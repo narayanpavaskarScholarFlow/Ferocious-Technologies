@@ -5,7 +5,6 @@ import {
   LayoutDashboard, 
   ShoppingCart, 
   Activity, 
-  ClipboardList, 
   Settings, 
   HelpCircle, 
   Box,
@@ -27,7 +26,7 @@ interface SidebarNavProps {
 export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
-    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production Orders' },
+    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Work Orders' },
     { id: 'customer-orders' as ViewType, icon: Package, label: 'Customer Orders' },
     { id: 'operations' as ViewType, icon: Layers, label: 'Operations' },
     { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Machine Utilization' },

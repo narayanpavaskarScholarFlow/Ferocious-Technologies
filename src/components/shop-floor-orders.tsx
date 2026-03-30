@@ -18,29 +18,29 @@ export function ShopFloorOrders() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-headline font-bold text-xl text-slate-800">Aktuelle Produktionsaufträge</h2>
+        <h2 className="font-headline font-bold text-xl text-slate-800 uppercase tracking-tight">Aktuelle Produktionsaufträge</h2>
         <div className="flex gap-2">
-           <Badge variant="outline" className="bg-white">Heute: 24</Badge>
-           <Badge variant="outline" className="bg-white">Offen: 12</Badge>
+           <Badge variant="outline" className="bg-white" suppressHydrationWarning>Heute: 24</Badge>
+           <Badge variant="outline" className="bg-white" suppressHydrationWarning>Offen: 12</Badge>
         </div>
       </div>
 
-      <div className="glass-card">
+      <div className="glass-card border border-slate-200">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableHead className="font-bold text-[10px] uppercase">Auftrag ID</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase">Maschine</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase">Status</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase">Fortschritt</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase">Geplant Ende</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-right">OEE Index</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Auftrag ID</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Maschine</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Fortschritt</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Geplant Ende</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">OEE Index</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {mockOrders.map((order) => (
               <TableRow key={order.id} className="hover:bg-slate-50/50">
-                <TableCell className="font-bold text-sm">{order.id}</TableCell>
+                <TableCell className="font-bold text-sm text-slate-700">{order.id}</TableCell>
                 <TableCell className="text-slate-600 font-medium">{order.machine}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -50,12 +50,12 @@ export function ShopFloorOrders() {
                       order.status === 'Störung' ? 'bg-red-500' :
                       order.status === 'Leerlauf' ? 'bg-amber-500' : 'bg-blue-500'
                     )} />
-                    <span className="text-xs font-bold">{order.status}</span>
+                    <span className="text-xs font-bold text-slate-500">{order.status}</span>
                   </div>
                 </TableCell>
                 <TableCell className="w-[200px]">
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between text-[10px] font-bold">
+                    <div className="flex justify-between text-[10px] font-bold text-slate-400">
                       <span>{order.progress}%</span>
                     </div>
                     <Progress value={order.progress} className="h-1.5" />
@@ -64,7 +64,7 @@ export function ShopFloorOrders() {
                 <TableCell className="text-xs text-slate-500 font-code">{order.endTime}</TableCell>
                 <TableCell className="text-right">
                    <div className={cn(
-                     "inline-flex px-2 py-1 rounded text-xs font-bold",
+                     "inline-flex px-2 py-1 rounded text-xs font-bold min-w-[40px] justify-center",
                      order.oee > 80 ? 'bg-green-100 text-green-700' :
                      order.oee > 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                    )}>
@@ -78,43 +78,43 @@ export function ShopFloorOrders() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass-card p-6 flex flex-col items-center justify-center min-h-[240px]">
-          <h3 className="text-slate-400 font-headline uppercase tracking-widest text-sm mb-6">Auftragsverteilung</h3>
-          <div className="flex items-center gap-12">
-            <div className="relative w-32 h-32">
+        <div className="glass-card p-6 flex flex-col items-center justify-center min-h-[260px] border border-slate-200">
+          <h3 className="text-slate-400 font-headline uppercase tracking-widest text-[10px] font-bold mb-8">Auftragsverteilung</h3>
+          <div className="flex items-center gap-16">
+            <div className="relative w-36 h-36">
               <svg className="w-full h-full transform -rotate-90">
-                <circle cx="64" cy="64" r="50" stroke="#005a9c" strokeWidth="20" fill="transparent" strokeDasharray="314" strokeDashoffset="100" />
-                <circle cx="64" cy="64" r="50" stroke="#f59e0b" strokeWidth="20" fill="transparent" strokeDasharray="314" strokeDashoffset="280" />
+                <circle cx="72" cy="72" r="60" stroke="#005a9c" strokeWidth="24" fill="transparent" strokeDasharray="376.8" strokeDashoffset="135" />
+                <circle cx="72" cy="72" r="60" stroke="#f59e0b" strokeWidth="24" fill="transparent" strokeDasharray="376.8" strokeDashoffset="310" />
               </svg>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
                 <div className="w-3 h-3 bg-[#005a9c] rounded-sm" /> In Bearbeitung (64%)
               </div>
-              <div className="flex items-center gap-2 text-xs font-bold">
+              <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
                 <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" /> Leerlauf (36%)
               </div>
             </div>
           </div>
         </div>
         
-        <div className="glass-card p-6 flex flex-col justify-between min-h-[240px]">
-           <h3 className="text-slate-400 font-headline uppercase tracking-widest text-sm mb-4">Schicht-Zusammenfassung</h3>
+        <div className="glass-card p-6 flex flex-col justify-between min-h-[260px] border border-slate-200">
+           <h3 className="text-slate-400 font-headline uppercase tracking-widest text-[10px] font-bold mb-6">Schicht-Zusammenfassung</h3>
            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <p className="text-[10px] text-slate-500 uppercase font-bold">Geplante Zeit</p>
-                <p className="text-2xl font-bold">08:00 h</p>
+              <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Geplante Zeit</p>
+                <p className="text-2xl font-bold text-slate-700">08:00 h</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <p className="text-[10px] text-slate-500 uppercase font-bold">Effektive Zeit</p>
+              <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Effektive Zeit</p>
                 <p className="text-2xl font-bold text-primary">07:12 h</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <p className="text-[10px] text-slate-500 uppercase font-bold">Ausschuss</p>
+              <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Ausschuss</p>
                 <p className="text-2xl font-bold text-red-500">2.4 %</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <p className="text-[10px] text-slate-500 uppercase font-bold">Produktivität</p>
+              <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Produktivität</p>
                 <p className="text-2xl font-bold text-green-500">94.1 %</p>
               </div>
            </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ViewType } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
@@ -18,11 +18,15 @@ import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 
 export default function VisualShopFloor() {
+  const [mounted, setMounted] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleNavigateToOperations = (orderId: string) => {
     setActiveWorkOrderId(orderId);
@@ -41,6 +45,10 @@ export default function VisualShopFloor() {
   const handleBackToOrders = () => {
     setCurrentView('orders');
   };
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#000000]" />;
+  }
 
   return (
     <div className="flex min-h-screen bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -72,7 +80,7 @@ export default function VisualShopFloor() {
             </div>
             
             <div className="flex items-center gap-2">
-              <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative">
+              <button suppressHydrationWarning className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-2.5 right-2.5 h-2 w-2 bg-primary rounded-full border-2 border-white dark:border-black" />
               </button>

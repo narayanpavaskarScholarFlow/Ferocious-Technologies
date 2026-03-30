@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StaffMember } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const staffData: StaffMember[] = [
   { id: '1', name: 'Miloš Kovařík', role: 'Lead Engineer', status: 'active', shift: 'Morning', efficiency: 98 },
@@ -19,14 +20,14 @@ export function ManpowerUtilization() {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-headline font-bold uppercase">Manpower & Resource Planning</h2>
         <div className="flex gap-2">
-          <Badge variant="outline" className="bg-green-100 text-green-700">Active: 14</Badge>
-          <Badge variant="outline" className="bg-amber-100 text-amber-700">Break: 3</Badge>
+          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Active: 14</Badge>
+          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">Break: 3</Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {staffData.map((staff) => (
-          <Card key={staff.id} className="p-4 flex items-center justify-between border-slate-200">
+          <Card key={staff.id} className="p-4 flex items-center justify-between border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
               <Avatar className="h-10 w-10 border border-slate-100">
                 <AvatarImage src={`https://picsum.photos/seed/${staff.id}/100/100`} />
@@ -55,39 +56,35 @@ export function ManpowerUtilization() {
         ))}
       </div>
 
-      <Card className="p-6">
+      <Card className="p-6 border-slate-200 shadow-sm">
         <h3 className="text-sm font-bold text-slate-500 uppercase mb-4">Skill Matrix & Availability</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="space-y-2">
             <p className="text-xs font-bold">Milling (Expert)</p>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 w-[80%]" />
+              <div className="h-full bg-primary w-[80%]" />
             </div>
           </div>
           <div className="space-y-2">
             <p className="text-xs font-bold">Turning (Expert)</p>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 w-[65%]" />
+              <div className="h-full bg-primary w-[65%]" />
             </div>
           </div>
           <div className="space-y-2">
             <p className="text-xs font-bold">Quality Control</p>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 w-[95%]" />
+              <div className="h-full bg-primary w-[95%]" />
             </div>
           </div>
           <div className="space-y-2">
             <p className="text-xs font-bold">Logistics</p>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 w-[40%]" />
+              <div className="h-full bg-primary w-[40%]" />
             </div>
           </div>
         </div>
       </Card>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }

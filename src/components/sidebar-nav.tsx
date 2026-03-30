@@ -1,9 +1,9 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { ViewType } from '@/lib/types';
 import { 
   LayoutDashboard, 
-  ShoppingCart, 
   Activity, 
   Settings, 
   HelpCircle, 
@@ -14,7 +14,8 @@ import {
   Calendar,
   UserPlus,
   Layers,
-  Truck
+  Truck,
+  ShoppingCart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -25,6 +26,12 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Work Orders' },
@@ -37,6 +44,10 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'sqcdp' as ViewType, icon: Activity, label: 'Board' },
     { id: 'users' as ViewType, icon: UserPlus, label: 'Access' },
   ];
+
+  if (!mounted) {
+    return <div className="w-20 lg:w-24 bg-white dark:bg-black border-r border-black/5 dark:border-white/5 h-screen" />;
+  }
 
   return (
     <div className="w-20 lg:w-24 bg-white dark:bg-black flex flex-col items-center py-10 gap-10 border-r border-black/5 dark:border-white/5 z-50 sticky top-0 h-screen">
@@ -53,9 +64,10 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <button
+                    suppressHydrationWarning
                     onClick={() => onViewChange(item.id)}
                     className={cn(
-                      "p-3.5 rounded-2xl transition-all duration-300 relative group",
+                      "p-3.5 rounded-2xl transition-all duration-300 relative group outline-none",
                       isActive 
                         ? "bg-primary text-white shadow-xl shadow-primary/20 scale-110" 
                         : "text-muted-foreground hover:text-primary hover:bg-primary/5"
@@ -77,10 +89,10 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
       </div>
 
       <div className="flex flex-col gap-6 text-muted-foreground pt-6 border-t border-black/5 dark:border-white/5 w-10 items-center">
-        <button className="hover:text-primary transition-all hover:scale-110">
+        <button suppressHydrationWarning className="hover:text-primary transition-all hover:scale-110 outline-none">
           <Settings className="h-5 w-5" />
         </button>
-        <button className="hover:text-primary transition-all hover:scale-110">
+        <button suppressHydrationWarning className="hover:text-primary transition-all hover:scale-110 outline-none">
           <HelpCircle className="h-5 w-5" />
         </button>
       </div>

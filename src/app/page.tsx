@@ -13,6 +13,7 @@ import { WeeklyPlan } from '@/components/weekly-plan';
 import { UserManagement } from '@/components/user-management';
 import { OperationsStatus } from '@/components/operations-status';
 import { VendorManagement } from '@/components/vendor-management';
+import { OrderDetails } from '@/components/order-details';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search } from 'lucide-react';
@@ -27,8 +28,17 @@ export default function VisualShopFloor() {
     setCurrentView('operations');
   };
 
+  const handleNavigateToOrderDetails = (orderId: string) => {
+    setActiveWorkOrderId(orderId);
+    setCurrentView('order-details');
+  };
+
   const handleNavigateToVendor = () => {
     setCurrentView('vendor');
+  };
+
+  const handleBackToOrders = () => {
+    setCurrentView('orders');
   };
 
   return (
@@ -73,7 +83,10 @@ export default function VisualShopFloor() {
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           {currentView === 'overview' && <ShopFloorOverview />}
           {currentView === 'orders' && (
-            <ShopFloorOrders onNavigateToOperations={handleNavigateToOperations} />
+            <ShopFloorOrders 
+              onNavigateToOperations={handleNavigateToOperations} 
+              onNavigateToOrderDetails={handleNavigateToOrderDetails}
+            />
           )}
           {currentView === 'sqcdp' && <ShopFloorSQCDP />}
           {currentView === 'machine-utilization' && <MachineUtilization />}
@@ -82,6 +95,12 @@ export default function VisualShopFloor() {
           {currentView === 'weekly-plan' && <WeeklyPlan />}
           {currentView === 'users' && <UserManagement />}
           {currentView === 'vendor' && <VendorManagement />}
+          {currentView === 'order-details' && (
+            <OrderDetails 
+              orderId={activeWorkOrderId} 
+              onBack={handleBackToOrders} 
+            />
+          )}
           {currentView === 'operations' && (
             <OperationsStatus 
               initialOrderId={activeWorkOrderId} 

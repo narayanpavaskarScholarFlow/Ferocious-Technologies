@@ -32,7 +32,8 @@ export type ViewType =
   | 'customer-orders' 
   | 'weekly-plan' 
   | 'users'
-  | 'vendor';
+  | 'vendor'
+  | 'order-details';
 
 export interface Order {
   id: string;

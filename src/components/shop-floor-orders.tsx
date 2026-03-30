@@ -19,9 +19,10 @@ const mockOrders: Order[] = [
 
 interface ShopFloorOrdersProps {
   onNavigateToOperations?: (orderId: string) => void;
+  onNavigateToOrderDetails?: (orderId: string) => void;
 }
 
-export function ShopFloorOrders({ onNavigateToOperations }: ShopFloorOrdersProps) {
+export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetails }: ShopFloorOrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredOrders = mockOrders.filter(order => 
@@ -68,7 +69,12 @@ export function ShopFloorOrders({ onNavigateToOperations }: ShopFloorOrdersProps
           <TableBody>
             {filteredOrders.map((order) => (
               <TableRow key={order.id} className="hover:bg-slate-50/50 h-16">
-                <TableCell className="font-bold text-sm text-slate-700">{order.id}</TableCell>
+                <TableCell 
+                  className="font-bold text-sm text-slate-700 cursor-pointer hover:text-primary transition-colors underline decoration-dotted underline-offset-4"
+                  onClick={() => onNavigateToOrderDetails?.(order.id)}
+                >
+                  {order.id}
+                </TableCell>
                 <TableCell className="text-slate-600 font-medium">{order.customer}</TableCell>
                 <TableCell className="text-xs text-slate-500 font-code">{order.startDate}</TableCell>
                 <TableCell className="text-xs text-slate-500 font-code">{order.endDate}</TableCell>

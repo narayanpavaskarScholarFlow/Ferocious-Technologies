@@ -9,9 +9,13 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
-import { Layers, ChevronDown } from 'lucide-react';
+import { Layers, ChevronRight, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const OPERATION_COLUMNS = [
@@ -36,7 +40,14 @@ const STATUS_OPTIONS = [
   { label: "Hold", color: "text-red-600 bg-red-50 border-red-200" },
   { label: "Review Pending", color: "text-amber-600 bg-amber-50 border-amber-200" },
   { label: "NA", color: "text-slate-400 bg-slate-50 border-slate-100" },
-  { label: "Vendor", color: "text-purple-600 bg-purple-50 border-purple-200" },
+];
+
+const VENDORS = [
+  "Precision HT",
+  "Global Logistics",
+  "Electro-Chem",
+  "Alpha Machining",
+  "Apex Finishing"
 ];
 
 interface OperationsStatusProps {
@@ -75,12 +86,11 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
     setOpStatuses(initial);
   };
 
-  const handleStatusChange = (column: string, status: string) => {
+  const handleStatusChange = (column: string, status: string, vendorName?: string) => {
     let finalStatus = status;
     
-    // If Vendor is selected, we append a mock vendor name and navigate to the portal
-    if (status === 'Vendor') {
-      finalStatus = "Vendor: Precision HT";
+    if (status === 'Vendor' && vendorName) {
+      finalStatus = `Vendor: ${vendorName}`;
       onNavigateToVendor?.();
     }
     
@@ -157,7 +167,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                                 <Badge 
                                   variant="outline"
                                   className={cn(
-                                    "text-[9px] font-bold uppercase py-1 px-2 w-full justify-center whitespace-nowrap",
+                                    "text-[9px] font-bold uppercase py-1 px-2 w-full justify-center whitespace-nowrap overflow-hidden text-ellipsis",
                                     getStatusStyles(currentStatus)
                                   )}
                                 >
@@ -165,7 +175,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                                 </Badge>
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" className="w-40">
+                            <DropdownMenuContent align="center" className="w-48">
                               {STATUS_OPTIONS.map((opt) => (
                                 <DropdownMenuItem 
                                   key={opt.label}
@@ -175,6 +185,26 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                                   <span className="text-xs font-medium">{opt.label}</span>
                                 </DropdownMenuItem>
                               ))}
+                              
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
+                                  <Truck className="h-3 w-3 text-purple-600" />
+                                  <span className="text-xs font-medium">Vendor</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                  <DropdownMenuSubContent className="w-48">
+                                    {VENDORS.map((vendor) => (
+                                      <DropdownMenuItem 
+                                        key={vendor}
+                                        onClick={() => handleStatusChange(col, 'Vendor', vendor)}
+                                        className="cursor-pointer text-xs"
+                                      >
+                                        {vendor}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                              </DropdownMenuSub>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -206,13 +236,18 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
       </Card>
 
       <div className="flex flex-wrap items-center gap-6 text-[10px] font-code text-slate-400 uppercase tracking-widest pt-4">
-        {STATUS_OPTIONS.filter(opt => opt.label !== 'NA').map(opt => (
+        {STATUS_OPTIONS.map(opt => (
           <div key={opt.label} className="flex items-center gap-2">
             <Badge variant="outline" className={cn("text-[8px] font-bold px-1.5 py-0", opt.color)}>
               {opt.label}
             </Badge>
           </div>
         ))}
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[8px] font-bold px-1.5 py-0 text-purple-600 bg-purple-50 border-purple-200">
+            Vendor
+          </Badge>
+        </div>
       </div>
     </div>
   );

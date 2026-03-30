@@ -47,11 +47,11 @@ export default function VisualShopFloor() {
   };
 
   if (!mounted) {
-    return <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#000000]" />;
+    return <div className="min-h-screen bg-white dark:bg-black" />;
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7]">
+    <div className="flex min-h-screen bg-white dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7]">
       <SidebarNav currentView={currentView} onViewChange={setCurrentView} />
 
       <div className="flex-1 flex flex-col min-w-0">

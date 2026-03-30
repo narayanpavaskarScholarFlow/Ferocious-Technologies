@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 10%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
@@ -12,16 +12,16 @@
     --popover-foreground: 0 0% 10%;
     --primary: 212 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 92%;
+    --secondary: 0 0% 98%;
     --secondary-foreground: 0 0% 15%;
-    --muted: 0 0% 96%;
+    --muted: 0 0% 98%;
     --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
+    --accent: 0 0% 98%;
     --accent-foreground: 0 0% 15%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 0 0% 92%;
+    --input: 0 0% 92%;
     --ring: 212 100% 45%;
     --radius: 1.25rem;
   }
@@ -60,11 +60,11 @@
 
 /* Apple-style Glassmorphism */
 .glass-card {
-  @apply bg-white/70 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-3xl overflow-hidden transition-all duration-500;
+  @apply bg-white/70 dark:bg-black/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.02)] rounded-3xl overflow-hidden transition-all duration-500;
 }
 
 .glass-card:hover {
-  @apply shadow-[0_12px_48px_rgba(0,0,0,0.08)] scale-[1.005];
+  @apply shadow-[0_12px_48px_rgba(0,0,0,0.04)] scale-[1.005];
 }
 
 /* Custom Scrollbar */

@@ -15,21 +15,21 @@ import {
 } from 'recharts';
 
 const utilizationData = [
-  { name: 'ML-01', value: 72, color: '#3b82f6' },
-  { name: 'ML-02', value: 62, color: '#3b82f6' },
-  { name: 'TR-04', value: 88, color: '#22c55e' },
-  { name: 'TR-05', value: 42, color: '#ef4444' },
-  { name: 'GR-01', value: 78, color: '#3b82f6' },
-  { name: '3D-09', value: 54, color: '#ef4444' },
+  { name: 'VMC milling-BFW (01)', value: 72, color: '#3b82f6' },
+  { name: 'VMC milling-BFW (02)', value: 62, color: '#3b82f6' },
+  { name: 'VMC milling-HASS (03)', value: 88, color: '#22c55e' },
+  { name: 'VMC milling (04)', value: 42, color: '#ef4444' },
+  { name: 'CNC Turning -Jyothi (05)', value: 78, color: '#3b82f6' },
+  { name: 'EDM ZNC (06)', value: 54, color: '#ef4444' },
 ];
 
 const loadData = [
-  { name: 'ML-01', value: 85, color: 'text-blue-500' },
-  { name: 'ML-02', value: 72, color: 'text-blue-500' },
-  { name: 'TR-04', value: 94, color: 'text-blue-500' },
-  { name: 'TR-05', value: 45, color: 'text-red-500' },
-  { name: 'GR-01', value: 88, color: 'text-blue-500' },
-  { name: '3D-09', value: 60, color: 'text-orange-500' },
+  { name: 'VMC milling-BFW (01)', value: 85, color: 'text-blue-500' },
+  { name: 'VMC milling-BFW (02)', value: 72, color: 'text-blue-500' },
+  { name: 'VMC milling-HASS (03)', value: 94, color: 'text-blue-500' },
+  { name: 'VMC milling (04)', value: 45, color: 'text-red-500' },
+  { name: 'CNC Turning -Jyothi (05)', value: 88, color: 'text-blue-500' },
+  { name: 'EDM ZNC (06)', value: 60, color: 'text-orange-500' },
 ];
 
 export function MachineUtilization() {
@@ -53,7 +53,7 @@ export function MachineUtilization() {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }}
+                  tick={{ fill: '#4b5563', fontSize: 10, fontWeight: 600 }}
                   dy={10}
                 />
                 <YAxis hide domain={[0, 100]} />
@@ -77,7 +77,7 @@ export function MachineUtilization() {
           <div className="space-y-8 flex-grow">
             {loadData.map((machine) => (
               <div key={machine.name} className="space-y-3">
-                <div className="flex justify-between items-center text-xs font-bold tracking-tight">
+                <div className="flex justify-between items-center text-[10px] font-bold tracking-tight">
                   <span className="text-slate-200">{machine.name}</span>
                   <span className={machine.color}>{machine.value}%</span>
                 </div>

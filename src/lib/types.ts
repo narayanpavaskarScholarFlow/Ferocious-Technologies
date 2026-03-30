@@ -22,7 +22,17 @@ export interface Tool {
   updatedAt: string;
 }
 
-export type ViewType = 'overview' | 'orders' | 'sqcdp' | 'tasks';
+export type ViewType = 
+  | 'overview' 
+  | 'orders' 
+  | 'sqcdp' 
+  | 'tasks' 
+  | 'machine-utilization' 
+  | 'manpower' 
+  | 'customer-orders' 
+  | 'operations' 
+  | 'weekly-plan' 
+  | 'users';
 
 export interface Order {
   id: string;
@@ -39,4 +49,31 @@ export interface SQCDPData {
   label: string;
   value: number;
   history: { date: string; value: number }[];
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string;
+  status: 'active' | 'break' | 'off';
+  shift: 'Morning' | 'Evening' | 'Night';
+  efficiency: number;
+}
+
+export interface CustomerOrder {
+  id: string;
+  customer: string;
+  partName: string;
+  quantity: number;
+  dueDate: string;
+  status: 'Pending' | 'Production' | 'Shipping' | 'Delivered';
+}
+
+export interface OperationStep {
+  id: string;
+  partId: string;
+  operationName: string;
+  machineId: string;
+  status: 'Queued' | 'In Progress' | 'Completed' | 'Blocked';
+  startTime?: string;
 }

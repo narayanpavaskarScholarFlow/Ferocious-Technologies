@@ -1,7 +1,21 @@
 "use client";
 
 import { ViewType } from '@/lib/types';
-import { LayoutDashboard, ShoppingCart, Activity, ClipboardList, Settings, HelpCircle, Box } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  ShoppingCart, 
+  Activity, 
+  ClipboardList, 
+  Settings, 
+  HelpCircle, 
+  Box,
+  Cpu,
+  Users,
+  Package,
+  Layers,
+  Calendar,
+  UserPlus
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -13,18 +27,23 @@ interface SidebarNavProps {
 export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
-    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Orders' },
-    { id: 'sqcdp' as ViewType, icon: Activity, label: 'SQCDP' },
-    { id: 'tasks' as ViewType, icon: ClipboardList, label: 'Tasks' },
+    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production Orders' },
+    { id: 'customer-orders' as ViewType, icon: Package, label: 'Customer Orders' },
+    { id: 'operations' as ViewType, icon: Layers, label: 'Operations' },
+    { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Machine Utilization' },
+    { id: 'manpower' as ViewType, icon: Users, label: 'Manpower' },
+    { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Weekly Plan' },
+    { id: 'sqcdp' as ViewType, icon: Activity, label: 'SQCDP Board' },
+    { id: 'users' as ViewType, icon: UserPlus, label: 'User Management' },
   ];
 
   return (
-    <div className="w-16 bg-[#003d6b] flex flex-col items-center py-6 gap-8 border-r border-white/10 z-50">
-      <div className="p-2 bg-white/10 rounded-lg">
+    <div className="w-16 bg-[#003d6b] flex flex-col items-center py-6 gap-6 border-r border-white/10 z-50">
+      <div className="p-2 bg-white/10 rounded-lg mb-2">
         <Box className="h-6 w-6 text-white" />
       </div>
 
-      <div className="flex-1 flex flex-col gap-4">
+      <div className="flex-1 flex flex-col gap-3">
         <TooltipProvider delayDuration={0}>
           {menuItems.map((item) => {
             const Icon = item.icon;

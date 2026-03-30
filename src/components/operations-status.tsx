@@ -91,6 +91,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
     
     if (status === 'Vendor' && vendorName) {
       finalStatus = `Vendor: ${vendorName}`;
+      // Trigger navigation after selection
       onNavigateToVendor?.();
     }
     
@@ -186,6 +187,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                                 </DropdownMenuItem>
                               ))}
                               
+                              {/* Vendor Sub-menu "small tab" as requested */}
                               <DropdownMenuSub>
                                 <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
                                   <Truck className="h-3 w-3 text-purple-600" />
@@ -235,6 +237,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
         </div>
       </Card>
 
+      {/* Legend showing all points/statuses in words as requested */}
       <div className="flex flex-wrap items-center gap-6 text-[10px] font-code text-slate-400 uppercase tracking-widest pt-4">
         {STATUS_OPTIONS.map(opt => (
           <div key={opt.label} className="flex items-center gap-2">

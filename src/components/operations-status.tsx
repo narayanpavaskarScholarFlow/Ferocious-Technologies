@@ -31,12 +31,12 @@ const OPERATION_COLUMNS = [
 ];
 
 const STATUS_OPTIONS = [
-  { label: "WIP", color: "bg-blue-500" },
-  { label: "Completed", color: "bg-green-500" },
-  { label: "Hold", color: "bg-red-500" },
-  { label: "Review Pending", color: "bg-amber-500" },
-  { label: "NA", color: "bg-slate-200" },
-  { label: "Vendor", color: "bg-purple-500" },
+  { label: "WIP", color: "text-blue-600 bg-blue-50 border-blue-200" },
+  { label: "Completed", color: "text-green-600 bg-green-50 border-green-200" },
+  { label: "Hold", color: "text-red-600 bg-red-50 border-red-200" },
+  { label: "Review Pending", color: "text-amber-600 bg-amber-50 border-amber-200" },
+  { label: "NA", color: "text-slate-400 bg-slate-50 border-slate-100" },
+  { label: "Vendor", color: "text-purple-600 bg-purple-50 border-purple-200" },
 ];
 
 interface OperationsStatusProps {
@@ -46,13 +46,11 @@ interface OperationsStatusProps {
 
 export function OperationsStatus({ initialOrderId, onOrderIdChange }: OperationsStatusProps) {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
-  // Using local state to track status for demo purposes
   const [opStatuses, setOpStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialOrderId) {
       setSelectedWorkOrder(initialOrderId);
-      // Initialize some random statuses when an order is selected
       const initial: Record<string, string> = {};
       OPERATION_COLUMNS.forEach((col, idx) => {
         if (idx < 5) initial[col] = "Completed";
@@ -66,14 +64,23 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
   const handleSelectChange = (val: string) => {
     setSelectedWorkOrder(val);
     onOrderIdChange?.(val);
+    
+    // Reset/Initialize statuses for the new order
+    const initial: Record<string, string> = {};
+    OPERATION_COLUMNS.forEach((col, idx) => {
+      if (idx < 3) initial[col] = "Completed";
+      else if (idx === 3) initial[col] = "WIP";
+      else initial[col] = "NA";
+    });
+    setOpStatuses(initial);
   };
 
   const handleStatusChange = (column: string, status: string) => {
     setOpStatuses(prev => ({ ...prev, [column]: status }));
   };
 
-  const getStatusColor = (status?: string) => {
-    return STATUS_OPTIONS.find(opt => opt.label === status)?.color || "bg-slate-100";
+  const getStatusStyles = (status?: string) => {
+    return STATUS_OPTIONS.find(opt => opt.label === status)?.color || "text-slate-400 bg-slate-50 border-slate-100";
   };
 
   return (
@@ -114,7 +121,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
                 {OPERATION_COLUMNS.map((col) => (
                   <TableHead 
                     key={col} 
-                    className="font-bold text-[9px] uppercase text-slate-500 py-6 px-2 text-center border-r border-slate-100 last:border-r-0 min-w-[110px]"
+                    className="font-bold text-[9px] uppercase text-slate-500 py-6 px-2 text-center border-r border-slate-100 last:border-r-0 min-w-[120px]"
                   >
                     {col}
                   </TableHead>
@@ -128,19 +135,23 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
               {selectedWorkOrder ? (
                 <TableRow className="h-20 border-b border-slate-100">
                   {OPERATION_COLUMNS.map((col, idx) => {
-                    const currentStatus = opStatuses[col];
+                    const currentStatus = opStatuses[col] || "NA";
                     
                     return (
                       <TableCell key={idx} className="border-r border-slate-50 last:border-r-0 p-2">
                         <div className="flex justify-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className="outline-none focus:ring-2 focus:ring-primary/20 rounded-full p-1 transition-all">
-                                <div className={cn(
-                                  "h-3.5 w-3.5 rounded-full shadow-sm",
-                                  getStatusColor(currentStatus),
-                                  currentStatus === "WIP" && "animate-pulse"
-                                )} />
+                              <button className="outline-none focus:ring-2 focus:ring-primary/20 rounded-md transition-all w-full">
+                                <Badge 
+                                  variant="outline"
+                                  className={cn(
+                                    "text-[9px] font-bold uppercase py-1 px-2 w-full justify-center whitespace-nowrap",
+                                    getStatusStyles(currentStatus)
+                                  )}
+                                >
+                                  {currentStatus}
+                                </Badge>
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="center" className="w-40">
@@ -150,7 +161,6 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
                                   onClick={() => handleStatusChange(col, opt.label)}
                                   className="flex items-center gap-2 cursor-pointer"
                                 >
-                                  <div className={cn("h-2 w-2 rounded-full", opt.color)} />
                                   <span className="text-xs font-medium">{opt.label}</span>
                                 </DropdownMenuItem>
                               ))}
@@ -184,10 +194,14 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
         </div>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-4 text-[10px] font-code text-slate-400 uppercase tracking-widest pt-4">
-        <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-green-500" /> COMPLETED</div>
-        <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-blue-500" /> IN PROGRESS</div>
-        <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-slate-200" /> QUEUED</div>
+      <div className="flex flex-wrap items-center gap-6 text-[10px] font-code text-slate-400 uppercase tracking-widest pt-4">
+        {STATUS_OPTIONS.filter(opt => opt.label !== 'NA').map(opt => (
+          <div key={opt.label} className="flex items-center gap-2">
+            <Badge variant="outline" className={cn("text-[8px] font-bold px-1.5 py-0", opt.color)}>
+              {opt.label}
+            </Badge>
+          </div>
+        ))}
       </div>
     </div>
   );

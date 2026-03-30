@@ -12,6 +12,7 @@ import { CustomerOrders } from '@/components/customer-orders';
 import { WeeklyPlan } from '@/components/weekly-plan';
 import { UserManagement } from '@/components/user-management';
 import { OperationsStatus } from '@/components/operations-status';
+import { VendorManagement } from '@/components/vendor-management';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search } from 'lucide-react';
@@ -24,6 +25,10 @@ export default function VisualShopFloor() {
   const handleNavigateToOperations = (orderId: string) => {
     setActiveWorkOrderId(orderId);
     setCurrentView('operations');
+  };
+
+  const handleNavigateToVendor = () => {
+    setCurrentView('vendor');
   };
 
   return (
@@ -76,10 +81,12 @@ export default function VisualShopFloor() {
           {currentView === 'customer-orders' && <CustomerOrders />}
           {currentView === 'weekly-plan' && <WeeklyPlan />}
           {currentView === 'users' && <UserManagement />}
+          {currentView === 'vendor' && <VendorManagement />}
           {currentView === 'operations' && (
             <OperationsStatus 
               initialOrderId={activeWorkOrderId} 
               onOrderIdChange={setActiveWorkOrderId} 
+              onNavigateToVendor={handleNavigateToVendor}
             />
           )}
         </main>

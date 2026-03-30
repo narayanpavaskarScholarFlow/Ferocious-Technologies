@@ -31,7 +31,8 @@ export type ViewType =
   | 'manpower' 
   | 'customer-orders' 
   | 'weekly-plan' 
-  | 'users';
+  | 'users'
+  | 'vendor';
 
 export interface Order {
   id: string;
@@ -79,4 +80,14 @@ export interface OperationStep {
   machineId: string;
   status: 'Queued' | 'In Progress' | 'Completed' | 'Blocked';
   startTime?: string;
+}
+
+export interface Vendor {
+  id: string;
+  name: string;
+  type: string;
+  activeOrders: number;
+  rating: number;
+  contact: string;
+  status: 'Active' | 'Under Review' | 'Inactive';
 }

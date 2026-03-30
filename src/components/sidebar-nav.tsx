@@ -13,7 +13,8 @@ import {
   Package,
   Calendar,
   UserPlus,
-  Layers
+  Layers,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -31,6 +32,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Machine Utilization' },
     { id: 'manpower' as ViewType, icon: Users, label: 'Manpower' },
     { id: 'operations' as ViewType, icon: Layers, label: 'Operations' },
+    { id: 'vendor' as ViewType, icon: Truck, label: 'Vendor Portal' },
     { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Weekly Plan' },
     { id: 'sqcdp' as ViewType, icon: Activity, label: 'SQCDP Board' },
     { id: 'users' as ViewType, icon: UserPlus, label: 'User Management' },

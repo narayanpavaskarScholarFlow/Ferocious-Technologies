@@ -42,9 +42,10 @@ const STATUS_OPTIONS = [
 interface OperationsStatusProps {
   initialOrderId?: string | null;
   onOrderIdChange?: (orderId: string | null) => void;
+  onNavigateToVendor?: () => void;
 }
 
-export function OperationsStatus({ initialOrderId, onOrderIdChange }: OperationsStatusProps) {
+export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateToVendor }: OperationsStatusProps) {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
   const [opStatuses, setOpStatuses] = useState<Record<string, string>>({});
 
@@ -77,6 +78,9 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
 
   const handleStatusChange = (column: string, status: string) => {
     setOpStatuses(prev => ({ ...prev, [column]: status }));
+    if (status === 'Vendor') {
+      onNavigateToVendor?.();
+    }
   };
 
   const getStatusStyles = (status?: string) => {

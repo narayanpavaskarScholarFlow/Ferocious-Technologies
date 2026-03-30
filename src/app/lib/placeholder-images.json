@@ -2,28 +2,40 @@
 {
   "placeholderImages": [
     {
-      "id": "tool-1",
+      "id": "milling",
+      "description": "Industrial Milling Machine",
+      "imageUrl": "https://picsum.photos/seed/milling/600/400",
+      "imageHint": "milling machine"
+    },
+    {
+      "id": "turning",
+      "description": "CNC Turning Center",
+      "imageUrl": "https://picsum.photos/seed/turning/600/400",
+      "imageHint": "cnc lathe"
+    },
+    {
+      "id": "grinding",
+      "description": "Precision Grinding Unit",
+      "imageUrl": "https://picsum.photos/seed/grinding/600/400",
+      "imageHint": "grinding machine"
+    },
+    {
+      "id": "3d-printing",
       "description": "Professional 3D Printer",
-      "imageUrl": "https://picsum.photos/seed/tool1/600/400",
-      "imageHint": "3d printer machine"
+      "imageUrl": "https://picsum.photos/seed/3dprint/600/400",
+      "imageHint": "3d printer"
     },
     {
-      "id": "tool-2",
-      "description": "Precision Oscilloscope",
-      "imageUrl": "https://picsum.photos/seed/tool2/600/400",
-      "imageHint": "oscilloscope electronics"
+      "id": "edm",
+      "description": "Electrical Discharge Machine",
+      "imageUrl": "https://picsum.photos/seed/edm/600/400",
+      "imageHint": "edm machine"
     },
     {
-      "id": "tool-3",
-      "description": "High-Performance Workstation",
-      "imageUrl": "https://picsum.photos/seed/tool3/600/400",
-      "imageHint": "computer workstation server"
-    },
-    {
-      "id": "tool-4",
-      "description": "Laser Cutting Machine",
-      "imageUrl": "https://picsum.photos/seed/tool4/600/400",
-      "imageHint": "laser cutter industrial"
+      "id": "double-column",
+      "description": "Double Column Milling Center",
+      "imageUrl": "https://picsum.photos/seed/doublecol/600/400",
+      "imageHint": "large milling machine"
     }
   ]
 }

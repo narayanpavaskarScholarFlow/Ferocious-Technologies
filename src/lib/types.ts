@@ -1,11 +1,20 @@
 
-export type ToolStatus = 'active' | 'obsolete' | 'maintenance';
+export type ToolStatus = 'active' | 'obsolete' | 'maintenance' | 'fault';
+
+export type MachineCategory = 
+  | 'Milling' 
+  | 'Turning' 
+  | 'Grinding' 
+  | '3D Printing' 
+  | 'EDM' 
+  | 'Double Column Milling'
+  | 'All';
 
 export interface Tool {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category: Exclude<MachineCategory, 'All'>;
   tags: string[];
   imageUrl: string;
   status: ToolStatus;
@@ -16,7 +25,7 @@ export interface Tool {
 
 export interface CatalogFilter {
   search: string;
-  category: string;
+  category: MachineCategory;
   status: ToolStatus | 'all';
 }
 

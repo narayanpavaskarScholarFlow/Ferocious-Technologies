@@ -64,7 +64,9 @@ export interface StaffMember {
 export interface CustomerOrder {
   id: string;
   customer: string;
-  partName: string;
+  numberOfPOs: number;
+  partDescription: string;
+  value: string;
   quantity: number;
   dueDate: string;
   status: 'Pending' | 'Production' | 'Shipping' | 'Delivered';

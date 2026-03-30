@@ -11,7 +11,6 @@ import {
   Cpu,
   Users,
   Package,
-  Layers,
   Calendar,
   UserPlus
 } from 'lucide-react';
@@ -28,7 +27,6 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Work Orders' },
     { id: 'customer-orders' as ViewType, icon: Package, label: 'Customer Orders' },
-    { id: 'operations' as ViewType, icon: Layers, label: 'Operations' },
     { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Machine Utilization' },
     { id: 'manpower' as ViewType, icon: Users, label: 'Manpower' },
     { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Weekly Plan' },

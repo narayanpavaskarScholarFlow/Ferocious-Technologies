@@ -9,7 +9,6 @@ import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
 import { MachineUtilization } from '@/components/machine-utilization';
 import { ManpowerUtilization } from '@/components/manpower-utilization';
 import { CustomerOrders } from '@/components/customer-orders';
-import { OperationsStatus } from '@/components/operations-status';
 import { WeeklyPlan } from '@/components/weekly-plan';
 import { UserManagement } from '@/components/user-management';
 import { Toaster } from '@/components/ui/toaster';
@@ -66,7 +65,6 @@ export default function VisualShopFloor() {
           {currentView === 'machine-utilization' && <MachineUtilization />}
           {currentView === 'manpower' && <ManpowerUtilization />}
           {currentView === 'customer-orders' && <CustomerOrders />}
-          {currentView === 'operations' && <OperationsStatus />}
           {currentView === 'weekly-plan' && <WeeklyPlan />}
           {currentView === 'users' && <UserManagement />}
         </main>

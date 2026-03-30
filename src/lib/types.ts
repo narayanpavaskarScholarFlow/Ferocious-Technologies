@@ -30,7 +30,6 @@ export type ViewType =
   | 'machine-utilization' 
   | 'manpower' 
   | 'customer-orders' 
-  | 'operations' 
   | 'weekly-plan' 
   | 'users';
 

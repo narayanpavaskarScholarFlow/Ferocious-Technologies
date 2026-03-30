@@ -17,7 +17,11 @@ const mockOrders: Order[] = [
   { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60 },
 ];
 
-export function ShopFloorOrders() {
+interface ShopFloorOrdersProps {
+  onNavigateToOperations?: (orderId: string) => void;
+}
+
+export function ShopFloorOrders({ onNavigateToOperations }: ShopFloorOrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredOrders = mockOrders.filter(order => 
@@ -68,10 +72,13 @@ export function ShopFloorOrders() {
                 <TableCell className="text-slate-600 font-medium">{order.customer}</TableCell>
                 <TableCell className="text-xs text-slate-500 font-code">{order.startDate}</TableCell>
                 <TableCell className="text-xs text-slate-500 font-code">{order.endDate}</TableCell>
-                <TableCell className="w-[120px]">
+                <TableCell 
+                  className="w-[120px] cursor-pointer group/cell hover:bg-slate-100/50 transition-colors"
+                  onClick={() => onNavigateToOperations?.(order.id)}
+                >
                   <div className="flex flex-col gap-1.5">
                     <div className="flex justify-between text-[10px] font-bold">
-                      <span className="text-slate-500">{order.progress}%</span>
+                      <span className="text-slate-500 group-hover/cell:text-primary transition-colors">{order.progress}%</span>
                     </div>
                     <Progress value={order.progress} className="h-1.5" />
                   </div>

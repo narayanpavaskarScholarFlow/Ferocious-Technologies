@@ -19,6 +19,12 @@ import { Input } from '@/components/ui/input';
 
 export default function VisualShopFloor() {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
+  const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
+
+  const handleNavigateToOperations = (orderId: string) => {
+    setActiveWorkOrderId(orderId);
+    setCurrentView('operations');
+  };
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -61,14 +67,21 @@ export default function VisualShopFloor() {
 
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           {currentView === 'overview' && <ShopFloorOverview />}
-          {currentView === 'orders' && <ShopFloorOrders />}
+          {currentView === 'orders' && (
+            <ShopFloorOrders onNavigateToOperations={handleNavigateToOperations} />
+          )}
           {currentView === 'sqcdp' && <ShopFloorSQCDP />}
           {currentView === 'machine-utilization' && <MachineUtilization />}
           {currentView === 'manpower' && <ManpowerUtilization />}
           {currentView === 'customer-orders' && <CustomerOrders />}
           {currentView === 'weekly-plan' && <WeeklyPlan />}
           {currentView === 'users' && <UserManagement />}
-          {currentView === 'operations' && <OperationsStatus />}
+          {currentView === 'operations' && (
+            <OperationsStatus 
+              initialOrderId={activeWorkOrderId} 
+              onOrderIdChange={setActiveWorkOrderId} 
+            />
+          )}
         </main>
       </div>
 

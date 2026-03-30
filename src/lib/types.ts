@@ -19,3 +19,12 @@ export interface CatalogFilter {
   category: string;
   status: ToolStatus | 'all';
 }
+
+export interface SystemActivity {
+  id: string;
+  type: 'usage' | 'maintenance' | 'ai_update' | 'alert';
+  message: string;
+  timestamp: string;
+  user?: string;
+  severity?: 'low' | 'medium' | 'high';
+}

@@ -1,4 +1,3 @@
-
 export type ToolStatus = 'active' | 'obsolete' | 'maintenance' | 'fault';
 
 export type MachineCategory = 
@@ -23,17 +22,21 @@ export interface Tool {
   updatedAt: string;
 }
 
-export interface CatalogFilter {
-  search: string;
-  category: MachineCategory;
-  status: ToolStatus | 'all';
+export type ViewType = 'overview' | 'orders' | 'sqcdp' | 'tasks';
+
+export interface Order {
+  id: string;
+  machine: string;
+  status: 'Betrieb' | 'Störung' | 'Leerlauf' | 'Wartung';
+  progress: number;
+  startTime: string;
+  endTime: string;
+  oee: number;
 }
 
-export interface SystemActivity {
-  id: string;
-  type: 'usage' | 'maintenance' | 'ai_update' | 'alert';
-  message: string;
-  timestamp: string;
-  user?: string;
-  severity?: 'low' | 'medium' | 'high';
+export interface SQCDPData {
+  category: 'S' | 'Q' | 'C' | 'D' | 'P';
+  label: string;
+  value: number;
+  history: { date: string; value: number }[];
 }

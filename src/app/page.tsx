@@ -1,71 +1,72 @@
+"use client";
 
-import { Navbar } from '@/components/navbar';
-import { OperationalMatrix } from '@/components/operational-matrix';
+import { useState } from 'react';
+import { SidebarNav } from '@/components/sidebar-nav';
+import { ViewType } from '@/lib/types';
+import { ShopFloorOverview } from '@/components/shop-floor-overview';
+import { ShopFloorOrders } from '@/components/shop-floor-orders';
+import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
 import { Toaster } from '@/components/ui/toaster';
-import { Terminal, Shield, Cpu, Globe } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Bell, Search, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
-export default function Home() {
+export default function VisualShopFloor() {
+  const [currentView, setCurrentView] = useState<ViewType>('overview');
+
   return (
-    <div className="relative flex flex-col min-h-screen bg-[#0a0c0d] text-foreground">
-      <Navbar />
-      
-      <main className="flex-grow pt-20 pb-6 px-4 md:px-6">
-        <div className="container mx-auto max-w-7xl h-full flex flex-col gap-4">
-          
-          {/* System Status Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 glass-effect rounded-lg border border-white/5 bg-primary/5">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-xs font-code">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-muted-foreground uppercase tracking-wider">Operational Status:</span>
-                <span className="text-primary font-bold">NOMINAL</span>
-              </div>
-              <div className="hidden md:flex items-center gap-2 text-xs font-code">
-                <Globe className="h-3 w-3 text-accent" />
-                <span className="text-muted-foreground uppercase tracking-wider">Node:</span>
-                <span className="text-foreground">EU-WEST-1_S2</span>
-              </div>
-              <div className="hidden lg:flex items-center gap-2 text-xs font-code">
-                <Cpu className="h-3 w-3 text-muted-foreground" />
-                <span className="text-muted-foreground uppercase tracking-wider">Core Load:</span>
-                <span className="text-foreground">12.4%</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded border border-white/5 text-[10px] font-code text-muted-foreground">
-                <Shield className="h-3 w-3" />
-                SECURE_PROTOCOL_V4
-              </div>
-              <div className="text-[10px] font-code text-primary">
-                {new Date().toISOString().split('T')[0]} // {new Date().toLocaleTimeString()}
-              </div>
+    <div className="flex min-h-screen bg-slate-50">
+      {/* High Density Sidebar */}
+      <SidebarNav currentView={currentView} onViewChange={setCurrentView} />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Modern Header */}
+        <header className="h-14 border-b bg-white flex items-center justify-between px-6 sticky top-0 z-30">
+          <div className="flex items-center gap-4">
+            <h1 className="font-headline font-bold text-slate-800 uppercase tracking-tight text-lg">
+              visual shop floor <span className="text-primary">2.0</span>
+            </h1>
+            <div className="h-4 w-[1px] bg-slate-200 mx-2" />
+            <div className="text-xs font-medium text-slate-500 uppercase tracking-widest">
+              Location: EU-NORTH-1 / Section B
             </div>
           </div>
 
-          {/* Unified Display Area */}
-          <div className="flex-grow min-h-[600px]">
-            <OperationalMatrix />
-          </div>
-
-          {/* Console Footer */}
-          <div className="p-3 bg-black/40 border border-white/5 rounded-lg flex items-center justify-between font-code text-[10px] text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1"><Terminal className="h-3 w-3" /> SYS_INIT_COMPLETE</span>
-              <span className="text-primary/50">|</span>
-              <span className="hover:text-primary cursor-pointer">AUDIT_LOGS</span>
-              <span className="text-primary/50">|</span>
-              <span className="hover:text-primary cursor-pointer">TELEMETRY_EXPORT</span>
+          <div className="flex items-center gap-6">
+            <div className="relative w-64 hidden md:block">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input placeholder="Global search..." className="h-8 pl-8 text-xs bg-slate-50 border-none focus-visible:ring-1" />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-12 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-2/3"></div>
+            <div className="flex items-center gap-4 border-l pl-4">
+              <button className="text-slate-400 hover:text-primary transition-colors">
+                <Bell className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-bold leading-none">Miloš Kovařík</p>
+                  <p className="text-[10px] text-slate-400 leading-none mt-1">Plant Manager</p>
+                </div>
+                <Avatar className="h-8 w-8 border border-slate-200">
+                  <AvatarImage src="https://picsum.photos/seed/user-shop/100/100" />
+                  <AvatarFallback>MK</AvatarFallback>
+                </Avatar>
               </div>
-              <span>MEM_USAGE: 4.2GB</span>
             </div>
           </div>
-        </div>
-      </main>
+        </header>
+
+        {/* Dynamic Content Area */}
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          {currentView === 'overview' && <ShopFloorOverview />}
+          {currentView === 'orders' && <ShopFloorOrders />}
+          {currentView === 'sqcdp' && <ShopFloorSQCDP />}
+          {currentView === 'tasks' && (
+            <div className="flex items-center justify-center h-full text-slate-400 font-headline uppercase tracking-widest text-sm italic">
+              -- Tasks View Under Construction --
+            </div>
+          )}
+        </main>
+      </div>
 
       <Toaster />
     </div>

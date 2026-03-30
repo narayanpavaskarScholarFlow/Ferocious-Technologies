@@ -66,7 +66,6 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
     setSelectedWorkOrder(val);
     onOrderIdChange?.(val);
     
-    // Reset/Initialize statuses for the new order
     const initial: Record<string, string> = {};
     OPERATION_COLUMNS.forEach((col, idx) => {
       if (idx < 3) initial[col] = "Completed";
@@ -77,13 +76,21 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
   };
 
   const handleStatusChange = (column: string, status: string) => {
-    setOpStatuses(prev => ({ ...prev, [column]: status }));
+    let finalStatus = status;
+    
+    // If Vendor is selected, we append a mock vendor name and navigate to the portal
     if (status === 'Vendor') {
+      finalStatus = "Vendor: Precision HT";
       onNavigateToVendor?.();
     }
+    
+    setOpStatuses(prev => ({ ...prev, [column]: finalStatus }));
   };
 
   const getStatusStyles = (status?: string) => {
+    if (status?.startsWith('Vendor')) {
+      return "text-purple-600 bg-purple-50 border-purple-200";
+    }
     return STATUS_OPTIONS.find(opt => opt.label === status)?.color || "text-slate-400 bg-slate-50 border-slate-100";
   };
 
@@ -125,7 +132,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                 {OPERATION_COLUMNS.map((col) => (
                   <TableHead 
                     key={col} 
-                    className="font-bold text-[9px] uppercase text-slate-500 py-6 px-2 text-center border-r border-slate-100 last:border-r-0 min-w-[120px]"
+                    className="font-bold text-[9px] uppercase text-slate-500 py-6 px-2 text-center border-r border-slate-100 last:border-r-0 min-w-[140px]"
                   >
                     {col}
                   </TableHead>

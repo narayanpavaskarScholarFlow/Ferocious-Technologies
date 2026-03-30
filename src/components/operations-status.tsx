@@ -5,7 +5,13 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Layers, ChevronRight } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Layers, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const OPERATION_COLUMNS = [
@@ -24,6 +30,15 @@ const OPERATION_COLUMNS = [
   "Assembly"
 ];
 
+const STATUS_OPTIONS = [
+  { label: "WIP", color: "bg-blue-500" },
+  { label: "Completed", color: "bg-green-500" },
+  { label: "Hold", color: "bg-red-500" },
+  { label: "Review Pending", color: "bg-amber-500" },
+  { label: "NA", color: "bg-slate-200" },
+  { label: "Vendor", color: "bg-purple-500" },
+];
+
 interface OperationsStatusProps {
   initialOrderId?: string | null;
   onOrderIdChange?: (orderId: string | null) => void;
@@ -31,16 +46,34 @@ interface OperationsStatusProps {
 
 export function OperationsStatus({ initialOrderId, onOrderIdChange }: OperationsStatusProps) {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
+  // Using local state to track status for demo purposes
+  const [opStatuses, setOpStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialOrderId) {
       setSelectedWorkOrder(initialOrderId);
+      // Initialize some random statuses when an order is selected
+      const initial: Record<string, string> = {};
+      OPERATION_COLUMNS.forEach((col, idx) => {
+        if (idx < 5) initial[col] = "Completed";
+        else if (idx === 5) initial[col] = "WIP";
+        else initial[col] = "NA";
+      });
+      setOpStatuses(initial);
     }
   }, [initialOrderId]);
 
   const handleSelectChange = (val: string) => {
     setSelectedWorkOrder(val);
     onOrderIdChange?.(val);
+  };
+
+  const handleStatusChange = (column: string, status: string) => {
+    setOpStatuses(prev => ({ ...prev, [column]: status }));
+  };
+
+  const getStatusColor = (status?: string) => {
+    return STATUS_OPTIONS.find(opt => opt.label === status)?.color || "bg-slate-100";
   };
 
   return (
@@ -56,7 +89,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
               onValueChange={handleSelectChange}
             >
               <SelectTrigger className="w-[180px] h-9 bg-white text-xs border-slate-200">
-                <SelectValue placeholder="Select Order" />
+                <SelectValue placeholder="Add Filter" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="103645">103645</SelectItem>
@@ -67,8 +100,8 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
               </SelectContent>
             </Select>
           </div>
-          <Badge variant="outline" className="bg-slate-800 text-white border-none h-9 px-4 flex items-center gap-2">
-            Active Ops: <span className="font-code text-primary">{selectedWorkOrder ? '5' : '0'}</span>
+          <Badge variant="outline" className="bg-[#1e293b] text-white border-none h-9 px-4 flex items-center gap-2 rounded-full font-bold">
+            Active Ops: <span className="text-white">5</span>
           </Badge>
         </div>
       </div>
@@ -81,7 +114,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
                 {OPERATION_COLUMNS.map((col) => (
                   <TableHead 
                     key={col} 
-                    className="font-bold text-[9px] uppercase text-slate-500 py-4 px-2 text-center border-r border-slate-100 last:border-r-0 min-w-[90px]"
+                    className="font-bold text-[9px] uppercase text-slate-500 py-6 px-2 text-center border-r border-slate-100 last:border-r-0 min-w-[110px]"
                   >
                     {col}
                   </TableHead>
@@ -93,19 +126,36 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
             </TableHeader>
             <TableBody>
               {selectedWorkOrder ? (
-                <TableRow className="h-16 border-b border-slate-100">
+                <TableRow className="h-20 border-b border-slate-100">
                   {OPERATION_COLUMNS.map((col, idx) => {
-                    // Logic to simulate different progress based on ID
-                    const isCompleted = idx < (selectedWorkOrder === '103645' ? 10 : 4);
-                    const isInProgress = idx === (selectedWorkOrder === '103645' ? 10 : 4);
+                    const currentStatus = opStatuses[col];
                     
                     return (
                       <TableCell key={idx} className="border-r border-slate-50 last:border-r-0 p-2">
                         <div className="flex justify-center">
-                          <div className={cn(
-                            "h-3 w-3 rounded-full",
-                            isCompleted ? "bg-green-500" : isInProgress ? "bg-blue-500 animate-pulse" : "bg-slate-100"
-                          )} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="outline-none focus:ring-2 focus:ring-primary/20 rounded-full p-1 transition-all">
+                                <div className={cn(
+                                  "h-3.5 w-3.5 rounded-full shadow-sm",
+                                  getStatusColor(currentStatus),
+                                  currentStatus === "WIP" && "animate-pulse"
+                                )} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center" className="w-40">
+                              {STATUS_OPTIONS.map((opt) => (
+                                <DropdownMenuItem 
+                                  key={opt.label}
+                                  onClick={() => handleStatusChange(col, opt.label)}
+                                  className="flex items-center gap-2 cursor-pointer"
+                                >
+                                  <div className={cn("h-2 w-2 rounded-full", opt.color)} />
+                                  <span className="text-xs font-medium">{opt.label}</span>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     );
@@ -134,10 +184,10 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
         </div>
       </Card>
 
-      <div className="flex items-center gap-2 text-[10px] font-code text-slate-400 uppercase tracking-widest">
-        <div className="h-2 w-2 rounded-full bg-green-500" /> Completed
-        <div className="h-2 w-2 rounded-full bg-blue-500 ml-4" /> In Progress
-        <div className="h-2 w-2 rounded-full bg-slate-200 ml-4" /> Queued
+      <div className="flex flex-wrap items-center gap-4 text-[10px] font-code text-slate-400 uppercase tracking-widest pt-4">
+        <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-green-500" /> COMPLETED</div>
+        <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-blue-500" /> IN PROGRESS</div>
+        <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-slate-200" /> QUEUED</div>
       </div>
     </div>
   );

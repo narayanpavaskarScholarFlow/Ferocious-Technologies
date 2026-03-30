@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -22,7 +21,7 @@ const formSchema = z.object({
   description: z.string().min(10, { message: "Provide a more detailed description." }),
   category: z.string().min(1, { message: "Category is required." }),
   tags: z.string(),
-  status: z.enum(['active', 'obsolete', 'maintenance']),
+  status: z.enum(['active', 'obsolete', 'maintenance', 'fault']),
   technicalId: z.string().min(3, { message: "Technical ID is required." }),
   imageUrl: z.string().url({ message: "Provide a valid image URL." }),
 });
@@ -45,10 +44,18 @@ export function ToolForm({ tool, onSave, onCancel }: ToolFormProps) {
       category: tool?.category || '',
       tags: tool?.tags.join(', ') || '',
       status: tool?.status || 'active',
-      technicalId: tool?.technicalId || `TR-${Math.floor(Math.random() * 9000) + 1000}`,
+      technicalId: tool?.technicalId || 'TR-XXXX',
       imageUrl: tool?.imageUrl || 'https://picsum.photos/seed/tool/600/400',
     },
   });
+
+  // Handle generation of random ID after mount to avoid hydration mismatch
+  useEffect(() => {
+    if (!tool) {
+      const randomId = `TR-${Math.floor(Math.random() * 9000) + 1000}`;
+      form.setValue('technicalId', randomId);
+    }
+  }, [tool, form]);
 
   const handleAICategorize = async () => {
     const description = form.getValues('description');
@@ -88,7 +95,7 @@ export function ToolForm({ tool, onSave, onCancel }: ToolFormProps) {
       id: tool?.id || Math.random().toString(36).substr(2, 9),
       name: values.name,
       description: values.description,
-      category: values.category,
+      category: values.category as any,
       tags: values.tags.split(',').map(t => t.trim()).filter(t => t !== ''),
       status: values.status,
       technicalId: values.technicalId,
@@ -195,6 +202,7 @@ export function ToolForm({ tool, onSave, onCancel }: ToolFormProps) {
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="maintenance">Maintenance</SelectItem>
                     <SelectItem value="obsolete">Obsolete</SelectItem>
+                    <SelectItem value="fault">Fault</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

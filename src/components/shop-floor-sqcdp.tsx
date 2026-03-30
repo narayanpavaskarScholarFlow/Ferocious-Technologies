@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { SQCDPData } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -29,11 +30,17 @@ const sqcdpData: SQCDPData[] = [
 ];
 
 export function ShopFloorSQCDP() {
+  const [syncTime, setSyncTime] = useState<string>('');
+
+  useEffect(() => {
+    setSyncTime(new Date().toLocaleTimeString());
+  }, []);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <h2 className="font-headline font-bold text-xl text-slate-800 uppercase tracking-tighter">SQCDP Performance Board</h2>
-        <p className="text-xs font-bold text-slate-400 font-code">LAST_SYNC: {new Date().toLocaleTimeString()}</p>
+        <p className="text-xs font-bold text-slate-400 font-code">LAST_SYNC: {syncTime || 'Initializing...'}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

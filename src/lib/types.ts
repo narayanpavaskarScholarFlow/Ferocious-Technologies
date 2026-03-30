@@ -36,12 +36,12 @@ export type ViewType =
 
 export interface Order {
   id: string;
-  machine: string;
-  status: 'Operating' | 'Fault' | 'Idle' | 'Maintenance';
-  progress: number;
-  startTime: string;
-  endTime: string;
-  oee: number;
+  customer: string;
+  startDate: string;
+  endDate: string;
+  priority: 'High' | 'Medium' | 'Low';
+  status: 'Active' | 'Pending' | 'Completed' | 'Delayed';
+  owner?: string;
 }
 
 export interface SQCDPData {

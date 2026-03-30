@@ -1,0 +1,29 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "tool-1",
+      "description": "Professional 3D Printer",
+      "imageUrl": "https://picsum.photos/seed/tool1/600/400",
+      "imageHint": "3d printer machine"
+    },
+    {
+      "id": "tool-2",
+      "description": "Precision Oscilloscope",
+      "imageUrl": "https://picsum.photos/seed/tool2/600/400",
+      "imageHint": "oscilloscope electronics"
+    },
+    {
+      "id": "tool-3",
+      "description": "High-Performance Workstation",
+      "imageUrl": "https://picsum.photos/seed/tool3/600/400",
+      "imageHint": "computer workstation server"
+    },
+    {
+      "id": "tool-4",
+      "description": "Laser Cutting Machine",
+      "imageUrl": "https://picsum.photos/seed/tool4/600/400",
+      "imageHint": "laser cutter industrial"
+    }
+  ]
+}

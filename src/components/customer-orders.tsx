@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { CustomerOrder } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const customerOrders: CustomerOrder[] = [
   { id: 'PO-88452', customer: 'Automotive Corp', partName: 'Gear Housing V6', quantity: 500, dueDate: '20.03.2025', status: 'Production' },
@@ -28,7 +29,6 @@ export function CustomerOrders() {
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableRow className="border-none" />
               <TableHead className="font-bold text-[10px] uppercase">Order ID</TableHead>
               <TableHead className="font-bold text-[10px] uppercase">Customer</TableHead>
               <TableHead className="font-bold text-[10px] uppercase">Part Description</TableHead>
@@ -65,8 +65,4 @@ export function CustomerOrders() {
       </Card>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }

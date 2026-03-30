@@ -1,90 +1,123 @@
 "use client";
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
+import { MachineLoadPlan } from '@/components/machine-load-plan';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import { Cpu, Search } from 'lucide-react';
 
-const utilizationData = [
-  { name: 'VMC milling-BFW (01)', value: 72, color: '#3b82f6' },
-  { name: 'VMC milling-BFW (02)', value: 62, color: '#3b82f6' },
-  { name: 'VMC milling-HASS (03)', value: 88, color: '#22c55e' },
-  { name: 'VMC milling (04)', value: 42, color: '#ef4444' },
-  { name: 'CNC Turning -Jyothi (05)', value: 78, color: '#3b82f6' },
-  { name: 'EDM ZNC (06)', value: 54, color: '#ef4444' },
-];
-
-const loadData = [
-  { name: 'VMC milling-BFW (01)', value: 85, color: 'text-blue-500' },
-  { name: 'VMC milling-BFW (02)', value: 72, color: 'text-blue-500' },
-  { name: 'VMC milling-HASS (03)', value: 94, color: 'text-blue-500' },
-  { name: 'VMC milling (04)', value: 45, color: 'text-red-500' },
-  { name: 'CNC Turning -Jyothi (05)', value: 88, color: 'text-blue-500' },
-  { name: 'EDM ZNC (06)', value: 60, color: 'text-orange-500' },
+const machines = [
+  { id: '01', name: 'VMC milling-BFW (01)', load: 85, status: 'active', image: 'https://picsum.photos/seed/milling1/400/300' },
+  { id: '02', name: 'VMC milling-BFW (02)', load: 72, status: 'active', image: 'https://picsum.photos/seed/milling2/400/300' },
+  { id: '03', name: 'VMC milling-HASS (03)', load: 94, status: 'active', image: 'https://picsum.photos/seed/milling3/400/300' },
+  { id: '04', name: 'VMC milling (04)', load: 45, status: 'fault', image: 'https://picsum.photos/seed/milling4/400/300' },
+  { id: '05', name: 'CNC Turning -Jyothi (05)', load: 88, status: 'active', image: 'https://picsum.photos/seed/turning1/400/300' },
+  { id: '06', name: 'EDM ZNC (06)', load: 60, status: 'maintenance', image: 'https://picsum.photos/seed/edm1/400/300' },
 ];
 
 export function MachineUtilization() {
+  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+
+  const selectedMachine = machines.find(m => m.id === selectedMachineId);
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <div className="px-4 py-1 border border-slate-200 rounded-full text-[10px] font-bold text-slate-300 uppercase tracking-widest bg-white/5">
-          Target: 90%
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Cpu className="h-6 w-6 text-primary" />
+          </div>
+          <h2 className="text-xl font-headline font-bold uppercase text-slate-800">
+            {selectedMachineId ? `Load Plan: ${selectedMachine?.name}` : 'Machine Utilization Overview'}
+          </h2>
+        </div>
+        <div className="px-4 py-1 border border-slate-200 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white">
+          Plant Target: 90%
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main Chart Card */}
-        <Card className="lg:col-span-8 p-8 bg-[#111827] border-slate-800 shadow-2xl">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-10">Current Availability (Last 24h)</h3>
-          <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={utilizationData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#4b5563', fontSize: 10, fontWeight: 600 }}
-                  dy={10}
-                />
-                <YAxis hide domain={[0, 100]} />
-                <Tooltip 
-                  cursor={{ fill: '#1f2937', opacity: 0.4 }}
-                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-                />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
-                  {utilizationData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+        {/* Main Content Area */}
+        <div className="lg:col-span-8">
+          {selectedMachineId ? (
+            <MachineLoadPlan 
+              machineId={selectedMachineId} 
+              machineName={selectedMachine?.name || ''} 
+              onBack={() => setSelectedMachineId(null)} 
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {machines.map((machine) => (
+                <Card 
+                  key={machine.id}
+                  onClick={() => setSelectedMachineId(machine.id)}
+                  className="overflow-hidden group cursor-pointer hover:border-primary transition-all bg-white border-slate-200 shadow-sm"
+                >
+                  <div className="relative h-40 w-full">
+                    <Image 
+                      src={machine.image} 
+                      alt={machine.name} 
+                      fill 
+                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                      data-ai-hint="industrial machine"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-3 left-3">
+                      <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">ID: {machine.id}</p>
+                      <h3 className="text-sm font-bold text-white leading-tight">{machine.name}</h3>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Load Status</span>
+                      <span className={cn(
+                        "text-[10px] font-bold uppercase",
+                        machine.load > 80 ? "text-green-600" : machine.load > 50 ? "text-blue-600" : "text-red-600"
+                      )}>
+                        {machine.load}%
+                      </span>
+                    </div>
+                    <Progress value={machine.load} className="h-1.5" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* Load Distribution Card */}
-        <Card className="lg:col-span-4 p-8 bg-[#111827] border-slate-800 shadow-2xl flex flex-col">
+        {/* Side Panel: Load Distribution List */}
+        <Card className="lg:col-span-4 p-8 bg-[#111827] border-slate-800 shadow-2xl flex flex-col h-fit sticky top-6">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-10">Load Distribution</h3>
           <div className="space-y-8 flex-grow">
-            {loadData.map((machine) => (
-              <div key={machine.name} className="space-y-3">
+            {machines.map((machine) => (
+              <div 
+                key={machine.id} 
+                className="group cursor-pointer space-y-3"
+                onClick={() => setSelectedMachineId(machine.id)}
+              >
                 <div className="flex justify-between items-center text-[10px] font-bold tracking-tight">
-                  <span className="text-slate-200">{machine.name}</span>
-                  <span className={machine.color}>{machine.value}%</span>
+                  <span className={cn(
+                    "transition-colors",
+                    selectedMachineId === machine.id ? "text-primary" : "text-slate-200 group-hover:text-primary"
+                  )}>
+                    {machine.name}
+                  </span>
+                  <span className={cn(
+                    machine.load > 85 ? "text-blue-500" : machine.load < 50 ? "text-red-500" : "text-slate-400"
+                  )}>
+                    {machine.load}%
+                  </span>
                 </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-white transition-all duration-1000" 
-                    style={{ width: `${machine.value}%`, opacity: 0.9 }} 
+                    className={cn(
+                      "h-full transition-all duration-1000",
+                      selectedMachineId === machine.id ? "bg-primary" : "bg-slate-600 group-hover:bg-primary/50"
+                    )}
+                    style={{ width: `${machine.load}%` }} 
                   />
                 </div>
               </div>
@@ -94,24 +127,26 @@ export function MachineUtilization() {
       </div>
 
       {/* KPI Cards Bottom Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6 bg-[#2563eb] text-white border-none shadow-lg">
-          <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Avg. Utilization</p>
-          <p className="text-3xl font-bold">74.2%</p>
-        </Card>
-        <Card className="p-6 bg-[#16a34a] text-white border-none shadow-lg">
-          <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Peak Capacity</p>
-          <p className="text-3xl font-bold">94.0%</p>
-        </Card>
-        <Card className="p-6 bg-[#dc2626] text-white border-none shadow-lg">
-          <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Downtime Hours</p>
-          <p className="text-3xl font-bold">12.4h</p>
-        </Card>
-        <Card className="p-6 bg-[#1f2937] text-white border-none shadow-lg">
-          <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Active Units</p>
-          <p className="text-3xl font-bold tracking-tight">5 / 6</p>
-        </Card>
-      </div>
+      {!selectedMachineId && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="p-6 bg-[#2563eb] text-white border-none shadow-lg">
+            <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Avg. Utilization</p>
+            <p className="text-3xl font-bold">74.2%</p>
+          </Card>
+          <Card className="p-6 bg-[#16a34a] text-white border-none shadow-lg">
+            <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Peak Capacity</p>
+            <p className="text-3xl font-bold">94.0%</p>
+          </Card>
+          <Card className="p-6 bg-[#dc2626] text-white border-none shadow-lg">
+            <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Downtime Hours</p>
+            <p className="text-3xl font-bold">12.4h</p>
+          </Card>
+          <Card className="p-6 bg-[#1f2937] text-white border-none shadow-lg">
+            <p className="text-[10px] uppercase font-bold tracking-[0.1em] opacity-80 mb-2">Active Units</p>
+            <p className="text-3xl font-bold tracking-tight">5 / 6</p>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

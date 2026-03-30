@@ -10,11 +10,11 @@ import { Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const mockOrders: Order[] = [
-  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe', progress: 85 },
-  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith', progress: 15 },
-  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber', progress: 100 },
-  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller', progress: 45 },
-  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60 },
+  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe', progress: 85, amountSpent: '$12,450' },
+  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith', progress: 15, amountSpent: '$2,100' },
+  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber', progress: 100, amountSpent: '$8,900' },
+  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller', progress: 45, amountSpent: '$5,600' },
+  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60, amountSpent: '$4,200' },
 ];
 
 interface ShopFloorOrdersProps {
@@ -63,6 +63,7 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status in %</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Priority</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Project Owner</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Amount Spent</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -105,6 +106,9 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
                 <TableCell className="text-xs text-slate-600 font-medium">
                   {order.owner}
                 </TableCell>
+                <TableCell className="text-xs font-code font-bold text-slate-600">
+                  {order.amountSpent}
+                </TableCell>
                 <TableCell className="text-right">
                    <div className={cn(
                      "inline-flex px-3 py-1 rounded-full text-[10px] font-bold min-w-[80px] justify-center uppercase",
@@ -120,7 +124,7 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
             ))}
             {filteredOrders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-slate-400 text-xs">
+                <TableCell colSpan={9} className="h-32 text-center text-slate-400 text-xs">
                   No production orders found matching your search.
                 </TableCell>
               </TableRow>

@@ -44,6 +44,7 @@ export interface Order {
   status: 'Active' | 'Pending' | 'Completed' | 'Delayed';
   owner?: string;
   progress?: number;
+  amountSpent?: string;
 }
 
 export interface SQCDPData {

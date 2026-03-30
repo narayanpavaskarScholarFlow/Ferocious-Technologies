@@ -42,6 +42,7 @@ export interface Order {
   priority: 'High' | 'Medium' | 'Low';
   status: 'Active' | 'Pending' | 'Completed' | 'Delayed';
   owner?: string;
+  progress?: number;
 }
 
 export interface SQCDPData {

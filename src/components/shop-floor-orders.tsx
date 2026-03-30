@@ -5,15 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Order } from '@/lib/types';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const mockOrders: Order[] = [
-  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe' },
-  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith' },
-  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber' },
-  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller' },
-  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe' },
+  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe', progress: 85 },
+  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith', progress: 15 },
+  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber', progress: 100 },
+  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller', progress: 45 },
+  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60 },
 ];
 
 export function ShopFloorOrders() {
@@ -41,7 +42,7 @@ export function ShopFloorOrders() {
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-md border border-slate-200">
             <User className="h-4 w-4 text-slate-500" />
-            <span className="text-xs font-bold text-slate-700">Owner: Admin User</span>
+            <span className="text-xs font-bold text-slate-700">Admin User</span>
           </div>
         </div>
       </div>
@@ -54,17 +55,27 @@ export function ShopFloorOrders() {
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Start Date</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">End Date</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status in %</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Priority</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Project Owner</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredOrders.map((order) => (
-              <TableRow key={order.id} className="hover:bg-slate-50/50">
+              <TableRow key={order.id} className="hover:bg-slate-50/50 h-16">
                 <TableCell className="font-bold text-sm text-slate-700">{order.id}</TableCell>
                 <TableCell className="text-slate-600 font-medium">{order.customer}</TableCell>
                 <TableCell className="text-xs text-slate-500 font-code">{order.startDate}</TableCell>
                 <TableCell className="text-xs text-slate-500 font-code">{order.endDate}</TableCell>
+                <TableCell className="w-[120px]">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span className="text-slate-500">{order.progress}%</span>
+                    </div>
+                    <Progress value={order.progress} className="h-1.5" />
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Badge 
                     variant="outline"
@@ -77,6 +88,9 @@ export function ShopFloorOrders() {
                   >
                     {order.priority}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-xs text-slate-600 font-medium">
+                  {order.owner}
                 </TableCell>
                 <TableCell className="text-right">
                    <div className={cn(
@@ -93,7 +107,7 @@ export function ShopFloorOrders() {
             ))}
             {filteredOrders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-400 text-xs">
+                <TableCell colSpan={8} className="h-32 text-center text-slate-400 text-xs">
                   No production orders found matching your search.
                 </TableCell>
               </TableRow>

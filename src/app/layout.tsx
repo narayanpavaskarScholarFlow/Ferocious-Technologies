@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Precision resource management with intelligent AI categorization.',
 };
 
-export default function RootLayout({
+export default function RootLayer({
   children,
 }: Readonly<{
   children: React.ReactNode;

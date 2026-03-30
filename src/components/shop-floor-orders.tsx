@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Order } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, User } from 'lucide-react';
+import { Search, User, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const mockOrders: Order[] = [
@@ -19,7 +20,7 @@ const mockOrders: Order[] = [
 
 interface ShopFloorOrdersProps {
   onNavigateToOperations?: (orderId: string) => void;
-  onNavigateToOrderDetails?: (orderId: string) => void;
+  onNavigateToOrderDetails?: (orderId: string | null) => void;
 }
 
 export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetails }: ShopFloorOrdersProps) {
@@ -45,6 +46,17 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="h-9 gap-2 bg-primary font-bold uppercase text-[10px] tracking-wider shadow-sm"
+            onClick={() => onNavigateToOrderDetails?.(null)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Order
+          </Button>
+
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-md border border-slate-200">
             <User className="h-4 w-4 text-slate-500" />
             <span className="text-xs font-bold text-slate-700">Admin User</span>

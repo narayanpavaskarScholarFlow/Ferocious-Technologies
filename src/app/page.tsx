@@ -16,8 +16,9 @@ import { VendorManagement } from '@/components/vendor-management';
 import { OrderDetails } from '@/components/order-details';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Command } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 export default function VisualShopFloor() {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
@@ -28,7 +29,7 @@ export default function VisualShopFloor() {
     setCurrentView('operations');
   };
 
-  const handleNavigateToOrderDetails = (orderId: string) => {
+  const handleNavigateToOrderDetails = (orderId: string | null) => {
     setActiveWorkOrderId(orderId);
     setCurrentView('order-details');
   };
@@ -42,72 +43,84 @@ export default function VisualShopFloor() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7]">
       <SidebarNav currentView={currentView} onViewChange={setCurrentView} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b bg-white flex items-center justify-between px-6 sticky top-0 z-30">
-          <div className="flex items-center gap-4">
-            <h1 className="font-headline font-bold text-slate-800 uppercase tracking-tight text-lg">
-              visual shop floor <span className="text-primary">2.0</span>
+        <header className="h-20 bg-white/80 dark:bg-black/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-40 border-b border-black/5 dark:border-white/5">
+          <div className="flex items-center gap-6">
+            <h1 className="font-display font-bold text-xl tracking-tight">
+              TOOLROOM<span className="text-primary">2.0</span>
             </h1>
-            <div className="h-4 w-[1px] bg-slate-200 mx-2" />
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-widest">
-              Section: {currentView.replace('-', ' ')}
+            <div className="h-6 w-[1px] bg-black/10 dark:bg-white/10" />
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              {currentView.replace('-', ' ')}
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative w-64 hidden md:block">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <Input suppressHydrationWarning placeholder="Global search..." className="h-8 pl-8 text-xs bg-slate-50 border-none focus-visible:ring-1" />
+            <div className="relative w-80 hidden lg:block group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <Input 
+                suppressHydrationWarning 
+                placeholder="Search resources..." 
+                className="h-10 pl-10 pr-12 rounded-full bg-black/[0.03] dark:bg-white/[0.03] border-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-sm"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground pointer-events-none border border-black/10 dark:border-white/10 rounded px-1.5 py-0.5 bg-white dark:bg-black">
+                <Command className="h-2.5 w-2.5" /> K
+              </div>
             </div>
-            <div className="flex items-center gap-4 border-l pl-4">
-              <button className="text-slate-400 hover:text-primary transition-colors" suppressHydrationWarning>
-                <Bell className="h-4 w-4" />
+            
+            <div className="flex items-center gap-2">
+              <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-2.5 right-2.5 h-2 w-2 bg-primary rounded-full border-2 border-white dark:border-black" />
               </button>
-              <div className="flex items-center gap-3">
+              <div className="h-10 w-[1px] bg-black/10 dark:bg-white/10 mx-2" />
+              <div className="flex items-center gap-3 pl-2 group cursor-pointer">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-bold leading-none">Admin User</p>
-                  <p className="text-[10px] text-slate-400 leading-none mt-1">Plant Manager</p>
+                  <p className="text-xs font-bold leading-none">Plant Admin</p>
+                  <p className="text-[10px] text-muted-foreground leading-none mt-1 group-hover:text-primary transition-colors">View Profile</p>
                 </div>
-                <Avatar className="h-8 w-8 border border-slate-200">
-                  <AvatarImage src="https://picsum.photos/seed/admin-user/100/100" />
-                  <AvatarFallback>AD</AvatarFallback>
+                <Avatar className="h-9 w-9 border-2 border-transparent group-hover:border-primary/20 transition-all">
+                  <AvatarImage src="https://picsum.photos/seed/apple-user/100/100" />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold">PA</AvatarFallback>
                 </Avatar>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          {currentView === 'overview' && <ShopFloorOverview />}
-          {currentView === 'orders' && (
-            <ShopFloorOrders 
-              onNavigateToOperations={handleNavigateToOperations} 
-              onNavigateToOrderDetails={handleNavigateToOrderDetails}
-            />
-          )}
-          {currentView === 'sqcdp' && <ShopFloorSQCDP />}
-          {currentView === 'machine-utilization' && <MachineUtilization />}
-          {currentView === 'manpower' && <ManpowerUtilization />}
-          {currentView === 'customer-orders' && <CustomerOrders />}
-          {currentView === 'weekly-plan' && <WeeklyPlan />}
-          {currentView === 'users' && <UserManagement />}
-          {currentView === 'vendor' && <VendorManagement />}
-          {currentView === 'order-details' && (
-            <OrderDetails 
-              orderId={activeWorkOrderId} 
-              onBack={handleBackToOrders} 
-            />
-          )}
-          {currentView === 'operations' && (
-            <OperationsStatus 
-              initialOrderId={activeWorkOrderId} 
-              onOrderIdChange={setActiveWorkOrderId} 
-              onNavigateToVendor={handleNavigateToVendor}
-            />
-          )}
+        <main className="flex-1 p-8 lg:p-12 max-w-[1600px] mx-auto w-full overflow-visible">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            {currentView === 'overview' && <ShopFloorOverview />}
+            {currentView === 'orders' && (
+              <ShopFloorOrders 
+                onNavigateToOperations={handleNavigateToOperations} 
+                onNavigateToOrderDetails={handleNavigateToOrderDetails}
+              />
+            )}
+            {currentView === 'sqcdp' && <ShopFloorSQCDP />}
+            {currentView === 'machine-utilization' && <MachineUtilization />}
+            {currentView === 'manpower' && <ManpowerUtilization />}
+            {currentView === 'customer-orders' && <CustomerOrders />}
+            {currentView === 'weekly-plan' && <WeeklyPlan />}
+            {currentView === 'users' && <UserManagement />}
+            {currentView === 'vendor' && <VendorManagement />}
+            {currentView === 'order-details' && (
+              <OrderDetails 
+                orderId={activeWorkOrderId} 
+                onBack={handleBackToOrders} 
+              />
+            )}
+            {currentView === 'operations' && (
+              <OperationsStatus 
+                initialOrderId={activeWorkOrderId} 
+                onOrderIdChange={setActiveWorkOrderId} 
+                onNavigateToVendor={handleNavigateToVendor}
+              />
+            )}
+          </div>
         </main>
       </div>
 

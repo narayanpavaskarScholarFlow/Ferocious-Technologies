@@ -15,7 +15,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
-import { Layers, ChevronRight, Truck } from 'lucide-react';
+import { Layers, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const OPERATION_COLUMNS = [
@@ -56,7 +56,7 @@ interface OperationsStatusProps {
   onNavigateToVendor?: () => void;
 }
 
-export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateToVendor }: OperationsStatusProps) {
+export function OperationsStatus({ initialOrderId, onOrderIdChange }: OperationsStatusProps) {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
   const [opStatuses, setOpStatuses] = useState<Record<string, string>>({});
 
@@ -91,8 +91,6 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
     
     if (status === 'Vendor' && vendorName) {
       finalStatus = `Vendor: ${vendorName}`;
-      // Trigger navigation after selection
-      onNavigateToVendor?.();
     }
     
     setOpStatuses(prev => ({ ...prev, [column]: finalStatus }));
@@ -108,7 +106,12 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-xl font-headline font-bold uppercase text-slate-800">Operational Routing Status</h2>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+             <Layers className="h-6 w-6 text-primary" />
+          </div>
+          <h2 className="text-xl font-headline font-bold uppercase text-slate-800">Operational Routing Status</h2>
+        </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="flex items-center gap-2">
@@ -187,7 +190,6 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                                 </DropdownMenuItem>
                               ))}
                               
-                              {/* Vendor Sub-menu "small tab" as requested */}
                               <DropdownMenuSub>
                                 <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
                                   <Truck className="h-3 w-3 text-purple-600" />
@@ -237,7 +239,6 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
         </div>
       </Card>
 
-      {/* Legend showing all points/statuses in words as requested */}
       <div className="flex flex-wrap items-center gap-6 text-[10px] font-code text-slate-400 uppercase tracking-widest pt-4">
         {STATUS_OPTIONS.map(opt => (
           <div key={opt.label} className="flex items-center gap-2">

@@ -8,7 +8,7 @@ import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 export default function VisualShopFloor() {
@@ -38,7 +38,7 @@ export default function VisualShopFloor() {
               <Input placeholder="Global search..." className="h-8 pl-8 text-xs bg-slate-50 border-none focus-visible:ring-1" />
             </div>
             <div className="flex items-center gap-4 border-l pl-4">
-              <button className="text-slate-400 hover:text-primary transition-colors">
+              <button className="text-slate-400 hover:text-primary transition-colors" suppressHydrationWarning>
                 <Bell className="h-4 w-4" />
               </button>
               <div className="flex items-center gap-3">

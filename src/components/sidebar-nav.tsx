@@ -34,6 +34,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onViewChange(item.id)}
+                    suppressHydrationWarning
                     className={cn(
                       "p-3 rounded-lg transition-all duration-200 relative",
                       isActive 
@@ -57,10 +58,10 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
       </div>
 
       <div className="flex flex-col gap-4 text-white/40">
-        <button className="hover:text-white transition-colors">
+        <button className="hover:text-white transition-colors" suppressHydrationWarning>
           <Settings className="h-5 w-5" />
         </button>
-        <button className="hover:text-white transition-colors">
+        <button className="hover:text-white transition-colors" suppressHydrationWarning>
           <HelpCircle className="h-5 w-5" />
         </button>
       </div>

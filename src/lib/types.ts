@@ -62,13 +62,14 @@ export interface StaffMember {
 }
 
 export interface CustomerOrder {
+  siNo: number;
   id: string;
   customer: string;
+  customerType: string;
   numberOfPOs: number;
-  partDescription: string;
   value: string;
   quantity: number;
-  dueDate: string;
+  location: string;
   status: 'Pending' | 'Production' | 'Shipping' | 'Delivered';
 }
 

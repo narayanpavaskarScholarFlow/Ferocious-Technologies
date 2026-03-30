@@ -5,8 +5,6 @@ import { ViewType } from '@/lib/types';
 import { 
   LayoutDashboard, 
   Activity, 
-  Settings, 
-  HelpCircle, 
   Box,
   Cpu,
   Users,
@@ -15,7 +13,9 @@ import {
   UserPlus,
   Layers,
   Truck,
-  ShoppingCart
+  ShoppingCart,
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -46,11 +46,11 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   ];
 
   if (!mounted) {
-    return <div className="w-20 lg:w-24 bg-white dark:bg-black border-r border-black/5 dark:border-white/5 h-screen" />;
+    return <div className="w-20 lg:w-24 bg-white border-r border-black/5 h-screen" />;
   }
 
   return (
-    <div className="w-20 lg:w-24 bg-white dark:bg-black flex flex-col items-center py-10 gap-10 border-r border-black/5 dark:border-white/5 z-50 sticky top-0 h-screen">
+    <div className="w-20 lg:w-24 bg-white flex flex-col items-center py-10 gap-10 border-r border-black/5 z-50 sticky top-0 h-screen">
       <div className="p-3 bg-primary rounded-2xl shadow-lg shadow-primary/20 animate-float">
         <Box className="h-7 w-7 text-white" />
       </div>
@@ -79,7 +79,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
                     )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={15} className="bg-black text-white dark:bg-white dark:text-black font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 border-none">
+                <TooltipContent side="right" sideOffset={15} className="bg-black text-white font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 border-none">
                   {item.label}
                 </TooltipContent>
               </Tooltip>
@@ -88,7 +88,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
         </TooltipProvider>
       </div>
 
-      <div className="flex flex-col gap-6 text-muted-foreground pt-6 border-t border-black/5 dark:border-white/5 w-10 items-center">
+      <div className="flex flex-col gap-6 text-muted-foreground pt-6 border-t border-black/5 w-10 items-center">
         <button suppressHydrationWarning className="hover:text-primary transition-all hover:scale-110 outline-none">
           <Settings className="h-5 w-5" />
         </button>

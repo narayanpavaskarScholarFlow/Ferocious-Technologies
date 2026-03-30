@@ -26,7 +26,7 @@ export type ViewType =
   | 'overview' 
   | 'orders' 
   | 'sqcdp' 
-  | 'tasks' 
+  | 'operations' 
   | 'machine-utilization' 
   | 'manpower' 
   | 'customer-orders' 

@@ -11,6 +11,7 @@ import { ManpowerUtilization } from '@/components/manpower-utilization';
 import { CustomerOrders } from '@/components/customer-orders';
 import { WeeklyPlan } from '@/components/weekly-plan';
 import { UserManagement } from '@/components/user-management';
+import { OperationsStatus } from '@/components/operations-status';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search } from 'lucide-react';
@@ -67,6 +68,7 @@ export default function VisualShopFloor() {
           {currentView === 'customer-orders' && <CustomerOrders />}
           {currentView === 'weekly-plan' && <WeeklyPlan />}
           {currentView === 'users' && <UserManagement />}
+          {currentView === 'operations' && <OperationsStatus />}
         </main>
       </div>
 

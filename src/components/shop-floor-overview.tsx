@@ -22,9 +22,9 @@ import {
 } from "recharts";
 
 const kpiData = [
-  { label: 'Maschinen', total: 71, sub1: 'Betrieb', sub1Val: 25, sub2: 'Leerlauf', sub2Val: 30, color: 'bg-blue-600', icon: Monitor },
-  { label: 'Aufträge', total: 50, sub1: 'In Bearbeitung', sub1Val: 29, sub2: 'In 3 Tagen', sub2Val: 1, color: 'bg-purple-600', icon: ShoppingCart },
-  { label: 'Mitarbeiter', total: 37, sub1: 'Abwesend', sub1Val: 3, sub2: 'Abteilung 1', sub2Val: 14, color: 'bg-amber-500', icon: Users },
+  { label: 'Total Machines', total: 71, sub1: 'Operating', sub1Val: 25, sub2: 'Idle', sub2Val: 30, color: 'bg-blue-600', icon: Monitor },
+  { label: 'Total Orders', total: 50, sub1: 'In Progress', sub1Val: 29, sub2: 'In 3 Days', sub2Val: 1, color: 'bg-purple-600', icon: ShoppingCart },
+  { label: 'Total Employees', total: 37, sub1: 'Absent', sub1Val: 3, sub2: 'Dept 1', sub2Val: 14, color: 'bg-amber-500', icon: Users },
 ];
 
 const chartData = [
@@ -54,7 +54,7 @@ export function ShopFloorOverview() {
             <Card key={kpi.label} className={`${kpi.color} text-white p-4 flex flex-col justify-between border-none shadow-md overflow-hidden relative group`}>
               <div className="flex justify-between items-start z-10">
                 <div>
-                  <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">{kpi.label} gesamt</p>
+                  <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">{kpi.label}</p>
                   <h3 className="text-3xl font-bold mt-1">{kpi.total}</h3>
                 </div>
                 <div className="p-2 bg-white/20 rounded-lg">
@@ -83,7 +83,7 @@ export function ShopFloorOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* OEE Gauge Section */}
         <div className="lg:col-span-3 glass-card p-4 flex flex-col items-center justify-center gap-4">
-          <h4 className="text-xs font-bold uppercase text-slate-500 text-center">Gesamt OEE</h4>
+          <h4 className="text-xs font-bold uppercase text-slate-500 text-center">Total OEE</h4>
           <div className="relative w-48 h-32 flex flex-col items-center">
              <svg className="w-full h-full transform -rotate-90">
                 <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-100" />
@@ -96,13 +96,13 @@ export function ShopFloorOverview() {
           </div>
           <div className="flex items-center gap-2 text-green-500 font-bold">
             <ArrowUpRight className="h-4 w-4" />
-            <span>+2.4% vs L. Woche</span>
+            <span>+2.4% vs L. Week</span>
           </div>
         </div>
 
         {/* Performance Bars */}
         <div className="lg:col-span-5 glass-card p-4">
-          <h4 className="text-xs font-bold uppercase text-slate-500 mb-6">Produktionsstatus pro Abteilung</h4>
+          <h4 className="text-xs font-bold uppercase text-slate-500 mb-6">Production Status per Department</h4>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
@@ -119,7 +119,7 @@ export function ShopFloorOverview() {
 
         {/* Trend Section */}
         <div className="lg:col-span-4 glass-card p-4">
-          <h4 className="text-xs font-bold uppercase text-slate-500 mb-6">Entwicklung Aufträge</h4>
+          <h4 className="text-xs font-bold uppercase text-slate-500 mb-6">Order Trends</h4>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
@@ -136,13 +136,13 @@ export function ShopFloorOverview() {
 
       {/* Alerts Feed */}
       <div className="glass-card p-4">
-        <h4 className="text-xs font-bold uppercase text-slate-500 mb-4">Aktuelle Systemmeldungen</h4>
+        <h4 className="text-xs font-bold uppercase text-slate-500 mb-4">Current System Alerts</h4>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-800 text-xs">
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-4 w-4" />
-              <span className="font-bold">KRITISCH:</span>
-              <span>Stillstand Maschine ML-04 (Antriebsfehler)</span>
+              <span className="font-bold">CRITICAL:</span>
+              <span>Machine ML-04 Down (Drive Error)</span>
             </div>
             <span className="font-code opacity-60">12:44:02</span>
           </div>
@@ -150,7 +150,7 @@ export function ShopFloorOverview() {
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-4 w-4" />
               <span className="font-bold">INFO:</span>
-              <span>Wartungszyklus TR-12 abgeschlossen von M. Weber</span>
+              <span>Maintenance cycle for TR-12 completed by M. Weber</span>
             </div>
             <span className="font-code opacity-60">11:15:30</span>
           </div>

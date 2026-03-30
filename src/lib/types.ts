@@ -37,7 +37,7 @@ export type ViewType =
 export interface Order {
   id: string;
   machine: string;
-  status: 'Betrieb' | 'Störung' | 'Leerlauf' | 'Wartung';
+  status: 'Operating' | 'Fault' | 'Idle' | 'Maintenance';
   progress: number;
   startTime: string;
   endTime: string;

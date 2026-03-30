@@ -7,21 +7,21 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 const mockOrders: Order[] = [
-  { id: '103645', machine: 'Verpackungsvorrichtung VE0060', status: 'Betrieb', progress: 85, startTime: '03.03.2025, 14:23:01', endTime: '03.03.2025, 17:30:00', oee: 75 },
-  { id: '102778', machine: 'Löteinrichtung SL01', status: 'Störung', progress: 42, startTime: '03.03.2025, 13:10:45', endTime: '-', oee: 34 },
-  { id: '100685', machine: 'Prüfstand-02', status: 'Leerlauf', progress: 10, startTime: '03.03.2025, 15:00:00', endTime: '-', oee: 62 },
-  { id: '105542', machine: 'Kniehebelpresse KP402', status: 'Betrieb', progress: 67, startTime: '03.03.2025, 08:30:00', endTime: '03.03.2025, 16:45:00', oee: 92 },
-  { id: '101230', machine: 'Gantry Mill TR-80', status: 'Wartung', progress: 0, startTime: '-', endTime: '-', oee: 0 },
+  { id: '103645', machine: 'Packaging Unit VE0060', status: 'Operating', progress: 85, startTime: '03.03.2025, 14:23:01', endTime: '03.03.2025, 17:30:00', oee: 75 },
+  { id: '102778', machine: 'Soldering Station SL01', status: 'Fault', progress: 42, startTime: '03.03.2025, 13:10:45', endTime: '-', oee: 34 },
+  { id: '100685', machine: 'Test Bench-02', status: 'Idle', progress: 10, startTime: '03.03.2025, 15:00:00', endTime: '-', oee: 62 },
+  { id: '105542', machine: 'Toggle Press KP402', status: 'Operating', progress: 67, startTime: '03.03.2025, 08:30:00', endTime: '03.03.2025, 16:45:00', oee: 92 },
+  { id: '101230', machine: 'Gantry Mill TR-80', status: 'Maintenance', progress: 0, startTime: '-', endTime: '-', oee: 0 },
 ];
 
 export function ShopFloorOrders() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-headline font-bold text-xl text-slate-800 uppercase tracking-tight">Aktuelle Produktionsaufträge</h2>
+        <h2 className="font-headline font-bold text-xl text-slate-800 uppercase tracking-tight">Current Production Orders</h2>
         <div className="flex gap-2">
-           <Badge variant="outline" className="bg-white" suppressHydrationWarning>Heute: 24</Badge>
-           <Badge variant="outline" className="bg-white" suppressHydrationWarning>Offen: 12</Badge>
+           <Badge variant="outline" className="bg-white" suppressHydrationWarning>Today: 24</Badge>
+           <Badge variant="outline" className="bg-white" suppressHydrationWarning>Open: 12</Badge>
         </div>
       </div>
 
@@ -29,11 +29,11 @@ export function ShopFloorOrders() {
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Auftrag ID</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Maschine</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Order ID</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Machine</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Fortschritt</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Geplant Ende</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Progress</TableHead>
+              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Planned End</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">OEE Index</TableHead>
             </TableRow>
           </TableHeader>
@@ -46,9 +46,9 @@ export function ShopFloorOrders() {
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "h-2 w-2 rounded-full",
-                      order.status === 'Betrieb' ? 'bg-green-500' :
-                      order.status === 'Störung' ? 'bg-red-500' :
-                      order.status === 'Leerlauf' ? 'bg-amber-500' : 'bg-blue-500'
+                      order.status === 'Operating' ? 'bg-green-500' :
+                      order.status === 'Fault' ? 'bg-red-500' :
+                      order.status === 'Idle' ? 'bg-amber-500' : 'bg-blue-500'
                     )} />
                     <span className="text-xs font-bold text-slate-500">{order.status}</span>
                   </div>
@@ -79,7 +79,7 @@ export function ShopFloorOrders() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="glass-card p-6 flex flex-col items-center justify-center min-h-[260px] border border-slate-200">
-          <h3 className="text-slate-400 font-headline uppercase tracking-widest text-[10px] font-bold mb-8">Auftragsverteilung</h3>
+          <h3 className="text-slate-400 font-headline uppercase tracking-widest text-[10px] font-bold mb-8">Order Distribution</h3>
           <div className="flex items-center gap-16">
             <div className="relative w-36 h-36">
               <svg className="w-full h-full transform -rotate-90">
@@ -89,32 +89,32 @@ export function ShopFloorOrders() {
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
-                <div className="w-3 h-3 bg-[#005a9c] rounded-sm" /> In Bearbeitung (64%)
+                <div className="w-3 h-3 bg-[#005a9c] rounded-sm" /> In Progress (64%)
               </div>
               <div className="flex items-center gap-3 text-xs font-bold text-slate-600">
-                <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" /> Leerlauf (36%)
+                <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" /> Idle (36%)
               </div>
             </div>
           </div>
         </div>
         
         <div className="glass-card p-6 flex flex-col justify-between min-h-[260px] border border-slate-200">
-           <h3 className="text-slate-400 font-headline uppercase tracking-widest text-[10px] font-bold mb-6">Schicht-Zusammenfassung</h3>
+           <h3 className="text-slate-400 font-headline uppercase tracking-widest text-[10px] font-bold mb-6">Shift Summary</h3>
            <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Geplante Zeit</p>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Planned Time</p>
                 <p className="text-2xl font-bold text-slate-700">08:00 h</p>
               </div>
               <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Effektive Zeit</p>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Effective Time</p>
                 <p className="text-2xl font-bold text-primary">07:12 h</p>
               </div>
               <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Ausschuss</p>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Waste</p>
                 <p className="text-2xl font-bold text-red-500">2.4 %</p>
               </div>
               <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Produktivität</p>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Productivity</p>
                 <p className="text-2xl font-bold text-green-500">94.1 %</p>
               </div>
            </div>

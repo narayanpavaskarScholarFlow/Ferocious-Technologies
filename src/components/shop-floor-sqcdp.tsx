@@ -94,22 +94,22 @@ export function ShopFloorSQCDP() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="glass-card">
            <div className="bg-slate-50 p-3 border-b border-slate-200">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ereignis-Protokoll (Safety/Quality)</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Event Log (Safety/Quality)</h4>
            </div>
            <div className="p-4 space-y-4">
               <div className="flex gap-4 items-start border-b border-slate-100 pb-3">
                  <div className="bg-red-100 text-red-700 font-headline font-bold p-2 rounded text-sm w-10 text-center">S</div>
                  <div>
-                    <p className="text-xs font-bold text-slate-800">Beinahe-Unfall an Maschine ML-02 gemeldet</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Status: In Klärung / Zuständig: Sicherheitsbeauftragter</p>
+                    <p className="text-xs font-bold text-slate-800">Near-miss accident reported at machine ML-02</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Status: In Review / Responsible: Safety Officer</p>
                  </div>
                  <div className="ml-auto text-[10px] text-slate-300 font-code">03.03. / 08:15</div>
               </div>
               <div className="flex gap-4 items-start">
                  <div className="bg-amber-100 text-amber-700 font-headline font-bold p-2 rounded text-sm w-10 text-center">Q</div>
                  <div>
-                    <p className="text-xs font-bold text-slate-800">Abweichung in Charge #8845 - Prüfprotokoll folgt</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Status: Erledigt / Maßnahme: Nacharbeit</p>
+                    <p className="text-xs font-bold text-slate-800">Deviation in batch #8845 - Test protocol follows</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Status: Completed / Action: Rework</p>
                  </div>
                  <div className="ml-auto text-[10px] text-slate-300 font-code">02.03. / 16:40</div>
               </div>
@@ -130,7 +130,7 @@ export function ShopFloorSQCDP() {
            <div className="space-y-4">
               <div className="space-y-2">
                  <div className="flex justify-between text-[10px] font-bold uppercase">
-                    <span>Verfügbarkeit</span>
+                    <span>Availability</span>
                     <span>92%</span>
                  </div>
                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -139,7 +139,7 @@ export function ShopFloorSQCDP() {
               </div>
               <div className="space-y-2">
                  <div className="flex justify-between text-[10px] font-bold uppercase">
-                    <span>Leistungsgrad</span>
+                    <span>Performance Rate</span>
                     <span>88%</span>
                  </div>
                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -148,7 +148,7 @@ export function ShopFloorSQCDP() {
               </div>
               <div className="space-y-2">
                  <div className="flex justify-between text-[10px] font-bold uppercase">
-                    <span>Qualitätsrate</span>
+                    <span>Quality Rate</span>
                     <span>96%</span>
                  </div>
                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">

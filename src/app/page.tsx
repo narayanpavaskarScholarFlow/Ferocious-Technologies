@@ -16,12 +16,13 @@ import { VendorManagement } from '@/components/vendor-management';
 import { OrderDetails } from '@/components/order-details';
 import { BillingManagement } from '@/components/billing-management';
 import { WorkLogEntry } from '@/components/work-log-entry';
+import { InventoryManagement } from '@/components/inventory-management';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-export default function VisualShopFloor() {
+export default function IndustrialERP() {
   const [mounted, setMounted] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function VisualShopFloor() {
     setMounted(true);
   }, []);
 
+  // Centralized Navigation Handlers
   const handleNavigateToOperations = (orderId: string) => {
     setActiveWorkOrderId(orderId);
     setCurrentView('operations');
@@ -46,6 +48,10 @@ export default function VisualShopFloor() {
 
   const handleBackToOrders = () => {
     setCurrentView('orders');
+  };
+
+  const handleNavigateToInventory = () => {
+    setCurrentView('inventory');
   };
 
   if (!mounted) {
@@ -73,7 +79,7 @@ export default function VisualShopFloor() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input 
                 suppressHydrationWarning 
-                placeholder="Search resources..." 
+                placeholder="Search ERP index..." 
                 className="h-10 pl-10 pr-12 rounded-full bg-black/[0.03] border-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-sm"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground pointer-events-none border border-black/10 rounded px-1.5 py-0.5 bg-white">
@@ -89,12 +95,12 @@ export default function VisualShopFloor() {
               <div className="h-10 w-[1px] bg-black/10 mx-2" />
               <div className="flex items-center gap-3 pl-2 group cursor-pointer">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-bold leading-none">Plant Admin</p>
-                  <p className="text-[10px] text-muted-foreground leading-none mt-1 group-hover:text-primary transition-colors">View Profile</p>
+                  <p className="text-xs font-bold leading-none">System Admin</p>
+                  <p className="text-[10px] text-muted-foreground leading-none mt-1 group-hover:text-primary transition-colors">Plant Ledger</p>
                 </div>
                 <Avatar className="h-9 w-9 border-2 border-transparent group-hover:border-primary/20 transition-all">
-                  <AvatarImage src="https://picsum.photos/seed/apple-user/100/100" />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">PA</AvatarFallback>
+                  <AvatarImage src="https://picsum.photos/seed/erp-user/100/100" />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold">SA</AvatarFallback>
                 </Avatar>
               </div>
             </div>
@@ -103,7 +109,12 @@ export default function VisualShopFloor() {
 
         <main className="flex-1 p-8 lg:p-12 max-w-[1600px] mx-auto w-full overflow-visible">
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            {currentView === 'overview' && <ShopFloorOverview />}
+            {currentView === 'overview' && (
+              <ShopFloorOverview 
+                onNavigateToOrders={() => setCurrentView('orders')}
+                onNavigateToMachine={() => setCurrentView('machine-utilization')}
+              />
+            )}
             {currentView === 'orders' && (
               <ShopFloorOrders 
                 onNavigateToOperations={handleNavigateToOperations} 
@@ -111,6 +122,7 @@ export default function VisualShopFloor() {
               />
             )}
             {currentView === 'billing' && <BillingManagement />}
+            {currentView === 'inventory' && <InventoryManagement />}
             {currentView === 'work-log' && <WorkLogEntry />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
             {currentView === 'machine-utilization' && <MachineUtilization />}

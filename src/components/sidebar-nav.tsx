@@ -17,7 +17,8 @@ import {
   Settings,
   HelpCircle,
   CreditCard,
-  ClipboardList
+  ClipboardList,
+  Boxes
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -36,16 +37,16 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
 
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
-    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Work Orders' },
+    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production' },
+    { id: 'operations' as ViewType, icon: Layers, label: 'Routing' },
+    { id: 'inventory' as ViewType, icon: Boxes, label: 'Inventory' },
     { id: 'billing' as ViewType, icon: CreditCard, label: 'Billing' },
     { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log' },
+    { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Assets' },
+    { id: 'manpower' as ViewType, icon: Users, label: 'Staff' },
     { id: 'customer-orders' as ViewType, icon: Package, label: 'Pipeline' },
-    { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Machines' },
-    { id: 'manpower' as ViewType, icon: Users, label: 'Manpower' },
-    { id: 'operations' as ViewType, icon: Layers, label: 'Routing' },
     { id: 'vendor' as ViewType, icon: Truck, label: 'Vendors' },
-    { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Schedule' },
-    { id: 'sqcdp' as ViewType, icon: Activity, label: 'Board' },
+    { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Plan' },
     { id: 'users' as ViewType, icon: UserPlus, label: 'Access' },
   ];
 
@@ -54,7 +55,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   }
 
   return (
-    <div className="w-20 lg:w-24 bg-white flex flex-col items-center py-10 gap-10 border-r border-black/5 z-50 sticky top-0 h-screen">
+    <div className="w-20 lg:w-24 bg-white flex flex-col items-center py-10 gap-10 border-r border-black/5 z-50 sticky top-0 h-screen overflow-y-auto hide-scrollbar">
       <div className="p-3 bg-primary rounded-2xl shadow-lg shadow-primary/20 animate-float">
         <Box className="h-7 w-7 text-white" />
       </div>

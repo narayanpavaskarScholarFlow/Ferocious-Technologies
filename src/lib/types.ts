@@ -35,7 +35,8 @@ export type ViewType =
   | 'vendor'
   | 'order-details'
   | 'billing'
-  | 'work-log';
+  | 'work-log'
+  | 'inventory';
 
 export interface Order {
   id: string;
@@ -121,4 +122,16 @@ export interface WorkLogEntry {
   activity: string;
   duration: string;
   type: 'Production' | 'Maintenance' | 'Idle' | 'Setup';
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  sku: string;
+  category: 'Raw Material' | 'Tooling' | 'Finished Goods' | 'Consumable';
+  quantity: number;
+  unit: string;
+  minThreshold: number;
+  location: string;
+  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }

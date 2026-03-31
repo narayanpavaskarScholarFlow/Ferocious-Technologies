@@ -14,6 +14,7 @@ import { UserManagement } from '@/components/user-management';
 import { OperationsStatus } from '@/components/operations-status';
 import { VendorManagement } from '@/components/vendor-management';
 import { OrderDetails } from '@/components/order-details';
+import { BillingManagement } from '@/components/billing-management';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command } from 'lucide-react';
@@ -108,6 +109,7 @@ export default function VisualShopFloor() {
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
             )}
+            {currentView === 'billing' && <BillingManagement />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
             {currentView === 'machine-utilization' && <MachineUtilization />}
             {currentView === 'manpower' && <ManpowerUtilization />}

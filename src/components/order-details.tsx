@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, Save, Plus, Trash2, Calendar } from 'lucide-react';
+import { ChevronLeft, Save, Plus, Trash2, Calendar, CreditCard, DollarSign } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
@@ -89,6 +89,31 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
 
             <Separator className="bg-slate-100" />
 
+            {/* Financial Breakdown Section */}
+            <div className="space-y-6 pt-2">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em]">Financial Breakdown</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Material Cost</Label>
+                  <Input defaultValue="$8,450.00" className={darkInputClasses} />
+                </div>
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Labor / Machine Cost</Label>
+                  <Input defaultValue="$4,000.00" className={darkInputClasses} />
+                </div>
+                <div className="space-y-2.5">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Total Quoted Value</Label>
+                  <Input defaultValue="$12,450.00" className={cn(darkInputClasses, "border-primary/20 bg-primary/5 text-primary")} />
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-slate-100" />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-2.5">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Priority Level</Label>
@@ -136,6 +161,20 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
               </div>
               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 w-[85%] rounded-full shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+              </div>
+
+              <Separator className="bg-slate-100 mt-8 mb-6" />
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Financial Status</p>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-600">Invoiced Amount</span>
+                  <span className="text-primary font-bold">$12,450.00</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-600">Payment Status</span>
+                  <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200 uppercase font-bold">Pending</Badge>
+                </div>
               </div>
 
               <Separator className="bg-slate-100 mt-8 mb-6" />

@@ -33,7 +33,8 @@ export type ViewType =
   | 'weekly-plan' 
   | 'users'
   | 'vendor'
-  | 'order-details';
+  | 'order-details'
+  | 'billing';
 
 export interface Order {
   id: string;
@@ -45,6 +46,21 @@ export interface Order {
   owner?: string;
   progress?: number;
   amountSpent?: string;
+  materialCost?: string;
+  laborCost?: string;
+  taxAmount?: string;
+  totalQuoted?: string;
+}
+
+export interface Invoice {
+  id: string;
+  orderId: string;
+  customer: string;
+  amount: string;
+  date: string;
+  dueDate: string;
+  status: 'Paid' | 'Pending' | 'Overdue';
+  type: 'Service' | 'Material' | 'Full';
 }
 
 export interface SQCDPData {

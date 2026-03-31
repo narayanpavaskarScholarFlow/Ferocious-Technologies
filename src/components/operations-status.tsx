@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -15,7 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
-import { Layers, Truck } from 'lucide-react';
+import { Layers, Truck, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const OPERATION_COLUMNS = [
@@ -56,7 +57,7 @@ interface OperationsStatusProps {
   onNavigateToVendor?: () => void;
 }
 
-export function OperationsStatus({ initialOrderId, onOrderIdChange }: OperationsStatusProps) {
+export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateToVendor }: OperationsStatusProps) {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
   const [opStatuses, setOpStatuses] = useState<Record<string, string>>({});
 
@@ -114,6 +115,15 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange }: Operations
         </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="rounded-full border-slate-200 h-9 font-bold text-[10px] uppercase tracking-wider"
+            onClick={onNavigateToVendor}
+          >
+            Manage Vendors <ExternalLink className="ml-2 h-3 w-3" />
+          </Button>
+          <div className="h-6 w-[1px] bg-slate-200 mx-2" />
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-slate-500 uppercase">Work Order:</span>
             <Select 

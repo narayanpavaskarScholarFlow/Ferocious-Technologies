@@ -34,7 +34,8 @@ export type ViewType =
   | 'users'
   | 'vendor'
   | 'order-details'
-  | 'billing';
+  | 'billing'
+  | 'work-log';
 
 export interface Order {
   id: string;
@@ -108,4 +109,16 @@ export interface Vendor {
   rating: number;
   contact: string;
   status: 'Active' | 'Under Review' | 'Inactive';
+}
+
+export interface WorkLogEntry {
+  id: string;
+  resourceId: string;
+  resourceName: string;
+  operator: string;
+  date: string;
+  shift: 'Morning' | 'Evening' | 'Night';
+  activity: string;
+  duration: string;
+  type: 'Production' | 'Maintenance' | 'Idle' | 'Setup';
 }

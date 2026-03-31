@@ -16,7 +16,8 @@ import {
   ShoppingCart,
   Settings,
   HelpCircle,
-  CreditCard
+  CreditCard,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -37,6 +38,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Work Orders' },
     { id: 'billing' as ViewType, icon: CreditCard, label: 'Billing' },
+    { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log' },
     { id: 'customer-orders' as ViewType, icon: Package, label: 'Pipeline' },
     { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Machines' },
     { id: 'manpower' as ViewType, icon: Users, label: 'Manpower' },

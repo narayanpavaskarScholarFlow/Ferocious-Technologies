@@ -15,6 +15,7 @@ import { OperationsStatus } from '@/components/operations-status';
 import { VendorManagement } from '@/components/vendor-management';
 import { OrderDetails } from '@/components/order-details';
 import { BillingManagement } from '@/components/billing-management';
+import { WorkLogEntry } from '@/components/work-log-entry';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command } from 'lucide-react';
@@ -110,6 +111,7 @@ export default function VisualShopFloor() {
               />
             )}
             {currentView === 'billing' && <BillingManagement />}
+            {currentView === 'work-log' && <WorkLogEntry />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
             {currentView === 'machine-utilization' && <MachineUtilization />}
             {currentView === 'manpower' && <ManpowerUtilization />}

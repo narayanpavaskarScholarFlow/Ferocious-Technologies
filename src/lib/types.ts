@@ -142,6 +142,7 @@ export interface WorkLogEntry {
   activity: string;
   duration: string;
   type: 'Production' | 'Maintenance' | 'Idle' | 'Setup';
+  workOrderId?: string;
 }
 
 export interface InventoryItem {

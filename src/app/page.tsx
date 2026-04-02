@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -23,10 +23,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+const INITIAL_LOGS: WorkLogEntryType[] = [
+  { id: 'LOG-001', resourceId: '01', resourceName: 'VMC milling-BFW (01)', operator: 'Sarah Miller', date: '03 Mar 2025', shift: 'Morning', type: 'Production', duration: '4.5h', activity: 'Main batch production', workOrderId: '103645' },
+  { id: 'LOG-002', resourceId: '05', resourceName: 'CNC Turning -Jyothi (05)', operator: 'Sarah Miller', date: '03 Mar 2025', shift: 'Morning', type: 'Setup', duration: '1.2h', activity: 'Tool changing for new order', workOrderId: '102778' },
+  { id: 'LOG-003', resourceId: '06', resourceName: 'EDM ZNC (06)', operator: 'A. Chen', date: '02 Mar 2025', shift: 'Evening', type: 'Maintenance', duration: '2.0h', activity: 'Routine electrode inspection', workOrderId: '100685' },
+];
+
 export default function IndustrialERP() {
   const [mounted, setMounted] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
 
   useEffect(() => {
     setMounted(true);
@@ -51,8 +58,8 @@ export default function IndustrialERP() {
     setCurrentView('orders');
   };
 
-  const handleNavigateToInventory = () => {
-    setCurrentView('inventory');
+  const handleAddLog = (newLog: WorkLogEntryType) => {
+    setLogs(prev => [newLog, ...prev]);
   };
 
   if (!mounted) {
@@ -124,12 +131,12 @@ export default function IndustrialERP() {
             )}
             {currentView === 'billing' && <BillingManagement />}
             {currentView === 'inventory' && <InventoryManagement />}
-            {currentView === 'work-log' && <WorkLogEntry />}
+            {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={handleAddLog} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
             {currentView === 'machine-utilization' && <MachineUtilization />}
             {currentView === 'manpower' && <ManpowerUtilization />}
             {currentView === 'customer-orders' && <CustomerOrders />}
-            {currentView === 'weekly-plan' && <WeeklyPlan />}
+            {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} />}
             {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
             {currentView === 'quality' && <QualityManagement />}

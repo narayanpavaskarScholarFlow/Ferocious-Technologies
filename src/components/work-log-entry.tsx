@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ClipboardList, Plus, History, Clock, User, Cpu, Save } from 'lucide-react';
+import { ClipboardList, Plus, History, Clock, User, Cpu, Save, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { WorkLogEntry as WorkLogEntryType } from '@/lib/types';
 
 const mockResources = [
   { id: '01', name: 'VMC milling-BFW' },
@@ -21,22 +22,56 @@ const mockResources = [
   { id: '06', name: 'EDM ZNC' },
 ];
 
-const mockRecentLogs = [
-  { id: 'LOG-001', resourceName: 'VMC milling-BFW (01)', operator: 'Sarah Miller', date: '03 Mar 2025', shift: 'Morning', type: 'Production', duration: '4.5h', activity: 'Main batch production #103645' },
-  { id: 'LOG-002', resourceName: 'CNC Turning -Jyothi (05)', operator: 'Sarah Miller', date: '03 Mar 2025', shift: 'Morning', type: 'Setup', duration: '1.2h', activity: 'Tool changing for new order' },
-  { id: 'LOG-003', resourceName: 'EDM ZNC (06)', operator: 'A. Chen', date: '02 Mar 2025', shift: 'Evening', type: 'Maintenance', duration: '2.0h', activity: 'Routine electrode inspection' },
-];
+interface WorkLogEntryProps {
+  logs: WorkLogEntryType[];
+  onAddLog: (log: WorkLogEntryType) => void;
+}
 
-export function WorkLogEntry() {
+export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
   const { toast } = useToast();
   const [selectedResource, setSelectedResource] = useState('');
   const [activityType, setActivityType] = useState('Production');
+  const [workOrderId, setWorkOrderId] = useState('');
+  const [duration, setDuration] = useState('');
+  const [description, setDescription] = useState('');
+  const [operator, setOperator] = useState('Sarah Miller');
 
   const handleSaveLog = () => {
+    if (!selectedResource || !workOrderId || !duration) {
+      toast({
+        variant: "destructive",
+        title: "Incomplete Entry",
+        description: "Please provide a Work Order ID, Resource, and Duration.",
+      });
+      return;
+    }
+
+    const resource = mockResources.find(r => r.id === selectedResource);
+    
+    const newLog: WorkLogEntryType = {
+      id: `LOG-${Math.floor(100 + Math.random() * 900)}`,
+      resourceId: selectedResource,
+      resourceName: `${resource?.name} (${selectedResource})`,
+      operator: operator,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      shift: 'Morning',
+      type: activityType as any,
+      duration: `${duration}h`,
+      activity: description || 'Routine operation recorded',
+      workOrderId: workOrderId
+    };
+
+    onAddLog(newLog);
+    
     toast({
       title: "Log Recorded Successfully",
-      description: "Production record has been added to the master ledger.",
+      description: `Production record for WO #${workOrderId} has been added to the master ledger.`,
     });
+
+    // Reset form
+    setWorkOrderId('');
+    setDuration('');
+    setDescription('');
   };
 
   const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-medium";
@@ -72,8 +107,21 @@ export function WorkLogEntry() {
             
             <div className="space-y-6">
               <div className="space-y-2.5">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Work Order ID</Label>
+                <div className="relative">
+                  <Input 
+                    placeholder="e.g. 103645" 
+                    className={cn(darkInputClasses, "pr-12")}
+                    value={workOrderId}
+                    onChange={(e) => setWorkOrderId(e.target.value)}
+                  />
+                  <Hash className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Select Machine / Resource</Label>
-                <Select onValueChange={setSelectedResource}>
+                <Select onValueChange={setSelectedResource} value={selectedResource}>
                   <SelectTrigger className={darkSelectClasses}>
                     <SelectValue placeholder="Select resource..." />
                   </SelectTrigger>
@@ -118,20 +166,34 @@ export function WorkLogEntry() {
               <div className="space-y-2.5">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Duration (Hours)</Label>
                 <div className="relative">
-                  <Input placeholder="0.0" className={cn(darkInputClasses, "pr-12")} />
+                  <Input 
+                    placeholder="0.0" 
+                    className={cn(darkInputClasses, "pr-12")}
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                  />
                   <Clock className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 </div>
               </div>
 
               <div className="space-y-2.5">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Activity Description</Label>
-                <Input placeholder="Describe work performed..." className={darkInputClasses} />
+                <Input 
+                  placeholder="Describe work performed..." 
+                  className={darkInputClasses}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2.5">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Operator Name</Label>
                 <div className="relative">
-                  <Input defaultValue="Sarah Miller" className={cn(darkInputClasses, "pr-12")} />
+                  <Input 
+                    defaultValue="Sarah Miller" 
+                    className={cn(darkInputClasses, "pr-12")}
+                    onChange={(e) => setOperator(e.target.value)}
+                  />
                   <User className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 </div>
               </div>
@@ -146,54 +208,60 @@ export function WorkLogEntry() {
                 <History className="h-4 w-4 text-primary" />
                 <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Recent Operational Entries</h3>
              </div>
-             <Badge variant="outline" className="text-[10px] font-bold uppercase bg-white">Showing Last 15 Entries</Badge>
+             <Badge variant="outline" className="text-[10px] font-bold uppercase bg-white">Showing Last {logs.length} Entries</Badge>
           </div>
-          <Table>
-            <TableHeader className="bg-white hover:bg-transparent border-slate-100">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Resource</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Shift/Type</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Operator</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Duration</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-right px-8">Activity</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockRecentLogs.map((log) => (
-                <TableRow key={log.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                  <TableCell className="px-8">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-sm text-slate-900">{log.resourceName}</span>
-                      <span className="text-[10px] text-slate-400 font-code">{log.id}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-bold text-slate-700">{log.shift}</span>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-[9px] font-bold uppercase w-fit px-2",
-                          log.type === 'Production' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                          log.type === 'Maintenance' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-slate-50 text-slate-500 border-slate-100'
-                        )}
-                      >
-                        {log.type}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-medium text-slate-600">{log.operator}</TableCell>
-                  <TableCell className="font-code text-sm font-bold text-primary">{log.duration}</TableCell>
-                  <TableCell className="text-right px-8">
-                    <p className="text-xs font-medium text-slate-500 max-w-[200px] ml-auto line-clamp-2">
-                      {log.activity}
-                    </p>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-white hover:bg-transparent border-slate-100">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Resource</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Shift/Type</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Work Order</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Duration</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Activity</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {logs.map((log) => (
+                  <TableRow key={log.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                    <TableCell className="px-8">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm text-slate-900">{log.resourceName}</span>
+                        <span className="text-[10px] text-slate-400 font-code">{log.id}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold text-slate-700">{log.shift}</span>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "text-[9px] font-bold uppercase w-fit px-2",
+                            log.type === 'Production' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                            log.type === 'Maintenance' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                            'bg-slate-50 text-slate-500 border-slate-100'
+                          )}
+                        >
+                          {log.type}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className="font-code text-[10px] font-bold border-slate-200 text-slate-600 bg-slate-50">
+                        #{log.workOrderId || 'N/A'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-code text-sm font-bold text-primary">{log.duration}</TableCell>
+                    <TableCell className="text-right px-8">
+                      <p className="text-xs font-medium text-slate-500 max-w-[200px] ml-auto line-clamp-2">
+                        {log.activity}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       </div>
 

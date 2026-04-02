@@ -19,11 +19,6 @@ import {
   DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
 import { 
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { 
   Layers, 
   Truck, 
   ExternalLink, 
@@ -39,6 +34,8 @@ import {
   Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
+import React from 'react';
 
 interface SubTask {
   id: string;
@@ -253,200 +250,196 @@ export function OperationsStatus({
                     const isExpanded = !!expandedOps[idx];
                     
                     return (
-                      <Collapsible
-                        key={idx}
-                        asChild
-                        open={isExpanded}
-                        onOpenChange={() => toggleExpand(idx)}
-                      >
-                        <>
-                          <TableRow className="h-20 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
-                            <TableCell className="px-8 font-code text-xs text-slate-300 font-bold flex items-center gap-2">
-                              <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300 hover:text-primary hover:bg-primary/5 -ml-4">
-                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </Button>
-                              </CollapsibleTrigger>
-                              {(idx + 1).toString().padStart(2, '0')}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{op.name}</span>
-                                {op.subTasks.length > 0 && (
-                                  <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest mt-0.5">
-                                    {op.subTasks.length} detailed items
-                                  </span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button className="outline-none focus:ring-4 focus:ring-primary/10 rounded-full transition-all w-full max-w-[160px]">
-                                      <Badge 
-                                        variant="outline"
-                                        className={cn(
-                                          "text-[9px] font-bold uppercase py-2 px-4 w-full justify-center rounded-full border transition-all hover:scale-105 shadow-sm",
-                                          getStatusStyles(currentStatus)
-                                        )}
-                                      >
-                                        {currentStatus}
-                                      </Badge>
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100">
-                                    {STATUS_OPTIONS.map((opt) => (
-                                      <DropdownMenuItem 
-                                        key={opt.label}
-                                        onClick={() => handleLocalStatusChange(op.name, opt.label)}
-                                        className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50"
-                                      >
-                                        <div className={cn("h-2 w-2 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
-                                        <span className="text-xs font-bold uppercase tracking-wider">{opt.label}</span>
-                                      </DropdownMenuItem>
-                                    ))}
-                                    
-                                    <DropdownMenuSub>
-                                      <DropdownMenuSubTrigger className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50">
-                                        <Truck className="h-4 w-4 text-purple-600" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Vendor</span>
-                                      </DropdownMenuSubTrigger>
-                                      <DropdownMenuPortal>
-                                        <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
-                                          {RESOURCE_LIST.filter(r => r.type === 'vendor').map((vendor) => (
-                                            <DropdownMenuItem 
-                                              key={vendor.id}
-                                              onClick={() => handleLocalStatusChange(op.name, 'Vendor', vendor.name)}
-                                              className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
-                                            >
-                                              {vendor.name}
-                                            </DropdownMenuItem>
-                                          ))}
-                                        </DropdownMenuSubContent>
-                                      </DropdownMenuPortal>
-                                    </DropdownMenuSub>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right px-8">
-                               <div className="h-2 w-2 rounded-full bg-slate-100 group-hover:bg-primary/20 transition-colors ml-auto" />
-                            </TableCell>
-                          </TableRow>
-                          
-                          <CollapsibleContent asChild>
-                            <TableRow className="bg-slate-50/40 border-b border-slate-100 animate-in slide-in-from-top-2 duration-300">
-                              <TableCell colSpan={4} className="pl-24 py-8 pr-12">
-                                <div className="space-y-6">
-                                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-                                    <CircleDot className="h-3 w-3 text-primary" /> Detailed Task Parameters
-                                  </div>
+                      <React.Fragment key={idx}>
+                        <TableRow className="h-20 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
+                          <TableCell className="px-8 font-code text-xs text-slate-300 font-bold flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-slate-300 hover:text-primary hover:bg-primary/5 -ml-4"
+                              onClick={() => toggleExpand(idx)}
+                            >
+                              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                            </Button>
+                            {(idx + 1).toString().padStart(2, '0')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{op.name}</span>
+                              {op.subTasks.length > 0 && (
+                                <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest mt-0.5">
+                                  {op.subTasks.length} detailed items
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="outline-none focus:ring-4 focus:ring-primary/10 rounded-full transition-all w-full max-w-[160px]">
+                                    <Badge 
+                                      variant="outline"
+                                      className={cn(
+                                        "text-[9px] font-bold uppercase py-2 px-4 w-full justify-center rounded-full border transition-all hover:scale-105 shadow-sm",
+                                        getStatusStyles(currentStatus)
+                                      )}
+                                    >
+                                      {currentStatus}
+                                    </Badge>
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100">
+                                  {STATUS_OPTIONS.map((opt) => (
+                                    <DropdownMenuItem 
+                                      key={opt.label}
+                                      onClick={() => handleLocalStatusChange(op.name, opt.label)}
+                                      className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50"
+                                    >
+                                      <div className={cn("h-2 w-2 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
+                                      <span className="text-xs font-bold uppercase tracking-wider">{opt.label}</span>
+                                    </DropdownMenuItem>
+                                  ))}
                                   
-                                  <div className="space-y-4">
-                                    {op.subTasks.map((task, sIdx) => (
-                                      <div key={task.id} className="grid grid-cols-12 gap-4 items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
-                                        <div className="col-span-4 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Name</Label>
+                                  <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50">
+                                      <Truck className="h-4 w-4 text-purple-600" />
+                                      <span className="text-xs font-bold uppercase tracking-wider">Vendor</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                      <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
+                                        {RESOURCE_LIST.filter(r => r.type === 'vendor').map((vendor) => (
+                                          <DropdownMenuItem 
+                                            key={vendor.id}
+                                            onClick={() => handleLocalStatusChange(op.name, 'Vendor', vendor.name)}
+                                            className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
+                                          >
+                                            {vendor.name}
+                                          </DropdownMenuItem>
+                                        ))}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                  </DropdownMenuSub>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right px-8">
+                             <div className="h-2 w-2 rounded-full bg-slate-100 group-hover:bg-primary/20 transition-colors ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                        
+                        {isExpanded && (
+                          <TableRow className="bg-slate-50/40 border-b border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <TableCell colSpan={4} className="pl-24 py-8 pr-12">
+                              <div className="space-y-6">
+                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                                  <CircleDot className="h-3 w-3 text-primary" /> Detailed Task Parameters
+                                </div>
+                                
+                                <div className="space-y-4">
+                                  {op.subTasks.map((task, sIdx) => (
+                                    <div key={task.id} className="grid grid-cols-12 gap-4 items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
+                                      <div className="col-span-4 space-y-2">
+                                        <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Name</Label>
+                                        <Input 
+                                          value={task.name}
+                                          onChange={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
+                                          className="h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold" 
+                                        />
+                                      </div>
+                                      <div className="col-span-2 space-y-2">
+                                        <Label className="text-[9px] font-bold uppercase text-slate-400">Start Date</Label>
+                                        <div className="relative">
                                           <Input 
-                                            value={task.name}
-                                            onChange={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
-                                            className="h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold" 
+                                            type="date"
+                                            value={task.startDate}
+                                            onChange={(e) => handleUpdateSubTask(idx, sIdx, { startDate: e.target.value })}
+                                            className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
                                           />
-                                        </div>
-                                        <div className="col-span-2 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Start Date</Label>
-                                          <div className="relative">
-                                            <Input 
-                                              type="date"
-                                              value={task.startDate}
-                                              onChange={(e) => handleUpdateSubTask(idx, sIdx, { startDate: e.target.value })}
-                                              className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
-                                            />
-                                            <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
-                                          </div>
-                                        </div>
-                                        <div className="col-span-2 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">End Date</Label>
-                                          <div className="relative">
-                                            <Input 
-                                              type="date"
-                                              value={task.endDate}
-                                              onChange={(e) => handleUpdateSubTask(idx, sIdx, { endDate: e.target.value })}
-                                              className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
-                                            />
-                                            <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
-                                          </div>
-                                        </div>
-                                        <div className="col-span-3 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Resource Assignment</Label>
-                                          <Select 
-                                            value={task.machineId} 
-                                            onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}
-                                          >
-                                            <SelectTrigger className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]">
-                                              <SelectValue placeholder="Select Machine/Vendor" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1">Internal Assets</SelectItem>
-                                              {RESOURCE_LIST.filter(r => r.type === 'internal').map(res => (
-                                                <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
-                                              ))}
-                                              <SelectItem value="vendors" disabled className="text-[9px] font-bold uppercase text-purple-500/50 bg-purple-50 px-2 py-1">External Partners</SelectItem>
-                                              {RESOURCE_LIST.filter(r => r.type === 'vendor').map(res => (
-                                                <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                        <div className="col-span-1 flex justify-end">
-                                          <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-9 w-9 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-full"
-                                            onClick={() => handleRemoveSubTask(idx, sIdx)}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
+                                          <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
                                         </div>
                                       </div>
-                                    ))}
-                                  </div>
-
-                                  <div className="flex gap-3 max-w-md pt-4">
-                                    <div className="relative flex-1">
-                                      <Input 
-                                        placeholder="Enter sub-task name..." 
-                                        className="h-11 bg-white border-slate-200 rounded-xl pl-10 text-[10px] font-bold uppercase tracking-widest focus-visible:ring-primary/20"
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            handleAddSubTask(idx, e.currentTarget.value);
-                                            e.currentTarget.value = '';
-                                          }
-                                        }}
-                                      />
-                                      <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                      <div className="col-span-2 space-y-2">
+                                        <Label className="text-[9px] font-bold uppercase text-slate-400">End Date</Label>
+                                        <div className="relative">
+                                          <Input 
+                                            type="date"
+                                            value={task.endDate}
+                                            onChange={(e) => handleUpdateSubTask(idx, sIdx, { endDate: e.target.value })}
+                                            className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
+                                          />
+                                          <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
+                                        </div>
+                                      </div>
+                                      <div className="col-span-3 space-y-2">
+                                        <Label className="text-[9px] font-bold uppercase text-slate-400">Resource Assignment</Label>
+                                        <Select 
+                                          value={task.machineId} 
+                                          onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}
+                                        >
+                                          <SelectTrigger className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]">
+                                            <SelectValue placeholder="Select Machine/Vendor" />
+                                          </SelectTrigger>
+                                          <SelectContent className="rounded-xl">
+                                            <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1">Internal Assets</SelectItem>
+                                            {RESOURCE_LIST.filter(r => r.type === 'internal').map(res => (
+                                              <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
+                                            ))}
+                                            <SelectItem value="vendors" disabled className="text-[9px] font-bold uppercase text-purple-500/50 bg-purple-50 px-2 py-1">External Partners</SelectItem>
+                                            {RESOURCE_LIST.filter(r => r.type === 'vendor').map(res => (
+                                              <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="col-span-1 flex justify-end">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon" 
+                                          className="h-9 w-9 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-full"
+                                          onClick={() => handleRemoveSubTask(idx, sIdx)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
                                     </div>
-                                    <Button 
-                                      size="sm"
-                                      className="h-11 rounded-xl bg-slate-900 hover:bg-black text-white px-6"
-                                      onClick={(e) => {
-                                        const input = e.currentTarget.previousElementSibling?.querySelector('input') as HTMLInputElement;
-                                        if (input) {
-                                          handleAddSubTask(idx, input.value);
-                                          input.value = '';
+                                  ))}
+                                </div>
+
+                                <div className="flex gap-3 max-w-md pt-4">
+                                  <div className="relative flex-1">
+                                    <Input 
+                                      placeholder="Enter sub-task name..." 
+                                      className="h-11 bg-white border-slate-200 rounded-xl pl-10 text-[10px] font-bold uppercase tracking-widest focus-visible:ring-primary/20"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleAddSubTask(idx, e.currentTarget.value);
+                                          e.currentTarget.value = '';
                                         }
                                       }}
-                                    >
-                                      Add Task
-                                    </Button>
+                                    />
+                                    <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                   </div>
+                                  <Button 
+                                    size="sm"
+                                    className="h-11 rounded-xl bg-slate-900 hover:bg-black text-white px-6"
+                                    onClick={(e) => {
+                                      const input = e.currentTarget.previousElementSibling?.querySelector('input') as HTMLInputElement;
+                                      if (input) {
+                                        handleAddSubTask(idx, input.value);
+                                        input.value = '';
+                                      }
+                                    }}
+                                  >
+                                    Add Task
+                                  </Button>
                                 </div>
-                              </TableCell>
-                            </TableRow>
-                          </CollapsibleContent>
-                        </>
-                      </Collapsible>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                   <TableRow className="bg-slate-50/30">

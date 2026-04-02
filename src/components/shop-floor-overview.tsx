@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Monitor, 
   ShoppingCart, 

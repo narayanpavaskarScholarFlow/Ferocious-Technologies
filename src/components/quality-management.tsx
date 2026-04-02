@@ -91,9 +91,32 @@ export function QualityManagement() {
   };
 
   const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
-    setDimensions(prev => prev.map(dim => 
-      dim.id === id ? { ...dim, [field]: value } : dim
-    ));
+    setDimensions(prev => prev.map(dim => {
+      if (dim.id !== id) return dim;
+      
+      const updatedDim = { ...dim, [field]: value };
+      
+      // AUTO-CALCULATION LOGIC:
+      // If the field updated is 'actual', 'upperLimit', or 'lowerLimit', 
+      // check if actual value is within the range.
+      if (field === 'actual' || field === 'upperLimit' || field === 'lowerLimit') {
+        const actualNum = parseFloat(updatedDim.actual);
+        const upperNum = parseFloat(updatedDim.upperLimit);
+        const lowerNum = parseFloat(updatedDim.lowerLimit);
+
+        if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
+          if (actualNum >= lowerNum && actualNum <= upperNum) {
+            updatedDim.status = 'Pass'; // Within tolerance (OK)
+          } else {
+            updatedDim.status = 'Fail'; // Out of tolerance (NOT OK)
+          }
+        } else if (updatedDim.actual === '') {
+          updatedDim.status = 'Pending';
+        }
+      }
+      
+      return updatedDim;
+    }));
   };
 
   const handleDimensionStatus = (id: string, status: 'Pass' | 'Fail' | 'NA') => {
@@ -205,13 +228,13 @@ export function QualityManagement() {
       {currentStep === 'checklist' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
-            <Tabs defaultValue="internal" className="w-full">
+            <Tabs defaultValue="customer" className="w-full">
               <TabsList className="bg-slate-100 p-1 rounded-full mb-6 h-12 inline-flex border border-slate-200">
-                <TabsTrigger value="internal" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  Internal Process Checks
-                </TabsTrigger>
                 <TabsTrigger value="customer" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   Customer Dimensions
+                </TabsTrigger>
+                <TabsTrigger value="internal" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Internal Process Checks
                 </TabsTrigger>
               </TabsList>
 
@@ -269,10 +292,10 @@ export function QualityManagement() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <h3 className="text-lg font-bold text-slate-900">Customer Dimension Entry</h3>
-                      <p className="text-xs text-muted-foreground">Record critical measurements for product release.</p>
+                      <p className="text-xs text-muted-foreground">Record critical measurements for product release. Status updates automatically based on limits.</p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleAddDimension} className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2">
-                      <Plus className="h-3 w-3" /> Add Row
+                    <Button variant="outline" size="sm" onClick={handleAddDimension} className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2 hover:bg-primary/5 hover:text-primary transition-all">
+                      <Plus className="h-3 w-3" /> Add More Dimensions
                     </Button>
                   </div>
 
@@ -332,7 +355,7 @@ export function QualityManagement() {
                             <TableCell>
                               <Input 
                                 placeholder="0.00" 
-                                className="h-8 text-xs font-code bg-slate-100 border-none rounded-md"
+                                className="h-8 text-xs font-code bg-slate-100 border border-primary/20 focus-visible:ring-primary/20 rounded-md"
                                 value={dim.actual}
                                 onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
                               />
@@ -346,8 +369,8 @@ export function QualityManagement() {
                                     className={cn(
                                       "px-2 py-1 rounded text-[8px] font-bold uppercase border transition-all",
                                       dim.status === st 
-                                        ? (st === 'Pass' ? "bg-green-500 border-green-500 text-white" : "bg-red-500 border-red-500 text-white")
-                                        : "bg-white border-slate-200 text-slate-300"
+                                        ? (st === 'Pass' ? "bg-green-500 border-green-500 text-white shadow-sm" : "bg-red-500 border-red-500 text-white shadow-sm")
+                                        : "bg-white border-slate-200 text-slate-300 hover:border-slate-400"
                                     )}
                                   >
                                     {st === 'Pass' ? 'OK' : 'NOT OK'}
@@ -373,7 +396,7 @@ export function QualityManagement() {
             </Tabs>
 
             <Button 
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
               onClick={() => setCurrentStep('report')}
             >
               Verify & Preview Inspection Sheet
@@ -415,7 +438,7 @@ export function QualityManagement() {
         </div>
       )}
 
-      {/* STEP 3 & 4: Report View (Modified per user request) */}
+      {/* STEP 3 & 4: Report View */}
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && (
         <div className="space-y-8 pb-20">
           <div className="flex justify-end gap-3 print:hidden">
@@ -498,7 +521,7 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Final Dimensional Table (RED BOX REQUEST) */}
+            {/* Final Dimensional Table */}
             <div className="space-y-6">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">II. Dimensional Compliance Report</h3>
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">

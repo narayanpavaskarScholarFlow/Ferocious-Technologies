@@ -19,7 +19,10 @@ import {
   Lock,
   Key,
   LayoutDashboard,
-  Check
+  Check,
+  Eye,
+  Edit2,
+  Settings2
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -31,6 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
 const usersData = [
@@ -48,18 +52,30 @@ const ACCESS_PAGES = [
   { id: 'resources', label: 'Resource Management', icon: Shield },
 ];
 
+type PermissionLevel = 'read' | 'edit' | 'full';
+
 export function UserManagement() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [selectedPages, setSelectedPages] = useState<string[]>(['overview']);
+  const [permissions, setPermissions] = useState<Record<string, PermissionLevel>>({
+    overview: 'read'
+  });
 
   const nextStep = () => setStep(s => Math.min(s + 1, 4));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
-  const togglePage = (id: string) => {
-    setSelectedPages(prev => 
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
-    );
+  const handleTogglePage = (id: string, checked: boolean) => {
+    if (checked) {
+      setPermissions(prev => ({ ...prev, [id]: 'read' }));
+    } else {
+      const newPerms = { ...permissions };
+      delete newPerms[id];
+      setPermissions(newPerms);
+    }
+  };
+
+  const handleSetPermission = (id: string, level: PermissionLevel) => {
+    setPermissions(prev => ({ ...prev, [id]: level }));
   };
 
   return (
@@ -186,8 +202,8 @@ export function UserManagement() {
 
       {/* Registration Wizard Automation */}
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-        <DialogContent className="max-w-2xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-3xl">
-          <div className="flex h-[600px]">
+        <DialogContent className="max-w-3xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-3xl">
+          <div className="flex h-[650px]">
             {/* Sidebar Steps */}
             <div className="w-64 bg-slate-50 p-8 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-8">
@@ -226,8 +242,8 @@ export function UserManagement() {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 p-10 flex flex-col justify-between">
-              <div className="space-y-8">
+            <div className="flex-1 p-10 flex flex-col justify-between overflow-hidden">
+              <div className="space-y-8 flex-grow overflow-hidden flex flex-col">
                 {step === 1 && (
                   <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                     <div>
@@ -248,30 +264,66 @@ export function UserManagement() {
                 )}
 
                 {step === 2 && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500 flex flex-col flex-grow overflow-hidden">
                     <div>
                       <h3 className="text-2xl font-display font-bold text-slate-900">02. Access Control Matrix</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Select the functional areas this user is authorized to visit.</p>
+                      <p className="text-sm text-muted-foreground mt-1">Define granular permission levels for each functional area.</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-4 overflow-y-auto pr-2 flex-grow">
                       {ACCESS_PAGES.map((page) => (
                         <div 
                           key={page.id}
-                          onClick={() => togglePage(page.id)}
                           className={cn(
-                            "p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 group",
-                            selectedPages.includes(page.id) ? "bg-primary/5 border-primary/20" : "bg-white border-slate-100 hover:border-slate-200"
+                            "p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-4",
+                            permissions[page.id] ? "bg-primary/5 border-primary/20" : "bg-white border-slate-100"
                           )}
                         >
-                          <Checkbox 
-                            checked={selectedPages.includes(page.id)} 
-                            onCheckedChange={() => togglePage(page.id)}
-                            className="rounded-full h-5 w-5"
-                          />
-                          <span className={cn(
-                            "text-xs font-bold transition-colors",
-                            selectedPages.includes(page.id) ? "text-primary" : "text-slate-600 group-hover:text-slate-900"
-                          )}>{page.label}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "p-2 rounded-lg transition-colors",
+                                permissions[page.id] ? "bg-white" : "bg-slate-50"
+                              )}>
+                                <page.icon className={cn(
+                                  "h-4 w-4 transition-colors",
+                                  permissions[page.id] ? "text-primary" : "text-slate-400"
+                                )} />
+                              </div>
+                              <span className={cn(
+                                "text-sm font-bold transition-colors",
+                                permissions[page.id] ? "text-slate-900" : "text-slate-500"
+                              )}>{page.label}</span>
+                            </div>
+                            <Checkbox 
+                              checked={!!permissions[page.id]} 
+                              onCheckedChange={(checked) => handleTogglePage(page.id, !!checked)}
+                              className="rounded-full h-5 w-5"
+                            />
+                          </div>
+                          
+                          {permissions[page.id] && (
+                            <div className="animate-in fade-in zoom-in-95 duration-300">
+                              <RadioGroup 
+                                value={permissions[page.id]} 
+                                onValueChange={(val) => handleSetPermission(page.id, val as PermissionLevel)}
+                                className="grid grid-cols-3 gap-2"
+                              >
+                                {[
+                                  { id: 'read', label: 'Read Only', icon: Eye },
+                                  { id: 'edit', label: 'Edit', icon: Edit2 },
+                                  { id: 'full', label: 'Full Control', icon: Settings2 }
+                                ].map((opt) => (
+                                  <div key={opt.id} className="flex items-center space-x-2 bg-white/50 p-2 rounded-xl border border-transparent hover:border-primary/20 transition-all cursor-pointer">
+                                    <RadioGroupItem value={opt.id} id={`${page.id}-${opt.id}`} className="h-4 w-4" />
+                                    <Label htmlFor={`${page.id}-${opt.id}`} className="text-[9px] font-bold uppercase cursor-pointer flex items-center gap-1.5 text-slate-600">
+                                      <opt.icon className="h-3 w-3" />
+                                      {opt.label}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -322,7 +374,7 @@ export function UserManagement() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-8 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-8 border-t border-slate-100 mt-4">
                 <Button 
                   variant="ghost" 
                   onClick={prevStep} 

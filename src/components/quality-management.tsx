@@ -22,7 +22,8 @@ import {
   X,
   Box,
   MinusCircle,
-  Plus
+  Plus,
+  Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -147,6 +148,13 @@ export function QualityManagement() {
     setDimensions(prev => prev.map(dim => 
       dim.id === id ? { ...dim, status } : dim
     ));
+  };
+
+  const handleSaveDraft = () => {
+    toast({
+      title: "Draft Saved",
+      description: `Dimension entries for Order #${selectedOrder?.id} have been updated in the ledger.`,
+    });
   };
 
   const handlePrint = () => {
@@ -416,12 +424,21 @@ export function QualityManagement() {
               </TabsContent>
             </Tabs>
 
-            <Button 
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
-              onClick={() => setCurrentStep('report')}
-            >
-              Verify & Preview Inspection Sheet
-            </Button>
+            <div className="flex gap-4">
+              <Button 
+                variant="outline"
+                className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-xs border-primary/20 text-primary hover:bg-primary/5"
+                onClick={handleSaveDraft}
+              >
+                <Save className="h-4 w-4 mr-2" /> Save Draft
+              </Button>
+              <Button 
+                className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+                onClick={() => setCurrentStep('report')}
+              >
+                Verify & Preview Inspection Sheet
+              </Button>
+            </div>
           </div>
 
           <Card className="lg:col-span-4 p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">

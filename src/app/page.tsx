@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -19,6 +18,7 @@ import { BillingManagement } from '@/components/billing-management';
 import { WorkLogEntry } from '@/components/work-log-entry';
 import { InventoryManagement } from '@/components/inventory-management';
 import { QualityManagement } from '@/components/quality-management';
+import { ProductionGantt } from '@/components/production-gantt';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command, X } from 'lucide-react';
@@ -178,6 +178,7 @@ export default function IndustrialERP() {
             {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} />}
             {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
+            {currentView === 'gantt' && <ProductionGantt />}
             {currentView === 'quality' && <QualityManagement onUpdateStatus={handleUpdateGlobalOpStatus} />}
             {currentView === 'order-details' && (
               <OrderDetails 

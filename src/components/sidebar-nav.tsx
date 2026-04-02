@@ -20,7 +20,8 @@ import {
   ClipboardList,
   Boxes,
   LineChart,
-  ShieldCheck
+  ShieldCheck,
+  LayoutGrid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,6 +41,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Command Center' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production Orders' },
+    { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Production Gantt' },
     { id: 'operations' as ViewType, icon: Layers, label: 'Operational Routing' },
     { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality Assurance' },
     { id: 'inventory' as ViewType, icon: Boxes, label: 'Resource Inventory' },

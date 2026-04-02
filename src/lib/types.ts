@@ -37,7 +37,8 @@ export type ViewType =
   | 'billing'
   | 'work-log'
   | 'inventory'
-  | 'quality';
+  | 'quality'
+  | 'gantt';
 
 export interface Order {
   id: string;

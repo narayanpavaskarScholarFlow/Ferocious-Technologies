@@ -81,6 +81,25 @@ export interface StaffMember {
   efficiency: number;
 }
 
+export interface LeaveBalance {
+  id: string;
+  resourceName: string;
+  annual: number;
+  sick: number;
+  casual: number;
+  totalTaken: number;
+}
+
+export interface LeaveRequest {
+  id: string;
+  resourceName: string;
+  startDate: string;
+  endDate: string;
+  type: 'Annual' | 'Sick' | 'Casual' | 'Unpaid';
+  status: 'Approved' | 'Pending' | 'Rejected';
+  reason?: string;
+}
+
 export interface CustomerOrder {
   siNo: number;
   id: string;

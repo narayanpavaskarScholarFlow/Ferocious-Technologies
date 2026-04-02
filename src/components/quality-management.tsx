@@ -364,7 +364,7 @@ export function QualityManagement() {
           </div>
 
           <Card className={cn(
-            "bg-white border-slate-200 shadow-2xl p-16 max-w-[900px] mx-auto space-y-12 transition-all duration-700",
+            "bg-white border-slate-200 shadow-2xl p-16 max-w-[1000px] mx-auto space-y-12 transition-all duration-700",
             currentStep === 'review' && "border-primary/30 ring-4 ring-primary/5"
           )}>
             {/* Report Header */}
@@ -387,39 +387,58 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-2 gap-12">
-              <div className="grid grid-cols-2 gap-y-6">
-                <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Work Order ID</p>
-                  <p className="text-sm font-bold text-slate-900">#{selectedOrder?.id}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Date Generated</p>
-                  <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString()}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Customer Name</p>
-                  <p className="text-sm font-bold text-slate-900">{selectedOrder?.customer}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Component Ref</p>
-                  <p className="text-sm font-bold text-slate-900">{selectedOrder?.part}</p>
-                </div>
+            {/* Metadata Summary Row - Compact for large drawing space */}
+            <div className="grid grid-cols-4 gap-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100">
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order ID</p>
+                <p className="text-sm font-bold text-slate-900">#{selectedOrder?.id}</p>
               </div>
-              
-              <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 flex items-center justify-center relative overflow-hidden">
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Customer Name</p>
+                <p className="text-sm font-bold text-slate-900">{selectedOrder?.customer}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Component Ref</p>
+                <p className="text-sm font-bold text-slate-900">{selectedOrder?.part}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Date Generated</p>
+                <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            {/* LARGE DRAWING SECTION - "Half Sheet" Layout */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">III. Technical Drawing Reference</h3>
+                <Badge variant="outline" className="text-[8px] bg-white border-slate-200">CONFIDENTIAL</Badge>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] h-[550px] flex items-center justify-center relative overflow-hidden shadow-inner">
                 {drawingUploaded ? (
-                  <div className="flex flex-col items-center gap-2 opacity-60">
-                    <ImageIcon className="h-12 w-12 text-slate-300" />
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Technical Drawing Reference Attached</span>
+                  <div className="flex flex-col items-center gap-6 text-center animate-in fade-in zoom-in-95 duration-1000">
+                    <div className="p-8 bg-white rounded-full shadow-sm">
+                      <ImageIcon className="h-20 w-20 text-primary/20" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xl font-display font-bold text-slate-900">TECHNICAL_DRAWING_03_MAR_2025.CAD</p>
+                      <div className="flex items-center justify-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <span>Scale: 1:1</span>
+                        <div className="h-1 w-1 rounded-full bg-slate-200" />
+                        <span>Format: A3 / A4 Optimized</span>
+                        <div className="h-1 w-1 rounded-full bg-slate-200" />
+                        <span>ID: DWG-88452-X</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">No Drawing Attached</span>
+                  <div className="flex flex-col items-center gap-2 opacity-20">
+                    <ImageIcon className="h-16 w-16" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.3em]">No Drawing Attachment Loaded</span>
+                  </div>
                 )}
-                <div className="absolute top-0 right-0 p-3">
-                  <Badge variant="outline" className="text-[8px] bg-white border-slate-200">CONFIDENTIAL</Badge>
-                </div>
+                
+                {/* Visual grid overlay for blueprint feel */}
+                <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '24px 24px' }} />
               </div>
             </div>
 
@@ -532,7 +551,7 @@ export function QualityManagement() {
           )}
 
           {currentStep === 'review' && (
-            <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-10 max-w-[900px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 print:hidden">
+            <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-10 max-w-[1000px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 print:hidden">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white rounded-2xl shadow-sm">
                   <ShieldCheck className="h-6 w-6 text-primary" />

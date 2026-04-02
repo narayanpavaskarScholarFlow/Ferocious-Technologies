@@ -23,12 +23,14 @@ import {
   X,
   User,
   Calendar,
-  Box
+  Box,
+  MinusCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 type QualityStep = 'list' | 'checklist' | 'report' | 'review' | 'approval';
+type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
 
 const mockOrders = [
   { id: '103645', customer: 'Automotive Corp', part: 'Axle Support', status: 'Ready for QC', date: '03 Mar 2025' },
@@ -50,19 +52,19 @@ export function QualityManagement() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [checks, setChecks] = useState<Record<string, 'Pass' | 'Fail' | 'Pending'>>({});
+  const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [drawingUploaded, setDrawingUploaded] = useState(false);
 
   const handleSelectOrder = (order: any) => {
     setSelectedOrder(order);
     setCurrentStep('checklist');
     // Reset checks
-    const initial: Record<string, 'Pass' | 'Fail' | 'Pending'> = {};
+    const initial: Record<string, CheckStatus> = {};
     MACHINING_OPS.forEach(op => initial[op] = 'Pending');
     setChecks(initial);
   };
 
-  const handleToggleCheck = (op: string, status: 'Pass' | 'Fail') => {
+  const handleToggleCheck = (op: string, status: 'Pass' | 'Fail' | 'NA') => {
     setChecks(prev => ({ ...prev, [op]: status }));
   };
 
@@ -159,6 +161,7 @@ export function QualityManagement() {
               <div className="flex gap-2">
                 <Badge className="bg-green-50 text-green-700 border-green-100">PASSED: {Object.values(checks).filter(v => v === 'Pass').length}</Badge>
                 <Badge className="bg-red-50 text-red-700 border-red-100">FAILED: {Object.values(checks).filter(v => v === 'Fail').length}</Badge>
+                <Badge className="bg-slate-50 text-slate-500 border-slate-100">NA: {Object.values(checks).filter(v => v === 'NA').length}</Badge>
               </div>
             </div>
             
@@ -170,10 +173,12 @@ export function QualityManagement() {
                       "h-10 w-10 rounded-xl flex items-center justify-center border transition-all",
                       checks[op] === 'Pass' ? "bg-green-500 border-green-500 text-white" :
                       checks[op] === 'Fail' ? "bg-red-500 border-red-500 text-white" :
+                      checks[op] === 'NA' ? "bg-slate-400 border-slate-400 text-white" :
                       "bg-white border-slate-200 text-slate-300"
                     )}>
                       {checks[op] === 'Pass' ? <Check className="h-5 w-5" /> : 
                        checks[op] === 'Fail' ? <X className="h-5 w-5" /> : 
+                       checks[op] === 'NA' ? <MinusCircle className="h-5 w-5" /> :
                        <Box className="h-5 w-5" />}
                     </div>
                     <span className="text-sm font-bold text-slate-700">{op}</span>
@@ -200,6 +205,17 @@ export function QualityManagement() {
                       onClick={() => handleToggleCheck(op, 'Fail')}
                     >
                       Fail
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className={cn(
+                        "rounded-xl h-9 px-4 font-bold text-[10px] uppercase transition-all",
+                        checks[op] === 'NA' ? "bg-slate-100 border-slate-300 text-slate-700" : "bg-white text-slate-400"
+                      )}
+                      onClick={() => handleToggleCheck(op, 'NA')}
+                    >
+                      NA
                     </Button>
                   </div>
                 </div>
@@ -344,7 +360,10 @@ export function QualityManagement() {
                         <TableCell className="text-center">
                           <Badge variant="outline" className={cn(
                             "text-[8px] font-bold uppercase px-2",
-                            checks[op] === 'Pass' ? "text-green-600 bg-green-50 border-green-100" : "text-red-600 bg-red-50 border-red-100"
+                            checks[op] === 'Pass' ? "text-green-600 bg-green-50 border-green-100" : 
+                            checks[op] === 'Fail' ? "text-red-600 bg-red-50 border-red-100" :
+                            checks[op] === 'NA' ? "text-slate-400 bg-slate-50 border-slate-100" :
+                            "text-slate-300 bg-white border-slate-100"
                           )}>
                             {checks[op] || 'NA'}
                           </Badge>

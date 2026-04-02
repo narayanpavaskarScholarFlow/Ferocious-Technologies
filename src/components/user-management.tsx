@@ -24,7 +24,8 @@ import {
   Edit2,
   Settings2,
   ShieldCheck,
-  Circle
+  Circle,
+  Phone
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -209,8 +210,8 @@ export function UserManagement() {
             <DialogTitle>User Onboarding Wizard</DialogTitle>
             <DialogDescription>Follow the 4-step process to register a new user and assign granular permissions.</DialogDescription>
           </DialogHeader>
-          <div className="flex h-[700px]">
-            {/* Sidebar Steps (Matching Image) */}
+          <div className="flex h-[750px]">
+            {/* Sidebar Steps */}
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
                 <div className="p-4 bg-primary rounded-2xl w-fit shadow-xl shadow-primary/20">
@@ -270,6 +271,10 @@ export function UserManagement() {
                       <div className="space-y-3">
                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Address</Label>
                         <Input placeholder="name@toolroom.tech" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Mobile Number</Label>
+                        <Input placeholder="+1 (555) 000-0000" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
                       </div>
                     </div>
                   </div>
@@ -400,7 +405,7 @@ export function UserManagement() {
                 )}
               </div>
 
-              {/* Bottom Actions (Matching Image) */}
+              {/* Bottom Actions */}
               <div className="flex items-center justify-between pt-10 border-t border-slate-100">
                 <Button 
                   variant="ghost" 

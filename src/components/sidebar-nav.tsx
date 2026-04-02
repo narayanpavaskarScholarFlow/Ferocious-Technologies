@@ -18,7 +18,8 @@ import {
   HelpCircle,
   CreditCard,
   ClipboardList,
-  Boxes
+  Boxes,
+  LineChart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -44,6 +45,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log Entry' },
     { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Asset Telemetry' },
     { id: 'manpower' as ViewType, icon: Users, label: 'Resource Management' },
+    { id: 'sqcdp' as ViewType, icon: LineChart, label: 'SQCDP Board' },
     { id: 'customer-orders' as ViewType, icon: Package, label: 'Customer Pipeline' },
     { id: 'vendor' as ViewType, icon: Truck, label: 'Vendor Management' },
     { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Schedule' },

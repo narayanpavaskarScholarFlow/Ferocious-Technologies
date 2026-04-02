@@ -25,7 +25,18 @@ import {
   Settings2,
   ShieldCheck,
   Circle,
-  Phone
+  Phone,
+  ShoppingCart,
+  Layers,
+  Boxes,
+  CreditCard,
+  ClipboardList,
+  Cpu,
+  Users,
+  LineChart,
+  Package,
+  Truck,
+  Calendar
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -48,11 +59,17 @@ const usersData = [
 
 const ACCESS_PAGES = [
   { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
-  { id: 'production', label: 'Production Orders', icon: Shield },
-  { id: 'routing', label: 'Operational Routing', icon: Shield },
-  { id: 'inventory', label: 'Material Inventory', icon: Shield },
-  { id: 'billing', label: 'Financial Billing', icon: Shield },
-  { id: 'resources', label: 'Resource Management', icon: Shield },
+  { id: 'orders', label: 'Production Orders', icon: ShoppingCart },
+  { id: 'routing', label: 'Operational Routing', icon: Layers },
+  { id: 'inventory', label: 'Material Inventory', icon: Boxes },
+  { id: 'billing', label: 'Financial Billing', icon: CreditCard },
+  { id: 'work-log', label: 'Work Log Ledger', icon: ClipboardList },
+  { id: 'telemetry', label: 'Asset Telemetry', icon: Cpu },
+  { id: 'resources', label: 'Resource Mgmt', icon: Users },
+  { id: 'sqcdp', label: 'SQCDP Board', icon: LineChart },
+  { id: 'pipeline', label: 'Customer Pipeline', icon: Package },
+  { id: 'vendors', label: 'Vendor Mgmt', icon: Truck },
+  { id: 'schedule', label: 'Master Schedule', icon: Calendar },
 ];
 
 type PermissionLevel = 'read' | 'edit' | 'full';
@@ -108,7 +125,6 @@ export function UserManagement() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Main User Matrix */}
         <Card className="lg:col-span-8 overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
           <Table>
             <TableHeader className="bg-slate-50/50">
@@ -166,24 +182,20 @@ export function UserManagement() {
           </Table>
         </Card>
 
-        {/* Security Summary Sidebar */}
         <div className="lg:col-span-4 space-y-8">
           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-8">Security Summary</h3>
-            
             <div className="space-y-6">
                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Active Sessions</p>
                   <p className="text-4xl font-display font-bold text-slate-900">12</p>
                   <div className="h-1 w-12 bg-primary rounded-full mt-4" />
                </div>
-               
                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Login Failures (24h)</p>
                   <p className="text-4xl font-display font-bold text-red-500">0</p>
                   <div className="h-1 w-12 bg-red-500 rounded-full mt-4" />
                </div>
-
                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Audit Log Integrity</p>
                   <div className="flex items-center gap-2 mt-2">
@@ -193,7 +205,6 @@ export function UserManagement() {
                </div>
             </div>
           </Card>
-
           <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4">
             <AlertCircle className="h-5 w-5 text-primary" />
             <p className="text-xs font-medium text-slate-600 leading-snug">
@@ -203,15 +214,13 @@ export function UserManagement() {
         </div>
       </div>
 
-      {/* Registration Wizard Automation */}
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
           <DialogHeader className="sr-only">
             <DialogTitle>User Onboarding Wizard</DialogTitle>
-            <DialogDescription>Follow the 4-step process to register a new user and assign granular permissions.</DialogDescription>
+            <DialogDescription>Automated ERP registration flow.</DialogDescription>
           </DialogHeader>
           <div className="flex h-[750px]">
-            {/* Sidebar Steps */}
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
                 <div className="p-4 bg-primary rounded-2xl w-fit shadow-xl shadow-primary/20">
@@ -219,10 +228,10 @@ export function UserManagement() {
                 </div>
                 <div className="space-y-8">
                   {[
-                    { s: 1, label: 'Register New User', desc: 'IDENTITY & CONTACT DETAILS' },
-                    { s: 2, label: 'Access Control', desc: 'DEFINE PAGE PERMISSIONS' },
-                    { s: 3, label: 'User Profile', desc: 'FUNCTIONAL ROLE SETUP' },
-                    { s: 4, label: 'Credentials', desc: 'SECURITY ESTABLISHMENT' },
+                    { s: 1, label: 'Register New User', desc: 'IDENTITY & CONTACT' },
+                    { s: 2, label: 'Access Control', desc: 'DEFINE PERMISSIONS' },
+                    { s: 3, label: 'User Profile', desc: 'ORGANIZATIONAL ROLE' },
+                    { s: 4, label: 'Credentials', desc: 'SECURITY SETUP' },
                   ].map((item) => (
                     <div key={item.s} className="flex gap-5 group relative">
                       {item.s < 4 && (
@@ -250,18 +259,17 @@ export function UserManagement() {
                 </div>
               </div>
               <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-                ERP ONBOARDING V2.4
+                ERP_AUTO_ONBOARD_V2.4
               </div>
             </div>
 
-            {/* Main Content Area */}
             <div className="flex-1 p-12 flex flex-col justify-between overflow-hidden bg-white">
               <div className="space-y-10 flex-grow overflow-hidden flex flex-col">
                 {step === 1 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
                       <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">01. Identity Registration</h3>
-                      <p className="text-base text-muted-foreground mt-2">Provide the foundational details for the new user account.</p>
+                      <p className="text-base text-muted-foreground mt-2">Provide foundational contact details.</p>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-3">
@@ -284,7 +292,7 @@ export function UserManagement() {
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500 flex flex-col flex-grow overflow-hidden">
                     <div>
                       <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">02. Access Control Matrix</h3>
-                      <p className="text-base text-muted-foreground mt-2">Define granular permission levels for each functional area.</p>
+                      <p className="text-base text-muted-foreground mt-2">Define granular permission levels for the core ecosystem.</p>
                     </div>
                     <div className="space-y-4 overflow-y-auto pr-4 flex-grow custom-scrollbar">
                       {ACCESS_PAGES.map((page) => (
@@ -321,7 +329,6 @@ export function UserManagement() {
                               {permissions[page.id] && <Check className="h-3.5 w-3.5" />}
                             </div>
                           </div>
-                          
                           {permissions[page.id] && (
                             <div className="animate-in fade-in zoom-in-95 duration-500 pt-2">
                               <RadioGroup 
@@ -363,7 +370,7 @@ export function UserManagement() {
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
                       <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">03. User Profile Setup</h3>
-                      <p className="text-base text-muted-foreground mt-2">Assign professional roles and departmental locations.</p>
+                      <p className="text-base text-muted-foreground mt-2">Functional role assignment.</p>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-3">
@@ -382,7 +389,7 @@ export function UserManagement() {
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
                       <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">04. Credentials</h3>
-                      <p className="text-base text-muted-foreground mt-2">Finalize the security layer for the new account.</p>
+                      <p className="text-base text-muted-foreground mt-2">Security layer initialization.</p>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-3">
@@ -397,7 +404,7 @@ export function UserManagement() {
                           <ShieldCheck className="h-6 w-6 text-primary" />
                         </div>
                         <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                          By finalizing, the system will generate a secure identity token and send an <span className="font-bold text-primary">activation link</span> to the user.
+                          Secure activation link will be dispatched automatically upon completion.
                         </p>
                       </div>
                     </div>
@@ -405,7 +412,6 @@ export function UserManagement() {
                 )}
               </div>
 
-              {/* Bottom Actions */}
               <div className="flex items-center justify-between pt-10 border-t border-slate-100">
                 <Button 
                   variant="ghost" 
@@ -415,7 +421,6 @@ export function UserManagement() {
                 >
                   <ChevronLeft className="h-4 w-4 mr-2" /> Back
                 </Button>
-                
                 <Button 
                   onClick={step === 4 ? () => setIsWizardOpen(false) : nextStep}
                   className={cn(

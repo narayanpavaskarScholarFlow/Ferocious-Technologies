@@ -17,7 +17,9 @@ import {
   History,
   Boxes,
   Layers,
-  Container
+  Container,
+  BarChart3,
+  Archive
 } from 'lucide-react';
 import { InventoryItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -81,76 +83,116 @@ export function InventoryManagement() {
         </Card>
       </div>
 
-      <div className="glass-card bg-white border-slate-200 shadow-xl overflow-hidden rounded-2xl">
-        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search by SKU or Item Name..." 
-              className="pl-10 h-11 bg-slate-50 border-none focus-visible:ring-primary/20 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-             <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-wider gap-2 text-slate-500">
-               <Filter className="h-4 w-4" /> Advanced Filter
-             </Button>
-          </div>
-        </div>
+      <Tabs defaultValue="items" className="w-full">
+        <TabsList className="bg-slate-100 p-1 rounded-full mb-8 h-12 inline-flex border border-slate-200">
+          <TabsTrigger value="items" className="rounded-full px-6 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            Stock Items
+          </TabsTrigger>
+          <TabsTrigger value="movements" className="rounded-full px-6 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            Movements Log
+          </TabsTrigger>
+          <TabsTrigger value="warehouse" className="rounded-full px-6 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            Warehouse Map
+          </TabsTrigger>
+          <TabsTrigger value="replenishment" className="rounded-full px-6 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            Replenishment
+          </TabsTrigger>
+        </TabsList>
 
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow className="hover:bg-transparent border-slate-100">
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Item Detail</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Available Qty</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Storage Location</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-right px-8">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredItems.map((item) => (
-              <TableRow key={item.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
-                <TableCell className="px-8">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-900">{item.name}</span>
-                    <span className="text-[10px] text-slate-400 font-code uppercase">{item.sku}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-white border-slate-200 text-[9px] font-bold uppercase py-1 px-3">
-                      {item.category}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className={cn(
-                    "text-sm font-bold",
-                    item.status === 'Out of Stock' ? "text-red-500" : "text-slate-700"
-                  )}>
-                    {item.quantity} <span className="text-[10px] text-slate-400 font-medium uppercase ml-1">{item.unit}</span>
-                  </span>
-                </TableCell>
-                <TableCell className="text-xs text-slate-500 font-medium">
-                  {item.location}
-                </TableCell>
-                <TableCell className="text-right px-8">
-                  <Badge className={cn(
-                    "text-[9px] font-bold uppercase px-3 py-1",
-                    item.status === 'In Stock' ? "bg-green-50 text-green-700 border border-green-100" :
-                    item.status === 'Low Stock' ? "bg-amber-50 text-amber-700 border border-amber-100" :
-                    "bg-red-50 text-red-700 border border-red-100"
-                  )}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+        <TabsContent value="items" className="m-0">
+          <div className="glass-card bg-white border-slate-200 shadow-xl overflow-hidden rounded-2xl">
+            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Search by SKU or Item Name..." 
+                  className="pl-10 h-11 bg-slate-50 border-none focus-visible:ring-primary/20 text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                 <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-wider gap-2 text-slate-500">
+                   <Filter className="h-4 w-4" /> Advanced Filter
+                 </Button>
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow className="hover:bg-transparent border-slate-100">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Item Detail</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Available Qty</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Storage Location</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems.map((item) => (
+                  <TableRow key={item.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
+                    <TableCell className="px-8">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-900">{item.name}</span>
+                        <span className="text-[10px] text-slate-400 font-code uppercase">{item.sku}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-white border-slate-200 text-[9px] font-bold uppercase py-1 px-3">
+                          {item.category}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className={cn(
+                        "text-sm font-bold",
+                        item.status === 'Out of Stock' ? "text-red-500" : "text-slate-700"
+                      )}>
+                        {item.quantity} <span className="text-[10px] text-slate-400 font-medium uppercase ml-1">{item.unit}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-500 font-medium">
+                      {item.location}
+                    </TableCell>
+                    <TableCell className="text-right px-8">
+                      <Badge className={cn(
+                        "text-[9px] font-bold uppercase px-3 py-1",
+                        item.status === 'In Stock' ? "bg-green-50 text-green-700 border border-green-100" :
+                        item.status === 'Low Stock' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                        "bg-red-50 text-red-700 border border-red-100"
+                      )}>
+                        {item.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="movements" className="m-0">
+          <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
+            <Archive className="h-12 w-12 mb-4" />
+            <p className="text-xs font-bold uppercase tracking-widest">No stock movements recorded in the last 24h</p>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="warehouse" className="m-0">
+          <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
+            <Layers className="h-12 w-12 mb-4" />
+            <p className="text-xs font-bold uppercase tracking-widest">Generating 3D Warehouse Map Telemetry...</p>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="replenishment" className="m-0">
+          <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
+            <BarChart3 className="h-12 w-12 mb-4" />
+            <p className="text-xs font-bold uppercase tracking-widest">Analyzing Consumption Patterns & PO Thresholds</p>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl flex items-center gap-4">
         <AlertTriangle className="h-5 w-5 text-blue-600" />

@@ -61,6 +61,7 @@ const ACCESS_PAGES = [
   { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
   { id: 'orders', label: 'Production Orders', icon: ShoppingCart },
   { id: 'routing', label: 'Operational Routing', icon: Layers },
+  { id: 'quality', label: 'Quality Assurance', icon: ShieldCheck },
   { id: 'inventory', label: 'Material Inventory', icon: Boxes },
   { id: 'billing', label: 'Financial Billing', icon: CreditCard },
   { id: 'work-log', label: 'Work Log Ledger', icon: ClipboardList },
@@ -218,7 +219,7 @@ export function UserManagement() {
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
           <DialogHeader className="sr-only">
             <DialogTitle>User Onboarding Wizard</DialogTitle>
-            <DialogDescription>Automated ERP registration flow.</DialogDescription>
+            <DialogDescription>Automated ERP registration flow with mobile capture and permission matrix.</DialogDescription>
           </DialogHeader>
           <div className="flex h-[750px]">
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">

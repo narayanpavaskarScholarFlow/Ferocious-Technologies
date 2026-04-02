@@ -19,7 +19,8 @@ import {
   CreditCard,
   ClipboardList,
   Boxes,
-  LineChart
+  LineChart,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,6 +41,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Command Center' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production Orders' },
     { id: 'operations' as ViewType, icon: Layers, label: 'Operational Routing' },
+    { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality Assurance' },
     { id: 'inventory' as ViewType, icon: Boxes, label: 'Resource Inventory' },
     { id: 'billing' as ViewType, icon: CreditCard, label: 'Financial Ledger' },
     { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log Entry' },

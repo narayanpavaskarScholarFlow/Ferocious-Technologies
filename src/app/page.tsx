@@ -17,6 +17,7 @@ import { OrderDetails } from '@/components/order-details';
 import { BillingManagement } from '@/components/billing-management';
 import { WorkLogEntry } from '@/components/work-log-entry';
 import { InventoryManagement } from '@/components/inventory-management';
+import { QualityManagement } from '@/components/quality-management';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command } from 'lucide-react';
@@ -131,6 +132,7 @@ export default function IndustrialERP() {
             {currentView === 'weekly-plan' && <WeeklyPlan />}
             {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
+            {currentView === 'quality' && <QualityManagement />}
             {currentView === 'order-details' && (
               <OrderDetails 
                 orderId={activeWorkOrderId} 

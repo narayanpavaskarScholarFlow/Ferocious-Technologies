@@ -36,7 +36,8 @@ export type ViewType =
   | 'order-details'
   | 'billing'
   | 'work-log'
-  | 'inventory';
+  | 'inventory'
+  | 'quality';
 
 export interface Order {
   id: string;
@@ -153,4 +154,11 @@ export interface InventoryItem {
   minThreshold: number;
   location: string;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+}
+
+export interface QualityCheck {
+  id: string;
+  operation: string;
+  status: 'Pass' | 'Fail' | 'Pending' | 'NA';
+  remarks?: string;
 }

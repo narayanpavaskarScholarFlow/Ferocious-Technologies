@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const mockOrders: Order[] = [
-  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe', progress: 85, amountSpent: '$12,450' },
-  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith', progress: 15, amountSpent: '$2,100' },
-  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber', progress: 100, amountSpent: '$8,900' },
-  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller', progress: 45, amountSpent: '$5,600' },
-  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60, amountSpent: '$4,200' },
+  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe', progress: 85, amountSpent: '$12,450', materialCost: '$8,450', laborCost: '$4,000' },
+  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith', progress: 15, amountSpent: '$2,100', materialCost: '$1,200', laborCost: '$900' },
+  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber', progress: 100, amountSpent: '$8,900', materialCost: '$5,500', laborCost: '$3,400' },
+  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller', progress: 45, amountSpent: '$5,600', materialCost: '$3,800', laborCost: '$1,800' },
+  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60, amountSpent: '$4,200', materialCost: '$2,900', laborCost: '$1,300' },
 ];
 
 interface ShopFloorOrdersProps {

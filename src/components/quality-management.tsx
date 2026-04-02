@@ -39,8 +39,11 @@ interface DimensionRecord {
   feature: string;
   target: string;
   tolerance: string;
+  upperLimit: string;
+  lowerLimit: string;
   actual: string;
   status: 'Pass' | 'Fail' | 'NA' | 'Pending';
+  remark: string;
 }
 
 const mockOrders = [
@@ -60,9 +63,9 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', feature: 'Overall Length', target: '150.00 mm', tolerance: '±0.05', actual: '', status: 'Pending' },
-  { id: '2', feature: 'Outer Diameter', target: '45.00 mm', tolerance: '+0.02/-0.00', actual: '', status: 'Pending' },
-  { id: '3', feature: 'Internal Bore', target: '22.00 mm', tolerance: 'H7', actual: '', status: 'Pending' },
+  { id: '1', feature: 'Overall Length', target: '150.00', tolerance: '±0.05', upperLimit: '150.05', lowerLimit: '149.95', actual: '', status: 'Pending', remark: '' },
+  { id: '2', feature: 'Outer Diameter', target: '45.00', tolerance: '+0.02/-0.00', upperLimit: '45.02', lowerLimit: '45.00', actual: '', status: 'Pending', remark: '' },
+  { id: '3', feature: 'Internal Bore', target: '22.00', tolerance: 'H7 (+0.021)', upperLimit: '22.021', lowerLimit: '22.00', actual: '', status: 'Pending', remark: '' },
 ];
 
 export function QualityManagement() {
@@ -105,6 +108,21 @@ export function QualityManagement() {
       title: "Generating Document",
       description: "Preparing inspection report for print/export...",
     });
+  };
+
+  const handleAddDimension = () => {
+    const newDim: DimensionRecord = {
+      id: Math.random().toString(36).substr(2, 9),
+      feature: 'New Feature',
+      target: '0.00',
+      tolerance: '±0.00',
+      upperLimit: '0.00',
+      lowerLimit: '0.00',
+      actual: '',
+      status: 'Pending',
+      remark: ''
+    };
+    setDimensions([...dimensions, newDim]);
   };
 
   return (
@@ -183,7 +201,7 @@ export function QualityManagement() {
         </Card>
       )}
 
-      {/* STEP 2: Multi-Part Entry (Machining + Dimensions) */}
+      {/* STEP 2: Entry Form */}
       {currentStep === 'checklist' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
@@ -201,7 +219,7 @@ export function QualityManagement() {
                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-900">Machining Operation Verification</h3>
-                    <Badge className="bg-primary/5 text-primary border-primary/10">Internal Use Only</Badge>
+                    <Badge className="bg-primary/5 text-primary border-primary/10">Internal Compliance</Badge>
                   </div>
                   
                   <div className="space-y-3">
@@ -250,60 +268,106 @@ export function QualityManagement() {
                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <h3 className="text-lg font-bold text-slate-900">Customer Dimension Report</h3>
-                      <p className="text-xs text-muted-foreground">Record critical measurements for product delivery.</p>
+                      <h3 className="text-lg font-bold text-slate-900">Customer Dimension Entry</h3>
+                      <p className="text-xs text-muted-foreground">Record critical measurements for product release.</p>
                     </div>
-                    <Button variant="outline" size="sm" className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2">
-                      <Plus className="h-3 w-3" /> Add Feature
+                    <Button variant="outline" size="sm" onClick={handleAddDimension} className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2">
+                      <Plus className="h-3 w-3" /> Add Row
                     </Button>
                   </div>
 
-                  <Table>
-                    <TableHeader className="bg-slate-50/50">
-                      <TableRow className="hover:bg-transparent border-slate-100">
-                        <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-4">Feature / Desc</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase text-slate-400">Target</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase text-slate-400">Tolerance</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase text-slate-400 w-[120px]">Actual</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-right">Result</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dimensions.map((dim) => (
-                        <TableRow key={dim.id} className="border-slate-50 h-16">
-                          <TableCell className="font-bold text-xs text-slate-700">{dim.feature}</TableCell>
-                          <TableCell className="font-code text-xs text-slate-500">{dim.target}</TableCell>
-                          <TableCell className="font-code text-[10px] text-slate-400">{dim.tolerance}</TableCell>
-                          <TableCell>
-                            <Input 
-                              placeholder="0.00" 
-                              className="h-8 text-xs font-code bg-slate-50 border-none rounded-md focus-visible:ring-primary/20"
-                              value={dim.actual}
-                              onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              {['Pass', 'Fail', 'NA'].map((st) => (
-                                <button
-                                  key={st}
-                                  onClick={() => handleDimensionStatus(dim.id, st as any)}
-                                  className={cn(
-                                    "px-2 py-1 rounded text-[8px] font-bold uppercase border transition-all",
-                                    dim.status === st 
-                                      ? (st === 'Pass' ? "bg-green-500 border-green-500 text-white" : st === 'Fail' ? "bg-red-500 border-red-500 text-white" : "bg-slate-400 border-slate-400 text-white")
-                                      : "bg-white border-slate-200 text-slate-300"
-                                  )}
-                                >
-                                  {st}
-                                </button>
-                              ))}
-                            </div>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[1000px]">
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow className="hover:bg-transparent border-slate-100">
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-4 w-[150px]">Dimension Name</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Target</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Tolerance</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Limits (U/L)</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 w-[100px]">Actual</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Status</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Remark</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {dimensions.map((dim) => (
+                          <TableRow key={dim.id} className="border-slate-50 h-16">
+                            <TableCell>
+                              <Input 
+                                className="h-8 text-xs bg-slate-50 border-none" 
+                                value={dim.feature} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'feature', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                className="h-8 text-xs font-code bg-slate-50 border-none" 
+                                value={dim.target} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                className="h-8 text-xs font-code bg-slate-50 border-none" 
+                                value={dim.tolerance} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Input 
+                                  placeholder="U"
+                                  className="h-8 text-[10px] font-code bg-slate-50 border-none w-14" 
+                                  value={dim.upperLimit} 
+                                  onChange={(e) => handleUpdateDimension(dim.id, 'upperLimit', e.target.value)}
+                                />
+                                <Input 
+                                  placeholder="L"
+                                  className="h-8 text-[10px] font-code bg-slate-50 border-none w-14" 
+                                  value={dim.lowerLimit} 
+                                  onChange={(e) => handleUpdateDimension(dim.id, 'lowerLimit', e.target.value)}
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                placeholder="0.00" 
+                                className="h-8 text-xs font-code bg-slate-100 border-none rounded-md"
+                                value={dim.actual}
+                                onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-center gap-1">
+                                {['Pass', 'Fail'].map((st) => (
+                                  <button
+                                    key={st}
+                                    onClick={() => handleDimensionStatus(dim.id, st as any)}
+                                    className={cn(
+                                      "px-2 py-1 rounded text-[8px] font-bold uppercase border transition-all",
+                                      dim.status === st 
+                                        ? (st === 'Pass' ? "bg-green-500 border-green-500 text-white" : "bg-red-500 border-red-500 text-white")
+                                        : "bg-white border-slate-200 text-slate-300"
+                                    )}
+                                  >
+                                    {st === 'Pass' ? 'OK' : 'NOT OK'}
+                                  </button>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                placeholder="..." 
+                                className="h-8 text-xs bg-slate-50 border-none" 
+                                value={dim.remark}
+                                onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </Card>
               </TabsContent>
             </Tabs>
@@ -312,20 +376,20 @@ export function QualityManagement() {
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
               onClick={() => setCurrentStep('report')}
             >
-              Verify All Checks & Generate Master Report
+              Verify & Preview Inspection Sheet
             </Button>
           </div>
 
           <Card className="lg:col-span-4 p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inspection Metadata</h3>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Order Details</h3>
             <div className="space-y-6">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order ID</p>
                 <p className="text-lg font-bold text-slate-900">#{selectedOrder?.id}</p>
               </div>
               
               <div className="space-y-4 pt-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Technical Drawing Upload</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload Drawing Reference</p>
                 <div 
                   className={cn(
                     "h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
@@ -336,12 +400,12 @@ export function QualityManagement() {
                   {drawingUploaded ? (
                     <>
                       <ImageIcon className="h-10 w-10 text-green-500" />
-                      <span className="text-[10px] font-bold text-green-600 uppercase">DRAWING_LOADED.CAD</span>
+                      <span className="text-[10px] font-bold text-green-600 uppercase">DRAWING_LOADED.PDF</span>
                     </>
                   ) : (
                     <>
                       <Upload className="h-10 w-10 text-slate-300" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Click to upload drawing</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Click to attach CAD/PDF</span>
                     </>
                   )}
                 </div>
@@ -351,7 +415,7 @@ export function QualityManagement() {
         </div>
       )}
 
-      {/* STEP 3 & 4: Inspection Report Preview & Review */}
+      {/* STEP 3 & 4: Report View (Modified per user request) */}
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && (
         <div className="space-y-8 pb-20">
           <div className="flex justify-end gap-3 print:hidden">
@@ -359,16 +423,16 @@ export function QualityManagement() {
               <Printer className="h-4 w-4" /> Print Report
             </Button>
             <Button className="rounded-full bg-slate-900 hover:bg-black text-white gap-2 h-11 px-6 font-bold uppercase text-[10px]">
-              <Download className="h-4 w-4" /> Export PDF
+              <Download className="h-4 w-4" /> Download PDF
             </Button>
           </div>
 
           <Card className={cn(
-            "bg-white border-slate-200 shadow-2xl p-16 max-w-[1000px] mx-auto space-y-12 transition-all duration-700",
+            "bg-white border border-slate-200 shadow-2xl p-12 max-w-[1000px] mx-auto space-y-10 transition-all duration-700",
             currentStep === 'review' && "border-primary/30 ring-4 ring-primary/5"
           )}>
-            {/* Report Header */}
-            <div className="flex justify-between items-start border-b border-slate-100 pb-12">
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-slate-100 pb-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-primary rounded-xl shadow-lg shadow-primary/20">
@@ -377,134 +441,98 @@ export function QualityManagement() {
                   <h1 className="text-2xl font-display font-bold tracking-tight">TOOLROOM<span className="text-primary">2.0</span></h1>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Quality Control Division</p>
-                  <p className="text-sm font-medium text-slate-600">Plant Alpha - Secure Ledger Entry</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Precision Quality Control Division</p>
+                  <p className="text-sm font-medium text-slate-600">Final Compliance Report - Secure Ledger</p>
                 </div>
               </div>
               <div className="text-right space-y-2">
-                <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tighter">INSPECTION REPORT</h2>
-                <p className="text-xs font-bold text-primary uppercase font-code">REP_ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tighter uppercase">Inspection Sheet</h2>
+                <p className="text-xs font-bold text-primary uppercase font-code">REP_VAL: QC-{selectedOrder?.id}-{new Date().getFullYear()}</p>
               </div>
             </div>
 
-            {/* Metadata Summary Row - Compact for large drawing space */}
-            <div className="grid grid-cols-4 gap-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100">
+            {/* Metadata Summary */}
+            <div className="grid grid-cols-4 gap-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
               <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order ID</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order</p>
                 <p className="text-sm font-bold text-slate-900">#{selectedOrder?.id}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Customer Name</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Client Name</p>
                 <p className="text-sm font-bold text-slate-900">{selectedOrder?.customer}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Component Ref</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Component Name</p>
                 <p className="text-sm font-bold text-slate-900">{selectedOrder?.part}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Date Generated</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Issue Date</p>
                 <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString()}</p>
               </div>
             </div>
 
-            {/* LARGE DRAWING SECTION - "Half Sheet" Layout */}
-            <div className="space-y-6">
+            {/* Drawing Sheet */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">III. Technical Drawing Reference</h3>
-                <Badge variant="outline" className="text-[8px] bg-white border-slate-200">CONFIDENTIAL</Badge>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">I. Technical Drawing Sheet</h3>
+                <Badge variant="outline" className="text-[8px] bg-white border-slate-200">RESTRICTED</Badge>
               </div>
-              <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] h-[550px] flex items-center justify-center relative overflow-hidden shadow-inner">
+              <div className="bg-slate-50 border border-slate-100 rounded-[2rem] h-[450px] flex items-center justify-center relative overflow-hidden shadow-inner">
                 {drawingUploaded ? (
-                  <div className="flex flex-col items-center gap-6 text-center animate-in fade-in zoom-in-95 duration-1000">
-                    <div className="p-8 bg-white rounded-full shadow-sm">
-                      <ImageIcon className="h-20 w-20 text-primary/20" />
+                  <div className="flex flex-col items-center gap-6 text-center">
+                    <div className="p-8 bg-white rounded-full shadow-sm border border-slate-100">
+                      <ImageIcon className="h-16 w-16 text-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xl font-display font-bold text-slate-900">TECHNICAL_DRAWING_03_MAR_2025.CAD</p>
-                      <div className="flex items-center justify-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <span>Scale: 1:1</span>
-                        <div className="h-1 w-1 rounded-full bg-slate-200" />
-                        <span>Format: A3 / A4 Optimized</span>
-                        <div className="h-1 w-1 rounded-full bg-slate-200" />
-                        <span>ID: DWG-88452-X</span>
-                      </div>
+                      <p className="text-lg font-bold text-slate-900">DRAWING_REF_#{selectedOrder?.id}.PDF</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Scaled for A4 Sheet Verification</p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 opacity-20">
-                    <ImageIcon className="h-16 w-16" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.3em]">No Drawing Attachment Loaded</span>
+                    <ImageIcon className="h-12 w-12" />
+                    <span className="text-[9px] font-bold uppercase tracking-[0.3em]">No Document Attached</span>
                   </div>
                 )}
-                
-                {/* Visual grid overlay for blueprint feel */}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '30px 30px' }} />
               </div>
             </div>
 
-            {/* Internal Process Verification */}
+            {/* Final Dimensional Table (RED BOX REQUEST) */}
             <div className="space-y-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">I. Machining Tolerance Verification</h3>
-              <div className="border border-slate-100 rounded-3xl overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[9px] font-bold uppercase py-4 px-6">Operation Index</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center">Result</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-right px-6">Inspector Sign-off</TableHead>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">II. Dimensional Compliance Report</h3>
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <Table className="border-collapse">
+                  <TableHeader className="bg-slate-50/80">
+                    <TableRow className="hover:bg-transparent border-b border-slate-200">
+                      <TableHead className="text-[9px] font-bold uppercase py-4 px-4 text-center border-r border-slate-200 w-12">Si No</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200">Dimension Detail</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Tolerance</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Upper Limit</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Lower Limit</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Actual</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-16">OK</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-16">Not OK</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase px-4">Remark</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {MACHINING_OPS.map((op) => (
-                      <TableRow key={op} className="border-slate-50 hover:bg-slate-50/30">
-                        <TableCell className="px-6 py-4 font-bold text-xs text-slate-700">{op}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={cn(
-                            "text-[8px] font-bold uppercase px-2",
-                            checks[op] === 'Pass' ? "text-green-600 bg-green-50 border-green-100" : 
-                            checks[op] === 'Fail' ? "text-red-600 bg-red-50 border-red-100" :
-                            checks[op] === 'NA' ? "text-slate-400 bg-slate-50 border-slate-100" :
-                            "text-slate-300 bg-white border-slate-100"
-                          )}>
-                            {checks[op] || 'Pending'}
-                          </Badge>
+                    {dimensions.map((dim, idx) => (
+                      <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/30">
+                        <TableCell className="text-center font-bold text-xs border-r border-slate-100 text-slate-400">{idx + 1}</TableCell>
+                        <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700">{dim.feature} ({dim.target})</TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.tolerance}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.upperLimit}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.lowerLimit}</TableCell>
+                        <TableCell className="text-center font-code text-xs font-bold border-r border-slate-100 text-primary">{dim.actual || '-'}</TableCell>
+                        <TableCell className="text-center border-r border-slate-100">
+                          {dim.status === 'Pass' ? <div className="mx-auto h-4 w-4 rounded-full bg-green-500 flex items-center justify-center"><Check className="h-2.5 w-2.5 text-white" /></div> : <div className="mx-auto h-4 w-4 rounded-full border border-slate-200" />}
                         </TableCell>
-                        <TableCell className="text-right px-6 font-code text-[10px] text-slate-400 uppercase tracking-tighter">DIGITAL_VERIFIED</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-
-            {/* Customer Dimension Report */}
-            <div className="space-y-6 pt-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">II. Customer Dimension Report</h3>
-              <div className="border border-slate-100 rounded-3xl overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="text-[9px] font-bold uppercase py-4 px-6">Feature</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center">Target</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center">Actual</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-right px-6">Result</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dimensions.map((dim) => (
-                      <TableRow key={dim.id} className="border-slate-50 hover:bg-slate-50/30">
-                        <TableCell className="px-6 py-4 font-bold text-xs text-slate-700">{dim.feature}</TableCell>
-                        <TableCell className="text-center font-code text-[10px] text-slate-500">{dim.target} ({dim.tolerance})</TableCell>
-                        <TableCell className="text-center font-code text-xs font-bold text-primary">{dim.actual || 'N/A'}</TableCell>
-                        <TableCell className="text-right px-6">
-                          <Badge className={cn(
-                            "text-[8px] font-bold uppercase px-3",
-                            dim.status === 'Pass' ? "bg-green-50 text-green-700 border-green-100" : 
-                            dim.status === 'Fail' ? "bg-red-50 text-red-700 border-red-100" :
-                            "bg-slate-50 text-slate-400 border-slate-100"
-                          )}>
-                            {dim.status}
-                          </Badge>
+                        <TableCell className="text-center border-r border-slate-100">
+                          {dim.status === 'Fail' ? <div className="mx-auto h-4 w-4 rounded-full bg-red-500 flex items-center justify-center"><X className="h-2.5 w-2.5 text-white" /></div> : <div className="mx-auto h-4 w-4 rounded-full border border-slate-200" />}
+                        </TableCell>
+                        <TableCell className="px-4 font-medium text-[10px] text-slate-400 italic">
+                          {dim.remark || '-'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -513,14 +541,14 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Signatures */}
-            <div className="grid grid-cols-2 gap-20 pt-12">
+            {/* Sign-offs */}
+            <div className="grid grid-cols-2 gap-20 pt-16">
               <div className="space-y-6">
                 <div className="h-[1px] bg-slate-200 w-full" />
                 <div className="flex justify-between items-center px-2">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Created By</p>
-                    <p className="text-sm font-bold text-slate-900">Admin Inspector</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Created By (Inspector)</p>
+                    <p className="text-sm font-bold text-slate-900">Admin_User_01</p>
                   </div>
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                 </div>
@@ -529,36 +557,45 @@ export function QualityManagement() {
                 <div className="h-[1px] bg-slate-200 w-full" />
                 <div className="flex justify-between items-center px-2">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Approved By</p>
-                    <p className="text-sm font-bold text-slate-300 italic">Pending Digital Signature</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Approved By (Compliance)</p>
+                    <p className={cn(
+                      "text-sm font-bold",
+                      currentStep === 'approval' ? "text-slate-900" : "text-slate-200 italic"
+                    )}>
+                      {currentStep === 'approval' ? 'Director of Quality' : 'Pending Signature'}
+                    </p>
                   </div>
-                  <ShieldCheck className="h-5 w-5 text-slate-200" />
+                  {currentStep === 'approval' ? (
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-slate-100" />
+                  )}
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Review Actions - Hidden on print */}
+          {/* Review Actions */}
           {currentStep === 'report' && (
             <div className="flex justify-center pt-10 print:hidden">
               <Button 
                 className="rounded-full bg-primary hover:bg-primary/90 text-white h-14 px-12 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20"
                 onClick={() => setCurrentStep('review')}
               >
-                Submit for Compliance Review
+                Submit for Final Quality Review
               </Button>
             </div>
           )}
 
           {currentStep === 'review' && (
-            <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-10 max-w-[1000px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 print:hidden">
+            <div className="bg-primary/5 border border-primary/10 rounded-[2.5rem] p-10 max-w-[1000px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 print:hidden">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white rounded-2xl shadow-sm">
                   <ShieldCheck className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900">Compliance Officer Review</h4>
-                  <p className="text-sm text-slate-500">Verify dimension results and technical drawings before final release.</p>
+                  <h4 className="text-lg font-bold text-slate-900">Management Approval Protocol</h4>
+                  <p className="text-sm text-slate-500">Verify dimensional compliance and remark accuracy before releasing component.</p>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -566,20 +603,20 @@ export function QualityManagement() {
                   className="flex-1 h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold uppercase text-xs tracking-widest gap-2 shadow-lg shadow-green-600/20"
                   onClick={() => {
                     setCurrentStep('approval');
-                    toast({ title: "Quality Approved", description: "Report has been moved to final approval phase." });
+                    toast({ title: "Release Authorized", description: "Report has been digitally signed and archived." });
                   }}
                 >
-                  <CheckCircle2 className="h-4 w-4" /> Approve Report
+                  <CheckCircle2 className="h-4 w-4" /> Authorize & Sign
                 </Button>
                 <Button 
                   variant="outline" 
                   className="flex-1 h-14 rounded-2xl bg-white border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs tracking-widest gap-2"
                   onClick={() => {
                     setCurrentStep('checklist');
-                    toast({ variant: "destructive", title: "Review Rejected", description: "Report sent back to Inspector for corrections." });
+                    toast({ variant: "destructive", title: "Review Rejected", description: "Dimension sheet returned for correction." });
                   }}
                 >
-                  <AlertTriangle className="h-4 w-4" /> Reject & Send Back
+                  <AlertTriangle className="h-4 w-4" /> Reject Report
                 </Button>
               </div>
             </div>
@@ -588,9 +625,9 @@ export function QualityManagement() {
           {currentStep === 'approval' && (
             <div className="text-center space-y-6 pt-10 print:hidden">
               <div className="inline-flex items-center gap-2 px-6 py-2 bg-green-50 text-green-700 rounded-full border border-green-100 font-bold text-[10px] uppercase tracking-widest">
-                <CheckCircle2 className="h-3 w-3" /> Final Status: Authorized
+                <CheckCircle2 className="h-3 w-3" /> Report Status: FINAL_APPROVED
               </div>
-              <p className="text-slate-500 text-sm max-w-sm mx-auto">This report is now digitally signed and archived in the ERP ledger.</p>
+              <p className="text-slate-500 text-sm max-w-sm mx-auto">Compliance verified. Drawing and measurements are locked in the ERP ledger.</p>
             </div>
           )}
         </div>

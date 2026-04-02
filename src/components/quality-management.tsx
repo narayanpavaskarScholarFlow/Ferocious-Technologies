@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ShieldCheck, 
   Search, 
-  FileText, 
   CheckCircle2, 
   AlertTriangle, 
   Upload, 
@@ -21,11 +20,8 @@ import {
   Image as ImageIcon,
   Check,
   X,
-  User,
-  Calendar,
   Box,
   MinusCircle,
-  Ruler,
   Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -63,9 +59,9 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', feature: 'Overall Length', target: '150.00', tolerance: '±0.05', upperLimit: '150.05', lowerLimit: '149.95', actual: '', status: 'Pending', remark: '' },
-  { id: '2', feature: 'Outer Diameter', target: '45.00', tolerance: '+0.02/-0.00', upperLimit: '45.02', lowerLimit: '45.00', actual: '', status: 'Pending', remark: '' },
-  { id: '3', feature: 'Internal Bore', target: '22.00', tolerance: 'H7 (+0.021)', upperLimit: '22.021', lowerLimit: '22.00', actual: '', status: 'Pending', remark: '' },
+  { id: '1', feature: 'Overall Length', target: '150.00', tolerance: '±0.05', upperLimit: '150.050', lowerLimit: '149.950', actual: '', status: 'Pending', remark: '' },
+  { id: '2', feature: 'Outer Diameter', target: '45.00', tolerance: '+0.02/-0.00', upperLimit: '45.020', lowerLimit: '45.000', actual: '', status: 'Pending', remark: '' },
+  { id: '3', feature: 'Internal Bore', target: '22.00', tolerance: '+0.021', upperLimit: '22.021', lowerLimit: '22.000', actual: '', status: 'Pending', remark: '' },
 ];
 
 export function QualityManagement() {
@@ -79,7 +75,6 @@ export function QualityManagement() {
   const handleSelectOrder = (order: any) => {
     setSelectedOrder(order);
     setCurrentStep('checklist');
-    // Reset checks
     const initial: Record<string, CheckStatus> = {};
     MACHINING_OPS.forEach(op => initial[op] = 'Pending');
     setChecks(initial);
@@ -94,25 +89,54 @@ export function QualityManagement() {
     setDimensions(prev => prev.map(dim => {
       if (dim.id !== id) return dim;
       
-      const updatedDim = { ...dim, [field]: value };
+      let updatedDim = { ...dim, [field]: value };
       
-      // AUTO-CALCULATION LOGIC:
-      // If the field updated is 'actual', 'upperLimit', or 'lowerLimit', 
-      // check if actual value is within the range.
-      if (field === 'actual' || field === 'upperLimit' || field === 'lowerLimit') {
-        const actualNum = parseFloat(updatedDim.actual);
-        const upperNum = parseFloat(updatedDim.upperLimit);
-        const lowerNum = parseFloat(updatedDim.lowerLimit);
+      // AUTO-CALCULATE LIMITS if Target or Tolerance changed
+      if (field === 'target' || field === 'tolerance') {
+        const targetNum = parseFloat(updatedDim.target);
+        if (!isNaN(targetNum)) {
+          let upperOffset = 0;
+          let lowerOffset = 0;
+          const tol = updatedDim.tolerance.trim();
 
-        if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
-          if (actualNum >= lowerNum && actualNum <= upperNum) {
-            updatedDim.status = 'Pass'; // Within tolerance (OK)
+          const plusMatch = tol.match(/\+([\d.]+)/);
+          const minusMatch = tol.match(/-([\d.]+)/);
+          const pmMatch = tol.match(/±([\d.]+)/);
+
+          if (pmMatch) {
+            const val = parseFloat(pmMatch[1]);
+            upperOffset = val;
+            lowerOffset = -val;
           } else {
-            updatedDim.status = 'Fail'; // Out of tolerance (NOT OK)
+            if (plusMatch) upperOffset = parseFloat(plusMatch[1]);
+            if (minusMatch) lowerOffset = -parseFloat(minusMatch[1]);
+            
+            // If raw number like "0.05"
+            if (!plusMatch && !minusMatch && !isNaN(parseFloat(tol))) {
+               const val = parseFloat(tol);
+               upperOffset = val;
+               lowerOffset = -val;
+            }
           }
-        } else if (updatedDim.actual === '') {
-          updatedDim.status = 'Pending';
+          
+          updatedDim.upperLimit = (targetNum + upperOffset).toFixed(3);
+          updatedDim.lowerLimit = (targetNum + lowerOffset).toFixed(3);
         }
+      }
+
+      // AUTO-CALCULATE STATUS
+      const actualNum = parseFloat(updatedDim.actual);
+      const upperNum = parseFloat(updatedDim.upperLimit);
+      const lowerNum = parseFloat(updatedDim.lowerLimit);
+
+      if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
+        if (actualNum >= lowerNum && actualNum <= upperNum) {
+          updatedDim.status = 'Pass'; // Within tolerance (OK)
+        } else {
+          updatedDim.status = 'Fail'; // Out of tolerance (NOT OK)
+        }
+      } else if (updatedDim.actual === '') {
+        updatedDim.status = 'Pending';
       }
       
       return updatedDim;
@@ -139,8 +163,8 @@ export function QualityManagement() {
       feature: 'New Feature',
       target: '0.00',
       tolerance: '±0.00',
-      upperLimit: '0.00',
-      lowerLimit: '0.00',
+      upperLimit: '0.000',
+      lowerLimit: '0.000',
       actual: '',
       status: 'Pending',
       remark: ''
@@ -150,7 +174,6 @@ export function QualityManagement() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
-      {/* Header - Hidden on print */}
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
@@ -174,7 +197,6 @@ export function QualityManagement() {
         )}
       </header>
 
-      {/* STEP 1: Work Order List */}
       {currentStep === 'list' && (
         <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -224,7 +246,6 @@ export function QualityManagement() {
         </Card>
       )}
 
-      {/* STEP 2: Entry Form */}
       {currentStep === 'checklist' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
@@ -438,7 +459,6 @@ export function QualityManagement() {
         </div>
       )}
 
-      {/* STEP 3 & 4: Report View */}
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && (
         <div className="space-y-8 pb-20">
           <div className="flex justify-end gap-3 print:hidden">
@@ -454,7 +474,6 @@ export function QualityManagement() {
             "bg-white border border-slate-200 shadow-2xl p-12 max-w-[1000px] mx-auto space-y-10 transition-all duration-700",
             currentStep === 'review' && "border-primary/30 ring-4 ring-primary/5"
           )}>
-            {/* Header */}
             <div className="flex justify-between items-start border-b border-slate-100 pb-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -474,7 +493,6 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Metadata Summary */}
             <div className="grid grid-cols-4 gap-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
               <div className="space-y-1">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order</p>
@@ -494,7 +512,6 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Drawing Sheet */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">I. Technical Drawing Sheet</h3>
@@ -521,7 +538,6 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Final Dimensional Table */}
             <div className="space-y-6">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">II. Dimensional Compliance Report</h3>
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -564,7 +580,6 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Sign-offs */}
             <div className="grid grid-cols-2 gap-20 pt-16">
               <div className="space-y-6">
                 <div className="h-[1px] bg-slate-200 w-full" />
@@ -598,7 +613,6 @@ export function QualityManagement() {
             </div>
           </Card>
 
-          {/* Review Actions */}
           {currentStep === 'report' && (
             <div className="flex justify-center pt-10 print:hidden">
               <Button 

@@ -34,28 +34,38 @@ import {
   ChevronDown, 
   ChevronUp,
   CircleDot,
-  Trash2
+  Trash2,
+  Calendar,
+  Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface SubTask {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  machineId?: string;
+}
+
 interface Operation {
   name: string;
-  subTasks: string[];
+  subTasks: SubTask[];
 }
 
 const INITIAL_OPERATIONS: Operation[] = [
-  { name: "DFM", subTasks: ["Draft Review", "Feasibility Study"] },
-  { name: "Design", subTasks: ["2D Layout", "3D Modeling"] },
-  { name: "Review", subTasks: ["Internal Peer Review", "Safety Audit"] },
-  { name: "Final Design", subTasks: ["Client Approval", "Lock Specifications"] },
-  { name: "Raw Material", subTasks: ["Inventory Check", "Hardness Testing"] },
+  { name: "DFM", subTasks: [] },
+  { name: "Design", subTasks: [] },
+  { name: "Review", subTasks: [] },
+  { name: "Final Design", subTasks: [] },
+  { name: "Raw Material", subTasks: [] },
   { name: "Pre-machining", subTasks: [] },
   { name: "1st Grinding", subTasks: [] },
-  { name: "Heat Treatment", subTasks: ["Annealing", "Stress Relieving"] },
+  { name: "Heat Treatment", subTasks: [] },
   { name: "2nd Grinding", subTasks: [] },
   { name: "Hard Part Milling", subTasks: [] },
-  { name: "EDM / WEDM", subTasks: ["Wire-cut Calibration"] },
-  { name: "QC", subTasks: ["Dimensional Check", "Visual Surface Finish"] },
+  { name: "EDM / WEDM", subTasks: [] },
+  { name: "QC", subTasks: [] },
   { name: "Assembly", subTasks: [] }
 ];
 
@@ -67,12 +77,18 @@ const STATUS_OPTIONS = [
   { label: "NA", color: "text-slate-400 bg-slate-100 border-slate-200" },
 ];
 
-const VENDORS = [
-  "Precision HT",
-  "Global Logistics",
-  "Electro-Chem",
-  "Alpha Machining",
-  "Apex Finishing"
+const RESOURCE_LIST = [
+  { id: '01', name: 'VMC milling-BFW (01)', type: 'internal' },
+  { id: '02', name: 'VMC milling-BFW (02)', type: 'internal' },
+  { id: '03', name: 'VMC milling-HASS (03)', type: 'internal' },
+  { id: '04', name: 'VMC milling (04)', type: 'internal' },
+  { id: '05', name: 'CNC Turning (05)', type: 'internal' },
+  { id: '06', name: 'EDM ZNC (06)', type: 'internal' },
+  { id: 'V1', name: 'Precision HT', type: 'vendor' },
+  { id: 'V2', name: 'Global Logistics', type: 'vendor' },
+  { id: 'V3', name: 'Electro-Chem', type: 'vendor' },
+  { id: 'V4', name: 'Alpha Machining', type: 'vendor' },
+  { id: 'V5', name: 'Apex Finishing', type: 'vendor' },
 ];
 
 interface OperationsStatusProps {
@@ -130,9 +146,25 @@ export function OperationsStatus({
 
   const handleAddSubTask = (idx: number, taskName: string) => {
     if (!taskName.trim()) return;
+    const newSubTask: SubTask = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: taskName.trim(),
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+    };
     setOperations(prev => prev.map((op, i) => 
-      i === idx ? { ...op, subTasks: [...op.subTasks, taskName.trim()] } : op
+      i === idx ? { ...op, subTasks: [...op.subTasks, newSubTask] } : op
     ));
+  };
+
+  const handleUpdateSubTask = (opIdx: number, subIdx: number, updates: Partial<SubTask>) => {
+    setOperations(prev => prev.map((op, i) => {
+      if (i !== opIdx) return op;
+      return {
+        ...op,
+        subTasks: op.subTasks.map((st, j) => j === subIdx ? { ...st, ...updates } : st)
+      };
+    }));
   };
 
   const handleRemoveSubTask = (opIdx: number, taskIdx: number) => {
@@ -242,7 +274,7 @@ export function OperationsStatus({
                                 <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{op.name}</span>
                                 {op.subTasks.length > 0 && (
                                   <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest mt-0.5">
-                                    {op.subTasks.length} sub-items
+                                    {op.subTasks.length} detailed items
                                   </span>
                                 )}
                               </div>
@@ -282,13 +314,13 @@ export function OperationsStatus({
                                       </DropdownMenuSubTrigger>
                                       <DropdownMenuPortal>
                                         <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
-                                          {VENDORS.map((vendor) => (
+                                          {RESOURCE_LIST.filter(r => r.type === 'vendor').map((vendor) => (
                                             <DropdownMenuItem 
-                                              key={vendor}
-                                              onClick={() => handleLocalStatusChange(op.name, 'Vendor', vendor)}
+                                              key={vendor.id}
+                                              onClick={() => handleLocalStatusChange(op.name, 'Vendor', vendor.name)}
                                               className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
                                             >
-                                              {vendor}
+                                              {vendor.name}
                                             </DropdownMenuItem>
                                           ))}
                                         </DropdownMenuSubContent>
@@ -305,47 +337,108 @@ export function OperationsStatus({
                           
                           <CollapsibleContent asChild>
                             <TableRow className="bg-slate-50/40 border-b border-slate-100 animate-in slide-in-from-top-2 duration-300">
-                              <TableCell colSpan={4} className="pl-24 py-6 pr-12">
-                                <div className="space-y-4">
-                                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                    <CircleDot className="h-3 w-3 text-primary" /> Sub-Category Items
+                              <TableCell colSpan={4} className="pl-24 py-8 pr-12">
+                                <div className="space-y-6">
+                                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                                    <CircleDot className="h-3 w-3 text-primary" /> Detailed Task Parameters
                                   </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+                                  
+                                  <div className="space-y-4">
                                     {op.subTasks.map((task, sIdx) => (
-                                      <div key={sIdx} className="flex items-center justify-between group/task p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                                        <span className="text-xs font-semibold text-slate-600 uppercase tracking-tight">{task}</span>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon" 
-                                          className="h-6 w-6 text-slate-200 hover:text-red-500 opacity-0 group-hover/task:opacity-100 transition-opacity"
-                                          onClick={() => handleRemoveSubTask(idx, sIdx)}
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </Button>
+                                      <div key={task.id} className="grid grid-cols-12 gap-4 items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
+                                        <div className="col-span-4 space-y-2">
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Name</Label>
+                                          <Input 
+                                            value={task.name}
+                                            onChange={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
+                                            className="h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold" 
+                                          />
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Start Date</Label>
+                                          <div className="relative">
+                                            <Input 
+                                              type="date"
+                                              value={task.startDate}
+                                              onChange={(e) => handleUpdateSubTask(idx, sIdx, { startDate: e.target.value })}
+                                              className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
+                                            />
+                                            <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
+                                          </div>
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">End Date</Label>
+                                          <div className="relative">
+                                            <Input 
+                                              type="date"
+                                              value={task.endDate}
+                                              onChange={(e) => handleUpdateSubTask(idx, sIdx, { endDate: e.target.value })}
+                                              className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
+                                            />
+                                            <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
+                                          </div>
+                                        </div>
+                                        <div className="col-span-3 space-y-2">
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Resource Assignment</Label>
+                                          <Select 
+                                            value={task.machineId} 
+                                            onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}
+                                          >
+                                            <SelectTrigger className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]">
+                                              <SelectValue placeholder="Select Machine/Vendor" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl">
+                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1">Internal Assets</SelectItem>
+                                              {RESOURCE_LIST.filter(r => r.type === 'internal').map(res => (
+                                                <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
+                                              ))}
+                                              <SelectItem value="vendors" disabled className="text-[9px] font-bold uppercase text-purple-500/50 bg-purple-50 px-2 py-1">External Partners</SelectItem>
+                                              {RESOURCE_LIST.filter(r => r.type === 'vendor').map(res => (
+                                                <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="col-span-1 flex justify-end">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-9 w-9 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-full"
+                                            onClick={() => handleRemoveSubTask(idx, sIdx)}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
-                                  <div className="flex gap-2 max-w-md pt-2">
-                                    <Input 
-                                      placeholder="Add sub-task item..." 
-                                      className="h-9 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-widest focus-visible:ring-primary/20"
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleAddSubTask(idx, e.currentTarget.value);
-                                          e.currentTarget.value = '';
-                                        }
-                                      }}
-                                    />
+
+                                  <div className="flex gap-3 max-w-md pt-4">
+                                    <div className="relative flex-1">
+                                      <Input 
+                                        placeholder="Enter sub-task name..." 
+                                        className="h-11 bg-white border-slate-200 rounded-xl pl-10 text-[10px] font-bold uppercase tracking-widest focus-visible:ring-primary/20"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleAddSubTask(idx, e.currentTarget.value);
+                                            e.currentTarget.value = '';
+                                          }
+                                        }}
+                                      />
+                                      <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                    </div>
                                     <Button 
                                       size="sm"
-                                      className="h-9 rounded-lg bg-primary hover:bg-primary/90 text-white"
+                                      className="h-11 rounded-xl bg-slate-900 hover:bg-black text-white px-6"
                                       onClick={(e) => {
-                                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                                        handleAddSubTask(idx, input.value);
-                                        input.value = '';
+                                        const input = e.currentTarget.previousElementSibling?.querySelector('input') as HTMLInputElement;
+                                        if (input) {
+                                          handleAddSubTask(idx, input.value);
+                                          input.value = '';
+                                        }
                                       }}
                                     >
-                                      <Plus className="h-3.5 w-3.5" />
+                                      Add Task
                                     </Button>
                                   </div>
                                 </div>

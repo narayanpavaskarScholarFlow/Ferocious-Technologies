@@ -36,18 +36,18 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   }, []);
 
   const menuItems = [
-    { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
-    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production' },
-    { id: 'operations' as ViewType, icon: Layers, label: 'Routing' },
-    { id: 'inventory' as ViewType, icon: Boxes, label: 'Inventory' },
-    { id: 'billing' as ViewType, icon: CreditCard, label: 'Billing' },
-    { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log' },
-    { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Assets' },
+    { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Command Center' },
+    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production Orders' },
+    { id: 'operations' as ViewType, icon: Layers, label: 'Operational Routing' },
+    { id: 'inventory' as ViewType, icon: Boxes, label: 'Resource Inventory' },
+    { id: 'billing' as ViewType, icon: CreditCard, label: 'Financial Ledger' },
+    { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log Entry' },
+    { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Asset Telemetry' },
     { id: 'manpower' as ViewType, icon: Users, label: 'Resource Management' },
-    { id: 'customer-orders' as ViewType, icon: Package, label: 'Pipeline' },
-    { id: 'vendor' as ViewType, icon: Truck, label: 'Vendors' },
-    { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Plan' },
-    { id: 'users' as ViewType, icon: UserPlus, label: 'Access' },
+    { id: 'customer-orders' as ViewType, icon: Package, label: 'Customer Pipeline' },
+    { id: 'vendor' as ViewType, icon: Truck, label: 'Vendor Management' },
+    { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Schedule' },
+    { id: 'users' as ViewType, icon: UserPlus, label: 'Access Control' },
   ];
 
   if (!mounted) {

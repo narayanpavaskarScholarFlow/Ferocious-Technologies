@@ -21,7 +21,7 @@ import { InventoryManagement } from '@/components/inventory-management';
 import { QualityManagement } from '@/components/quality-management';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command } from 'lucide-react';
+import { Bell, Search, Command, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 const INITIAL_LOGS: WorkLogEntryType[] = [
@@ -42,10 +42,21 @@ export default function IndustrialERP() {
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
+  const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Automation Logic: Detect Order ID in Global Search
+  const handleSearchChange = (val: string) => {
+    setGlobalSearch(val);
+    // If the input matches a typical Work Order ID format (e.g., 6 digits), trigger navigation
+    if (val.length >= 5 && /^\d+$/.test(val)) {
+      setActiveWorkOrderId(val);
+      setCurrentView('operations');
+    }
+  };
 
   // Centralized Navigation Handlers
   const handleNavigateToOperations = (orderId: string) => {
@@ -107,7 +118,17 @@ export default function IndustrialERP() {
                 suppressHydrationWarning 
                 placeholder="Search ERP index..." 
                 className="h-10 pl-10 pr-12 rounded-full bg-black/[0.03] border-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-sm"
+                value={globalSearch}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {globalSearch && (
+                <button 
+                  onClick={() => setGlobalSearch('')}
+                  className="absolute right-10 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-full hover:bg-black/5 text-muted-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground pointer-events-none border border-black/10 rounded px-1.5 py-0.5 bg-white">
                 <Command className="h-2.5 w-2.5" /> K
               </div>

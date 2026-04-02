@@ -43,7 +43,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'billing' as ViewType, icon: CreditCard, label: 'Billing' },
     { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Log' },
     { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Assets' },
-    { id: 'manpower' as ViewType, icon: Users, label: 'Staff' },
+    { id: 'manpower' as ViewType, icon: Users, label: 'Resource Management' },
     { id: 'customer-orders' as ViewType, icon: Package, label: 'Pipeline' },
     { id: 'vendor' as ViewType, icon: Truck, label: 'Vendors' },
     { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Plan' },

@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 const kpiData = [
   { id: 'inventory', label: 'Resource Assets', total: 71, sub1: 'In Stock', sub1Val: 62, sub2: 'Low', sub2Val: 9, icon: Package, color: 'text-blue-500' },
   { id: 'orders', label: 'Production Load', total: 50, sub1: 'WIP', sub1Val: 29, sub2: 'Queued', sub2Val: 21, icon: ShoppingCart, color: 'text-purple-500' },
-  { id: 'manpower', label: 'Plant Staff', total: 37, sub1: 'Active', sub1Val: 34, sub2: 'Off', sub2Val: 3, icon: Users, color: 'text-orange-500' },
+  { id: 'manpower', label: 'Resource Mgmt', total: 37, sub1: 'Active', sub1Val: 34, sub2: 'Off', sub2Val: 3, icon: Users, color: 'text-orange-500' },
 ];
 
 const chartData = [

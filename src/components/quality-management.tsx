@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ShieldCheck, 
   Search, 
@@ -24,13 +24,24 @@ import {
   User,
   Calendar,
   Box,
-  MinusCircle
+  MinusCircle,
+  Ruler,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 type QualityStep = 'list' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
+
+interface DimensionRecord {
+  id: string;
+  feature: string;
+  target: string;
+  tolerance: string;
+  actual: string;
+  status: 'Pass' | 'Fail' | 'NA' | 'Pending';
+}
 
 const mockOrders = [
   { id: '103645', customer: 'Automotive Corp', part: 'Axle Support', status: 'Ready for QC', date: '03 Mar 2025' },
@@ -48,11 +59,18 @@ const MACHINING_OPS = [
   "Assembly - Fit & Function Test"
 ];
 
+const INITIAL_DIMENSIONS: DimensionRecord[] = [
+  { id: '1', feature: 'Overall Length', target: '150.00 mm', tolerance: '±0.05', actual: '', status: 'Pending' },
+  { id: '2', feature: 'Outer Diameter', target: '45.00 mm', tolerance: '+0.02/-0.00', actual: '', status: 'Pending' },
+  { id: '3', feature: 'Internal Bore', target: '22.00 mm', tolerance: 'H7', actual: '', status: 'Pending' },
+];
+
 export function QualityManagement() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
+  const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [drawingUploaded, setDrawingUploaded] = useState(false);
 
   const handleSelectOrder = (order: any) => {
@@ -62,10 +80,23 @@ export function QualityManagement() {
     const initial: Record<string, CheckStatus> = {};
     MACHINING_OPS.forEach(op => initial[op] = 'Pending');
     setChecks(initial);
+    setDimensions(INITIAL_DIMENSIONS);
   };
 
   const handleToggleCheck = (op: string, status: 'Pass' | 'Fail' | 'NA') => {
     setChecks(prev => ({ ...prev, [op]: status }));
+  };
+
+  const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
+    setDimensions(prev => prev.map(dim => 
+      dim.id === id ? { ...dim, [field]: value } : dim
+    ));
+  };
+
+  const handleDimensionStatus = (id: string, status: 'Pass' | 'Fail' | 'NA') => {
+    setDimensions(prev => prev.map(dim => 
+      dim.id === id ? { ...dim, status } : dim
+    ));
   };
 
   const handlePrint = () => {
@@ -87,12 +118,12 @@ export function QualityManagement() {
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900">
             {currentStep === 'list' && 'Inspection Pipeline'}
-            {currentStep === 'checklist' && 'Machining Quality Check'}
+            {currentStep === 'checklist' && 'Quality Check Entry'}
             {currentStep === 'report' && 'Inspection Report Generation'}
             {currentStep === 'review' && 'Compliance Review'}
             {currentStep === 'approval' && 'Final Quality Release'}
           </h2>
-          <p className="text-muted-foreground font-medium">Standardized industrial inspection workflows & report automation.</p>
+          <p className="text-muted-foreground font-medium">Standardized industrial inspection workflows & customer dimension reporting.</p>
         </div>
         
         {currentStep !== 'list' && (
@@ -152,83 +183,138 @@ export function QualityManagement() {
         </Card>
       )}
 
-      {/* STEP 2: Machining Check List */}
+      {/* STEP 2: Multi-Part Entry (Machining + Dimensions) */}
       {currentStep === 'checklist' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <Card className="lg:col-span-8 p-10 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">Machining Operation Verification</h3>
-              <div className="flex gap-2">
-                <Badge className="bg-green-50 text-green-700 border-green-100">PASSED: {Object.values(checks).filter(v => v === 'Pass').length}</Badge>
-                <Badge className="bg-red-50 text-red-700 border-red-100">FAILED: {Object.values(checks).filter(v => v === 'Fail').length}</Badge>
-                <Badge className="bg-slate-50 text-slate-500 border-slate-100">NA: {Object.values(checks).filter(v => v === 'NA').length}</Badge>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {MACHINING_OPS.map((op) => (
-                <div key={op} className="p-6 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-center justify-between transition-all hover:border-primary/20">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "h-10 w-10 rounded-xl flex items-center justify-center border transition-all",
-                      checks[op] === 'Pass' ? "bg-green-500 border-green-500 text-white" :
-                      checks[op] === 'Fail' ? "bg-red-500 border-red-500 text-white" :
-                      checks[op] === 'NA' ? "bg-slate-400 border-slate-400 text-white" :
-                      "bg-white border-slate-200 text-slate-300"
-                    )}>
-                      {checks[op] === 'Pass' ? <Check className="h-5 w-5" /> : 
-                       checks[op] === 'Fail' ? <X className="h-5 w-5" /> : 
-                       checks[op] === 'NA' ? <MinusCircle className="h-5 w-5" /> :
-                       <Box className="h-5 w-5" />}
+          <div className="lg:col-span-8 space-y-8">
+            <Tabs defaultValue="internal" className="w-full">
+              <TabsList className="bg-slate-100 p-1 rounded-full mb-6 h-12 inline-flex border border-slate-200">
+                <TabsTrigger value="internal" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Internal Process Checks
+                </TabsTrigger>
+                <TabsTrigger value="customer" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Customer Dimensions
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="internal" className="m-0">
+                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900">Machining Operation Verification</h3>
+                    <Badge className="bg-primary/5 text-primary border-primary/10">Internal Use Only</Badge>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {MACHINING_OPS.map((op) => (
+                      <div key={op} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-center justify-between transition-all hover:border-primary/20">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "h-8 w-8 rounded-lg flex items-center justify-center border transition-all",
+                            checks[op] === 'Pass' ? "bg-green-500 border-green-500 text-white" :
+                            checks[op] === 'Fail' ? "bg-red-500 border-red-500 text-white" :
+                            checks[op] === 'NA' ? "bg-slate-400 border-slate-400 text-white" :
+                            "bg-white border-slate-200 text-slate-300"
+                          )}>
+                            {checks[op] === 'Pass' ? <Check className="h-4 w-4" /> : 
+                             checks[op] === 'Fail' ? <X className="h-4 w-4" /> : 
+                             checks[op] === 'NA' ? <MinusCircle className="h-4 w-4" /> :
+                             <Box className="h-4 w-4" />}
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">{op}</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {['Pass', 'Fail', 'NA'].map((st) => (
+                            <Button 
+                              key={st}
+                              size="sm" 
+                              variant="outline" 
+                              className={cn(
+                                "rounded-lg h-8 px-3 font-bold text-[9px] uppercase transition-all",
+                                checks[op] === st 
+                                  ? (st === 'Pass' ? "bg-green-50 border-green-200 text-green-700" : st === 'Fail' ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-100 border-slate-300 text-slate-700")
+                                  : "bg-white text-slate-400"
+                              )}
+                              onClick={() => handleToggleCheck(op, st as any)}
+                            >
+                              {st}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="customer" className="m-0">
+                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-bold text-slate-900">Customer Dimension Report</h3>
+                      <p className="text-xs text-muted-foreground">Record critical measurements for product delivery.</p>
                     </div>
-                    <span className="text-sm font-bold text-slate-700">{op}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className={cn(
-                        "rounded-xl h-9 px-4 font-bold text-[10px] uppercase transition-all",
-                        checks[op] === 'Pass' ? "bg-green-50 border-green-200 text-green-700" : "bg-white text-slate-400"
-                      )}
-                      onClick={() => handleToggleCheck(op, 'Pass')}
-                    >
-                      Pass
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className={cn(
-                        "rounded-xl h-9 px-4 font-bold text-[10px] uppercase transition-all",
-                        checks[op] === 'Fail' ? "bg-red-50 border-red-200 text-red-700" : "bg-white text-slate-400"
-                      )}
-                      onClick={() => handleToggleCheck(op, 'Fail')}
-                    >
-                      Fail
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className={cn(
-                        "rounded-xl h-9 px-4 font-bold text-[10px] uppercase transition-all",
-                        checks[op] === 'NA' ? "bg-slate-100 border-slate-300 text-slate-700" : "bg-white text-slate-400"
-                      )}
-                      onClick={() => handleToggleCheck(op, 'NA')}
-                    >
-                      NA
+                    <Button variant="outline" size="sm" className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2">
+                      <Plus className="h-3 w-3" /> Add Feature
                     </Button>
                   </div>
-                </div>
-              ))}
-            </div>
+
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow className="hover:bg-transparent border-slate-100">
+                        <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-4">Feature / Desc</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase text-slate-400">Target</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase text-slate-400">Tolerance</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase text-slate-400 w-[120px]">Actual</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-right">Result</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dimensions.map((dim) => (
+                        <TableRow key={dim.id} className="border-slate-50 h-16">
+                          <TableCell className="font-bold text-xs text-slate-700">{dim.feature}</TableCell>
+                          <TableCell className="font-code text-xs text-slate-500">{dim.target}</TableCell>
+                          <TableCell className="font-code text-[10px] text-slate-400">{dim.tolerance}</TableCell>
+                          <TableCell>
+                            <Input 
+                              placeholder="0.00" 
+                              className="h-8 text-xs font-code bg-slate-50 border-none rounded-md focus-visible:ring-primary/20"
+                              value={dim.actual}
+                              onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              {['Pass', 'Fail', 'NA'].map((st) => (
+                                <button
+                                  key={st}
+                                  onClick={() => handleDimensionStatus(dim.id, st as any)}
+                                  className={cn(
+                                    "px-2 py-1 rounded text-[8px] font-bold uppercase border transition-all",
+                                    dim.status === st 
+                                      ? (st === 'Pass' ? "bg-green-500 border-green-500 text-white" : st === 'Fail' ? "bg-red-500 border-red-500 text-white" : "bg-slate-400 border-slate-400 text-white")
+                                      : "bg-white border-slate-200 text-slate-300"
+                                  )}
+                                >
+                                  {st}
+                                </button>
+                              ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </TabsContent>
+            </Tabs>
 
             <Button 
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
               onClick={() => setCurrentStep('report')}
             >
-              Confirm Checks & Generate Report
+              Verify All Checks & Generate Master Report
             </Button>
-          </Card>
+          </div>
 
           <Card className="lg:col-span-4 p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inspection Metadata</h3>
@@ -236,10 +322,6 @@ export function QualityManagement() {
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order</p>
                 <p className="text-lg font-bold text-slate-900">#{selectedOrder?.id}</p>
-              </div>
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Customer</p>
-                <p className="text-lg font-bold text-slate-900">{selectedOrder?.customer}</p>
               </div>
               
               <div className="space-y-4 pt-4">
@@ -341,9 +423,9 @@ export function QualityManagement() {
               </div>
             </div>
 
-            {/* Operations Table */}
+            {/* Internal Process Verification */}
             <div className="space-y-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">Machining Tolerance Verification</h3>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">I. Machining Tolerance Verification</h3>
               <div className="border border-slate-100 rounded-3xl overflow-hidden">
                 <Table>
                   <TableHeader className="bg-slate-50/50">
@@ -365,10 +447,46 @@ export function QualityManagement() {
                             checks[op] === 'NA' ? "text-slate-400 bg-slate-50 border-slate-100" :
                             "text-slate-300 bg-white border-slate-100"
                           )}>
-                            {checks[op] || 'NA'}
+                            {checks[op] || 'Pending'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right px-6 font-code text-[10px] text-slate-400 uppercase tracking-tighter">DIGITAL_VERIFIED</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Customer Dimension Report */}
+            <div className="space-y-6 pt-4">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">II. Customer Dimension Report</h3>
+              <div className="border border-slate-100 rounded-3xl overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="hover:bg-transparent border-slate-100">
+                      <TableHead className="text-[9px] font-bold uppercase py-4 px-6">Feature</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center">Target</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center">Actual</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-right px-6">Result</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dimensions.map((dim) => (
+                      <TableRow key={dim.id} className="border-slate-50 hover:bg-slate-50/30">
+                        <TableCell className="px-6 py-4 font-bold text-xs text-slate-700">{dim.feature}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] text-slate-500">{dim.target} ({dim.tolerance})</TableCell>
+                        <TableCell className="text-center font-code text-xs font-bold text-primary">{dim.actual || 'N/A'}</TableCell>
+                        <TableCell className="text-right px-6">
+                          <Badge className={cn(
+                            "text-[8px] font-bold uppercase px-3",
+                            dim.status === 'Pass' ? "bg-green-50 text-green-700 border-green-100" : 
+                            dim.status === 'Fail' ? "bg-red-50 text-red-700 border-red-100" :
+                            "bg-slate-50 text-slate-400 border-slate-100"
+                          )}>
+                            {dim.status}
+                          </Badge>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

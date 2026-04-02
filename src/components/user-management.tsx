@@ -205,6 +205,10 @@ export function UserManagement() {
       {/* Registration Wizard Automation */}
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+          <DialogHeader className="sr-only">
+            <DialogTitle>User Onboarding Wizard</DialogTitle>
+            <DialogDescription>Follow the 4-step process to register a new user and assign granular permissions.</DialogDescription>
+          </DialogHeader>
           <div className="flex h-[700px]">
             {/* Sidebar Steps (Matching Image) */}
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">

@@ -23,8 +23,20 @@ import {
   Box,
   MinusCircle,
   Plus,
-  Save
+  Save,
+  Activity,
+  Layers,
+  Clock
 } from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  ResponsiveContainer, 
+  Cell, 
+  Tooltip as ChartTooltip 
+} from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -47,6 +59,10 @@ const mockOrders = [
   { id: '103645', customer: 'Automotive Corp', part: 'Axle Support', status: 'Ready for QC', date: '03 Mar 2025' },
   { id: '102778', customer: 'Precision Aero', part: 'Gear Housing', status: 'Ready for QC', date: '03 Mar 2025' },
   { id: '100685', customer: 'Medical Solutions', part: 'Surgical Tray', status: 'In Review', date: '02 Mar 2025' },
+  { id: '105542', customer: 'Global Energy', part: 'Turbine Blade', status: 'Ready for QC', date: '04 Mar 2025' },
+  { id: '101230', customer: 'Future Tech', part: 'Robot Joint', status: 'Ready for QC', date: '04 Mar 2025' },
+  { id: '108899', customer: 'Stellar Aero', part: 'Bracket Assembly', status: 'In Review', date: '01 Mar 2025' },
+  { id: '109921', customer: 'Nexus Robotics', part: 'Sensor Housing', status: 'Ready for QC', date: '05 Mar 2025' },
 ];
 
 const MACHINING_OPS = [
@@ -72,6 +88,14 @@ export function QualityManagement() {
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [drawingUploaded, setDrawingUploaded] = useState(false);
+
+  // Statistics for Graph
+  const pendingCount = mockOrders.filter(o => o.status === 'Ready for QC').length;
+  const wipCount = mockOrders.filter(o => o.status === 'In Review').length;
+  const statsData = [
+    { name: 'Pending', count: pendingCount, color: '#f59e0b' },
+    { name: 'Work in Progress', count: wipCount, color: '#3b82f6' },
+  ];
 
   const handleSelectOrder = (order: any) => {
     setSelectedOrder(order);
@@ -112,7 +136,6 @@ export function QualityManagement() {
             if (plusMatch) upperOffset = parseFloat(plusMatch[1]);
             if (minusMatch) lowerOffset = -parseFloat(minusMatch[1]);
             
-            // If raw number like "0.05"
             if (!plusMatch && !minusMatch && !isNaN(parseFloat(tol))) {
                const val = parseFloat(tol);
                upperOffset = val;
@@ -132,9 +155,9 @@ export function QualityManagement() {
 
       if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
         if (actualNum >= lowerNum && actualNum <= upperNum) {
-          updatedDim.status = 'Pass'; // Within tolerance (OK)
+          updatedDim.status = 'Pass'; 
         } else {
-          updatedDim.status = 'Fail'; // Out of tolerance (NOT OK)
+          updatedDim.status = 'Fail'; 
         }
       } else if (updatedDim.actual === '') {
         updatedDim.status = 'Pending';
@@ -206,52 +229,102 @@ export function QualityManagement() {
       </header>
 
       {currentStep === 'list' && (
-        <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="Search Work Orders for QC..." className="pl-10 h-10 bg-white border-none text-xs" />
+        <div className="space-y-8">
+          {/* Summary Dashboard with Graph */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <Card className="lg:col-span-8 p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col justify-between">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Queue Distribution</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Status of all active Work Orders in the inspection lifecycle.</p>
+                </div>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">Real-time Analytics</Badge>
+              </div>
+              <div className="h-24 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statsData} layout="vertical">
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#64748b'}} width={120} />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
+                      {statsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <div className="lg:col-span-4 grid grid-cols-1 gap-6">
+              <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-amber-500/50 transition-colors">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="p-3 bg-amber-50 rounded-xl">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-amber-600">{pendingCount}</span>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ready for Inspection</p>
+              </Card>
+              <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-blue-500/50 transition-colors">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="p-3 bg-blue-50 rounded-xl">
+                    <Layers className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-blue-600">{wipCount}</span>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Review (WIP)</p>
+              </Card>
             </div>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">Pending Inspections: 12</Badge>
           </div>
-          <Table>
-            <TableHeader className="bg-white">
-              <TableRow className="hover:bg-transparent border-slate-100">
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Order ID</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Component</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status</TableHead>
-                <TableHead className="text-right px-8"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                  <TableCell className="px-8 font-bold text-sm text-primary">{order.id}</TableCell>
-                  <TableCell className="text-slate-900 font-semibold">{order.customer}</TableCell>
-                  <TableCell className="text-slate-600 font-medium">{order.part}</TableCell>
-                  <TableCell>
-                    <Badge className={cn(
-                      "text-[9px] uppercase font-bold px-3 py-1",
-                      order.status === 'Ready for QC' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                    )}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right px-8">
-                    <Button 
-                      size="sm" 
-                      className="rounded-full bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase h-9 px-5 opacity-0 group-hover:opacity-100 transition-all"
-                      onClick={() => handleSelectOrder(order)}
-                    >
-                      Start Inspection <ChevronRight className="ml-2 h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
+
+          {/* Work Order Table */}
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input placeholder="Search Work Orders for QC..." className="pl-10 h-10 bg-white border-none text-xs" />
+              </div>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">Active Ledger: {mockOrders.length}</Badge>
+            </div>
+            <Table>
+              <TableHeader className="bg-white">
+                <TableRow className="hover:bg-transparent border-slate-100">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Order ID</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Component</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status</TableHead>
+                  <TableHead className="text-right px-8"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {mockOrders.map((order) => (
+                  <TableRow key={order.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                    <TableCell className="px-8 font-bold text-sm text-primary">{order.id}</TableCell>
+                    <TableCell className="text-slate-900 font-semibold">{order.customer}</TableCell>
+                    <TableCell className="text-slate-600 font-medium">{order.part}</TableCell>
+                    <TableCell>
+                      <Badge className={cn(
+                        "text-[9px] uppercase font-bold px-3 py-1",
+                        order.status === 'Ready for QC' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                      )}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right px-8">
+                      <Button 
+                        size="sm" 
+                        className="rounded-full bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase h-9 px-5 opacity-0 group-hover:opacity-100 transition-all"
+                        onClick={() => handleSelectOrder(order)}
+                      >
+                        Start Inspection <ChevronRight className="ml-2 h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
       )}
 
       {currentStep === 'checklist' && (

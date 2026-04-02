@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Order } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, User, Plus } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -56,11 +56,6 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
             <Plus className="h-3.5 w-3.5" />
             New Order
           </Button>
-
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
-            <User className="h-4 w-4 text-slate-400" />
-            <span className="text-xs font-bold text-slate-700">Admin User</span>
-          </div>
         </div>
       </div>
 

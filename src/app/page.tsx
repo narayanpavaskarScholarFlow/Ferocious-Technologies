@@ -175,10 +175,20 @@ export default function IndustrialERP() {
             {currentView === 'machine-utilization' && <MachineUtilization />}
             {currentView === 'manpower' && <ManpowerUtilization />}
             {currentView === 'customer-orders' && <CustomerOrders />}
-            {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} />}
+            {currentView === 'weekly-plan' && (
+              <WeeklyPlan 
+                logs={logs} 
+                onNavigateToGantt={() => setCurrentView('gantt')}
+              />
+            )}
             {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
-            {currentView === 'gantt' && <ProductionGantt />}
+            {currentView === 'gantt' && (
+              <ProductionGantt 
+                onNavigateToSchedule={() => setCurrentView('weekly-plan')}
+                onNavigateToOperations={handleNavigateToOperations}
+              />
+            )}
             {currentView === 'quality' && <QualityManagement onUpdateStatus={handleUpdateGlobalOpStatus} />}
             {currentView === 'order-details' && (
               <OrderDetails 

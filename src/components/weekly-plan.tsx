@@ -2,8 +2,9 @@
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Users, Zap, Clock, ClipboardList, TrendingUp } from 'lucide-react';
+import { Calendar, Users, Zap, Clock, ClipboardList, TrendingUp, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkLogEntry } from '@/lib/types';
 
@@ -18,9 +19,10 @@ const planData = [
 
 interface WeeklyPlanProps {
   logs: WorkLogEntry[];
+  onNavigateToGantt?: () => void;
 }
 
-export function WeeklyPlan({ logs }: WeeklyPlanProps) {
+export function WeeklyPlan({ logs, onNavigateToGantt }: WeeklyPlanProps) {
   // Calculate total production hours from logs to simulate reflection
   const productionLogs = logs.filter(l => l.type === 'Production');
   const recentLogs = logs.slice(0, 5);
@@ -38,7 +40,16 @@ export function WeeklyPlan({ logs }: WeeklyPlanProps) {
           </h2>
           <p className="text-muted-foreground font-medium">Week 10 / March 2025 | Resource Allocation & Throughput Planning.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            className="rounded-full border-slate-200 h-11 px-6 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50"
+            onClick={onNavigateToGantt}
+          >
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            View Visual Timeline
+          </Button>
+          <div className="h-8 w-[1px] bg-slate-200 mx-2" />
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 h-10 px-4 font-bold text-[10px] uppercase tracking-widest">
             Capacity Load: 72%
           </Badge>
@@ -127,7 +138,7 @@ export function WeeklyPlan({ logs }: WeeklyPlanProps) {
 
             <TabsContent value="bottlenecks" className="m-0">
               <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
-                <Activity className="h-12 w-12 mb-4" />
+                <Zap className="h-12 w-12 mb-4" />
                 <p className="text-xs font-bold uppercase tracking-widest">AI Detection: Identifying Operational Bottlenecks</p>
               </Card>
             </TabsContent>
@@ -178,23 +189,5 @@ export function WeeklyPlan({ logs }: WeeklyPlanProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-function Activity({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-    </svg>
   );
 }

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Box, LayoutGrid } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Box, LayoutGrid, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
 
@@ -17,7 +17,12 @@ const mockOrders: Order[] = [
   { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', progress: 60 },
 ];
 
-export function ProductionGantt() {
+interface ProductionGanttProps {
+  onNavigateToSchedule?: () => void;
+  onNavigateToOperations?: (orderId: string) => void;
+}
+
+export function ProductionGantt({ onNavigateToSchedule, onNavigateToOperations }: ProductionGanttProps) {
   const [view, setView] = useState<'week' | 'month'>('week');
   
   // Calculate Timeline Data
@@ -31,7 +36,6 @@ export function ProductionGantt() {
 
   const getPositionStyles = (order: Order) => {
     // This is a simplified mock logic for positioning bars on the timeline
-    // In a real app, you'd use actual date diffs
     const startDay = parseInt(order.startDate.split('.')[0]);
     const endDay = parseInt(order.endDate.split('.')[0]);
     
@@ -61,6 +65,17 @@ export function ProductionGantt() {
         </div>
         
         <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            className="rounded-full border-slate-200 h-11 px-6 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50"
+            onClick={onNavigateToSchedule}
+          >
+            <ClipboardList className="h-4 w-4 text-primary" />
+            View Master Schedule
+          </Button>
+
+          <div className="h-8 w-[1px] bg-slate-200 mx-2" />
+
           <Tabs value={view} onValueChange={(v) => setView(v as any)} className="bg-slate-100 p-1 rounded-full border border-slate-200">
             <TabsList className="bg-transparent h-10 border-none">
               <TabsTrigger value="week" className="rounded-full px-6 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
@@ -139,6 +154,7 @@ export function ProductionGantt() {
                         background: order.status === 'Completed' ? '#ecfdf5' : order.status === 'Active' ? '#eff6ff' : '#fffbeb',
                         border: `1px solid ${order.status === 'Completed' ? '#10b981' : order.status === 'Active' ? '#3b82f6' : '#f59e0b'}`
                       }}
+                      onClick={() => onNavigateToOperations?.(order.id)}
                     >
                       <div className="flex justify-between items-center mb-1 relative z-10">
                         <span className={cn(

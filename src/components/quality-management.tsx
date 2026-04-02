@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -81,7 +82,11 @@ const INITIAL_DIMENSIONS: DimensionRecord[] = [
   { id: '3', feature: 'Internal Bore', target: '22.00', tolerance: '+0.021', upperLimit: '22.021', lowerLimit: '22.000', actual: '', status: 'Pending', remark: '' },
 ];
 
-export function QualityManagement() {
+interface QualityManagementProps {
+  onUpdateStatus?: (orderId: string, operation: string, status: string) => void;
+}
+
+export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -201,6 +206,21 @@ export function QualityManagement() {
       remark: ''
     };
     setDimensions([...dimensions, newDim]);
+  };
+
+  const submitForReview = () => {
+    setCurrentStep('review');
+    if (selectedOrder && onUpdateStatus) {
+      onUpdateStatus(selectedOrder.id, 'QC', 'Review Pending');
+    }
+  };
+
+  const finalApproval = () => {
+    setCurrentStep('approval');
+    if (selectedOrder && onUpdateStatus) {
+      onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
+    }
+    toast({ title: "Release Authorized", description: "Report has been digitally signed and archived." });
   };
 
   return (
@@ -707,7 +727,7 @@ export function QualityManagement() {
             <div className="flex justify-center pt-10 print:hidden">
               <Button 
                 className="rounded-full bg-primary hover:bg-primary/90 text-white h-14 px-12 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20"
-                onClick={() => setCurrentStep('review')}
+                onClick={submitForReview}
               >
                 Submit for Final Quality Review
               </Button>
@@ -728,10 +748,7 @@ export function QualityManagement() {
               <div className="flex gap-4">
                 <Button 
                   className="flex-1 h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold uppercase text-xs tracking-widest gap-2 shadow-lg shadow-green-600/20"
-                  onClick={() => {
-                    setCurrentStep('approval');
-                    toast({ title: "Release Authorized", description: "Report has been digitally signed and archived." });
-                  }}
+                  onClick={finalApproval}
                 >
                   <CheckCircle2 className="h-4 w-4" /> Authorize & Sign
                 </Button>

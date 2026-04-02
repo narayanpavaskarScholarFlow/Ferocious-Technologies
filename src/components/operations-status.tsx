@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -55,46 +56,39 @@ interface OperationsStatusProps {
   initialOrderId?: string | null;
   onOrderIdChange?: (orderId: string | null) => void;
   onNavigateToVendor?: () => void;
+  externalOpStatuses?: Record<string, Record<string, string>>;
+  onStatusChange?: (orderId: string, operation: string, status: string) => void;
 }
 
-export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateToVendor }: OperationsStatusProps) {
+export function OperationsStatus({ 
+  initialOrderId, 
+  onOrderIdChange, 
+  onNavigateToVendor,
+  externalOpStatuses = {},
+  onStatusChange
+}: OperationsStatusProps) {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
-  const [opStatuses, setOpStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialOrderId) {
       setSelectedWorkOrder(initialOrderId);
-      const initial: Record<string, string> = {};
-      OPERATION_COLUMNS.forEach((col, idx) => {
-        if (idx < 5) initial[col] = "Completed";
-        else if (idx === 5) initial[col] = "WIP";
-        else initial[col] = "NA";
-      });
-      setOpStatuses(initial);
     }
   }, [initialOrderId]);
 
   const handleSelectChange = (val: string) => {
     setSelectedWorkOrder(val);
     onOrderIdChange?.(val);
-    
-    const initial: Record<string, string> = {};
-    OPERATION_COLUMNS.forEach((col, idx) => {
-      if (idx < 3) initial[col] = "Completed";
-      else if (idx === 3) initial[col] = "WIP";
-      else initial[col] = "NA";
-    });
-    setOpStatuses(initial);
   };
 
-  const handleStatusChange = (column: string, status: string, vendorName?: string) => {
-    let finalStatus = status;
+  const handleLocalStatusChange = (column: string, status: string, vendorName?: string) => {
+    if (!selectedWorkOrder || !onStatusChange) return;
     
+    let finalStatus = status;
     if (status === 'Vendor' && vendorName) {
       finalStatus = `Vendor: ${vendorName}`;
     }
     
-    setOpStatuses(prev => ({ ...prev, [column]: finalStatus }));
+    onStatusChange(selectedWorkOrder, column, finalStatus);
   };
 
   const getStatusStyles = (status?: string) => {
@@ -103,6 +97,8 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
     }
     return STATUS_OPTIONS.find(opt => opt.label === status)?.color || "text-slate-400 bg-slate-50 border-slate-100";
   };
+
+  const currentOpStatuses = selectedWorkOrder ? externalOpStatuses[selectedWorkOrder] || {} : {};
 
   return (
     <div className="space-y-6">
@@ -170,7 +166,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
               {selectedWorkOrder ? (
                 <TableRow className="h-20 border-b border-slate-100">
                   {OPERATION_COLUMNS.map((col, idx) => {
-                    const currentStatus = opStatuses[col] || "NA";
+                    const currentStatus = currentOpStatuses[col] || "NA";
                     
                     return (
                       <TableCell key={idx} className="border-r border-slate-50 last:border-r-0 p-2">
@@ -193,7 +189,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                               {STATUS_OPTIONS.map((opt) => (
                                 <DropdownMenuItem 
                                   key={opt.label}
-                                  onClick={() => handleStatusChange(col, opt.label)}
+                                  onClick={() => handleLocalStatusChange(col, opt.label)}
                                   className="flex items-center gap-2 cursor-pointer"
                                 >
                                   <span className="text-xs font-medium">{opt.label}</span>
@@ -210,7 +206,7 @@ export function OperationsStatus({ initialOrderId, onOrderIdChange, onNavigateTo
                                     {VENDORS.map((vendor) => (
                                       <DropdownMenuItem 
                                         key={vendor}
-                                        onClick={() => handleStatusChange(col, 'Vendor', vendor)}
+                                        onClick={() => handleLocalStatusChange(col, 'Vendor', vendor)}
                                         className="cursor-pointer text-xs"
                                       >
                                         {vendor}

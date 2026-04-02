@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -29,11 +30,18 @@ const INITIAL_LOGS: WorkLogEntryType[] = [
   { id: 'LOG-003', resourceId: '06', resourceName: 'EDM ZNC (06)', operator: 'A. Chen', date: '02 Mar 2025', shift: 'Evening', type: 'Maintenance', duration: '2.0h', activity: 'Routine electrode inspection', workOrderId: '100685' },
 ];
 
+const INITIAL_OP_STATUSES: Record<string, Record<string, string>> = {
+  '103645': { 'QC': 'NA' },
+  '102778': { 'QC': 'NA' },
+  '100685': { 'QC': 'Completed' },
+};
+
 export default function IndustrialERP() {
   const [mounted, setMounted] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
+  const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
 
   useEffect(() => {
     setMounted(true);
@@ -60,6 +68,16 @@ export default function IndustrialERP() {
 
   const handleAddLog = (newLog: WorkLogEntryType) => {
     setLogs(prev => [newLog, ...prev]);
+  };
+
+  const handleUpdateGlobalOpStatus = (orderId: string, operation: string, status: string) => {
+    setGlobalOpStatuses(prev => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] || {}),
+        [operation]: status
+      }
+    }));
   };
 
   if (!mounted) {
@@ -139,7 +157,7 @@ export default function IndustrialERP() {
             {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} />}
             {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
-            {currentView === 'quality' && <QualityManagement />}
+            {currentView === 'quality' && <QualityManagement onUpdateStatus={handleUpdateGlobalOpStatus} />}
             {currentView === 'order-details' && (
               <OrderDetails 
                 orderId={activeWorkOrderId} 
@@ -151,6 +169,8 @@ export default function IndustrialERP() {
                 initialOrderId={activeWorkOrderId} 
                 onOrderIdChange={setActiveWorkOrderId} 
                 onNavigateToVendor={handleNavigateToVendor}
+                externalOpStatuses={globalOpStatuses}
+                onStatusChange={handleUpdateGlobalOpStatus}
               />
             )}
           </div>

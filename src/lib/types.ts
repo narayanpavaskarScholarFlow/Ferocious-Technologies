@@ -114,6 +114,17 @@ export interface CustomerOrder {
   status: 'Pending' | 'Production' | 'Shipping' | 'Delivered';
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  type: 'Corporate' | 'Individual';
+  contactPerson: string;
+  email: string;
+  phone: string;
+  location: string;
+  totalOrders: number;
+}
+
 export interface OperationStep {
   id: string;
   partId: string;

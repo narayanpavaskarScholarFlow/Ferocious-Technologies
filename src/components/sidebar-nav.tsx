@@ -9,7 +9,6 @@ import {
   Users,
   Package,
   Calendar,
-  UserPlus,
   Layers,
   Truck,
   ShoppingCart,
@@ -52,7 +51,6 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'customer-orders' as ViewType, icon: Package, label: 'CRM / Pipeline' },
     { id: 'vendor' as ViewType, icon: Truck, label: 'Supply Chain' },
     { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Schedule' },
-    { id: 'users' as ViewType, icon: UserPlus, label: 'Access Security' },
   ];
 
   if (!mounted) {

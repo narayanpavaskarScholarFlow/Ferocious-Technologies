@@ -7,59 +7,52 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   User, 
   Shield, 
   Settings, 
-  Bell, 
-  Monitor, 
-  Key, 
   Save, 
   LogOut, 
   CheckCircle2, 
-  ShieldAlert,
-  Cpu,
-  Zap,
-  Lock,
-  Users,
-  ShieldCheck,
-  RefreshCw,
-  LayoutGrid,
-  ShoppingCart,
-  Layers,
-  Boxes,
-  CreditCard,
-  ClipboardList,
-  LineChart,
-  Package,
-  Truck,
+  Users, 
+  ShieldCheck, 
+  LayoutGrid, 
+  ShoppingCart, 
+  Layers, 
+  Boxes, 
+  CreditCard, 
+  ClipboardList, 
+  LineChart, 
+  Package, 
+  Truck, 
   Calendar,
-  Eye,
-  Edit2
+  ChevronRight,
+  Monitor,
+  Edit3,
+  Unlock,
+  UserCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
 import { SystemUser, PermissionLevel } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const ACCESS_PAGES = [
-  { id: 'overview', label: 'Overview', icon: LayoutGrid },
-  { id: 'orders', label: 'Orders', icon: ShoppingCart },
-  { id: 'routing', label: 'Routing', icon: Layers },
-  { id: 'quality', label: 'QA', icon: ShieldCheck },
-  { id: 'inventory', label: 'Inventory', icon: Boxes },
-  { id: 'billing', label: 'Billing', icon: CreditCard },
-  { id: 'work-log', label: 'Work Log', icon: ClipboardList },
-  { id: 'telemetry', label: 'Telemetry', icon: Cpu },
-  { id: 'resources', label: 'Resources', icon: Users },
-  { id: 'sqcdp', label: 'SQCDP', icon: LineChart },
-  { id: 'pipeline', label: 'Pipeline', icon: Package },
-  { id: 'vendors', label: 'Vendors', icon: Truck },
-  { id: 'schedule', label: 'Schedule', icon: Calendar },
+  { id: 'overview', label: 'Command Overview', icon: LayoutGrid },
+  { id: 'orders', label: 'Production Orders', icon: ShoppingCart },
+  { id: 'routing', label: 'Operational Routing', icon: Layers },
+  { id: 'quality', label: 'Quality Assurance', icon: ShieldCheck },
+  { id: 'inventory', label: 'Material Ledger', icon: Boxes },
+  { id: 'billing', label: 'Financial Hub', icon: CreditCard },
+  { id: 'work-log', label: 'Operator Work Log', icon: ClipboardList },
+  { id: 'telemetry', label: 'Asset Telemetry', icon: Monitor },
+  { id: 'resources', label: 'Resource Management', icon: Users },
+  { id: 'sqcdp', label: 'SQCDP Board', icon: LineChart },
+  { id: 'pipeline', label: 'CRM / Pipeline', icon: Package },
+  { id: 'vendors', label: 'Supply Chain', icon: Truck },
+  { id: 'schedule', label: 'Master Schedule', icon: Calendar },
 ];
 
 interface ProfileSettingsProps {
@@ -79,6 +72,7 @@ export function ProfileSettings({
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(users[0]?.id || null);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -108,6 +102,8 @@ export function ProfileSettings({
     });
   };
 
+  const currentUserMatrix = users.find(u => u.id === (selectedUserForMatrix || users[0]?.id));
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
@@ -135,15 +131,15 @@ export function ProfileSettings({
       </header>
 
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-        <TabsList className="bg-slate-100 p-1 rounded-full mb-8 h-12 inline-flex border border-slate-200">
-          <TabsTrigger value="profile" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <User className="h-3.5 w-3.5 mr-2" /> Admin Profile
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm">
+          <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
+            <UserCircle className="h-3.5 w-3.5 mr-2" /> Admin Profile
           </TabsTrigger>
-          <TabsTrigger value="access" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+          <TabsTrigger value="access" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
             <Users className="h-3.5 w-3.5 mr-2" /> User Directory
           </TabsTrigger>
-          <TabsTrigger value="matrix" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Access Matrix
+          <TabsTrigger value="matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
+            <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
           </TabsTrigger>
         </TabsList>
 
@@ -216,79 +212,99 @@ export function ProfileSettings({
 
         <TabsContent value="matrix" className="m-0">
           <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
-            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
-                <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Access Control Matrix</h3>
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-1">Granular Security Assignment Ledger</p>
+                <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Granular Security Assignment Ledger</p>
               </div>
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">SECURE_MODE</Badge>
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Select Identity:</span>
+                <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
+                  <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
+                    <SelectValue placeholder="Select User..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-100">
+                    {users.map(u => (
+                      <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            <ScrollArea className="w-full">
-              <div className="min-w-[1200px]">
-                <Table>
-                  <TableHeader className="bg-white">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="w-[200px] sticky left-0 bg-white z-20 font-bold text-[9px] uppercase text-slate-400 py-6 px-8 border-r border-slate-50">Identity</TableHead>
-                      {ACCESS_PAGES.map(page => (
-                        <TableHead key={page.id} className="text-center min-w-[100px]">
-                          <div className="flex flex-col items-center gap-1.5">
-                            <page.icon className="h-3.5 w-3.5 text-slate-300" />
-                            <span className="font-bold text-[8px] uppercase tracking-tighter text-slate-400 leading-none">{page.label}</span>
-                          </div>
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map(user => (
-                      <TableRow key={user.id} className="hover:bg-slate-50/30 h-16 border-slate-50">
-                        <TableCell className="sticky left-0 bg-white z-10 px-8 border-r border-slate-50">
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
-                            <span className="text-[8px] text-slate-400 font-code uppercase">{user.id}</span>
-                          </div>
-                        </TableCell>
-                        {ACCESS_PAGES.map(page => (
-                          <TableCell key={page.id} className="p-2">
-                            <div className="flex justify-center">
-                              <Select 
-                                value={user.permissions[page.id] || 'none'} 
-                                onValueChange={(val) => handleUpdatePermission(user.id, page.id, val as PermissionLevel)}
-                              >
-                                <SelectTrigger className={cn(
-                                  "h-8 border-none text-[8px] font-bold uppercase w-[80px] rounded-lg transition-all",
-                                  user.permissions[page.id] === 'full' ? "bg-accent/10 text-accent" :
-                                  user.permissions[page.id] === 'edit' ? "bg-primary/10 text-primary" :
-                                  user.permissions[page.id] === 'read' ? "bg-slate-100 text-slate-500" :
-                                  "bg-slate-50 text-slate-300"
-                                )}>
-                                  <SelectValue placeholder="Access" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="none" className="text-[8px] font-bold uppercase">Forbidden</SelectItem>
-                                  <SelectItem value="read" className="text-[8px] font-bold uppercase">Monitor</SelectItem>
-                                  <SelectItem value="edit" className="text-[8px] font-bold uppercase">Operator</SelectItem>
-                                  <SelectItem value="full" className="text-[8px] font-bold uppercase">Command</SelectItem>
-                                </SelectContent>
-                              </Select>
+            <div className="p-10">
+              {currentUserMatrix ? (
+                <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
+                  <div className="flex items-center justify-between mb-6 px-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">
+                        {currentUserMatrix.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{currentUserMatrix.name}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{currentUserMatrix.role} • {currentUserMatrix.dept}</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase tracking-widest px-4 py-1.5 h-8">SECURE_ACTIVE</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {ACCESS_PAGES.map(page => {
+                      const currentLevel = currentUserMatrix.permissions[page.id] || 'none';
+                      const Icon = page.icon;
+                      
+                      return (
+                        <div key={page.id} className="group p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col gap-5 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-primary/5 transition-colors">
+                                <Icon className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
+                              </div>
+                              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{page.label}</span>
                             </div>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                    {users.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={ACCESS_PAGES.length + 1} className="h-40 text-center text-slate-300 font-code text-[10px] uppercase">
-                          No users available for matrix assignment
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+                            <div className={cn(
+                              "h-1.5 w-1.5 rounded-full",
+                              currentLevel === 'full' ? "bg-accent animate-pulse" : 
+                              currentLevel === 'edit' ? "bg-primary" : 
+                              currentLevel === 'read' ? "bg-emerald-500" : "bg-slate-200"
+                            )} />
+                          </div>
+
+                          <Select 
+                            value={currentLevel} 
+                            onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, page.id, val as PermissionLevel)}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-10 border-none text-[10px] font-bold uppercase rounded-xl transition-all shadow-sm",
+                              currentLevel === 'full' ? "bg-accent/10 text-accent" :
+                              currentLevel === 'edit' ? "bg-primary/10 text-primary" :
+                              currentLevel === 'read' ? "bg-emerald-50 text-emerald-600" :
+                              "bg-slate-50 text-slate-400"
+                            )}>
+                              <SelectValue placeholder="Access Level" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                              <SelectItem value="none" className="text-[10px] font-bold uppercase">No Access</SelectItem>
+                              <SelectItem value="read" className="text-[10px] font-bold uppercase">View</SelectItem>
+                              <SelectItem value="edit" className="text-[10px] font-bold uppercase">Edit</SelectItem>
+                              <SelectItem value="full" className="text-[10px] font-bold uppercase">Full control</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-32 opacity-30 text-center">
+                  <div className="p-8 bg-slate-50 rounded-full mb-6">
+                    <Shield className="h-16 w-16 text-slate-300" />
+                  </div>
+                  <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Required</h4>
+                  <p className="text-xs text-slate-400 mt-2 font-medium">Select a user from the directory to initialize the access matrix.</p>
+                </div>
+              )}
+            </div>
           </Card>
         </TabsContent>
       </Tabs>

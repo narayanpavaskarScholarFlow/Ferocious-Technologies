@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -22,8 +23,16 @@ import { ProfileSettings } from '@/components/profile-settings';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, X, ShieldAlert } from 'lucide-react';
+import { Bell, Search, Command, X, ShieldAlert, LogOut, User, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const INITIAL_LOGS: WorkLogEntryType[] = [];
 
@@ -141,19 +150,34 @@ export default function IndustrialERP() {
                 <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-accent rounded-full border-2 border-white" />
               </button>
               <div className="h-8 w-[1px] bg-slate-200" />
-              <div 
-                className="flex items-center gap-3 pl-2 group cursor-pointer"
-                onClick={() => handleViewChange('settings')}
-              >
-                <div className="text-right hidden sm:block">
-                  <p className="text-[11px] font-bold leading-none text-[#001F3D]">{currentUser}</p>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
-                </div>
-                <Avatar className="h-8 w-8 border border-slate-200">
-                  <AvatarImage src="https://picsum.photos/seed/erp-user/100/100" />
-                  <AvatarFallback className="bg-primary text-white text-[10px] font-bold">SA</AvatarFallback>
-                </Avatar>
-              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center gap-3 pl-2 group cursor-pointer">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[11px] font-bold leading-none text-[#001F3D]">{currentUser}</p>
+                      <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
+                    </div>
+                    <Avatar className="h-8 w-8 border border-slate-200">
+                      <AvatarImage src="https://picsum.photos/seed/erp-user/100/100" />
+                      <AvatarFallback className="bg-primary text-white text-[10px] font-bold">SA</AvatarFallback>
+                    </Avatar>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl border-slate-100">
+                  <DropdownMenuLabel className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Account Matrix</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs font-bold gap-2 cursor-pointer rounded-lg h-10">
+                    <User className="h-4 w-4" /> My Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs font-bold gap-2 cursor-pointer rounded-lg h-10">
+                    <Settings className="h-4 w-4" /> Control Center
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-xs font-bold gap-2 text-red-600 cursor-pointer rounded-lg h-10 focus:bg-red-50 focus:text-red-700">
+                    <LogOut className="h-4 w-4" /> Terminate Session
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -27,9 +28,31 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel } from '@/lib/types';
+
+const JOB_TITLES = [
+  "Manager",
+  "Supervisor",
+  "VMC Programer",
+  "VMC Operator",
+  "Tool Maker",
+  "Senier Tool Maker"
+];
+
+const DEPARTMENTS = [
+  "Admin",
+  "Account",
+  "Market",
+  "Design",
+  "Tool Room",
+  "VMC Milling",
+  "CNC Turning",
+  "Assembly",
+  "Quality"
+];
 
 interface UserManagementProps {
   users: SystemUser[];
@@ -332,21 +355,29 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Job Title</Label>
-                        <Input 
-                          placeholder="e.g. Lead Machinist" 
-                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                          value={formData.jobTitle}
-                          onChange={(e) => setFormData({...formData, jobTitle: e.target.value})}
-                        />
+                        <Select value={formData.jobTitle} onValueChange={(val) => setFormData({...formData, jobTitle: val})}>
+                          <SelectTrigger className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus:ring-primary/20">
+                            <SelectValue placeholder="Select functional title..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl shadow-2xl">
+                            {JOB_TITLES.map(title => (
+                              <SelectItem key={title} value={title} className="text-xs font-bold uppercase">{title}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department Code</Label>
-                        <Input 
-                          placeholder="e.g. QA-01" 
-                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                          value={formData.deptCode}
-                          onChange={(e) => setFormData({...formData, deptCode: e.target.value})}
-                        />
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
+                        <Select value={formData.deptCode} onValueChange={(val) => setFormData({...formData, deptCode: val})}>
+                          <SelectTrigger className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus:ring-primary/20">
+                            <SelectValue placeholder="Select department..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl shadow-2xl">
+                            {DEPARTMENTS.map(dept => (
+                              <SelectItem key={dept} value={dept} className="text-xs font-bold uppercase">{dept}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>

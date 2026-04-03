@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,21 +11,15 @@ import {
   Shield, 
   User, 
   Trash2, 
-  MoreHorizontal, 
   CheckCircle2, 
-  AlertCircle,
   ChevronRight,
   ChevronLeft,
-  Lock,
   Key,
   LayoutDashboard,
   Check,
   Eye,
   Edit2,
-  Settings2,
   ShieldCheck,
-  Circle,
-  Phone,
   ShoppingCart,
   Layers,
   Boxes,
@@ -38,7 +32,7 @@ import {
   Truck,
   Calendar,
   UserX,
-  Zap
+  Plus
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -46,14 +40,11 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription,
-  DialogFooter
 } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-
-const usersData: any[] = [];
+import { useToast } from '@/hooks/use-toast';
 
 const ACCESS_PAGES = [
   { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
@@ -73,9 +64,33 @@ const ACCESS_PAGES = [
 
 type PermissionLevel = 'read' | 'edit' | 'full';
 
+interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  dept: string;
+  permissions: Record<string, PermissionLevel>;
+  lastLogin: string;
+  status: 'online' | 'offline';
+}
+
 export function UserManagement() {
+  const { toast } = useToast();
+  const [users, setUsers] = useState<SystemUser[]>([]);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [step, setStep] = useState(1);
+  
+  // Wizard Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    jobTitle: '',
+    deptCode: '',
+    password: ''
+  });
+  
   const [permissions, setPermissions] = useState<Record<string, PermissionLevel>>({
     overview: 'read'
   });
@@ -97,6 +112,59 @@ export function UserManagement() {
     setPermissions(prev => ({ ...prev, [id]: level }));
   };
 
+  const handleRegisterUser = () => {
+    if (!formData.name || !formData.email) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Identity name and email are required."
+      });
+      return;
+    }
+
+    const newUser: SystemUser = {
+      id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: formData.name,
+      email: formData.email,
+      role: formData.jobTitle || 'Standard Operator',
+      dept: formData.deptCode || 'GEN-01',
+      permissions: { ...permissions },
+      lastLogin: 'Never',
+      status: 'offline'
+    };
+
+    setUsers(prev => [...prev, newUser]);
+    setIsWizardOpen(false);
+    resetWizard();
+    
+    toast({
+      title: "User Registered",
+      description: `${newUser.name} has been added to the security matrix.`,
+    });
+  };
+
+  const resetWizard = () => {
+    setStep(1);
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      jobTitle: '',
+      deptCode: '',
+      password: ''
+    });
+    setPermissions({ overview: 'read' });
+  };
+
+  const handleDeleteUser = (id: string) => {
+    setUsers(prev => prev.filter(u => u.id !== id));
+    toast({
+      title: "User Revoked",
+      description: "Access privileges have been terminated.",
+      variant: "destructive"
+    });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
@@ -114,7 +182,7 @@ export function UserManagement() {
            <Button 
             className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
             onClick={() => {
-              setStep(1);
+              resetWizard();
               setIsWizardOpen(true);
             }}
            >
@@ -130,18 +198,18 @@ export function UserManagement() {
               <TableRow className="hover:bg-transparent border-slate-100">
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Permissions</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Activity</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Functional Role</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="flex-1">
-              {usersData.length > 0 ? usersData.map((user) => (
+              {users.length > 0 ? users.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
                   <TableCell className="px-8">
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
-                          {user.name.split(' ').map((n: any) => n[0]).join('')}
+                          {user.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         {user.status === 'online' && (
                           <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
@@ -149,28 +217,39 @@ export function UserManagement() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
-                        <span className="text-[9px] text-slate-400 font-code">{user.email}</span>
+                        <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">{user.id}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn(
-                      "text-[8px] font-bold uppercase gap-1.5 px-2.5 py-0.5 bg-white border-slate-200",
-                      user.role === 'System Admin' ? "text-accent border-accent/20" : "text-primary border-primary/20"
-                    )}>
-                      {user.role === 'System Admin' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
-                      {user.role}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.keys(user.permissions).slice(0, 3).map((p) => (
+                        <Badge key={p} variant="outline" className="text-[8px] font-bold uppercase bg-white border-slate-200 text-primary">
+                          {p}
+                        </Badge>
+                      ))}
+                      {Object.keys(user.permissions).length > 3 && (
+                        <span className="text-[8px] font-bold text-slate-400 ml-1">+{Object.keys(user.permissions).length - 3}</span>
+                      )}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-[10px] text-slate-500 font-medium font-code">
-                    {user.lastLogin}
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">{user.role}</span>
+                      <span className="text-[9px] text-slate-400 font-medium uppercase">{user.dept}</span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right px-8">
                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary">
                          <Edit2 className="h-3.5 w-3.5" />
                        </Button>
-                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-accent">
+                       <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-slate-400 hover:text-accent"
+                        onClick={() => handleDeleteUser(user.id)}
+                       >
                          <Trash2 className="h-3.5 w-3.5" />
                        </Button>
                     </div>
@@ -199,7 +278,7 @@ export function UserManagement() {
             <div className="space-y-4">
                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-primary/30 transition-all">
                   <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Active Sessions</p>
-                  <p className="text-4xl font-headline font-bold text-[#001F3D]">0</p>
+                  <p className="text-4xl font-headline font-bold text-[#001F3D]">{users.filter(u => u.status === 'online').length}</p>
                   <div className="h-1 w-8 bg-primary rounded-full mt-4 group-hover:w-12 transition-all duration-500" />
                </div>
                
@@ -233,10 +312,6 @@ export function UserManagement() {
 
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
-          <DialogHeader className="sr-only">
-            <DialogTitle>User Onboarding Wizard</DialogTitle>
-            <DialogDescription>Automated ERP registration flow with mobile capture and permission matrix.</DialogDescription>
-          </DialogHeader>
           <div className="flex h-[750px]">
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
@@ -291,15 +366,30 @@ export function UserManagement() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
-                        <Input placeholder="e.g. Miloš Kovařík" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
+                        <Input 
+                          placeholder="e.g. Miloš Kovařík" 
+                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Network Email Address</Label>
-                        <Input placeholder="name@toolroom.tech" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
+                        <Input 
+                          placeholder="name@toolroom.tech" 
+                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Primary Mobile Link</Label>
-                        <Input placeholder="+1 (555) 000-0000" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
+                        <Input 
+                          placeholder="+1 (555) 000-0000" 
+                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        />
                       </div>
                     </div>
                   </div>
@@ -392,11 +482,21 @@ export function UserManagement() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Job Title</Label>
-                        <Input placeholder="e.g. Lead Machinist" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
+                        <Input 
+                          placeholder="e.g. Lead Machinist" 
+                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          value={formData.jobTitle}
+                          onChange={(e) => setFormData({...formData, jobTitle: e.target.value})}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department Code</Label>
-                        <Input placeholder="e.g. QA-01" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
+                        <Input 
+                          placeholder="e.g. QA-01" 
+                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          value={formData.deptCode}
+                          onChange={(e) => setFormData({...formData, deptCode: e.target.value})}
+                        />
                       </div>
                     </div>
                   </div>
@@ -412,7 +512,13 @@ export function UserManagement() {
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Temporary Master Key</Label>
                         <div className="relative">
-                          <Input type="password" placeholder="••••••••" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20" />
+                          <Input 
+                            type="password" 
+                            placeholder="••••••••" 
+                            className="h-12 bg-slate-50/50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20"
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                          />
                           <Key className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                         </div>
                       </div>
@@ -439,7 +545,7 @@ export function UserManagement() {
                   <ChevronLeft className="h-4 w-4 mr-2" /> Protocol Back
                 </Button>
                 <Button 
-                  onClick={step === 4 ? () => setIsWizardOpen(false) : nextStep}
+                  onClick={step === 4 ? handleRegisterUser : nextStep}
                   className={cn(
                     "rounded-xl px-10 h-12 font-bold text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 flex gap-3",
                     step === 4 ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30" : "bg-[#001F3D] hover:bg-[#002d4f] shadow-primary/30"

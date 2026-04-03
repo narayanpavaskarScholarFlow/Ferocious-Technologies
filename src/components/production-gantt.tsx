@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Box, LayoutGrid, ClipboardList } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Box, LayoutGrid, ClipboardList, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
 
@@ -18,13 +19,25 @@ const mockOrders: Order[] = [
 ];
 
 interface ProductionGanttProps {
+  searchTerm?: string;
   onNavigateToSchedule?: () => void;
   onNavigateToOperations?: (orderId: string) => void;
 }
 
-export function ProductionGantt({ onNavigateToSchedule, onNavigateToOperations }: ProductionGanttProps) {
+export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule, onNavigateToOperations }: ProductionGanttProps) {
   const [view, setView] = useState<'week' | 'month'>('week');
+  const [localSearch, setLocalSearch] = useState('');
   
+  const activeSearch = globalSearch || localSearch;
+
+  // Filter Logic
+  const filteredOrders = useMemo(() => {
+    return mockOrders.filter(order => 
+      order.id.includes(activeSearch) || 
+      order.customer.toLowerCase().includes(activeSearch.toLowerCase())
+    );
+  }, [activeSearch]);
+
   // Calculate Timeline Data
   const timelineDays = useMemo(() => {
     if (view === 'week') {
@@ -65,6 +78,26 @@ export function ProductionGantt({ onNavigateToSchedule, onNavigateToOperations }
         </div>
         
         <div className="flex items-center gap-4">
+          <div className="relative w-64 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-primary" />
+            <Input 
+              placeholder="Filter by ID or Client..." 
+              className="h-10 pl-10 pr-10 rounded-full bg-slate-100 border-none text-xs focus-visible:ring-2 focus-visible:ring-primary/20"
+              value={activeSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+            />
+            {activeSearch && (
+              <button 
+                onClick={() => setLocalSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="h-8 w-[1px] bg-slate-200 mx-2" />
+
           <Button 
             variant="outline" 
             className="rounded-full border-slate-200 h-11 px-6 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50"
@@ -121,10 +154,10 @@ export function ProductionGantt({ onNavigateToSchedule, onNavigateToOperations }
 
           {/* Orders Rows */}
           <div className="flex flex-col">
-            {mockOrders.map((order) => {
+            {filteredOrders.map((order) => {
               const { left, width } = getPositionStyles(order);
               return (
-                <div key={order.id} className="flex border-b border-slate-50 last:border-b-0 hover:bg-slate-50/30 transition-colors group">
+                <div key={order.id} className="flex border-b border-slate-50 last:border-b-0 hover:bg-slate-50/30 transition-colors group animate-in slide-in-from-left-2 duration-300">
                   <div className="w-64 p-6 border-r border-slate-100 flex flex-col gap-1 justify-center">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-slate-900">#{order.id}</span>
@@ -186,6 +219,12 @@ export function ProductionGantt({ onNavigateToSchedule, onNavigateToOperations }
                 </div>
               );
             })}
+            {filteredOrders.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                <Box className="h-12 w-12 mb-4" />
+                <p className="text-xs font-bold uppercase tracking-widest">No matching Work Orders found in current timeline</p>
+              </div>
+            )}
           </div>
         </div>
       </Card>

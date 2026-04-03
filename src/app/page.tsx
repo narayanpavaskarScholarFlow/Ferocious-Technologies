@@ -51,8 +51,13 @@ export default function IndustrialERP() {
   // Automation Logic: Detect Order ID in Global Search
   const handleSearchChange = (val: string) => {
     setGlobalSearch(val);
-    // If the input matches a typical Work Order ID format (e.g., 6 digits), trigger navigation
-    if (val.length >= 5 && /^\d+$/.test(val)) {
+    
+    // Auto-Navigation Logic
+    // If we are on Overview or Dashboard and type a 5+ digit ID, jump to operations
+    const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
+    const isNavigationView = ['overview', 'orders', 'inventory', 'billing'].includes(currentView);
+    
+    if (isOrderPattern && isNavigationView) {
       setActiveWorkOrderId(val);
       setCurrentView('operations');
     }
@@ -116,7 +121,7 @@ export default function IndustrialERP() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input 
                 suppressHydrationWarning 
-                placeholder="Search ERP index..." 
+                placeholder="Search Work Order ID..." 
                 className="h-10 pl-10 pr-12 rounded-full bg-black/[0.03] border-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-sm"
                 value={globalSearch}
                 onChange={(e) => handleSearchChange(e.target.value)}
@@ -185,6 +190,7 @@ export default function IndustrialERP() {
             {currentView === 'vendor' && <VendorManagement />}
             {currentView === 'gantt' && (
               <ProductionGantt 
+                searchTerm={globalSearch}
                 onNavigateToSchedule={() => setCurrentView('weekly-plan')}
                 onNavigateToOperations={handleNavigateToOperations}
               />

@@ -37,7 +37,8 @@ import {
   Package,
   Truck,
   Calendar,
-  UserX
+  UserX,
+  Zap
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -97,21 +98,21 @@ export function UserManagement() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
-            <Shield className="h-4 w-4" />
+    <div className="space-y-8 animate-in fade-in duration-1000">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-accent font-bold text-[9px] uppercase tracking-[0.3em]">
+            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-red" />
             Security Governance
           </div>
-          <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900">
-            System Access Control
+          <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
+            System Access <span className="text-slate-400 font-medium">Control</span>
           </h2>
-          <p className="text-muted-foreground font-medium">Manage identity verification and role-based permissions.</p>
+          <p className="text-xs text-muted-foreground font-medium">Manage identity verification and role-based permissions.</p>
         </div>
         <div className="flex items-center gap-3">
            <Button 
-            className="rounded-full bg-primary hover:bg-primary/90 text-white gap-2 h-11 px-8 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20"
+            className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
             onClick={() => {
               setStep(1);
               setIsWizardOpen(true);
@@ -122,66 +123,68 @@ export function UserManagement() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <Card className="lg:col-span-8 overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <Card className="lg:col-span-8 overflow-hidden border-slate-200/60 bg-white shadow-xl rounded-2xl min-h-[500px] flex flex-col">
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent border-slate-100">
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-[300px]">User Identity</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Permissions</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Activity</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {usersData.map((user) => (
-                <TableRow key={user.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
+            <TableBody className="flex-1">
+              {usersData.length > 0 ? usersData.map((user) => (
+                <TableRow key={user.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
                   <TableCell className="px-8">
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
+                        <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
                           {user.name.split(' ').map((n: any) => n[0]).join('')}
                         </div>
                         {user.status === 'online' && (
-                          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white shadow-sm" />
+                          <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{user.name}</span>
-                        <span className="text-[10px] text-slate-400 font-code">{user.email}</span>
+                        <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
+                        <span className="text-[9px] text-slate-400 font-code">{user.email}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn(
-                      "text-[9px] font-bold uppercase gap-2 px-3 py-1 bg-white border-slate-200",
-                      user.role === 'System Admin' ? "text-red-600" : "text-slate-600"
+                      "text-[8px] font-bold uppercase gap-1.5 px-2.5 py-0.5 bg-white border-slate-200",
+                      user.role === 'System Admin' ? "text-accent border-accent/20" : "text-primary border-primary/20"
                     )}>
-                      {user.role === 'System Admin' ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                      {user.role === 'System Admin' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
                       {user.role}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-500 font-medium">
+                  <TableCell className="text-[10px] text-slate-500 font-medium font-code">
                     {user.lastLogin}
                   </TableCell>
                   <TableCell className="text-right px-8">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-primary">
-                         <MoreHorizontal className="h-4 w-4" />
+                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary">
+                         <Edit2 className="h-3.5 w-3.5" />
                        </Button>
-                       <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500">
-                         <Trash2 className="h-4 w-4" />
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-accent">
+                         <Trash2 className="h-3.5 w-3.5" />
                        </Button>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-              {usersData.length === 0 && (
+              )) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center opacity-20 py-10">
-                      <UserX className="h-12 w-12 text-slate-400 mb-4" />
-                      <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">No users registered in system</p>
+                  <TableCell colSpan={4} className="h-[400px] text-center">
+                    <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                      <div className="p-6 bg-slate-50 rounded-full mb-6">
+                        <UserX className="h-12 w-12 text-slate-300" />
+                      </div>
+                      <p className="text-[#001F3D] font-headline font-bold text-xs uppercase tracking-widest">No Users Registered in System</p>
+                      <p className="text-[10px] text-slate-400 mt-2 max-w-xs mx-auto">Initialize security matrix by onboarding your first administrative or operational user.</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -190,34 +193,40 @@ export function UserManagement() {
           </Table>
         </Card>
 
-        <div className="lg:col-span-4 space-y-8">
-          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-8">Security Summary</h3>
-            <div className="space-y-6">
-               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Active Sessions</p>
-                  <p className="text-4xl font-display font-bold text-slate-900">0</p>
-                  <div className="h-1 w-12 bg-primary rounded-full mt-4" />
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col gap-8">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Security Summary</h3>
+            <div className="space-y-4">
+               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-primary/30 transition-all">
+                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Active Sessions</p>
+                  <p className="text-4xl font-headline font-bold text-[#001F3D]">0</p>
+                  <div className="h-1 w-8 bg-primary rounded-full mt-4 group-hover:w-12 transition-all duration-500" />
                </div>
-               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Login Failures (24h)</p>
-                  <p className="text-4xl font-display font-bold text-red-500">0</p>
-                  <div className="h-1 w-12 bg-red-500 rounded-full mt-4" />
+               
+               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-accent/30 transition-all">
+                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Login Failures (24h)</p>
+                  <p className="text-4xl font-headline font-bold text-accent">0</p>
+                  <div className="h-1 w-8 bg-accent rounded-full mt-4 group-hover:w-12 transition-all duration-500" />
                </div>
-               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Audit Log Integrity</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Verified ✓</span>
+
+               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-emerald-500/30 transition-all">
+                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-2">Audit Log Integrity</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">System Verified ✓</span>
                   </div>
                </div>
             </div>
           </Card>
-          <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            <p className="text-xs font-medium text-slate-600 leading-snug">
-              Two-factor authentication is currently <span className="font-bold text-primary">enforced</span> for all administrative accounts.
-            </p>
+          
+          <div className="p-6 bg-[#001F3D]/[0.02] border border-[#001F3D]/10 rounded-2xl flex items-start gap-4">
+            <div className="h-2 w-2 rounded-full bg-accent mt-1 animate-pulse-red" />
+            <div>
+              <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Enforcement Note</p>
+              <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-1">
+                Two-factor authentication is currently <span className="font-bold text-[#001F3D]">enforced</span> for all administrative and executive plant accounts.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -231,7 +240,7 @@ export function UserManagement() {
           <div className="flex h-[750px]">
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
-                <div className="p-4 bg-primary rounded-2xl w-fit shadow-xl shadow-primary/20">
+                <div className="p-4 bg-[#001F3D] rounded-2xl w-fit shadow-xl shadow-primary/20">
                   <UserPlus className="h-7 w-7 text-white" />
                 </div>
                 <div className="space-y-8">
@@ -245,28 +254,28 @@ export function UserManagement() {
                       {item.s < 4 && (
                         <div className={cn(
                           "absolute left-3 top-8 w-[1px] h-10 transition-colors",
-                          step > item.s ? "bg-green-500" : "bg-slate-200"
+                          step > item.s ? "bg-emerald-500" : "bg-slate-200"
                         )} />
                       )}
                       <div className={cn(
                         "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10",
-                        step === item.s ? "bg-primary border-primary text-white scale-125 shadow-lg shadow-primary/30" : 
-                        step > item.s ? "bg-green-500 border-green-500 text-white" : "bg-white border-slate-200 text-slate-400"
+                        step === item.s ? "bg-[#001F3D] border-[#001F3D] text-white scale-125 shadow-lg shadow-primary/30" : 
+                        step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-400"
                       )}>
                         {step > item.s ? <Check className="h-3 w-3" /> : item.s}
                       </div>
                       <div className="flex flex-col">
                         <span className={cn(
-                          "text-sm font-bold transition-colors duration-500 leading-none",
-                          step === item.s ? "text-slate-900" : "text-slate-400"
+                          "text-[11px] font-bold transition-colors duration-500 leading-none",
+                          step === item.s ? "text-[#001F3D]" : "text-slate-400"
                         )}>{item.label}</span>
-                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1.5">{item.desc}</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-[0.15em] mt-1.5">{item.desc}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+              <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">
                 ERP_AUTO_ONBOARD_V2.4
               </div>
             </div>
@@ -276,21 +285,21 @@ export function UserManagement() {
                 {step === 1 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
-                      <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">01. Identity Registration</h3>
-                      <p className="text-base text-muted-foreground mt-2">Provide foundational contact details.</p>
+                      <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">01. Identity</h3>
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">Foundational Contact Protocols</p>
                     </div>
                     <div className="space-y-6">
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Full Name</Label>
-                        <Input placeholder="e.g. Miloš Kovařík" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
+                        <Input placeholder="e.g. Miloš Kovařík" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
                       </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Address</Label>
-                        <Input placeholder="name@toolroom.tech" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Network Email Address</Label>
+                        <Input placeholder="name@toolroom.tech" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
                       </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Mobile Number</Label>
-                        <Input placeholder="+1 (555) 000-0000" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Primary Mobile Link</Label>
+                        <Input placeholder="+1 (555) 000-0000" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
                       </div>
                     </div>
                   </div>
@@ -299,69 +308,69 @@ export function UserManagement() {
                 {step === 2 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500 flex flex-col flex-grow overflow-hidden">
                     <div>
-                      <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">02. Access Control Matrix</h3>
-                      <p className="text-base text-muted-foreground mt-2">Define granular permission levels for the core ecosystem.</p>
+                      <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">02. Access Matrix</h3>
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">Granular Permission Assignments</p>
                     </div>
-                    <div className="space-y-4 overflow-y-auto pr-4 flex-grow custom-scrollbar">
+                    <div className="space-y-3 overflow-y-auto pr-4 flex-grow custom-scrollbar">
                       {ACCESS_PAGES.map((page) => (
                         <div 
                           key={page.id}
                           className={cn(
-                            "p-6 rounded-[1.5rem] border transition-all duration-500 flex flex-col gap-6",
-                            permissions[page.id] ? "bg-primary/[0.03] border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                            "p-5 rounded-2xl border transition-all duration-500 flex flex-col gap-4",
+                            permissions[page.id] ? "bg-primary/[0.03] border-primary/20" : "bg-white border-slate-100"
                           )}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className={cn(
-                                "p-3 rounded-xl transition-colors",
+                                "p-2.5 rounded-lg transition-colors",
                                 permissions[page.id] ? "bg-white shadow-sm" : "bg-slate-50"
                               )}>
                                 <page.icon className={cn(
-                                  "h-5 w-5 transition-colors",
+                                  "h-4 w-4 transition-colors",
                                   permissions[page.id] ? "text-primary" : "text-slate-400"
                                 )} />
                               </div>
                               <span className={cn(
-                                "text-base font-bold transition-colors",
-                                permissions[page.id] ? "text-slate-900" : "text-slate-500"
+                                "text-[11px] font-bold uppercase tracking-tight transition-colors",
+                                permissions[page.id] ? "text-[#001F3D]" : "text-slate-400"
                               )}>{page.label}</span>
                             </div>
                             <div 
                               onClick={() => handleTogglePage(page.id, !permissions[page.id])}
                               className={cn(
-                                "h-6 w-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all",
-                                permissions[page.id] ? "bg-primary border-primary text-white" : "bg-white border-slate-200"
+                                "h-5 w-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all",
+                                permissions[page.id] ? "bg-[#001F3D] border-[#001F3D] text-white" : "bg-white border-slate-200"
                               )}
                             >
-                              {permissions[page.id] && <Check className="h-3.5 w-3.5" />}
+                              {permissions[page.id] && <Check className="h-3 w-3" />}
                             </div>
                           </div>
                           {permissions[page.id] && (
-                            <div className="animate-in fade-in zoom-in-95 duration-500 pt-2">
+                            <div className="animate-in fade-in zoom-in-95 duration-500">
                               <RadioGroup 
                                 value={permissions[page.id]} 
                                 onValueChange={(val) => handleSetPermission(page.id, val as PermissionLevel)}
-                                className="grid grid-cols-3 gap-3"
+                                className="grid grid-cols-3 gap-2"
                               >
                                 {[
-                                  { id: 'read', label: 'Read Only', icon: Eye },
-                                  { id: 'edit', label: 'Edit', icon: Edit2 },
-                                  { id: 'full', label: 'Full Control', icon: ShieldCheck }
+                                  { id: 'read', label: 'Monitor', icon: Eye },
+                                  { id: 'edit', label: 'Operator', icon: Edit2 },
+                                  { id: 'full', label: 'Command', icon: ShieldCheck }
                                 ].map((opt) => (
-                                  <div key={opt.id} className="relative group/opt">
+                                  <div key={opt.id} className="relative">
                                     <RadioGroupItem value={opt.id} id={`${page.id}-${opt.id}`} className="sr-only" />
                                     <Label 
                                       htmlFor={`${page.id}-${opt.id}`} 
                                       className={cn(
-                                        "flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer text-center h-full justify-center",
+                                        "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all cursor-pointer text-center",
                                         permissions[page.id] === opt.id 
-                                          ? "bg-white border-primary text-primary shadow-md" 
+                                          ? "bg-white border-primary text-primary shadow-sm" 
                                           : "bg-white/50 border-transparent hover:border-slate-200 text-slate-400"
                                       )}
                                     >
-                                      <opt.icon className={cn("h-4 w-4", permissions[page.id] === opt.id ? "text-primary" : "text-slate-300")} />
-                                      <span className="text-[10px] font-bold uppercase tracking-wider">{opt.label}</span>
+                                      <opt.icon className={cn("h-3 w-3", permissions[page.id] === opt.id ? "text-primary" : "text-slate-300")} />
+                                      <span className="text-[8px] font-bold uppercase tracking-widest">{opt.label}</span>
                                     </Label>
                                   </div>
                                 ))}
@@ -377,17 +386,17 @@ export function UserManagement() {
                 {step === 3 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
-                      <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">03. User Profile Setup</h3>
-                      <p className="text-base text-muted-foreground mt-2">Functional role assignment.</p>
+                      <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">03. Role Setup</h3>
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">Organizational Placement</p>
                     </div>
                     <div className="space-y-6">
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Professional Role</Label>
-                        <Input placeholder="e.g. Lead Machinist" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Job Title</Label>
+                        <Input placeholder="e.g. Lead Machinist" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
                       </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Department</Label>
-                        <Input placeholder="e.g. Quality Assurance" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl focus-visible:ring-primary/20" />
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department Code</Label>
+                        <Input placeholder="e.g. QA-01" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20" />
                       </div>
                     </div>
                   </div>
@@ -396,23 +405,23 @@ export function UserManagement() {
                 {step === 4 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
-                      <h3 className="text-3xl font-display font-bold text-slate-900 tracking-tight">04. Credentials</h3>
-                      <p className="text-base text-muted-foreground mt-2">Security layer initialization.</p>
+                      <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">04. Credentials</h3>
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">Secure Link Initialization</p>
                     </div>
                     <div className="space-y-6">
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Initial Password</Label>
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Temporary Master Key</Label>
                         <div className="relative">
-                          <Input type="password" placeholder="••••••••" className="h-14 bg-slate-50/50 border-none text-base rounded-2xl pr-14 focus-visible:ring-primary/20" />
-                          <Key className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                          <Input type="password" placeholder="••••••••" className="h-12 bg-slate-50/50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20" />
+                          <Key className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                         </div>
                       </div>
-                      <div className="p-6 bg-primary/[0.03] rounded-[1.5rem] border border-primary/10 flex gap-5 items-center">
+                      <div className="p-6 bg-emerald-500/[0.03] rounded-2xl border border-emerald-500/10 flex gap-5 items-center">
                         <div className="p-3 bg-white rounded-xl shadow-sm">
-                          <ShieldCheck className="h-6 w-6 text-primary" />
+                          <ShieldCheck className="h-6 w-6 text-emerald-500" />
                         </div>
-                        <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                          Secure activation link will be dispatched automatically upon completion.
+                        <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest leading-relaxed">
+                          Secure activation link and 2FA setup instructions will be dispatched automatically to the registered network email.
                         </p>
                       </div>
                     </div>
@@ -425,18 +434,18 @@ export function UserManagement() {
                   variant="ghost" 
                   onClick={prevStep} 
                   disabled={step === 1}
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 hover:bg-transparent px-0"
+                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-[#001F3D] hover:bg-transparent px-0"
                 >
-                  <ChevronLeft className="h-4 w-4 mr-2" /> Back
+                  <ChevronLeft className="h-4 w-4 mr-2" /> Protocol Back
                 </Button>
                 <Button 
                   onClick={step === 4 ? () => setIsWizardOpen(false) : nextStep}
                   className={cn(
-                    "rounded-full px-10 h-14 font-bold text-xs uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 flex gap-3",
-                    step === 4 ? "bg-green-600 hover:bg-green-700 shadow-green-600/30" : "bg-primary hover:bg-primary/90 shadow-primary/30"
+                    "rounded-xl px-10 h-12 font-bold text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 flex gap-3",
+                    step === 4 ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30" : "bg-[#001F3D] hover:bg-[#002d4f] shadow-primary/30"
                   )}
                 >
-                  {step === 4 ? 'Complete Registration' : 'Next Step'}
+                  {step === 4 ? 'Commit & Finalize' : 'Execute Next Step'}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

@@ -6,9 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Box, LayoutGrid, ClipboardList, Search, X } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  Clock, 
+  Box, 
+  LayoutGrid, 
+  ClipboardList, 
+  Search, 
+  X,
+  Activity,
+  Zap
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
+import { format, addMonths, subMonths, addDays, subDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 
 const mockOrders: Order[] = [
   { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', progress: 85 },
@@ -25,10 +39,22 @@ interface ProductionGanttProps {
 }
 
 export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule, onNavigateToOperations }: ProductionGanttProps) {
-  const [view, setView] = useState<'week' | 'month'>('week');
+  const [view, setView] = useState<'week' | 'month'>('month');
   const [localSearch, setLocalSearch] = useState('');
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 3)); // Starting at Mar 3, 2025
   
   const activeSearch = globalSearch || localSearch;
+
+  // Navigation Handlers
+  const handleNext = () => {
+    if (view === 'month') setCurrentDate(prev => addMonths(prev, 1));
+    else setCurrentDate(prev => addDays(prev, 7));
+  };
+
+  const handlePrev = () => {
+    if (view === 'month') setCurrentDate(prev => subMonths(prev, 1));
+    else setCurrentDate(prev => subDays(prev, 7));
+  };
 
   // Filter Logic
   const filteredOrders = useMemo(() => {
@@ -39,28 +65,42 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
   }, [activeSearch]);
 
   // Calculate Timeline Data
-  const timelineDays = useMemo(() => {
+  const timelineInterval = useMemo(() => {
     if (view === 'week') {
-      return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    } else {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
     }
-    // Simple 30 day month mock
-    return Array.from({ length: 30 }, (_, i) => (i + 1).toString());
-  }, [view]);
+  }, [view, currentDate]);
 
   const getPositionStyles = (order: Order) => {
-    // This is a simplified mock logic for positioning bars on the timeline
-    const startDay = parseInt(order.startDate.split('.')[0]);
-    const endDay = parseInt(order.endDate.split('.')[0]);
-    
-    if (view === 'week') {
-      const left = ((startDay % 7) * 14.2) + '%';
-      const width = Math.max(10, ((endDay - startDay + 1) * 14.2)) + '%';
-      return { left, width };
-    } else {
-      const left = ((startDay / 30) * 100) + '%';
-      const width = Math.max(5, ((endDay - startDay + 1) / 30) * 100) + '%';
-      return { left, width };
-    }
+    // Parsing dd.mm.yyyy
+    const [sD, sM, sY] = order.startDate.split('.').map(Number);
+    const [eD, eM, eY] = order.endDate.split('.').map(Number);
+    const start = new Date(sY, sM - 1, sD);
+    const end = new Date(eY, eM - 1, eD);
+
+    const timelineStart = timelineInterval[0];
+    const timelineEnd = timelineInterval[timelineInterval.length - 1];
+
+    // Check if order is within view
+    if (end < timelineStart || start > timelineEnd) return null;
+
+    const visibleStart = start < timelineStart ? timelineStart : start;
+    const visibleEnd = end > timelineEnd ? timelineEnd : end;
+
+    const totalDays = timelineInterval.length;
+    const diffStart = Math.max(0, Math.floor((visibleStart.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const diffDuration = Math.ceil((visibleEnd.getTime() - visibleStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    const left = (diffStart / totalDays) * 100 + '%';
+    const width = (diffDuration / totalDays) * 100 + '%';
+
+    return { left, width };
   };
 
   return (
@@ -123,13 +163,16 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
           <div className="h-10 w-[1px] bg-slate-200 mx-2" />
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-slate-200">
+            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-slate-200" onClick={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="px-4 text-xs font-bold text-slate-600 uppercase tracking-widest">
-              {view === 'week' ? 'Mar 03 - Mar 09' : 'March 2025'}
+            <div className="px-4 text-xs font-bold text-slate-600 uppercase tracking-widest min-w-[140px] text-center">
+              {view === 'week' 
+                ? `${format(timelineInterval[0], 'MMM dd')} - ${format(timelineInterval[6], 'MMM dd')}`
+                : format(currentDate, 'MMMM yyyy')
+              }
             </div>
-            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-slate-200">
+            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-slate-200" onClick={handleNext}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -137,96 +180,103 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
       </header>
 
       <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
-        <div className="flex flex-col">
-          {/* Timeline Header */}
-          <div className="flex border-b border-slate-100 bg-slate-50/50">
-            <div className="w-64 p-6 border-r border-slate-100 flex items-center">
-              <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Work Order Ledger</span>
-            </div>
-            <div className="flex-1 flex">
-              {timelineDays.map((day) => (
-                <div key={day} className="flex-1 p-6 border-r border-slate-100 last:border-r-0 text-center">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Orders Rows */}
-          <div className="flex flex-col">
-            {filteredOrders.map((order) => {
-              const { left, width } = getPositionStyles(order);
-              return (
-                <div key={order.id} className="flex border-b border-slate-50 last:border-b-0 hover:bg-slate-50/30 transition-colors group animate-in slide-in-from-left-2 duration-300">
-                  <div className="w-64 p-6 border-r border-slate-100 flex flex-col gap-1 justify-center">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900">#{order.id}</span>
-                      <div className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        order.status === 'Active' ? 'bg-primary' : 
-                        order.status === 'Completed' ? 'bg-green-500' : 'bg-amber-500'
-                      )} />
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight truncate">{order.customer}</span>
+        <ScrollArea className="w-full">
+          <div className="min-w-[1200px]">
+            {/* Timeline Header */}
+            <div className="flex border-b border-slate-100 bg-slate-50/50">
+              <div className="w-64 p-6 border-r border-slate-100 flex items-center bg-white sticky left-0 z-20">
+                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Work Order Ledger</span>
+              </div>
+              <div className="flex-1 flex">
+                {timelineInterval.map((day, idx) => (
+                  <div key={idx} className="flex-1 p-6 border-r border-slate-100 last:border-r-0 text-center min-w-[40px]">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">
+                      {view === 'week' ? format(day, 'EEE') : format(day, 'd')}
+                    </span>
                   </div>
-                  
-                  <div className="flex-1 relative h-24 flex items-center">
-                    {/* Grid Lines */}
-                    <div className="absolute inset-0 flex pointer-events-none opacity-20">
-                      {timelineDays.map((day) => (
-                        <div key={day} className="flex-1 border-r border-slate-200 last:border-none" />
-                      ))}
-                    </div>
+                ))}
+              </div>
+            </div>
 
-                    {/* Gantt Bar */}
-                    <div 
-                      className="absolute h-12 rounded-2xl flex flex-col justify-center px-4 shadow-lg group/bar cursor-pointer hover:scale-[1.02] transition-all duration-500 overflow-hidden"
-                      style={{ 
-                        left, 
-                        width,
-                        background: order.status === 'Completed' ? '#ecfdf5' : order.status === 'Active' ? '#eff6ff' : '#fffbeb',
-                        border: `1px solid ${order.status === 'Completed' ? '#10b981' : order.status === 'Active' ? '#3b82f6' : '#f59e0b'}`
-                      }}
-                      onClick={() => onNavigateToOperations?.(order.id)}
-                    >
-                      <div className="flex justify-between items-center mb-1 relative z-10">
-                        <span className={cn(
-                          "text-[9px] font-bold uppercase",
-                          order.status === 'Completed' ? 'text-green-700' : order.status === 'Active' ? 'text-blue-700' : 'text-amber-700'
-                        )}>
-                          {order.progress}%
-                        </span>
-                        <Clock className={cn(
-                          "h-3 w-3",
-                          order.status === 'Completed' ? 'text-green-400' : order.status === 'Active' ? 'text-blue-400' : 'text-amber-400'
+            {/* Orders Rows */}
+            <div className="flex flex-col">
+              {filteredOrders.map((order) => {
+                const styles = getPositionStyles(order);
+                return (
+                  <div key={order.id} className="flex border-b border-slate-50 last:border-b-0 hover:bg-slate-50/30 transition-colors group animate-in slide-in-from-left-2 duration-300">
+                    <div className="w-64 p-6 border-r border-slate-100 flex flex-col gap-1 justify-center bg-white sticky left-0 z-10 shadow-[4px_0_10px_rgba(0,0,0,0.02)]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">#{order.id}</span>
+                        <div className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          order.status === 'Active' ? 'bg-primary' : 
+                          order.status === 'Completed' ? 'bg-green-500' : 'bg-amber-500'
                         )} />
                       </div>
-                      <div className="h-1 bg-white/50 rounded-full overflow-hidden relative z-10">
+                      <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight truncate">{order.customer}</span>
+                    </div>
+                    
+                    <div className="flex-1 relative h-24 flex items-center">
+                      {/* Grid Lines */}
+                      <div className="absolute inset-0 flex pointer-events-none opacity-20">
+                        {timelineInterval.map((_, idx) => (
+                          <div key={idx} className="flex-1 border-r border-slate-200 last:border-none" />
+                        ))}
+                      </div>
+
+                      {/* Gantt Bar */}
+                      {styles && (
                         <div 
-                          className={cn(
-                            "h-full transition-all duration-1000",
-                            order.status === 'Completed' ? 'bg-green-500' : order.status === 'Active' ? 'bg-blue-500' : 'bg-amber-500'
-                          )}
-                          style={{ width: `${order.progress}%` }}
-                        />
-                      </div>
-                      {/* Sub-text on hover */}
-                      <div className="absolute bottom-1 right-4 opacity-0 group-hover/bar:opacity-40 transition-opacity">
-                        <span className="text-[8px] font-bold uppercase font-code">Deadline: {order.endDate}</span>
-                      </div>
+                          className="absolute h-12 rounded-2xl flex flex-col justify-center px-4 shadow-lg group/bar cursor-pointer hover:scale-[1.02] transition-all duration-500 overflow-hidden z-0"
+                          style={{ 
+                            left: styles.left, 
+                            width: styles.width,
+                            background: order.status === 'Completed' ? '#ecfdf5' : order.status === 'Active' ? '#eff6ff' : '#fffbeb',
+                            border: `1px solid ${order.status === 'Completed' ? '#10b981' : order.status === 'Active' ? '#3b82f6' : '#f59e0b'}`
+                          }}
+                          onClick={() => onNavigateToOperations?.(order.id)}
+                        >
+                          <div className="flex justify-between items-center mb-1 relative z-10">
+                            <span className={cn(
+                              "text-[9px] font-bold uppercase",
+                              order.status === 'Completed' ? 'text-green-700' : order.status === 'Active' ? 'text-blue-700' : 'text-amber-700'
+                            )}>
+                              {order.progress}%
+                            </span>
+                            <Clock className={cn(
+                              "h-3 w-3",
+                              order.status === 'Completed' ? 'text-green-400' : order.status === 'Active' ? 'text-blue-400' : 'text-amber-400'
+                            )} />
+                          </div>
+                          <div className="h-1 bg-white/50 rounded-full overflow-hidden relative z-10">
+                            <div 
+                              className={cn(
+                                "h-full transition-all duration-1000",
+                                order.status === 'Completed' ? 'bg-green-500' : order.status === 'Active' ? 'bg-blue-500' : 'bg-amber-500'
+                              )}
+                              style={{ width: `${order.progress}%` }}
+                            />
+                          </div>
+                          {/* Sub-text on hover */}
+                          <div className="absolute bottom-1 right-4 opacity-0 group-hover/bar:opacity-40 transition-opacity">
+                            <span className="text-[8px] font-bold uppercase font-code">Deadline: {order.endDate}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
+                );
+              })}
+              {filteredOrders.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                  <Box className="h-12 w-12 mb-4" />
+                  <p className="text-xs font-bold uppercase tracking-widest">No matching Work Orders found in current timeline</p>
                 </div>
-              );
-            })}
-            {filteredOrders.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 opacity-30">
-                <Box className="h-12 w-12 mb-4" />
-                <p className="text-xs font-bold uppercase tracking-widest">No matching Work Orders found in current timeline</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

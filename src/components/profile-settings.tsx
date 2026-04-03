@@ -25,11 +25,42 @@ import {
   Lock,
   Users,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  LayoutGrid,
+  ShoppingCart,
+  Layers,
+  Boxes,
+  CreditCard,
+  ClipboardList,
+  LineChart,
+  Package,
+  Truck,
+  Calendar,
+  Eye,
+  Edit2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
-import { SystemUser } from '@/lib/types';
+import { SystemUser, PermissionLevel } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+
+const ACCESS_PAGES = [
+  { id: 'overview', label: 'Overview', icon: LayoutGrid },
+  { id: 'orders', label: 'Orders', icon: ShoppingCart },
+  { id: 'routing', label: 'Routing', icon: Layers },
+  { id: 'quality', label: 'QA', icon: ShieldCheck },
+  { id: 'inventory', label: 'Inventory', icon: Boxes },
+  { id: 'billing', label: 'Billing', icon: CreditCard },
+  { id: 'work-log', label: 'Work Log', icon: ClipboardList },
+  { id: 'telemetry', label: 'Telemetry', icon: Cpu },
+  { id: 'resources', label: 'Resources', icon: Users },
+  { id: 'sqcdp', label: 'SQCDP', icon: LineChart },
+  { id: 'pipeline', label: 'Pipeline', icon: Package },
+  { id: 'vendors', label: 'Vendors', icon: Truck },
+  { id: 'schedule', label: 'Schedule', icon: Calendar },
+];
 
 interface ProfileSettingsProps {
   activeTab?: string;
@@ -58,6 +89,23 @@ export function ProfileSettings({
         description: "Administrative profile for Sys_Admin_01 has been updated."
       });
     }, 1000);
+  };
+
+  const handleUpdatePermission = (userId: string, pageId: string, level: PermissionLevel) => {
+    onUsersChange(users.map(u => {
+      if (u.id !== userId) return u;
+      return {
+        ...u,
+        permissions: {
+          ...u.permissions,
+          [pageId]: level
+        }
+      };
+    }));
+    toast({
+      title: "Permission Escalated",
+      description: `Access level for ${pageId} has been updated.`,
+    });
   };
 
   return (
@@ -92,13 +140,15 @@ export function ProfileSettings({
             <User className="h-3.5 w-3.5 mr-2" /> Admin Profile
           </TabsTrigger>
           <TabsTrigger value="access" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <ShieldCheck className="h-3.5 w-3.5 mr-2" /> System Access Ledger
+            <Users className="h-3.5 w-3.5 mr-2" /> User Directory
+          </TabsTrigger>
+          <TabsTrigger value="matrix" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Access Matrix
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="m-0 space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Profile Card */}
             <div className="lg:col-span-4 space-y-6">
               <Card className="p-8 bg-white border-slate-200/60 shadow-xl rounded-2xl flex flex-col items-center text-center">
                 <div className="relative mb-6">
@@ -135,21 +185,8 @@ export function ProfileSettings({
                   <LogOut className="h-3.5 w-3.5" /> Terminate Session
                 </Button>
               </Card>
-
-              <Card className="p-6 bg-primary/[0.02] border-primary/10 border shadow-sm rounded-2xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-primary rounded-lg">
-                    <Shield className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Security Signal</span>
-                </div>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  Your identity is verified via <span className="font-bold text-[#001F3D]">Biometric Protocol V2</span>. Last deep-security audit was completed <span className="text-primary font-bold">2.4h ago</span>.
-                </p>
-              </Card>
             </div>
 
-            {/* Settings Area */}
             <div className="lg:col-span-8 space-y-6">
               <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[2rem] space-y-10">
                 <div className="space-y-8">
@@ -157,7 +194,6 @@ export function ProfileSettings({
                     <User className="h-5 w-5 text-primary" />
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Identity Details</h3>
                   </div>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Network Alias</Label>
@@ -167,76 +203,6 @@ export function ProfileSettings({
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Functional Role</Label>
                       <Input defaultValue="Plant Controller" className="h-11 bg-slate-50 border-none text-xs rounded-xl" />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Primary Network Email</Label>
-                      <Input defaultValue="admin_01@toolroom.tech" className="h-11 bg-slate-50 border-none text-xs rounded-xl" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Contact Signal</Label>
-                      <Input defaultValue="+1 (555) 900-1200" className="h-11 bg-slate-50 border-none text-xs rounded-xl" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="flex items-center gap-3 border-l-4 border-accent pl-4">
-                    <Lock className="h-5 w-5 text-accent" />
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Credentials & Access</h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex flex-col justify-between h-40">
-                      <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Temporary Master Key</p>
-                        <p className="text-xs font-bold text-[#001F3D]">••••••••••••••••</p>
-                      </div>
-                      <Button variant="outline" size="sm" className="w-fit h-8 text-[9px] font-bold uppercase tracking-widest border-slate-200 rounded-lg group">
-                        <RefreshCw className="h-3 w-3 mr-2 group-hover:rotate-180 transition-transform" />
-                        Reset Key Protocol
-                      </Button>
-                    </div>
-
-                    <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex flex-col justify-between h-40">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">2FA Enforcement</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-red" />
-                            <span className="text-[10px] font-bold text-accent uppercase tracking-widest">ACTIVE_SECURE</span>
-                          </div>
-                        </div>
-                        <ShieldAlert className="h-4 w-4 text-accent" />
-                      </div>
-                      <p className="text-[9px] text-slate-400 leading-snug">Multi-factor verification is mandatory for root access tier accounts.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="flex items-center gap-3 border-l-4 border-slate-200 pl-4">
-                    <Settings className="h-5 w-5 text-slate-400" />
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Matrix Configuration</h3>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {[
-                      { label: 'Audit Log Live Stream', desc: 'Enable real-time security events in command header.', icon: Zap },
-                      { label: 'Asset Telemetry Overlay', desc: 'Display node health index on operational charts.', icon: Cpu },
-                      { label: 'Critical Alert Notifications', desc: 'Dispatch signal interruptions to contact links.', icon: Bell },
-                    ].map((pref, i) => (
-                      <div key={i} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 transition-all group">
-                        <div className="flex items-center gap-4">
-                          <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-primary/5">
-                            <pref.icon className="h-4 w-4 text-slate-400 group-hover:text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-[11px] font-bold text-[#001F3D]">{pref.label}</p>
-                            <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-0.5">{pref.desc}</p>
-                          </div>
-                        </div>
-                        <Switch defaultChecked={i < 2} className="data-[state=checked]:bg-primary" />
-                      </div>
-                    ))}
                   </div>
                 </div>
               </Card>
@@ -246,6 +212,84 @@ export function ProfileSettings({
 
         <TabsContent value="access" className="m-0">
           <UserManagement users={users} onUsersChange={onUsersChange} />
+        </TabsContent>
+
+        <TabsContent value="matrix" className="m-0">
+          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
+            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Access Control Matrix</h3>
+                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-1">Granular Security Assignment Ledger</p>
+              </div>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">SECURE_MODE</Badge>
+            </div>
+            
+            <ScrollArea className="w-full">
+              <div className="min-w-[1200px]">
+                <Table>
+                  <TableHeader className="bg-white">
+                    <TableRow className="hover:bg-transparent border-slate-100">
+                      <TableHead className="w-[200px] sticky left-0 bg-white z-20 font-bold text-[9px] uppercase text-slate-400 py-6 px-8 border-r border-slate-50">Identity</TableHead>
+                      {ACCESS_PAGES.map(page => (
+                        <TableHead key={page.id} className="text-center min-w-[100px]">
+                          <div className="flex flex-col items-center gap-1.5">
+                            <page.icon className="h-3.5 w-3.5 text-slate-300" />
+                            <span className="font-bold text-[8px] uppercase tracking-tighter text-slate-400 leading-none">{page.label}</span>
+                          </div>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map(user => (
+                      <TableRow key={user.id} className="hover:bg-slate-50/30 h-16 border-slate-50">
+                        <TableCell className="sticky left-0 bg-white z-10 px-8 border-r border-slate-50">
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
+                            <span className="text-[8px] text-slate-400 font-code uppercase">{user.id}</span>
+                          </div>
+                        </TableCell>
+                        {ACCESS_PAGES.map(page => (
+                          <TableCell key={page.id} className="p-2">
+                            <div className="flex justify-center">
+                              <Select 
+                                value={user.permissions[page.id] || 'none'} 
+                                onValueChange={(val) => handleUpdatePermission(user.id, page.id, val as PermissionLevel)}
+                              >
+                                <SelectTrigger className={cn(
+                                  "h-8 border-none text-[8px] font-bold uppercase w-[80px] rounded-lg transition-all",
+                                  user.permissions[page.id] === 'full' ? "bg-accent/10 text-accent" :
+                                  user.permissions[page.id] === 'edit' ? "bg-primary/10 text-primary" :
+                                  user.permissions[page.id] === 'read' ? "bg-slate-100 text-slate-500" :
+                                  "bg-slate-50 text-slate-300"
+                                )}>
+                                  <SelectValue placeholder="Access" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="none" className="text-[8px] font-bold uppercase">Forbidden</SelectItem>
+                                  <SelectItem value="read" className="text-[8px] font-bold uppercase">Monitor</SelectItem>
+                                  <SelectItem value="edit" className="text-[8px] font-bold uppercase">Operator</SelectItem>
+                                  <SelectItem value="full" className="text-[8px] font-bold uppercase">Command</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                    {users.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={ACCESS_PAGES.length + 1} className="h-40 text-center text-slate-300 font-code text-[10px] uppercase">
+                          No users available for matrix assignment
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

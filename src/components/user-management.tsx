@@ -46,6 +46,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { SystemUser, PermissionLevel } from '@/lib/types';
 
 const ACCESS_PAGES = [
   { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
@@ -63,22 +64,13 @@ const ACCESS_PAGES = [
   { id: 'schedule', label: 'Master Schedule', icon: Calendar },
 ];
 
-type PermissionLevel = 'read' | 'edit' | 'full';
-
-interface SystemUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  dept: string;
-  permissions: Record<string, PermissionLevel>;
-  lastLogin: string;
-  status: 'online' | 'offline';
+interface UserManagementProps {
+  users: SystemUser[];
+  onUsersChange: (users: SystemUser[]) => void;
 }
 
-export function UserManagement() {
+export function UserManagement({ users, onUsersChange }: UserManagementProps) {
   const { toast } = useToast();
-  const [users, setUsers] = useState<SystemUser[]>([]);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [step, setStep] = useState(1);
@@ -125,7 +117,7 @@ export function UserManagement() {
     }
 
     if (editingUser) {
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? {
+      onUsersChange(users.map(u => u.id === editingUser.id ? {
         ...u,
         name: formData.name,
         email: formData.email,
@@ -150,7 +142,7 @@ export function UserManagement() {
         status: 'offline'
       };
 
-      setUsers(prev => [...prev, newUser]);
+      onUsersChange([...users, newUser]);
       toast({
         title: "User Registered",
         description: `${newUser.name} has been added to the security matrix.`,
@@ -177,7 +169,7 @@ export function UserManagement() {
   };
 
   const handleDeleteUser = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
+    onUsersChange(users.filter(u => u.id !== id));
     toast({
       title: "User Revoked",
       description: "Access privileges have been terminated.",

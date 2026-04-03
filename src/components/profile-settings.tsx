@@ -29,14 +29,23 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
+import { SystemUser } from '@/lib/types';
 
 interface ProfileSettingsProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onLogout?: () => void;
+  users: SystemUser[];
+  onUsersChange: (users: SystemUser[]) => void;
 }
 
-export function ProfileSettings({ activeTab = 'profile', onTabChange, onLogout }: ProfileSettingsProps) {
+export function ProfileSettings({ 
+  activeTab = 'profile', 
+  onTabChange, 
+  onLogout,
+  users,
+  onUsersChange
+}: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -236,7 +245,7 @@ export function ProfileSettings({ activeTab = 'profile', onTabChange, onLogout }
         </TabsContent>
 
         <TabsContent value="access" className="m-0">
-          <UserManagement />
+          <UserManagement users={users} onUsersChange={onUsersChange} />
         </TabsContent>
       </Tabs>
     </div>

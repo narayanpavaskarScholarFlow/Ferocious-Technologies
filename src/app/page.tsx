@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -36,6 +36,7 @@ export default function IndustrialERP() {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
+  const [users, setUsers] = useState<SystemUser[]>([]);
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -192,6 +193,8 @@ export default function IndustrialERP() {
                 activeTab={settingsActiveTab} 
                 onTabChange={setSettingsActiveTab} 
                 onLogout={handleLogout}
+                users={users}
+                onUsersChange={setUsers}
               />
             )}
             {currentView === 'gantt' && (

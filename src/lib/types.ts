@@ -176,3 +176,16 @@ export interface QualityCheck {
   status: 'Pass' | 'Fail' | 'Pending' | 'NA';
   remarks?: string;
 }
+
+export type PermissionLevel = 'read' | 'edit' | 'full';
+
+export interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  dept: string;
+  permissions: Record<string, PermissionLevel>;
+  lastLogin: string;
+  status: 'online' | 'offline';
+}

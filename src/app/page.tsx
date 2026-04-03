@@ -21,7 +21,7 @@ import { QualityManagement } from '@/components/quality-management';
 import { ProductionGantt } from '@/components/production-gantt';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, X } from 'lucide-react';
+import { Bell, Search, Command, X, ShieldAlert } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 const INITIAL_LOGS: WorkLogEntryType[] = [];
@@ -40,22 +40,15 @@ export default function IndustrialERP() {
     setMounted(true);
   }, []);
 
-  // Automation Logic: Detect Order ID in Global Search
   const handleSearchChange = (val: string) => {
     setGlobalSearch(val);
-    
-    // Auto-Navigation Logic
-    // If we are on Overview or Dashboard and type a 5+ digit ID, jump to operations
     const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
-    const isNavigationView = ['overview', 'orders', 'inventory', 'billing'].includes(currentView);
-    
-    if (isOrderPattern && isNavigationView) {
+    if (isOrderPattern) {
       setActiveWorkOrderId(val);
       setCurrentView('operations');
     }
   };
 
-  // Centralized Navigation Handlers
   const handleNavigateToOperations = (orderId: string) => {
     setActiveWorkOrderId(orderId);
     setCurrentView('operations');
@@ -66,93 +59,69 @@ export default function IndustrialERP() {
     setCurrentView('order-details');
   };
 
-  const handleNavigateToVendor = () => {
-    setCurrentView('vendor');
-  };
-
   const handleBackToOrders = () => {
     setCurrentView('orders');
   };
 
-  const handleAddLog = (newLog: WorkLogEntryType) => {
-    setLogs(prev => [newLog, ...prev]);
-  };
-
-  const handleUpdateGlobalOpStatus = (orderId: string, operation: string, status: string) => {
-    setGlobalOpStatuses(prev => ({
-      ...prev,
-      [orderId]: {
-        ...(prev[orderId] || {}),
-        [operation]: status
-      }
-    }));
-  };
-
   if (!mounted) {
-    return <div className="min-h-screen bg-white" />;
+    return <div className="min-h-screen bg-slate-50" />;
   }
 
   return (
-    <div className="flex min-h-screen bg-white text-[#1D1D1F]">
+    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-body">
       <SidebarNav currentView={currentView} onViewChange={setCurrentView} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white/95 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-40 border-b border-black/5">
+        <header className="h-16 bg-white border-b border-slate-200/60 sticky top-0 z-40 px-8 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1 className="font-display font-bold text-xl tracking-tight">
-              TOOLROOM<span className="text-primary">2.0</span>
+            <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
+              TOOLROOM<span className="text-accent">2.0</span>
             </h1>
-            <div className="h-6 w-[1px] bg-black/10" />
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-              {currentView.replace('-', ' ')}
+            <div className="h-4 w-[1px] bg-slate-200" />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                {currentView.replace('-', ' ')}
+              </span>
+              <div className="h-1 w-1 rounded-full bg-accent animate-pulse-red" />
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative w-80 hidden lg:block group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+            <div className="relative w-72 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <Input 
-                suppressHydrationWarning 
-                placeholder="Search Work Order ID..." 
-                className="h-10 pl-10 pr-12 rounded-full bg-black/[0.03] border-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-sm"
+                placeholder="Search Work_Order_ID..." 
+                className="h-9 pl-9 pr-10 rounded-lg bg-slate-100 border-none text-[11px] focus-visible:ring-1 focus-visible:ring-primary/20"
                 value={globalSearch}
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
-              {globalSearch && (
-                <button 
-                  onClick={() => setGlobalSearch('')}
-                  className="absolute right-10 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-full hover:bg-black/5 text-muted-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-muted-foreground pointer-events-none border border-black/10 rounded px-1.5 py-0.5 bg-white">
-                <Command className="h-2.5 w-2.5" /> K
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[8px] font-bold text-slate-400 border border-slate-200 rounded px-1 py-0.5 bg-white">
+                <Command className="h-2 w-2" /> K
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              <button suppressHydrationWarning className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-2.5 right-2.5 h-2 w-2 bg-primary rounded-full border-2 border-white" />
+            <div className="flex items-center gap-4">
+              <button className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors relative">
+                <Bell className="h-4.5 w-4.5 text-slate-600" />
+                <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-accent rounded-full border-2 border-white" />
               </button>
-              <div className="h-10 w-[1px] bg-black/10 mx-2" />
+              <div className="h-8 w-[1px] bg-slate-200" />
               <div className="flex items-center gap-3 pl-2 group cursor-pointer">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-bold leading-none">System Admin</p>
-                  <p className="text-[10px] text-muted-foreground leading-none mt-1 group-hover:text-primary transition-colors">Plant Ledger</p>
+                  <p className="text-[11px] font-bold leading-none text-[#001F3D]">Sys_Admin_01</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
                 </div>
-                <Avatar className="h-9 w-9 border-2 border-transparent group-hover:border-primary/20 transition-all">
+                <Avatar className="h-8 w-8 border border-slate-200">
                   <AvatarImage src="https://picsum.photos/seed/erp-user/100/100" />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">SA</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-white text-[10px] font-bold">SA</AvatarFallback>
                 </Avatar>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-8 lg:p-12 max-w-[1600px] mx-auto w-full overflow-visible">
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <main className="flex-1 p-8 max-w-[1600px] mx-auto w-full overflow-visible">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
             {currentView === 'overview' && (
               <ShopFloorOverview 
                 onNavigateToOrders={() => setCurrentView('orders')}
@@ -169,7 +138,7 @@ export default function IndustrialERP() {
             )}
             {currentView === 'billing' && <BillingManagement />}
             {currentView === 'inventory' && <InventoryManagement />}
-            {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={handleAddLog} />}
+            {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={(l) => setLogs([l, ...logs])} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
             {currentView === 'machine-utilization' && <MachineUtilization />}
             {currentView === 'manpower' && <ManpowerUtilization />}
@@ -189,7 +158,11 @@ export default function IndustrialERP() {
                 onNavigateToOperations={handleNavigateToOperations}
               />
             )}
-            {currentView === 'quality' && <QualityManagement onUpdateStatus={handleUpdateGlobalOpStatus} />}
+            {currentView === 'quality' && <QualityManagement onUpdateStatus={(o, op, s) => {
+              setGlobalOpStatuses(prev => ({
+                ...prev, [o]: { ...(prev[o] || {}), [op]: s }
+              }))
+            }} />}
             {currentView === 'order-details' && (
               <OrderDetails 
                 orderId={activeWorkOrderId} 
@@ -200,9 +173,13 @@ export default function IndustrialERP() {
               <OperationsStatus 
                 initialOrderId={activeWorkOrderId} 
                 onOrderIdChange={setActiveWorkOrderId} 
-                onNavigateToVendor={handleNavigateToVendor}
+                onNavigateToVendor={() => setCurrentView('vendor')}
                 externalOpStatuses={globalOpStatuses}
-                onStatusChange={handleUpdateGlobalOpStatus}
+                onStatusChange={(o, op, s) => {
+                  setGlobalOpStatuses(prev => ({
+                    ...prev, [o]: { ...(prev[o] || {}), [op]: s }
+                  }))
+                }}
               />
             )}
           </div>

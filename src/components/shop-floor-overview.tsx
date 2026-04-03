@@ -32,35 +32,49 @@ import {
 import { cn } from '@/lib/utils';
 
 const kpiData = [
-  { id: 'inventory', label: 'Inventory Ledger', total: '1,244', sub1: 'SKUs Active', sub1Val: 89, sub2: 'Shortage', sub2Val: 12, icon: Package, color: 'text-blue-500' },
-  { id: 'billing', label: 'Revenue Pipeline', total: '$42,350', sub1: 'Paid MTD', sub1Val: '$11K', sub2: 'Pending', sub2Val: '$5.6K', icon: DollarSign, color: 'text-green-500' },
-  { id: 'orders', label: 'Production Load', total: '50', sub1: 'WIP Units', sub1Val: 29, sub2: 'In Queue', sub2Val: 21, icon: ShoppingCart, color: 'text-primary' },
+  { id: 'inventory', label: 'Inventory Ledger', total: '0', sub1: 'SKUs Active', sub1Val: 0, sub2: 'Shortage', sub2Val: 0, icon: Package, color: 'text-blue-500' },
+  { id: 'billing', label: 'Revenue Pipeline', total: '$0.00', sub1: 'Paid MTD', sub1Val: '$0', sub2: 'Pending', sub2Val: '$0', icon: DollarSign, color: 'text-green-500' },
+  { id: 'orders', label: 'Production Load', total: '0', sub1: 'WIP Units', sub1Val: 0, sub2: 'In Queue', sub2Val: 0, icon: ShoppingCart, color: 'text-primary' },
 ];
 
 const chartData = [
-  { name: 'Assembly', ok: 400, warn: 240, error: 100 },
-  { name: 'Machining', ok: 300, warn: 139, error: 200 },
-  { name: 'Quality', ok: 200, warn: 180, error: 300 },
-  { name: 'Logistics', ok: 278, warn: 390, error: 150 },
-  { name: 'Design', ok: 189, warn: 480, error: 180 },
+  { name: 'Assembly', ok: 0, warn: 0, error: 0 },
+  { name: 'Machining', ok: 0, warn: 0, error: 0 },
+  { name: 'Quality', ok: 0, warn: 0, error: 0 },
+  { name: 'Logistics', ok: 0, warn: 0, error: 0 },
+  { name: 'Design', ok: 0, warn: 0, error: 0 },
 ];
 
 const trendData = [
-  { date: 'Mon', actual: 400, plan: 450 },
-  { date: 'Tue', actual: 420, plan: 450 },
-  { date: 'Wed', actual: 380, plan: 450 },
-  { date: 'Thu', actual: 480, plan: 460 },
-  { date: 'Fri', actual: 520, plan: 460 },
-  { date: 'Sat', actual: 550, plan: 470 },
-  { date: 'Sun', actual: 590, plan: 480 },
+  { date: 'Mon', actual: 0, plan: 0 },
+  { date: 'Tue', actual: 0, plan: 0 },
+  { date: 'Wed', actual: 0, plan: 0 },
+  { date: 'Thu', actual: 0, plan: 0 },
+  { date: 'Fri', actual: 0, plan: 0 },
+  { date: 'Sat', actual: 0, plan: 0 },
+  { date: 'Sun', actual: 0, plan: 0 },
 ];
 
 interface ShopFloorOverviewProps {
   onNavigateToOrders?: () => void;
   onNavigateToMachine?: () => void;
+  onNavigateToInventory?: () => void;
+  onNavigateToBilling?: () => void;
 }
 
-export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: ShopFloorOverviewProps) {
+export function ShopFloorOverview({ 
+  onNavigateToOrders, 
+  onNavigateToMachine, 
+  onNavigateToInventory, 
+  onNavigateToBilling 
+}: ShopFloorOverviewProps) {
+  
+  const handleKPIClick = (id: string) => {
+    if (id === 'orders') onNavigateToOrders?.();
+    if (id === 'inventory') onNavigateToInventory?.();
+    if (id === 'billing') onNavigateToBilling?.();
+  };
+
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
@@ -94,8 +108,8 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
           return (
             <div 
               key={kpi.label} 
-              className="glass-card p-10 group relative overflow-hidden cursor-pointer"
-              onClick={kpi.id === 'orders' ? onNavigateToOrders : undefined}
+              className="glass-card p-10 group relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => handleKPIClick(kpi.id)}
             >
               <div className="flex justify-between items-start mb-10 relative z-10">
                 <div className="p-4 bg-black/[0.03] rounded-2xl group-hover:bg-primary/5 transition-colors">
@@ -103,7 +117,7 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-3 py-1 rounded-full">
                   <ArrowUpRight className="h-4 w-4" />
-                  +12.5%
+                  +0.0%
                 </div>
               </div>
               
@@ -135,7 +149,7 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* OEE Gauge Section */}
         <div 
-          className="lg:col-span-4 glass-card p-10 flex flex-col items-center justify-center text-center cursor-pointer group"
+          className="lg:col-span-4 glass-card p-10 flex flex-col items-center justify-center text-center cursor-pointer group active:scale-[0.98] transition-transform"
           onClick={onNavigateToMachine}
         >
           <header className="w-full flex justify-between items-center mb-10">
@@ -146,10 +160,10 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
           <div className="relative w-full aspect-square max-w-[260px] flex items-center justify-center">
              <svg className="w-full h-full transform -rotate-90">
                 <circle cx="50%" cy="50%" r="42%" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-black/[0.03]" />
-                <circle cx="50%" cy="50%" r="42%" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="300" strokeDashoffset="75" className="text-primary rounded-full drop-shadow-[0_0_15px_rgba(0,113,227,0.3)]" />
+                <circle cx="50%" cy="50%" r="42%" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="300" strokeDashoffset="300" className="text-primary rounded-full drop-shadow-[0_0_15px_rgba(0,113,227,0.3)]" />
              </svg>
              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-7xl font-display font-bold tracking-tighter">84.2</span>
+                <span className="text-7xl font-display font-bold tracking-tighter">0.0</span>
                 <span className="text-[10px] font-bold text-muted-foreground tracking-[0.3em] mt-2">PERCENT</span>
              </div>
           </div>
@@ -157,17 +171,17 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
           <div className="mt-12 grid grid-cols-2 gap-8 w-full border-t border-black/5 pt-10">
             <div className="text-center">
               <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Availability</p>
-              <p className="text-xl font-bold">92%</p>
+              <p className="text-xl font-bold">0%</p>
             </div>
             <div className="text-center">
               <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Performance</p>
-              <p className="text-xl font-bold">88%</p>
+              <p className="text-xl font-bold">0%</p>
             </div>
           </div>
         </div>
 
         {/* Performance Bars */}
-        <div className="lg:col-span-8 glass-card p-10">
+        <div className="lg:col-span-8 glass-card p-10 cursor-pointer group" onClick={onNavigateToMachine}>
           <header className="flex justify-between items-center mb-12">
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground mb-1">Functional Stability</h4>
@@ -222,7 +236,7 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
               <p className="text-2xl font-bold tracking-tight">Output vs Goal</p>
             </div>
             <div className="text-right">
-              <p className="text-[9px] font-bold text-green-500 uppercase">+4.2% Above Target</p>
+              <p className="text-[9px] font-bold text-green-500 uppercase">+0.0% Target Variance</p>
             </div>
           </header>
           <div className="h-[280px]">
@@ -282,35 +296,38 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Milling Centers</span>
-                <span className="text-sm font-bold">5 / 6 Active</span>
+                <span className="text-sm font-bold">0 / 0 Active</span>
               </div>
               <div className="h-1.5 bg-black/[0.03] rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-[83%] rounded-full" />
+                <div className="h-full bg-primary w-0 rounded-full" />
               </div>
             </div>
             
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase tracking-widest text-slate-500">QC Specialists</span>
-                <span className="text-sm font-bold">12 / 12 Active</span>
+                <span className="text-sm font-bold">0 / 0 Active</span>
               </div>
               <div className="h-1.5 bg-black/[0.03] rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-full rounded-full" />
+                <div className="h-full bg-green-500 w-0 rounded-full" />
               </div>
             </div>
 
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Logistics Fleet</span>
-                <span className="text-sm font-bold">8 / 10 Active</span>
+                <span className="text-sm font-bold">0 / 0 Active</span>
               </div>
               <div className="h-1.5 bg-black/[0.03] rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 w-[80%] rounded-full" />
+                <div className="h-full bg-amber-500 w-0 rounded-full" />
               </div>
             </div>
           </div>
 
-          <button className="mt-10 w-full py-4 bg-black text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-colors">
+          <button 
+            className="mt-10 w-full py-4 bg-black text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-colors"
+            onClick={onNavigateToMachine}
+          >
             Analyze Resource Distribution
           </button>
         </div>
@@ -332,12 +349,12 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
                 <AlertTriangle className="h-7 w-7" />
               </div>
               <div>
-                <p className="text-xs font-bold text-red-600 uppercase tracking-widest mb-1">Machine Failure</p>
-                <p className="text-lg font-bold text-red-900">VMC milling-04 (Drive Error)</p>
-                <p className="text-xs text-red-700/60 mt-1">Impact: Production Order #105542</p>
+                <p className="text-xs font-bold text-red-600 uppercase tracking-widest mb-1">System Status</p>
+                <p className="text-lg font-bold text-red-900">Database Purge Complete</p>
+                <p className="text-xs text-red-700/60 mt-1">Status: Initializing Daily Run</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-red-400 font-code uppercase">12:44 PM</span>
+            <span className="text-[10px] font-bold text-red-400 font-code uppercase">NOW</span>
           </div>
           
           <div className="flex items-center justify-between p-8 bg-primary/5 hover:bg-primary/10 rounded-3xl transition-all group border border-primary/10">
@@ -351,7 +368,7 @@ export function ShopFloorOverview({ onNavigateToOrders, onNavigateToMachine }: S
                 <p className="text-xs text-primary/60 mt-1">Source: Security Governance Node</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-primary/30 font-code uppercase">11:15 AM</span>
+            <span className="text-[10px] font-bold text-primary/30 font-code uppercase">SYNC</span>
           </div>
         </div>
       </div>

@@ -157,6 +157,8 @@ export default function IndustrialERP() {
               <ShopFloorOverview 
                 onNavigateToOrders={() => setCurrentView('orders')}
                 onNavigateToMachine={() => setCurrentView('machine-utilization')}
+                onNavigateToInventory={() => setCurrentView('inventory')}
+                onNavigateToBilling={() => setCurrentView('billing')}
               />
             )}
             {currentView === 'orders' && (

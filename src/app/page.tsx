@@ -24,17 +24,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-const INITIAL_LOGS: WorkLogEntryType[] = [
-  { id: 'LOG-001', resourceId: '01', resourceName: 'VMC milling-BFW (01)', operator: 'Sarah Miller', date: '03 Mar 2025', shift: 'Morning', type: 'Production', duration: '4.5h', activity: 'Main batch production', workOrderId: '103645' },
-  { id: 'LOG-002', resourceId: '05', resourceName: 'CNC Turning -Jyothi (05)', operator: 'Sarah Miller', date: '03 Mar 2025', shift: 'Morning', type: 'Setup', duration: '1.2h', activity: 'Tool changing for new order', workOrderId: '102778' },
-  { id: 'LOG-003', resourceId: '06', resourceName: 'EDM ZNC (06)', operator: 'A. Chen', date: '02 Mar 2025', shift: 'Evening', type: 'Maintenance', duration: '2.0h', activity: 'Routine electrode inspection', workOrderId: '100685' },
-];
+const INITIAL_LOGS: WorkLogEntryType[] = [];
 
-const INITIAL_OP_STATUSES: Record<string, Record<string, string>> = {
-  '103645': { 'QC': 'NA' },
-  '102778': { 'QC': 'NA' },
-  '100685': { 'QC': 'Completed' },
-};
+const INITIAL_OP_STATUSES: Record<string, Record<string, string>> = {};
 
 export default function IndustrialERP() {
   const [mounted, setMounted] = useState(false);

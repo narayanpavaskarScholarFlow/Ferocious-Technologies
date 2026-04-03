@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,47 +21,9 @@ export function ToolCatalog() {
     status: 'all',
   });
 
-  // Initial Data Load
+  // Initial Data Load - Empty for run
   useEffect(() => {
-    const initialTools: Tool[] = [
-      {
-        id: '1',
-        name: 'Industrial 3D Printer',
-        description: 'Multi-material high-precision 3D printer for rapid prototyping and manufacturing.',
-        category: 'Manufacturing',
-        tags: ['3D Printing', 'SLA', 'Prototype'],
-        imageUrl: 'https://picsum.photos/seed/tool1/600/400',
-        status: 'active',
-        technicalId: 'TR-PRNT-01',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'Digital Oscilloscope',
-        description: 'Dual-channel 100MHz digital storage oscilloscope for circuit analysis and debugging.',
-        category: 'Electronics',
-        tags: ['Measurement', 'Testing', 'Hardware'],
-        imageUrl: 'https://picsum.photos/seed/tool2/600/400',
-        status: 'active',
-        technicalId: 'TR-OSCI-04',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        name: 'Hydraulic Press',
-        description: '20-ton hydraulic shop press with pressure gauge for industrial part assembly.',
-        category: 'Heavy Equipment',
-        tags: ['Hydraulics', 'Mechanics', 'Industrial'],
-        imageUrl: 'https://picsum.photos/seed/tool3/600/400',
-        status: 'maintenance',
-        technicalId: 'TR-PRES-02',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-    ];
-    setTools(initialTools);
+    setTools([]);
   }, []);
 
   const filteredTools = useMemo(() => {
@@ -102,7 +63,6 @@ export function ToolCatalog() {
 
   return (
     <div className="space-y-8">
-      {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="relative w-full lg:max-w-md group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -149,7 +109,6 @@ export function ToolCatalog() {
         </div>
       </div>
 
-      {/* Catalog Display */}
       {filteredTools.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredTools.map(tool => (
@@ -166,7 +125,7 @@ export function ToolCatalog() {
           <AlertCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
           <h3 className="text-xl font-headline font-medium text-muted-foreground">No tools found</h3>
           <p className="text-muted-foreground max-w-xs mt-2">
-            Try adjusting your search filters or add a new tool to the system.
+            The tool catalog is currently empty. Register your first resource to begin.
           </p>
           <Button variant="outline" className="mt-6 border-primary/20 text-primary" onClick={() => setFilters({search: '', category: 'all', status: 'all'})}>
             Clear All Filters
@@ -174,7 +133,6 @@ export function ToolCatalog() {
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl bg-card border-white/10">
           <DialogHeader>

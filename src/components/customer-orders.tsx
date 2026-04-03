@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ChevronDown } from 'lucide-react';
+import { Search, ChevronDown, Package } from 'lucide-react';
 import { CustomerOrder } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
@@ -16,13 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const initialOrders: CustomerOrder[] = [
-  { siNo: 1, id: 'PO-88452', customer: 'Automotive Corp', customerType: 'Tier 1 Supplier', numberOfPOs: 12, value: '$24,500', quantity: 500, location: 'Detroit, MI', status: 'Production' },
-  { siNo: 2, id: 'PO-88453', customer: 'Precision Aero', customerType: 'OEM Manufacturer', numberOfPOs: 5, value: '$85,000', quantity: 50, location: 'Seattle, WA', status: 'Production' },
-  { siNo: 3, id: 'PO-88454', customer: 'Medical Solutions', customerType: 'Healthcare Provider', numberOfPOs: 24, value: '$12,200', quantity: 1200, location: 'Boston, MA', status: 'Pending' },
-  { siNo: 4, id: 'PO-88455', customer: 'Global Energy', customerType: 'Utility Provider', numberOfPOs: 2, value: '$4,500', quantity: 15, location: 'Houston, TX', status: 'Shipping' },
-  { siNo: 5, id: 'PO-88456', customer: 'Future Tech', customerType: 'R&D Lab', numberOfPOs: 1, value: '$9,800', quantity: 1, location: 'Palo Alto, CA', status: 'Delivered' },
-];
+const initialOrders: CustomerOrder[] = [];
 
 export function CustomerOrders() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,8 +43,6 @@ export function CustomerOrders() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Customers</SelectItem>
-                <SelectItem value="tier1">Tier 1 List</SelectItem>
-                <SelectItem value="oem">OEM List</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -65,7 +57,7 @@ export function CustomerOrders() {
             />
           </div>
           <Badge variant="outline" className="bg-blue-50 text-blue-600 h-9 px-4 shrink-0 border-blue-100 font-bold">
-            Pending: 42
+            Total Pipeline: 0
           </Badge>
         </div>
       </div>
@@ -81,7 +73,7 @@ export function CustomerOrders() {
               <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Value</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Qty</TableHead>
               <TableHead className="font-bold text-[10px] uppercase text-slate-400">Location</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">
+              <TableHead className="font-bold text-[10px] uppercase text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-1 ml-auto hover:text-white transition-colors uppercase outline-none" suppressHydrationWarning>
                     Status ({activeFilter}) <ChevronDown className="h-3 w-3" />
@@ -121,8 +113,11 @@ export function CustomerOrders() {
             ))}
             {filteredOrders.length === 0 && (
               <TableRow suppressHydrationWarning>
-                <TableCell colSpan={8} className="h-32 text-center text-slate-500 font-code text-xs italic">
-                  NO_MATCHING_RECORDS_FOUND
+                <TableCell colSpan={8} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center opacity-20 py-10">
+                    <Package className="h-12 w-12 text-slate-400 mb-4" />
+                    <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">Pipeline_Ledger_Empty</p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}

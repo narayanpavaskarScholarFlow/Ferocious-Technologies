@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -122,14 +121,8 @@ export function OperationalMatrix() {
       }
     ];
 
-    const mockLogs: SystemActivity[] = [
-      { id: '1', type: 'usage', message: 'ML-01-VMC cycle start sequence initiated', timestamp: new Date().toISOString(), severity: 'low' },
-      { id: '2', type: 'alert', message: 'TR-04-LTH vibration threshold exceeded', timestamp: new Date().toISOString(), severity: 'medium' },
-      { id: '3', type: 'ai_update', message: 'AI optimized toolpath for DC-80-GNT', timestamp: new Date().toISOString(), severity: 'low' },
-    ];
-
     setAssets(mockAssets);
-    setLogs(mockLogs);
+    setLogs([]);
   }, []);
 
   const filteredAssets = assets.filter(a => {
@@ -141,7 +134,6 @@ export function OperationalMatrix() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      {/* Machine Selection Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
         {MACHINE_TYPES.map((type) => {
           const Icon = type.icon;
@@ -175,7 +167,6 @@ export function OperationalMatrix() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 flex-grow overflow-hidden">
-        {/* Asset Explorer */}
         <div className="xl:col-span-3 glass-effect rounded-lg border border-white/5 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
             <div className="flex items-center gap-2">
@@ -243,9 +234,9 @@ export function OperationalMatrix() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <span className="text-[10px] font-code text-muted-foreground">84%</span>
+                        <span className="text-[10px] font-code text-muted-foreground">0%</span>
                         <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary w-4/5" />
+                          <div className="h-full bg-primary w-0" />
                         </div>
                       </div>
                     </TableCell>
@@ -266,7 +257,6 @@ export function OperationalMatrix() {
           </div>
         </div>
 
-        {/* Side Panels */}
         <div className="flex flex-col gap-4">
           <div className="flex-grow glass-effect rounded-lg border border-white/5 overflow-hidden flex flex-col">
             <div className="p-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
@@ -290,7 +280,7 @@ export function OperationalMatrix() {
                 </div>
               ))}
               <div className="pt-2 text-center text-muted-foreground animate-pulse text-[8px]">
-                _ MONITORING ACTIVE_NODES...
+                _ WAITING_FOR_OPERATIONAL_SIGNALS...
               </div>
             </div>
           </div>
@@ -301,20 +291,20 @@ export function OperationalMatrix() {
                 <Settings className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-xs font-headline font-bold uppercase tracking-widest">Health Index</h3>
               </div>
-              <span className="text-2xl font-headline font-bold text-primary">98.4<span className="text-[10px] ml-1">%</span></span>
+              <span className="text-2xl font-headline font-bold text-primary">100.0<span className="text-[10px] ml-1">%</span></span>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[8px] font-code text-muted-foreground">
                 <span>SYSTEM_STABILITY</span>
-                <span>OPTIMAL</span>
+                <span>NOMINAL</span>
               </div>
               <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-primary to-accent w-[98.4%]" />
+                <div className="h-full bg-gradient-to-r from-primary to-accent w-full" />
               </div>
             </div>
             <div className="flex items-center gap-2 text-[9px] font-code text-primary animate-pulse">
               <Zap className="h-3 w-3" />
-              ALL SYSTEMS NOMINAL
+              READY_FOR_DATA_STREAM
             </div>
           </div>
         </div>

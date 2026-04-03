@@ -10,13 +10,7 @@ import { Search, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const mockOrders: Order[] = [
-  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', owner: 'John Doe', progress: 85, amountSpent: '$12,450', materialCost: '$8,450', laborCost: '$4,000' },
-  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', owner: 'Jane Smith', progress: 15, amountSpent: '$2,100', materialCost: '$1,200', laborCost: '$900' },
-  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', owner: 'Mike Weber', progress: 100, amountSpent: '$8,900', materialCost: '$5,500', laborCost: '$3,400' },
-  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', owner: 'Sarah Miller', progress: 45, amountSpent: '$5,600', materialCost: '$3,800', laborCost: '$1,800' },
-  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', owner: 'John Doe', progress: 60, amountSpent: '$4,200', materialCost: '$2,900', laborCost: '$1,300' },
-];
+const mockOrders: Order[] = [];
 
 interface ShopFloorOrdersProps {
   onNavigateToOperations?: (orderId: string) => void;
@@ -153,10 +147,10 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
             </div>
             <div className="space-y-5">
               <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
-                <div className="w-3 h-3 bg-[#003d6b] rounded-sm" /> Active (64%)
+                <div className="w-3 h-3 bg-[#003d6b] rounded-sm" /> Active (0%)
               </div>
               <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
-                <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" /> Pending (36%)
+                <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" /> Pending (0%)
               </div>
             </div>
           </div>
@@ -171,15 +165,15 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
               </div>
               <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight mb-1">Net Productivity</p>
-                <p className="text-2xl font-bold text-[#003d6b]">94.1 %</p>
+                <p className="text-2xl font-bold text-[#003d6b]">0 %</p>
               </div>
               <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight mb-1">Cycle Waste</p>
-                <p className="text-2xl font-bold text-red-500">2.4 %</p>
+                <p className="text-2xl font-bold text-red-500">0 %</p>
               </div>
               <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight mb-1">Effective Hours</p>
-                <p className="text-2xl font-bold text-green-600">07:12 h</p>
+                <p className="text-2xl font-bold text-green-600">00:00 h</p>
               </div>
            </div>
         </div>

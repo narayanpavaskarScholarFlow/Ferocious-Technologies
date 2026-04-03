@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -56,15 +55,7 @@ interface DimensionRecord {
   remark: string;
 }
 
-const mockOrders = [
-  { id: '103645', customer: 'Automotive Corp', part: 'Axle Support', status: 'Ready for QC', date: '03 Mar 2025' },
-  { id: '102778', customer: 'Precision Aero', part: 'Gear Housing', status: 'Ready for QC', date: '03 Mar 2025' },
-  { id: '100685', customer: 'Medical Solutions', part: 'Surgical Tray', status: 'In Review', date: '02 Mar 2025' },
-  { id: '105542', customer: 'Global Energy', part: 'Turbine Blade', status: 'Ready for QC', date: '04 Mar 2025' },
-  { id: '101230', customer: 'Future Tech', part: 'Robot Joint', status: 'Ready for QC', date: '04 Mar 2025' },
-  { id: '108899', customer: 'Stellar Aero', part: 'Bracket Assembly', status: 'In Review', date: '01 Mar 2025' },
-  { id: '109921', customer: 'Nexus Robotics', part: 'Sensor Housing', status: 'Ready for QC', date: '05 Mar 2025' },
-];
+const mockOrders = [];
 
 const MACHINING_OPS = [
   "VMC Milling - Dimensions Verification",
@@ -77,9 +68,7 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', feature: 'Overall Length', target: '150.00', tolerance: '±0.05', upperLimit: '150.050', lowerLimit: '149.950', actual: '', status: 'Pending', remark: '' },
-  { id: '2', feature: 'Outer Diameter', target: '45.00', tolerance: '+0.02/-0.00', upperLimit: '45.020', lowerLimit: '45.000', actual: '', status: 'Pending', remark: '' },
-  { id: '3', feature: 'Internal Bore', target: '22.00', tolerance: '+0.021', upperLimit: '22.021', lowerLimit: '22.000', actual: '', status: 'Pending', remark: '' },
+  { id: '1', feature: 'Overall Length', target: '0.00', tolerance: '±0.00', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
 ];
 
 interface QualityManagementProps {
@@ -250,7 +239,6 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
 
       {currentStep === 'list' && (
         <div className="space-y-8">
-          {/* Summary Dashboard with Graph */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <Card className="lg:col-span-8 p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col justify-between">
               <div className="flex justify-between items-start mb-6">
@@ -297,7 +285,6 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
             </div>
           </div>
 
-          {/* Work Order Table */}
           <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="relative w-80">
@@ -341,6 +328,11 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
                     </TableCell>
                   </TableRow>
                 ))}
+                {mockOrders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">Pipeline_Ledger_Empty</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -539,7 +531,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
             <div className="space-y-6">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order ID</p>
-                <p className="text-lg font-bold text-slate-900">#{selectedOrder?.id}</p>
+                <p className="text-lg font-bold text-slate-900">#{selectedOrder?.id || '----'}</p>
               </div>
               
               <div className="space-y-4 pt-4">

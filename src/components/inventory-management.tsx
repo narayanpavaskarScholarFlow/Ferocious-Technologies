@@ -24,13 +24,7 @@ import {
 import { InventoryItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-const mockInventory: InventoryItem[] = [
-  { id: '1', name: 'Alloy Steel 4140', sku: 'MAT-STL-4140', category: 'Raw Material', quantity: 1250, unit: 'kg', minThreshold: 500, location: 'Rack A-12', status: 'In Stock' },
-  { id: '2', name: 'Carbide End Mill 10mm', sku: 'TOOL-EM-10', category: 'Tooling', quantity: 12, unit: 'pcs', minThreshold: 15, location: 'Tool Crib 2', status: 'Low Stock' },
-  { id: '3', name: 'Hydraulic Seals Kit', sku: 'CON-HS-500', category: 'Consumable', quantity: 45, unit: 'kits', minThreshold: 10, location: 'B-Section', status: 'In Stock' },
-  { id: '4', name: 'Front Axle Housing', sku: 'FG-AX-88', category: 'Finished Goods', quantity: 85, unit: 'pcs', minThreshold: 0, location: 'Shipping Bay', status: 'In Stock' },
-  { id: '5', name: 'Aluminum 6061-T6', sku: 'MAT-ALU-6061', category: 'Raw Material', quantity: 0, unit: 'kg', minThreshold: 200, location: 'Rack A-08', status: 'Out of Stock' },
-];
+const mockInventory: InventoryItem[] = [];
 
 export function InventoryManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,23 +57,22 @@ export function InventoryManagement() {
         </div>
       </header>
 
-      {/* Resource KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-8 border-slate-200 shadow-sm flex flex-col justify-between bg-white group hover:border-primary/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Total SKUs</p>
-          <p className="text-3xl font-display font-bold text-slate-900">1,244</p>
+          <p className="text-3xl font-display font-bold text-slate-900">0</p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm flex flex-col justify-between bg-white group hover:border-green-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">In Stock</p>
-          <p className="text-3xl font-display font-bold text-green-600">89%</p>
+          <p className="text-3xl font-display font-bold text-green-600">0%</p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm flex flex-col justify-between bg-white group hover:border-amber-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Low Stock Alerts</p>
-          <p className="text-3xl font-display font-bold text-amber-600">12</p>
+          <p className="text-3xl font-display font-bold text-amber-600">0</p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm flex flex-col justify-between bg-white group hover:border-red-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Out of Stock</p>
-          <p className="text-3xl font-display font-bold text-red-500">4</p>
+          <p className="text-3xl font-display font-bold text-red-500">0</p>
         </Card>
       </div>
 
@@ -118,78 +111,85 @@ export function InventoryManagement() {
               </div>
             </div>
 
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Item Detail</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Available Qty</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Storage Location</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
-                    <TableCell className="px-8">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{item.name}</span>
-                        <span className="text-[10px] text-slate-400 font-code uppercase">{item.sku}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-white border-slate-200 text-[9px] font-bold uppercase py-1 px-3">
-                          {item.category}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className={cn(
-                        "text-sm font-bold",
-                        item.status === 'Out of Stock' ? "text-red-500" : "text-slate-700"
-                      )}>
-                        {item.quantity} <span className="text-[10px] text-slate-400 font-medium uppercase ml-1">{item.unit}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-500 font-medium">
-                      {item.location}
-                    </TableCell>
-                    <TableCell className="text-right px-8">
-                      <Badge className={cn(
-                        "text-[9px] font-bold uppercase px-3 py-1",
-                        item.status === 'In Stock' ? "bg-green-50 text-green-700 border border-green-100" :
-                        item.status === 'Low Stock' ? "bg-amber-50 text-amber-700 border border-amber-100" :
-                        "bg-red-50 text-red-700 border border-red-100"
-                      )}>
-                        {item.status}
-                      </Badge>
-                    </TableCell>
+            {filteredItems.length > 0 ? (
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Item Detail</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Available Qty</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Storage Location</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-right px-8">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.map((item) => (
+                    <TableRow key={item.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
+                      <TableCell className="px-8">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-slate-900">{item.name}</span>
+                          <span className="text-[10px] text-slate-400 font-code uppercase">{item.sku}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-white border-slate-200 text-[9px] font-bold uppercase py-1 px-3">
+                            {item.category}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className={cn(
+                          "text-sm font-bold",
+                          item.status === 'Out of Stock' ? "text-red-500" : "text-slate-700"
+                        )}>
+                          {item.quantity} <span className="text-[10px] text-slate-400 font-medium uppercase ml-1">{item.unit}</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500 font-medium">
+                        {item.location}
+                      </TableCell>
+                      <TableCell className="text-right px-8">
+                        <Badge className={cn(
+                          "text-[9px] font-bold uppercase px-3 py-1",
+                          item.status === 'In Stock' ? "bg-green-50 text-green-700 border border-green-100" :
+                          item.status === 'Low Stock' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                          "bg-red-50 text-red-700 border border-red-100"
+                        )}>
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="p-20 flex flex-col items-center justify-center text-center opacity-40">
+                <Boxes className="h-12 w-12 mb-4" />
+                <p className="text-xs font-bold uppercase tracking-widest">No Items in Inventory</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="movements" className="m-0">
           <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
             <Archive className="h-12 w-12 mb-4" />
-            <p className="text-xs font-bold uppercase tracking-widest">No stock movements recorded in the last 24h</p>
+            <p className="text-xs font-bold uppercase tracking-widest">No stock movements recorded</p>
           </Card>
         </TabsContent>
 
         <TabsContent value="warehouse" className="m-0">
           <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
             <Layers className="h-12 w-12 mb-4" />
-            <p className="text-xs font-bold uppercase tracking-widest">Generating 3D Warehouse Map Telemetry...</p>
+            <p className="text-xs font-bold uppercase tracking-widest">Warehouse Map Telemetry Offline</p>
           </Card>
         </TabsContent>
 
         <TabsContent value="replenishment" className="m-0">
           <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
             <BarChart3 className="h-12 w-12 mb-4" />
-            <p className="text-xs font-bold uppercase tracking-widest">Analyzing Consumption Patterns & PO Thresholds</p>
+            <p className="text-xs font-bold uppercase tracking-widest">No Pending Replenishments</p>
           </Card>
         </TabsContent>
       </Tabs>
@@ -197,11 +197,8 @@ export function InventoryManagement() {
       <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl flex items-center gap-4">
         <AlertTriangle className="h-5 w-5 text-blue-600" />
         <p className="text-xs font-medium text-slate-600 leading-snug">
-          The ERP has detected <span className="font-bold text-blue-700">3 replenishment requests</span> based on current production load for Work Order #103645.
+          The ERP system is ready. Add items to monitor <span className="font-bold text-blue-700">replenishment requests</span>.
         </p>
-        <Button size="sm" variant="ghost" className="ml-auto text-blue-700 font-bold text-[10px] uppercase gap-2">
-          Auto-Generate PO <ArrowRight className="h-3 w-3" />
-        </Button>
       </div>
     </div>
   );

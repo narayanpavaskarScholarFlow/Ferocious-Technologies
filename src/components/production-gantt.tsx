@@ -31,41 +31,9 @@ import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { format, addMonths, subMonths, addDays, subDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 
-const mockOrders: Order[] = [
-  { id: '103645', customer: 'Automotive Corp', startDate: '01.03.2025', endDate: '05.03.2025', priority: 'High', status: 'Active', progress: 85 },
-  { id: '102778', customer: 'Precision Aero', startDate: '02.03.2025', endDate: '10.03.2025', priority: 'Medium', status: 'Pending', progress: 15 },
-  { id: '100685', customer: 'Medical Solutions', startDate: '03.03.2025', endDate: '04.03.2025', priority: 'Low', status: 'Completed', progress: 100 },
-  { id: '105542', customer: 'Global Energy', startDate: '28.02.2025', endDate: '03.03.2025', priority: 'High', status: 'Delayed', progress: 45 },
-  { id: '101230', customer: 'Future Tech', startDate: '05.03.2025', endDate: '12.03.2025', priority: 'Medium', status: 'Active', progress: 60 },
-];
+const mockOrders: Order[] = [];
 
-const mockOperationsData: Record<string, any[]> = {
-  '103645': [
-    { name: 'DFM Analysis', startDate: '01.03.2025', endDate: '01.03.2025', progress: 100, status: 'Completed' },
-    { name: 'CAD Design', startDate: '01.03.2025', endDate: '02.03.2025', progress: 100, status: 'Completed' },
-    { name: 'Raw Material', startDate: '02.03.2025', endDate: '03.03.2025', progress: 100, status: 'Completed' },
-    { name: 'VMC Milling', startDate: '03.03.2025', endDate: '04.03.2025', progress: 60, status: 'Active' },
-    { name: 'Final QC', startDate: '05.03.2025', endDate: '05.03.2025', progress: 0, status: 'Pending' },
-  ],
-  '102778': [
-    { name: 'Engineering Review', startDate: '02.03.2025', endDate: '03.03.2025', progress: 50, status: 'Active' },
-    { name: 'Material Prep', startDate: '04.03.2025', endDate: '05.03.2025', progress: 0, status: 'Pending' },
-    { name: 'Turning Ops', startDate: '06.03.2025', endDate: '08.03.2025', progress: 0, status: 'Pending' },
-  ],
-  '100685': [
-    { name: 'Surface Finish', startDate: '03.03.2025', endDate: '03.03.2025', progress: 100, status: 'Completed' },
-    { name: 'Packaging', startDate: '04.03.2025', endDate: '04.03.2025', progress: 100, status: 'Completed' },
-  ],
-  '105542': [
-    { name: 'Heat Treatment', startDate: '28.02.2025', endDate: '01.03.2025', progress: 80, status: 'Active' },
-    { name: 'Internal Grinding', startDate: '02.03.2025', endDate: '03.03.2025', progress: 0, status: 'Pending' },
-  ],
-  '101230': [
-    { name: 'Assembly Step 1', startDate: '05.03.2025', endDate: '07.03.2025', progress: 90, status: 'Active' },
-    { name: 'Assembly Step 2', startDate: '08.03.2025', endDate: '10.03.2025', progress: 20, status: 'Active' },
-    { name: 'Validation', startDate: '11.03.2025', endDate: '12.03.2025', progress: 0, status: 'Pending' },
-  ],
-};
+const mockOperationsData: Record<string, any[]> = {};
 
 interface ProductionGanttProps {
   searchTerm?: string;
@@ -151,7 +119,6 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          {/* Yellow Box Requirement: Work Order Selection Dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Focus:</span>
             <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
@@ -214,11 +181,9 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
         </div>
       </header>
 
-      {/* Red Box Requirement: fit to screen and all word orders visible */}
       <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-2xl">
         <ScrollArea className="w-full">
           <div className="min-w-max">
-            {/* Timeline Header */}
             <div className="flex border-b border-slate-100 bg-slate-50/50">
               <div className="w-56 p-4 border-r border-slate-100 flex items-center bg-white sticky left-0 z-20">
                 <span className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.2em]">Resource Matrix</span>
@@ -234,7 +199,6 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
               </div>
             </div>
 
-            {/* Orders & Operations Rows */}
             <div className="flex flex-col">
               {filteredOrders.map((order) => {
                 const orderStyles = getPositionStyles(order.startDate, order.endDate);
@@ -243,7 +207,6 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
 
                 return (
                   <div key={order.id} className="flex flex-col border-b border-slate-50 last:border-b-0 animate-in slide-in-from-left-2 duration-300">
-                    {/* Master Order Row */}
                     <div className={cn(
                       "flex group transition-colors",
                       isFocused ? "bg-primary/[0.02]" : "hover:bg-slate-50/30"
@@ -304,7 +267,6 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
                       </div>
                     </div>
 
-                    {/* Drilled-Down Operations Rows (Only shown if focused or searched) */}
                     {(isFocused || (activeSearch && filteredOrders.length === 1)) && orderOps.map((op, opIdx) => {
                       const opStyles = getPositionStyles(op.startDate, op.endDate);
                       return (
@@ -380,7 +342,7 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">On-Time Rate</p>
-            <p className="text-xl font-display font-bold text-slate-900">92.4%</p>
+            <p className="text-xl font-display font-bold text-slate-900">0%</p>
           </div>
         </div>
         <div className="glass-card p-6 bg-slate-900 text-white border-none relative overflow-hidden group">

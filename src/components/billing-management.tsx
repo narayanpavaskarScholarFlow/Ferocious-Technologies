@@ -32,24 +32,11 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 
-const mockInvoices: Invoice[] = [
-  { id: 'INV-8801', orderId: '103645', customer: 'Automotive Corp', amount: '$12,450.00', date: '01 Mar 2025', dueDate: '15 Mar 2025', status: 'Pending', type: 'Full' },
-  { id: 'INV-8802', orderId: '102778', customer: 'Precision Aero', amount: '$2,100.00', date: '02 Mar 2025', dueDate: '16 Mar 2025', status: 'Paid', type: 'Service' },
-  { id: 'INV-8803', orderId: '100685', customer: 'Medical Solutions', amount: '$8,900.00', date: '28 Feb 2025', dueDate: '10 Mar 2025', status: 'Paid', type: 'Full' },
-  { id: 'INV-8804', orderId: '105542', customer: 'Global Energy', amount: '$5,600.00', date: '25 Feb 2025', dueDate: '05 Mar 2025', status: 'Overdue', type: 'Material' },
-];
+const mockInvoices: Invoice[] = [];
 
-const mockQuotations = [
-  { id: 'QT-5521', customer: 'Nexus Robotics', value: '$45,000.00', date: '01 Mar 2025', validity: '30 Days', status: 'Open' },
-  { id: 'QT-5522', customer: 'Stellar Aero', value: '$12,800.00', date: '02 Mar 2025', validity: '15 Days', status: 'Draft' },
-  { id: 'QT-5523', customer: 'BioMed Systems', value: '$8,400.00', date: '27 Feb 2025', validity: '30 Days', status: 'Accepted' },
-];
+const mockQuotations = [];
 
-const mockExpenses = [
-  { id: 'EX-9901', category: 'Raw Material', vendor: 'Steel Co', amount: '$5,200.00', date: '01 Mar 2025', status: 'Paid' },
-  { id: 'EX-9902', category: 'Tooling', vendor: 'Precision Cut', amount: '$1,450.00', date: '02 Mar 2025', status: 'Pending' },
-  { id: 'EX-9903', category: 'Utilities', vendor: 'City Power', amount: '$2,800.00', date: '28 Feb 2025', status: 'Paid' },
-];
+const mockExpenses = [];
 
 export function BillingManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,18 +64,17 @@ export function BillingManagement() {
         </div>
       </header>
 
-      {/* Financial KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-8 border-slate-200 shadow-sm flex flex-col justify-between bg-white group hover:border-primary/50 transition-colors">
           <div className="flex justify-between items-start mb-6">
             <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Total Receivables</p>
             <div className="flex items-center gap-1 text-green-500 font-bold text-xs">
-              <ArrowUpRight className="h-3 w-3" /> +4.2%
+              <ArrowUpRight className="h-3 w-3" /> +0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-slate-900">$42,350.50</p>
+          <p className="text-3xl font-display font-bold text-slate-900">$0.00</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
-             <div className="h-full bg-primary w-[65%]" />
+             <div className="h-full bg-primary w-[0%]" />
           </div>
         </Card>
 
@@ -96,12 +82,12 @@ export function BillingManagement() {
           <div className="flex justify-between items-start mb-6">
             <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Month-to-Date Paid</p>
             <div className="flex items-center gap-1 text-green-500 font-bold text-xs">
-              <ArrowUpRight className="h-3 w-3" /> +12.8%
+              <ArrowUpRight className="h-3 w-3" /> +0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-slate-900">$11,000.00</p>
+          <p className="text-3xl font-display font-bold text-slate-900">$0.00</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
-             <div className="h-full bg-green-500 w-[40%]" />
+             <div className="h-full bg-green-500 w-[0%]" />
           </div>
         </Card>
 
@@ -109,12 +95,12 @@ export function BillingManagement() {
           <div className="flex justify-between items-start mb-6">
             <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Overdue Balance</p>
             <div className="flex items-center gap-1 text-red-500 font-bold text-xs">
-              <ArrowDownRight className="h-3 w-3" /> -2.1%
+              <ArrowDownRight className="h-3 w-3" /> -0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-slate-900">$5,600.00</p>
+          <p className="text-3xl font-display font-bold text-slate-900">$0.00</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
-             <div className="h-full bg-red-500 w-[15%]" />
+             <div className="h-full bg-red-500 w-[0%]" />
           </div>
         </Card>
       </div>
@@ -160,95 +146,116 @@ export function BillingManagement() {
           </div>
 
           <TabsContent value="invoice" className="m-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Invoice ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Amount</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Status</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockInvoices.map((inv) => (
-                  <TableRow key={inv.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                    <TableCell className="font-bold text-sm text-primary px-8">{inv.id}</TableCell>
-                    <TableCell className="text-slate-900 font-semibold">{inv.customer}</TableCell>
-                    <TableCell className="text-right font-display font-bold text-slate-900">{inv.amount}</TableCell>
-                    <TableCell className="text-center">
-                      <div className={cn(
-                        "inline-flex px-3 py-1 rounded-full text-[10px] font-bold min-w-[90px] justify-center uppercase",
-                        inv.status === 'Paid' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                      )}>
-                        {inv.status}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="h-4 w-4 text-slate-400" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Download PDF</DropdownMenuItem>
-                          <DropdownMenuItem>Mark as Paid</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {mockInvoices.length > 0 ? (
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Invoice ID</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Amount</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Status</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mockInvoices.map((inv) => (
+                    <TableRow key={inv.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                      <TableCell className="font-bold text-sm text-primary px-8">{inv.id}</TableCell>
+                      <TableCell className="text-slate-900 font-semibold">{inv.customer}</TableCell>
+                      <TableCell className="text-right font-display font-bold text-slate-900">{inv.amount}</TableCell>
+                      <TableCell className="text-center">
+                        <div className={cn(
+                          "inline-flex px-3 py-1 rounded-full text-[10px] font-bold min-w-[90px] justify-center uppercase",
+                          inv.status === 'Paid' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                        )}>
+                          {inv.status}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <MoreVertical className="h-4 w-4 text-slate-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Download PDF</DropdownMenuItem>
+                            <DropdownMenuItem>Mark as Paid</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center opacity-40">
+                <Receipt className="h-12 w-12 mb-4" />
+                <p className="text-xs font-bold uppercase tracking-widest">No Invoices Found</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="quotation" className="m-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Quotation ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Value</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockQuotations.map((qt) => (
-                  <TableRow key={qt.id} className="hover:bg-slate-50/50 h-20 border-slate-50">
-                    <TableCell className="font-bold text-sm text-slate-700 px-8">{qt.id}</TableCell>
-                    <TableCell className="text-slate-900 font-semibold">{qt.customer}</TableCell>
-                    <TableCell className="text-right font-display font-bold text-slate-900">{qt.value}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="text-[10px] font-bold uppercase">{qt.status}</Badge>
-                    </TableCell>
+            {mockQuotations.length > 0 ? (
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Quotation ID</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Value</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mockQuotations.map((qt) => (
+                    <TableRow key={qt.id} className="hover:bg-slate-50/50 h-20 border-slate-50">
+                      <TableCell className="font-bold text-sm text-slate-700 px-8">{qt.id}</TableCell>
+                      <TableCell className="text-slate-900 font-semibold">{qt.customer}</TableCell>
+                      <TableCell className="text-right font-display font-bold text-slate-900">{qt.value}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-bold uppercase">{qt.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center opacity-40">
+                <ClipboardList className="h-12 w-12 mb-4" />
+                <p className="text-xs font-bold uppercase tracking-widest">No Quotations Found</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="expenses" className="m-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Expense ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Vendor</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Category</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockExpenses.map((ex) => (
-                  <TableRow key={ex.id} className="hover:bg-slate-50/50 h-20 border-slate-50">
-                    <TableCell className="font-bold text-sm text-red-600 px-8">{ex.id}</TableCell>
-                    <TableCell className="text-slate-900 font-semibold">{ex.vendor}</TableCell>
-                    <TableCell className="text-xs text-slate-500 font-bold uppercase">{ex.category}</TableCell>
-                    <TableCell className="text-right font-display font-bold text-slate-900">{ex.amount}</TableCell>
+            {mockExpenses.length > 0 ? (
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Expense ID</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Vendor</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Category</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">Amount</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mockExpenses.map((ex) => (
+                    <TableRow key={ex.id} className="hover:bg-slate-50/50 h-20 border-slate-50">
+                      <TableCell className="font-bold text-sm text-red-600 px-8">{ex.id}</TableCell>
+                      <TableCell className="text-slate-900 font-semibold">{ex.vendor}</TableCell>
+                      <TableCell className="text-xs text-slate-500 font-bold uppercase">{ex.category}</TableCell>
+                      <TableCell className="text-right font-display font-bold text-slate-900">{ex.amount}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center opacity-40">
+                <Wallet className="h-12 w-12 mb-4" />
+                <p className="text-xs font-bold uppercase tracking-widest">No Expenses Recorded</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="proforma" className="m-0">

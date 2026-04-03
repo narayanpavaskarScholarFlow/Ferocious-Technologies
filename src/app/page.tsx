@@ -19,6 +19,7 @@ import { InventoryManagement } from '@/components/inventory-management';
 import { QualityManagement } from '@/components/quality-management';
 import { ProductionGantt } from '@/components/production-gantt';
 import { ProfileSettings } from '@/components/profile-settings';
+import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command, X, ShieldAlert } from 'lucide-react';
@@ -30,6 +31,8 @@ const INITIAL_OP_STATUSES: Record<string, Record<string, string>> = {};
 
 export default function IndustrialERP() {
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
@@ -74,8 +77,28 @@ export default function IndustrialERP() {
     }
   };
 
+  const handleLogin = (user: string) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    setCurrentView('overview');
+  };
+
   if (!mounted) {
     return <div className="min-h-screen bg-slate-50" />;
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <LoginScreen onLogin={handleLogin} />
+        <Toaster />
+      </>
+    );
   }
 
   return (
@@ -122,7 +145,7 @@ export default function IndustrialERP() {
                 onClick={() => handleViewChange('settings')}
               >
                 <div className="text-right hidden sm:block">
-                  <p className="text-[11px] font-bold leading-none text-[#001F3D]">Sys_Admin_01</p>
+                  <p className="text-[11px] font-bold leading-none text-[#001F3D]">{currentUser}</p>
                   <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
                 </div>
                 <Avatar className="h-8 w-8 border border-slate-200">
@@ -164,7 +187,13 @@ export default function IndustrialERP() {
               />
             )}
             {currentView === 'vendor' && <VendorManagement />}
-            {currentView === 'settings' && <ProfileSettings activeTab={settingsActiveTab} onTabChange={setSettingsActiveTab} />}
+            {currentView === 'settings' && (
+              <ProfileSettings 
+                activeTab={settingsActiveTab} 
+                onTabChange={setSettingsActiveTab} 
+                onLogout={handleLogout}
+              />
+            )}
             {currentView === 'gantt' && (
               <ProductionGantt 
                 searchTerm={globalSearch}

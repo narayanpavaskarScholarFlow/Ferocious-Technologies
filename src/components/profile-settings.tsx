@@ -24,7 +24,8 @@ import {
   Zap,
   Lock,
   Users,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -32,9 +33,10 @@ import { UserManagement } from '@/components/user-management';
 interface ProfileSettingsProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  onLogout?: () => void;
 }
 
-export function ProfileSettings({ activeTab = 'profile', onTabChange }: ProfileSettingsProps) {
+export function ProfileSettings({ activeTab = 'profile', onTabChange, onLogout }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -116,7 +118,11 @@ export function ProfileSettings({ activeTab = 'profile', onTabChange }: ProfileS
                   </div>
                 </div>
 
-                <Button variant="ghost" className="w-full mt-6 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[10px] uppercase tracking-widest gap-2">
+                <Button 
+                  variant="ghost" 
+                  className="w-full mt-6 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[10px] uppercase tracking-widest gap-2"
+                  onClick={onLogout}
+                >
                   <LogOut className="h-3.5 w-3.5" /> Terminate Session
                 </Button>
               </Card>
@@ -175,7 +181,8 @@ export function ProfileSettings({ activeTab = 'profile', onTabChange }: ProfileS
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Temporary Master Key</p>
                         <p className="text-xs font-bold text-[#001F3D]">••••••••••••••••</p>
                       </div>
-                      <Button variant="outline" size="sm" className="w-fit h-8 text-[9px] font-bold uppercase tracking-widest border-slate-200 rounded-lg">
+                      <Button variant="outline" size="sm" className="w-fit h-8 text-[9px] font-bold uppercase tracking-widest border-slate-200 rounded-lg group">
+                        <RefreshCw className="h-3 w-3 mr-2 group-hover:rotate-180 transition-transform" />
                         Reset Key Protocol
                       </Button>
                     </div>

@@ -10,7 +10,6 @@ import { MachineUtilization } from '@/components/machine-utilization';
 import { ManpowerUtilization } from '@/components/manpower-utilization';
 import { CustomerOrders } from '@/components/customer-orders';
 import { WeeklyPlan } from '@/components/weekly-plan';
-import { UserManagement } from '@/components/user-management';
 import { OperationsStatus } from '@/components/operations-status';
 import { VendorManagement } from '@/components/vendor-management';
 import { OrderDetails } from '@/components/order-details';
@@ -36,6 +35,7 @@ export default function IndustrialERP() {
   const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
+  const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
 
   useEffect(() => {
     setMounted(true);
@@ -64,13 +64,23 @@ export default function IndustrialERP() {
     setCurrentView('orders');
   };
 
+  const handleViewChange = (view: ViewType) => {
+    if (view === 'users') {
+      setCurrentView('settings');
+      setSettingsActiveTab('access');
+    } else {
+      setCurrentView(view);
+      if (view === 'settings') setSettingsActiveTab('profile');
+    }
+  };
+
   if (!mounted) {
     return <div className="min-h-screen bg-slate-50" />;
   }
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 font-body">
-      <SidebarNav currentView={currentView} onViewChange={setCurrentView} />
+      <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white border-b border-slate-200/60 sticky top-0 z-40 px-8 flex items-center justify-between">
@@ -109,7 +119,7 @@ export default function IndustrialERP() {
               <div className="h-8 w-[1px] bg-slate-200" />
               <div 
                 className="flex items-center gap-3 pl-2 group cursor-pointer"
-                onClick={() => setCurrentView('settings')}
+                onClick={() => handleViewChange('settings')}
               >
                 <div className="text-right hidden sm:block">
                   <p className="text-[11px] font-bold leading-none text-[#001F3D]">Sys_Admin_01</p>
@@ -153,9 +163,8 @@ export default function IndustrialERP() {
                 onNavigateToGantt={() => setCurrentView('gantt')}
               />
             )}
-            {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
-            {currentView === 'settings' && <ProfileSettings />}
+            {currentView === 'settings' && <ProfileSettings activeTab={settingsActiveTab} onTabChange={setSettingsActiveTab} />}
             {currentView === 'gantt' && (
               <ProductionGantt 
                 searchTerm={globalSearch}

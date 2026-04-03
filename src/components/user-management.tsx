@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,8 @@ import {
   Truck,
   Calendar,
   UserX,
-  Plus
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -124,7 +125,6 @@ export function UserManagement() {
     }
 
     if (editingUser) {
-      // Update Existing User
       setUsers(prev => prev.map(u => u.id === editingUser.id ? {
         ...u,
         name: formData.name,
@@ -139,7 +139,6 @@ export function UserManagement() {
         description: `Access matrix for ${formData.name} has been synchronized.`,
       });
     } else {
-      // Register New User
       const newUser: SystemUser = {
         id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
         name: formData.name,
@@ -167,7 +166,7 @@ export function UserManagement() {
     setFormData({
       name: user.name,
       email: user.email,
-      phone: '', // Mock field
+      phone: '',
       jobTitle: user.role,
       deptCode: user.dept,
       password: '••••••••'
@@ -202,29 +201,17 @@ export function UserManagement() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-accent font-bold text-[9px] uppercase tracking-[0.3em]">
-            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-red" />
-            Security Governance
-          </div>
-          <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
-            System Access <span className="text-slate-400 font-medium">Control</span>
-          </h2>
-          <p className="text-xs text-muted-foreground font-medium">Manage identity verification and role-based permissions.</p>
-        </div>
-        <div className="flex items-center gap-3">
-           <Button 
-            className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
-            onClick={() => {
-              resetWizard();
-              setIsWizardOpen(true);
-            }}
-           >
-             <UserPlus className="h-4 w-4" /> Register New User
-           </Button>
-        </div>
-      </header>
+      <div className="flex justify-end px-2">
+         <Button 
+          className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
+          onClick={() => {
+            resetWizard();
+            setIsWizardOpen(true);
+          }}
+         >
+           <UserPlus className="h-4 w-4" /> Register New User
+         </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <Card className="lg:col-span-8 overflow-hidden border-slate-200/60 bg-white shadow-xl rounded-2xl min-h-[500px] flex flex-col">
@@ -441,7 +428,7 @@ export function UserManagement() {
                       <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">02. Access Matrix</h3>
                       <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">Granular Permission Assignments</p>
                     </div>
-                    <div className="space-y-3 overflow-y-auto pr-4 flex-grow custom-scrollbar">
+                    <div className="space-y-3 overflow-y-auto pr-4 flex-grow hide-scrollbar">
                       {ACCESS_PAGES.map((page) => (
                         <div 
                           key={page.id}

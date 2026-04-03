@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { 
   Search, 
@@ -20,7 +19,11 @@ import {
   User, 
   Plus, 
   MoreVertical,
-  Contact
+  Contact,
+  TrendingUp,
+  ArrowRight,
+  ShieldCheck,
+  Check
 } from 'lucide-react';
 import { CustomerOrder, Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -36,19 +39,16 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription,
-  DialogFooter
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 const initialOrders: CustomerOrder[] = [];
-const initialCustomers: Customer[] = [];
 
 export function CustomerOrders() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('Active');
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   
   // New Customer Form State
@@ -69,343 +69,297 @@ export function CustomerOrders() {
     );
   }, [searchTerm]);
 
-  const filteredCustomers = useMemo(() => {
-    return customers.filter(c => 
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [customers, searchTerm]);
-
   const handleAddCustomer = () => {
     if (!newCustomer.name || !newCustomer.email) {
       toast({
         variant: "destructive",
-        title: "Validation Error",
-        description: "Customer name and email are required fields."
+        title: "Protocol Error",
+        description: "Customer Identity and Network Email are required."
       });
       return;
     }
 
-    const customer: Customer = {
-      id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: newCustomer.name || '',
-      type: newCustomer.type as any,
-      contactPerson: newCustomer.contactPerson || '',
-      email: newCustomer.email || '',
-      phone: newCustomer.phone || '',
-      location: newCustomer.location || '',
-      totalOrders: 0
-    };
-
-    setCustomers(prev => [...prev, customer]);
+    toast({
+      title: "Ledger Updated",
+      description: `${newCustomer.name} has been successfully registered in the Master Directory.`
+    });
+    
     setIsAddCustomerOpen(false);
     setNewCustomer({ type: 'Corporate' });
-    
-    toast({
-      title: "Registration Successful",
-      description: `${customer.name} has been added to the master directory.`
-    });
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h2 className="text-3xl font-display font-bold uppercase tracking-tight text-slate-900">CRM & Pipeline</h2>
-          <p className="text-xs text-muted-foreground font-medium mt-1 uppercase tracking-widest">Customer Lifecycle Management Ledger</p>
+    <div className="space-y-8 animate-in fade-in duration-1000">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-accent font-bold text-[9px] uppercase tracking-[0.3em]">
+            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-red" />
+            Commercial Operations
+          </div>
+          <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
+            CRM & <span className="text-slate-400 font-medium">Pipeline</span>
+          </h2>
+          <p className="text-xs text-muted-foreground font-medium">Lifecycle management for industrial accounts and active contracts.</p>
         </div>
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        
+        <div className="flex items-center gap-4">
+          <div className="relative w-72 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
-              placeholder="Search records..." 
-              className="pl-10 h-11 bg-white border-slate-200 rounded-full text-sm"
+              placeholder="Filter Ledger Records..." 
+              className="h-11 pl-10 rounded-xl bg-slate-100 border-none text-[11px] font-bold uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-primary/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button 
             onClick={() => setIsAddCustomerOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-white rounded-full h-11 px-6 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
+            className="bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
           >
-            <UserPlus className="mr-2 h-4 w-4" /> New Customer
+            <UserPlus className="mr-3 h-4 w-4" /> Register New Account
           </Button>
         </div>
-      </div>
+      </header>
 
-      <Tabs defaultValue="pipeline" className="w-full">
-        <TabsList className="bg-slate-100 p-1 rounded-full mb-8 h-12 inline-flex border border-slate-200">
-          <TabsTrigger value="pipeline" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            Active Pipeline
-          </TabsTrigger>
-          <TabsTrigger value="directory" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            Customer Directory
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pipeline" className="m-0 space-y-6">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filter by:</span>
-              <Select defaultValue="all">
-                <SelectTrigger className="w-[160px] h-9 bg-white text-[10px] font-bold border-slate-200 rounded-full">
-                  <SelectValue placeholder="All Accounts" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Main Pipeline Ledger */}
+        <Card className="lg:col-span-12 overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
+          <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div>
+              <h3 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">Active Accounts Ledger</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Total Pipeline Valuation: $0.00</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filter:</span>
+              <Select value={activeFilter} onValueChange={setActiveFilter}>
+                <SelectTrigger className="w-[180px] h-10 bg-white text-[10px] font-bold uppercase tracking-widest border-slate-200 rounded-xl shadow-sm">
+                  <SelectValue placeholder="All States" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-[10px] uppercase font-bold">All Accounts</SelectItem>
+                <SelectContent className="rounded-xl border-slate-100">
+                  <SelectItem value="Active" className="text-[10px] font-bold uppercase">Active Pipeline</SelectItem>
+                  <SelectItem value="Closed" className="text-[10px] font-bold uppercase">Closed Contracts</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Badge variant="outline" className="bg-blue-50 text-blue-600 h-8 px-4 border-blue-100 font-bold text-[10px] uppercase tracking-widest">
-              Live Pipeline Value: $0.00
-            </Badge>
           </div>
 
-          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
-            <Table>
-              <TableHeader className="bg-slate-50/50 border-b border-slate-100">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-20">Si.</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Order/Account</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">POs</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Valuation</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Qty</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Location</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="flex items-center gap-1 ml-auto hover:text-primary transition-colors outline-none">
-                        {activeFilter} <ChevronDown className="h-3 w-3" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl">
-                        <DropdownMenuItem onClick={() => setActiveFilter('Active')} className="text-[10px] font-bold uppercase cursor-pointer">Active</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setActiveFilter('Closed')} className="text-[10px] font-bold uppercase cursor-pointer">Closed</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableHead>
+          <Table>
+            <TableHeader className="bg-white">
+              <TableRow className="hover:bg-transparent border-slate-100">
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10 w-20">Seq.</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Client Name</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Point of Contact</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Location</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredOrders.length > 0 ? filteredOrders.map((order) => (
+                <TableRow key={order.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors group">
+                  <TableCell className="px-10 font-code text-[11px] text-slate-300 font-bold">
+                    {order.siNo.toString().padStart(2, '0')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-[#001F3D]">{order.customer}</span>
+                      <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID_{order.id}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
+                      {order.customerType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center">
+                        <Contact className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-700">{order.location}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-[11px] font-medium text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3 w-3 text-slate-300" /> {order.location}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right px-10">
+                    <Badge className={cn(
+                      "text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm",
+                      order.status === 'Production' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                      order.status === 'Shipping' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                      'bg-green-50 text-green-700 border-green-100'
+                    )}>
+                      {order.status}
+                    </Badge>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors">
-                    <TableCell className="font-bold text-sm text-slate-300 px-8">{order.siNo.toString().padStart(2, '0')}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{order.customer}</span>
-                        <span className="text-[10px] text-slate-400 font-code">#{order.id}</span>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-96 text-center">
+                    <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                      <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
+                        <Package className="h-16 w-16 text-slate-300" />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-center font-code text-xs font-bold text-primary">{order.numberOfPOs}</TableCell>
-                    <TableCell className="text-xs font-medium text-slate-600">{order.customerType}</TableCell>
-                    <TableCell className="text-right font-code text-sm font-bold text-slate-900">{order.value}</TableCell>
-                    <TableCell className="text-center font-code text-xs text-slate-500">{order.quantity}</TableCell>
-                    <TableCell className="text-xs text-slate-400 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3" /> {order.location}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right px-8">
-                      <Badge 
-                        className={cn(
-                          "text-[9px] uppercase font-bold tracking-wider px-3 py-1 rounded-full",
-                          order.status === 'Production' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                          order.status === 'Pending' ? 'bg-slate-50 text-slate-400 border border-slate-200' :
-                          order.status === 'Shipping' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                          'bg-green-50 text-green-600 border border-green-100'
-                        )}
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredOrders.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-80 text-center">
-                      <div className="flex flex-col items-center justify-center opacity-20">
-                        <Package className="h-16 w-16 text-slate-400 mb-6" />
-                        <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">Pipeline_Ledger_Empty</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="directory" className="m-0">
-          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
-            <Table>
-              <TableHeader className="bg-slate-50/50 border-b border-slate-100">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Client Name</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Type</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Contact / Email</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Location</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Order Count</TableHead>
-                  <TableHead className="text-right px-8"></TableHead>
+                      <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Ledger Matrix Offline</p>
+                      <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active pipeline records detected. Register a new account to initialize commercial telemetry.</p>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow key={customer.id} className="hover:bg-slate-50/50 border-slate-50 h-24 transition-colors group">
-                    <TableCell className="px-8">
-                      <div className="flex flex-col">
-                        <span className="text-base font-bold text-slate-900">{customer.name}</span>
-                        <span className="text-[10px] text-slate-400 font-code uppercase">{customer.id}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-white border-slate-200 text-[9px] font-bold uppercase px-3 py-1">
-                        {customer.type === 'Corporate' ? <Building2 className="h-3 w-3 mr-1.5" /> : <User className="h-3 w-3 mr-1.5" />}
-                        {customer.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <Contact className="h-3 w-3 text-primary" /> {customer.contactPerson}
-                        </span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                          <Mail className="h-3 w-3" /> {customer.email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3" /> {customer.location}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-sm font-bold text-primary">{customer.totalOrders}</span>
-                    </TableCell>
-                    <TableCell className="text-right px-8">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-primary/5 hover:text-primary">
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-slate-100">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredCustomers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-80 text-center">
-                      <div className="flex flex-col items-center justify-center opacity-20">
-                        <Building2 className="h-16 w-16 text-slate-400 mb-6" />
-                        <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">No Registered Customers Found</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
 
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-        <DialogContent className="max-w-xl bg-white rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
-          <div className="bg-primary p-8 flex items-center gap-4">
-            <div className="bg-white/20 p-3 rounded-2xl">
-              <UserPlus className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl font-display font-bold text-white uppercase tracking-tight">Onboard New Account</DialogTitle>
-              <DialogDescription className="text-white/70 text-sm font-medium">Initialize master data for a new customer account.</DialogDescription>
-            </div>
-          </div>
+        <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogTitle className="sr-only">Account Onboarding Protocol</DialogTitle>
+          <DialogDescription className="sr-only">Sequence for initializing new commercial identities in the ERP directory.</DialogDescription>
           
-          <div className="p-10 space-y-8">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Account Name</Label>
-                <Input 
-                  placeholder="Company or Individual Name" 
-                  className="h-12 bg-slate-50 border-none rounded-xl"
-                  value={newCustomer.name}
-                  onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                />
+          <div className="flex h-[600px]">
+            <div className="w-80 bg-slate-50/50 p-12 border-r border-slate-100 flex flex-col justify-between">
+              <div className="space-y-12">
+                <div className="p-5 bg-[#001F3D] rounded-[1.5rem] w-fit shadow-2xl shadow-primary/20 relative">
+                  <UserPlus className="h-8 w-8 text-white" />
+                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse shadow-[0_0_10px_#ef4444]" />
+                </div>
+                <div className="space-y-10">
+                  {[
+                    { s: 1, label: 'Identity Matrix', desc: 'ENTITY_SETUP', active: true },
+                    { s: 2, label: 'Contact Points', desc: 'LINK_PROTOCOL', active: false },
+                    { s: 3, label: 'Verify & Commit', desc: 'SYNC_LEDGER', active: false },
+                  ].map((item) => (
+                    <div key={item.s} className="flex gap-6 group relative">
+                      {item.s < 3 && <div className="absolute left-3.5 top-10 w-[1px] h-12 bg-slate-200" />}
+                      <div className={cn(
+                        "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10 shadow-sm",
+                        item.active ? "bg-[#001F3D] border-[#001F3D] text-white scale-110 shadow-lg shadow-primary/20" : "bg-white border-slate-200 text-slate-400"
+                      )}>
+                        {item.s}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={cn(
+                          "text-xs font-bold transition-colors duration-500 leading-none",
+                          item.active ? "text-[#001F3D]" : "text-slate-400"
+                        )}>{item.label}</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-[0.2em] mt-2">{item.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Account Type</Label>
-                <Select 
-                  value={newCustomer.type} 
-                  onValueChange={(val) => setNewCustomer({...newCustomer, type: val as any})}
+              <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.4em]">
+                CRM_ONBOARD_SYS_V2.4
+              </div>
+            </div>
+
+            <div className="flex-1 p-16 flex flex-col justify-between bg-white overflow-y-auto">
+              <div className="space-y-12">
+                <div className="flex items-center gap-4">
+                  <div className="h-1 w-10 bg-red-500 rounded-full" />
+                  <div>
+                    <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">Account Protocol</h3>
+                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Master Data Initialization Sequence</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Entity Name</Label>
+                      <Input 
+                        placeholder="Legal Account Identity" 
+                        className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold focus-visible:ring-primary/20"
+                        value={newCustomer.name}
+                        onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Account Class</Label>
+                      <Select value={newCustomer.type} onValueChange={(val) => setNewCustomer({...newCustomer, type: val as any})}>
+                        <SelectTrigger className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold uppercase tracking-widest focus:ring-primary/20 shadow-sm">
+                          <SelectValue placeholder="Select type..." />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                          <SelectItem value="Corporate" className="text-[10px] font-bold uppercase">Corporate Entity</SelectItem>
+                          <SelectItem value="Individual" className="text-[10px] font-bold uppercase">Private Account</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Liaison Officer</Label>
+                      <Input 
+                        placeholder="Primary Point of Contact" 
+                        className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold focus-visible:ring-primary/20"
+                        value={newCustomer.contactPerson}
+                        onChange={(e) => setNewCustomer({...newCustomer, contactPerson: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Location</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="e.g. Detroit Matrix" 
+                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                          value={newCustomer.location}
+                          onChange={(e) => setNewCustomer({...newCustomer, location: e.target.value})}
+                        />
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Email</Label>
+                      <div className="relative">
+                        <Input 
+                          type="email"
+                          placeholder="comms@entity.tech" 
+                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                          value={newCustomer.email}
+                          onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                        />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Voice Protocol</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="+1 (000) 000-0000" 
+                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                          value={newCustomer.phone}
+                          onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                        />
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-6 mt-12 pt-10 border-t border-slate-100">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:text-[#001F3D] hover:bg-slate-50"
+                  onClick={() => setIsAddCustomerOpen(false)}
                 >
-                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-sm">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="Corporate" className="text-xs font-bold uppercase">Corporate</SelectItem>
-                    <SelectItem value="Individual" className="text-xs font-bold uppercase">Individual</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Abort Protocol
+                </Button>
+                <Button 
+                  className="flex-[2] h-14 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-red-600/30 flex gap-3 group"
+                  onClick={handleAddCustomer}
+                >
+                  Commit to Master Ledger
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Contact Person</Label>
-                <Input 
-                  placeholder="Primary Point of Contact" 
-                  className="h-12 bg-slate-50 border-none rounded-xl"
-                  value={newCustomer.contactPerson}
-                  onChange={(e) => setNewCustomer({...newCustomer, contactPerson: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Location / City</Label>
-                <Input 
-                  placeholder="e.g. Detroit, MI" 
-                  className="h-12 bg-slate-50 border-none rounded-xl"
-                  value={newCustomer.location}
-                  onChange={(e) => setNewCustomer({...newCustomer, location: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Address</Label>
-                <Input 
-                  type="email"
-                  placeholder="contact@email.com" 
-                  className="h-12 bg-slate-50 border-none rounded-xl"
-                  value={newCustomer.email}
-                  onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Phone Number</Label>
-                <Input 
-                  placeholder="+1 (000) 000-0000" 
-                  className="h-12 bg-slate-50 border-none rounded-xl"
-                  value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button 
-                variant="ghost" 
-                className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400"
-                onClick={() => setIsAddCustomerOpen(false)}
-              >
-                Cancel Registration
-              </Button>
-              <Button 
-                className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20"
-                onClick={handleAddCustomer}
-              >
-                Register & Initialize Account
-              </Button>
             </div>
           </div>
         </DialogContent>

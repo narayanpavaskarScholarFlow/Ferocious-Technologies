@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard } from 'lucide-react';
+import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser } from '@/lib/types';
 
@@ -158,7 +157,7 @@ export function OrderDetails({ orderId, onBack, customers, users }: OrderDetails
                       selected={startDate}
                       onSelect={setStartDate}
                       initialFocus
-                      className="bg-transparent text-white"
+                      className="bg-transparent"
                     />
                   </PopoverContent>
                 </Popover>
@@ -188,7 +187,7 @@ export function OrderDetails({ orderId, onBack, customers, users }: OrderDetails
                       selected={endDate}
                       onSelect={setEndDate}
                       initialFocus
-                      className="bg-transparent text-white"
+                      className="bg-transparent"
                     />
                   </PopoverContent>
                 </Popover>

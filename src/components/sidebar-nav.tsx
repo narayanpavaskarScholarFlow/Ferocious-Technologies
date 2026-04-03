@@ -98,10 +98,16 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
       </div>
 
       <div className="flex flex-col gap-4 text-slate-500 pt-6 border-t border-white/5 w-8 items-center">
-        <button className="hover:text-white transition-all outline-none">
+        <button 
+          onClick={() => onViewChange('settings')}
+          className={cn(
+            "hover:text-white transition-all outline-none p-2 rounded-lg",
+            currentView === 'settings' ? "text-white bg-white/10" : ""
+          )}
+        >
           <Settings className="h-4 w-4" />
         </button>
-        <button className="hover:text-white transition-all outline-none">
+        <button className="hover:text-white transition-all outline-none p-2">
           <HelpCircle className="h-4 w-4" />
         </button>
       </div>

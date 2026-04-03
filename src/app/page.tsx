@@ -19,6 +19,7 @@ import { WorkLogEntry } from '@/components/work-log-entry';
 import { InventoryManagement } from '@/components/inventory-management';
 import { QualityManagement } from '@/components/quality-management';
 import { ProductionGantt } from '@/components/production-gantt';
+import { ProfileSettings } from '@/components/profile-settings';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command, X, ShieldAlert } from 'lucide-react';
@@ -106,7 +107,10 @@ export default function IndustrialERP() {
                 <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-accent rounded-full border-2 border-white" />
               </button>
               <div className="h-8 w-[1px] bg-slate-200" />
-              <div className="flex items-center gap-3 pl-2 group cursor-pointer">
+              <div 
+                className="flex items-center gap-3 pl-2 group cursor-pointer"
+                onClick={() => setCurrentView('settings')}
+              >
                 <div className="text-right hidden sm:block">
                   <p className="text-[11px] font-bold leading-none text-[#001F3D]">Sys_Admin_01</p>
                   <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
@@ -151,6 +155,7 @@ export default function IndustrialERP() {
             )}
             {currentView === 'users' && <UserManagement />}
             {currentView === 'vendor' && <VendorManagement />}
+            {currentView === 'settings' && <ProfileSettings />}
             {currentView === 'gantt' && (
               <ProductionGantt 
                 searchTerm={globalSearch}

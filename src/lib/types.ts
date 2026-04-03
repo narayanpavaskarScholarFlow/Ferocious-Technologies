@@ -38,6 +38,7 @@ export type ViewType =
   | 'work-log'
   | 'inventory'
   | 'quality'
+  | 'settings'
   | 'gantt';
 
 export interface Order {

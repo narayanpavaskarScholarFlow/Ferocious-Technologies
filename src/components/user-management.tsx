@@ -79,6 +79,7 @@ export function UserManagement() {
   const { toast } = useToast();
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [step, setStep] = useState(1);
   
   // Wizard Form State
@@ -122,38 +123,58 @@ export function UserManagement() {
       return;
     }
 
-    const newUser: SystemUser = {
-      id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: formData.name,
-      email: formData.email,
-      role: formData.jobTitle || 'Standard Operator',
-      dept: formData.deptCode || 'GEN-01',
-      permissions: { ...permissions },
-      lastLogin: 'Never',
-      status: 'offline'
-    };
+    if (editingUser) {
+      // Update Existing User
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? {
+        ...u,
+        name: formData.name,
+        email: formData.email,
+        role: formData.jobTitle,
+        dept: formData.deptCode,
+        permissions: { ...permissions }
+      } : u));
 
-    setUsers(prev => [...prev, newUser]);
+      toast({
+        title: "Identity Updated",
+        description: `Access matrix for ${formData.name} has been synchronized.`,
+      });
+    } else {
+      // Register New User
+      const newUser: SystemUser = {
+        id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: formData.name,
+        email: formData.email,
+        role: formData.jobTitle || 'Standard Operator',
+        dept: formData.deptCode || 'GEN-01',
+        permissions: { ...permissions },
+        lastLogin: 'Never',
+        status: 'offline'
+      };
+
+      setUsers(prev => [...prev, newUser]);
+      toast({
+        title: "User Registered",
+        description: `${newUser.name} has been added to the security matrix.`,
+      });
+    }
+
     setIsWizardOpen(false);
     resetWizard();
-    
-    toast({
-      title: "User Registered",
-      description: `${newUser.name} has been added to the security matrix.`,
-    });
   };
 
-  const resetWizard = () => {
-    setStep(1);
+  const handleEditUser = (user: SystemUser) => {
+    setEditingUser(user);
     setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      jobTitle: '',
-      deptCode: '',
-      password: ''
+      name: user.name,
+      email: user.email,
+      phone: '', // Mock field
+      jobTitle: user.role,
+      deptCode: user.dept,
+      password: '••••••••'
     });
-    setPermissions({ overview: 'read' });
+    setPermissions(user.permissions);
+    setStep(1);
+    setIsWizardOpen(true);
   };
 
   const handleDeleteUser = (id: string) => {
@@ -163,6 +184,20 @@ export function UserManagement() {
       description: "Access privileges have been terminated.",
       variant: "destructive"
     });
+  };
+
+  const resetWizard = () => {
+    setStep(1);
+    setEditingUser(null);
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      jobTitle: '',
+      deptCode: '',
+      password: ''
+    });
+    setPermissions({ overview: 'read' });
   };
 
   return (
@@ -241,7 +276,12 @@ export function UserManagement() {
                   </TableCell>
                   <TableCell className="text-right px-8">
                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary">
+                       <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-slate-400 hover:text-primary"
+                        onClick={() => handleEditUser(user)}
+                       >
                          <Edit2 className="h-3.5 w-3.5" />
                        </Button>
                        <Button 
@@ -316,11 +356,11 @@ export function UserManagement() {
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
                 <div className="p-4 bg-[#001F3D] rounded-2xl w-fit shadow-xl shadow-primary/20">
-                  <UserPlus className="h-7 w-7 text-white" />
+                  {editingUser ? <Shield className="h-7 w-7 text-white" /> : <UserPlus className="h-7 w-7 text-white" />}
                 </div>
                 <div className="space-y-8">
                   {[
-                    { s: 1, label: 'Register New User', desc: 'IDENTITY & CONTACT' },
+                    { s: 1, label: editingUser ? 'Update Identity' : 'Register New User', desc: 'IDENTITY & CONTACT' },
                     { s: 2, label: 'Access Control', desc: 'DEFINE PERMISSIONS' },
                     { s: 3, label: 'User Profile', desc: 'ORGANIZATIONAL ROLE' },
                     { s: 4, label: 'Credentials', desc: 'SECURITY SETUP' },
@@ -360,7 +400,7 @@ export function UserManagement() {
                 {step === 1 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div>
-                      <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">01. Identity</h3>
+                      <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingUser ? 'Update' : '01. Identity'}</h3>
                       <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">Foundational Contact Protocols</p>
                     </div>
                     <div className="space-y-6">
@@ -551,7 +591,7 @@ export function UserManagement() {
                     step === 4 ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30" : "bg-[#001F3D] hover:bg-[#002d4f] shadow-primary/30"
                   )}
                 >
-                  {step === 4 ? 'Commit & Finalize' : 'Execute Next Step'}
+                  {step === 4 ? (editingUser ? 'Save Changes' : 'Commit & Finalize') : 'Execute Next Step'}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

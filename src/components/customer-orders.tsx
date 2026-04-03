@@ -35,9 +35,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-const initialOrders: CustomerOrder[] = [];
+interface CustomerOrdersProps {
+  customers: Customer[];
+  onCustomersChange: (customers: Customer[]) => void;
+}
 
-export function CustomerOrders() {
+export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('Active');
@@ -53,12 +56,12 @@ export function CustomerOrders() {
     type: 'Corporate'
   });
 
-  const filteredOrders = useMemo(() => {
-    return initialOrders.filter(order => 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(customer => 
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.gstNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, customers]);
 
   const handleAddCustomer = () => {
     if (!newCustomer.name || !newCustomer.gstNumber || !newCustomer.contactPerson) {
@@ -70,9 +73,24 @@ export function CustomerOrders() {
       return;
     }
 
+    const customer: Customer = {
+      id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: newCustomer.name,
+      gstNumber: newCustomer.gstNumber,
+      contactPerson: newCustomer.contactPerson,
+      contactNumber: newCustomer.contactNumber || 'N/A',
+      address: newCustomer.address || 'N/A',
+      type: newCustomer.type as any || 'Corporate',
+      email: '',
+      location: newCustomer.address || 'Global',
+      totalOrders: 0
+    };
+
+    onCustomersChange([...customers, customer]);
+
     toast({
       title: "Ledger Updated",
-      description: `${newCustomer.name} has been successfully registered in the Master Directory.`
+      description: `${customer.name} has been successfully registered in the Master Directory.`
     });
     
     setIsAddCustomerOpen(false);
@@ -146,20 +164,20 @@ export function CustomerOrders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors group">
+              {filteredCustomers.length > 0 ? filteredCustomers.map((customer, idx) => (
+                <TableRow key={customer.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors group">
                   <TableCell className="px-10 font-code text-[11px] text-slate-300 font-bold">
-                    {order.siNo.toString().padStart(2, '0')}
+                    {(idx + 1).toString().padStart(2, '0')}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-[#001F3D]">{order.customer}</span>
-                      <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID_{order.id}</span>
+                      <span className="text-sm font-bold text-[#001F3D]">{customer.name}</span>
+                      <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID_{customer.id}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
-                      GST_REF_VALID
+                      {customer.gstNumber}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -167,22 +185,17 @@ export function CustomerOrders() {
                       <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center">
                         <Contact className="h-3.5 w-3.5 text-primary" />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-700">{order.location}</span>
+                      <span className="text-[11px] font-bold text-slate-700">{customer.contactPerson}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-[11px] font-medium text-slate-500">
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3 text-slate-300" /> {order.location}
+                      <MapPin className="h-3 w-3 text-slate-300" /> {customer.location}
                     </div>
                   </TableCell>
                   <TableCell className="text-right px-10">
-                    <Badge className={cn(
-                      "text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm",
-                      order.status === 'Production' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                      order.status === 'Shipping' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                      'bg-green-50 text-green-700 border-green-100'
-                    )}>
-                      {order.status}
+                    <Badge className="text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-100">
+                      Active
                     </Badge>
                   </TableCell>
                 </TableRow>

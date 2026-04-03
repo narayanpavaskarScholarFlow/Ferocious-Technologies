@@ -13,29 +13,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Customer, SystemUser } from '@/lib/types';
 
 interface OrderDetailsProps {
   orderId: string | null;
   onBack: () => void;
+  customers: Customer[];
+  users: SystemUser[];
 }
-
-// Simulated CRM Identities
-const CRM_CUSTOMERS = [
-  "Automotive Corp",
-  "Aerospace Dynamics",
-  "Global Logistics",
-  "Precision Tooling Ltd",
-  "Euro-Machining Group"
-];
-
-// Simulated Staff Directory
-const STAFF_DIRECTORY = [
-  "John Doe (Plant Controller)",
-  "Sarah Miller (Production Lead)",
-  "A. Chen (Senior Engineer)",
-  "Miloš Kovařík (Operations)",
-  "Sys_Admin_01"
-];
 
 interface PartRow {
   id: string;
@@ -45,7 +30,7 @@ interface PartRow {
   duration: string;
 }
 
-export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
+export function OrderDetails({ orderId, onBack, customers, users }: OrderDetailsProps) {
   const isNew = !orderId;
   const [displayId, setDisplayId] = useState("");
   const [customer, setCustomer] = useState("");
@@ -132,11 +117,11 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                 </Label>
                 <Select value={customer} onValueChange={setCustomer}>
                   <SelectTrigger className={darkSelectClasses}>
-                    <SelectValue placeholder="Select Account..." />
+                    <SelectValue placeholder={customers.length > 0 ? "Select Account..." : "No Customers Found"} />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                    {CRM_CUSTOMERS.map(c => (
-                      <SelectItem key={c} value={c} className="text-xs font-bold uppercase tracking-wider">{c}</SelectItem>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.name} className="text-xs font-bold uppercase tracking-wider">{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -232,11 +217,11 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                   </Label>
                   <Select value={lead} onValueChange={setLead}>
                     <SelectTrigger className={darkSelectClasses}>
-                      <SelectValue placeholder="Assign Officer..." />
+                      <SelectValue placeholder={users.length > 0 ? "Assign Officer..." : "No Personnel Found"} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                      {STAFF_DIRECTORY.map(s => (
-                        <SelectItem key={s} value={s} className="text-xs font-bold uppercase tracking-wider">{s}</SelectItem>
+                      {users.map(s => (
+                        <SelectItem key={s.id} value={s.name} className="text-xs font-bold uppercase tracking-wider">{s.name} ({s.role})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

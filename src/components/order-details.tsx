@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -7,7 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, Save, Plus, Trash2, Calendar, CreditCard, DollarSign, User, Building2, Hash } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OrderDetailsProps {
@@ -47,6 +51,8 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
   const [customer, setCustomer] = useState("");
   const [lead, setLead] = useState("");
   const [parts, setParts] = useState<PartRow[]>([]);
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   // Auto-generate ID protocol for new orders
   useEffect(() => {
@@ -70,7 +76,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
   };
 
   // Industrial Dark Input Styling
-  const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-bold placeholder:text-white/20 rounded-xl";
+  const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-bold placeholder:text-white/20 rounded-xl transition-all";
   const darkSelectClasses = "bg-[#0a0f18] border-none text-white h-12 focus:ring-primary/50 text-xs font-bold uppercase tracking-widest rounded-xl";
 
   return (
@@ -145,22 +151,62 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Calendar className="h-3 w-3" /> Planned Start Date
+                  <CalendarIcon className="h-3 w-3" /> Planned Start Date
                 </Label>
-                <div className="relative">
-                  <Input type="date" className={cn(darkInputClasses, "pr-12")} />
-                  <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        darkInputClasses,
+                        "justify-start text-left font-bold w-full border-none hover:bg-[#111827] hover:text-white",
+                        !startDate && "text-white/20"
+                      )}
+                    >
+                      {startDate ? format(startDate, "PPP") : <span>Set Start Date...</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 text-slate-500" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-[#0a0f18] border-white/10 rounded-2xl shadow-2xl" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className="bg-transparent text-white"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Calendar className="h-3 w-3" /> Target End Date
+                  <CalendarIcon className="h-3 w-3" /> Target End Date
                 </Label>
-                <div className="relative">
-                  <Input type="date" className={cn(darkInputClasses, "pr-12")} />
-                  <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        darkInputClasses,
+                        "justify-start text-left font-bold w-full border-none hover:bg-[#111827] hover:text-white",
+                        !endDate && "text-white/20"
+                      )}
+                    >
+                      {endDate ? format(endDate, "PPP") : <span>Set Target Date...</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 text-slate-500" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-[#0a0f18] border-white/10 rounded-2xl shadow-2xl" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      className="bg-transparent text-white"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 

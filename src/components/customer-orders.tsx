@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -9,30 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { 
   Search, 
-  ChevronDown, 
-  Package, 
   UserPlus, 
-  Mail, 
-  Phone, 
   MapPin, 
   Building2, 
-  User, 
   Plus, 
-  MoreVertical,
-  Contact,
-  TrendingUp,
+  Contact, 
   ArrowRight,
   ShieldCheck,
-  Check
+  Hash,
+  Phone,
+  User,
+  CreditCard,
+  FileText
 } from 'lucide-react';
 import { CustomerOrder, Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { 
   Dialog, 
   DialogContent, 
@@ -53,28 +45,27 @@ export function CustomerOrders() {
   
   // New Customer Form State
   const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({
-    type: 'Corporate',
-    location: '',
-    name: '',
+    name: '', // Company Name
+    address: '',
+    contactNumber: '',
+    gstNumber: '',
     contactPerson: '',
-    email: '',
-    phone: ''
+    type: 'Corporate'
   });
 
   const filteredOrders = useMemo(() => {
     return initialOrders.filter(order => 
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerType.toLowerCase().includes(searchTerm.toLowerCase())
+      order.customer.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm]);
 
   const handleAddCustomer = () => {
-    if (!newCustomer.name || !newCustomer.email) {
+    if (!newCustomer.name || !newCustomer.gstNumber || !newCustomer.contactPerson) {
       toast({
         variant: "destructive",
         title: "Protocol Error",
-        description: "Customer Identity and Network Email are required."
+        description: "Company Name, GST, and Contact Person are required for validation."
       });
       return;
     }
@@ -85,7 +76,7 @@ export function CustomerOrders() {
     });
     
     setIsAddCustomerOpen(false);
-    setNewCustomer({ type: 'Corporate' });
+    setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
   };
 
   return (
@@ -148,9 +139,9 @@ export function CustomerOrders() {
               <TableRow className="hover:bg-transparent border-slate-100">
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10 w-20">Seq.</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Client Name</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Point of Contact</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Location</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -168,7 +159,7 @@ export function CustomerOrders() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
-                      {order.customerType}
+                      GST_REF_VALID
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -200,7 +191,7 @@ export function CustomerOrders() {
                   <TableCell colSpan={6} className="h-96 text-center">
                     <div className="flex flex-col items-center justify-center opacity-30 py-10">
                       <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
-                        <Package className="h-16 w-16 text-slate-300" />
+                        <Building2 className="h-16 w-16 text-slate-300" />
                       </div>
                       <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Ledger Matrix Offline</p>
                       <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active pipeline records detected. Register a new account to initialize commercial telemetry.</p>
@@ -223,13 +214,13 @@ export function CustomerOrders() {
               <div className="space-y-12">
                 <div className="p-5 bg-[#001F3D] rounded-[1.5rem] w-fit shadow-2xl shadow-primary/20 relative">
                   <UserPlus className="h-8 w-8 text-white" />
-                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse shadow-[0_0_10px_#ef4444]" />
+                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                 </div>
                 <div className="space-y-10">
                   {[
-                    { s: 1, label: 'Identity Matrix', desc: 'ENTITY_SETUP', active: true },
-                    { s: 2, label: 'Contact Points', desc: 'LINK_PROTOCOL', active: false },
-                    { s: 3, label: 'Verify & Commit', desc: 'SYNC_LEDGER', active: false },
+                    { s: 1, label: 'Entity Identity', desc: 'NAME & GST', active: true },
+                    { s: 2, label: 'Liaison Setup', desc: 'CONTACT NODES', active: false },
+                    { s: 3, label: 'Logistics Matrix', desc: 'ADDRESS_SYNC', active: false },
                   ].map((item) => (
                     <div key={item.s} className="flex gap-6 group relative">
                       {item.s < 3 && <div className="absolute left-3.5 top-10 w-[1px] h-12 bg-slate-200" />}
@@ -268,77 +259,68 @@ export function CustomerOrders() {
                 <div className="space-y-8">
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Entity Name</Label>
-                      <Input 
-                        placeholder="Legal Account Identity" 
-                        className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold focus-visible:ring-primary/20"
-                        value={newCustomer.name}
-                        onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Account Class</Label>
-                      <Select value={newCustomer.type} onValueChange={(val) => setNewCustomer({...newCustomer, type: val as any})}>
-                        <SelectTrigger className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold uppercase tracking-widest focus:ring-primary/20 shadow-sm">
-                          <SelectValue placeholder="Select type..." />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-                          <SelectItem value="Corporate" className="text-[10px] font-bold uppercase">Corporate Entity</SelectItem>
-                          <SelectItem value="Individual" className="text-[10px] font-bold uppercase">Private Account</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Liaison Officer</Label>
-                      <Input 
-                        placeholder="Primary Point of Contact" 
-                        className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold focus-visible:ring-primary/20"
-                        value={newCustomer.contactPerson}
-                        onChange={(e) => setNewCustomer({...newCustomer, contactPerson: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Location</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name</Label>
                       <div className="relative">
                         <Input 
-                          placeholder="e.g. Detroit Matrix" 
+                          placeholder="Legal Account Identity" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.location}
-                          onChange={(e) => setNewCustomer({...newCustomer, location: e.target.value})}
+                          value={newCustomer.name}
+                          onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
                         />
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Number</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="TAX_ID / GSTIN" 
+                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20 uppercase"
+                          value={newCustomer.gstNumber}
+                          onChange={(e) => setNewCustomer({...newCustomer, gstNumber: e.target.value})}
+                        />
+                        <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Email</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Person</Label>
                       <div className="relative">
                         <Input 
-                          type="email"
-                          placeholder="comms@entity.tech" 
+                          placeholder="Liaison Officer Name" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.email}
-                          onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                          value={newCustomer.contactPerson}
+                          onChange={(e) => setNewCustomer({...newCustomer, contactPerson: e.target.value})}
                         />
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Voice Protocol</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Number</Label>
                       <div className="relative">
                         <Input 
-                          placeholder="+1 (000) 000-0000" 
+                          placeholder="+91 (000) 000-0000" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.phone}
-                          onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                          value={newCustomer.contactNumber}
+                          onChange={(e) => setNewCustomer({...newCustomer, contactNumber: e.target.value})}
                         />
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Business Address</Label>
+                    <div className="relative">
+                      <Input 
+                        placeholder="Full Node Location / Operational Base" 
+                        className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                        value={newCustomer.address}
+                        onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                      />
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                     </div>
                   </div>
                 </div>

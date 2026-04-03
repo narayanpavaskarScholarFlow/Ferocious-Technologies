@@ -117,11 +117,13 @@ export interface CustomerOrder {
 
 export interface Customer {
   id: string;
-  name: string;
-  type: 'Corporate' | 'Individual';
+  name: string; // Company name
+  address: string;
+  contactNumber: string;
+  gstNumber: string;
   contactPerson: string;
+  type: 'Corporate' | 'Individual';
   email: string;
-  phone: string;
   location: string;
   totalOrders: number;
 }

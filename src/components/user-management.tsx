@@ -36,10 +36,10 @@ import { SystemUser, PermissionLevel } from '@/lib/types';
 const JOB_TITLES = [
   "Manager",
   "Supervisor",
-  "VMC Programer",
+  "VMC Programmer",
   "VMC Operator",
   "Tool Maker",
-  "Senier Tool Maker"
+  "Senior Tool Maker"
 ];
 
 const DEPARTMENTS = [
@@ -282,7 +282,7 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
                 <div className="space-y-8">
                   {[
                     { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & CONTACT' },
-                    { s: 2, label: 'Role Profile', desc: 'DEPT & FUNCTION' },
+                    { s: 2, label: 'Role Setup', desc: 'DEPT & FUNCTION' },
                     { s: 3, label: 'Credentials', desc: 'SECURITY SETUP' },
                   ].map((item) => (
                     <div key={item.s} className="flex gap-5 group relative">

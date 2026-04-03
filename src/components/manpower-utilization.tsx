@@ -14,27 +14,15 @@ import { cn } from '@/lib/utils';
 import { 
   Users, 
   Calendar, 
-  Search
+  Search,
+  UserX
 } from 'lucide-react';
 
-const staffData: StaffMember[] = [
-  { id: '1', name: 'Miloš Kovařík', role: 'Lead Engineer', status: 'active', shift: 'Morning', efficiency: 98 },
-  { id: '2', name: 'Sarah Miller', role: 'Machine Operator', status: 'active', shift: 'Morning', efficiency: 85 },
-  { id: '3', name: 'A. Chen', role: 'QC Specialist', status: 'break', shift: 'Morning', efficiency: 92 },
-  { id: '4', name: 'J. Doe', role: 'Maintenance', status: 'off', shift: 'Evening', efficiency: 70 },
-  { id: '5', name: 'Elena Petrova', role: 'Operator', status: 'active', shift: 'Morning', efficiency: 88 },
-];
+const staffData: StaffMember[] = [];
 
-const leaveBalances: LeaveBalance[] = [
-  { id: '1', resourceName: 'Miloš Kovařík', annual: 12, sick: 5, casual: 3, totalTaken: 4 },
-  { id: '2', resourceName: 'Sarah Miller', annual: 15, sick: 2, casual: 1, totalTaken: 2 },
-  { id: '3', resourceName: 'A. Chen', annual: 8, sick: 4, casual: 2, totalTaken: 6 },
-];
+const leaveBalances: LeaveBalance[] = [];
 
-const plannedLeaves: LeaveRequest[] = [
-  { id: 'L-101', resourceName: 'Miloš Kovařík', startDate: '15 Mar 2025', endDate: '18 Mar 2025', type: 'Annual', status: 'Approved' },
-  { id: 'L-102', resourceName: 'J. Doe', startDate: '20 Mar 2025', endDate: '21 Mar 2025', type: 'Sick', status: 'Approved' },
-];
+const plannedLeaves: LeaveRequest[] = [];
 
 export function ManpowerUtilization() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -54,7 +42,7 @@ export function ManpowerUtilization() {
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 h-10 px-4 font-bold text-[10px] uppercase tracking-widest">
-            Available Resources: 14
+            Available Resources: {staffData.length}
           </Badge>
         </div>
       </header>
@@ -79,45 +67,52 @@ export function ManpowerUtilization() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-8 m-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {staffData.map((staff) => (
-              <Card key={staff.id} className="p-6 flex items-center justify-between border-slate-200 shadow-sm bg-white hover:border-primary/50 transition-colors rounded-2xl">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12 border-2 border-slate-50">
-                    <AvatarImage src={`https://picsum.photos/seed/${staff.id}/100/100`} />
-                    <AvatarFallback className="bg-primary/5 text-primary font-bold">{staff.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{staff.name}</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{staff.role}</p>
+          {staffData.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {staffData.map((staff) => (
+                <Card key={staff.id} className="p-6 flex items-center justify-between border-slate-200 shadow-sm bg-white hover:border-primary/50 transition-colors rounded-2xl">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12 border-2 border-slate-50">
+                      <AvatarImage src={`https://picsum.photos/seed/${staff.id}/100/100`} />
+                      <AvatarFallback className="bg-primary/5 text-primary font-bold">{staff.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{staff.name}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{staff.role}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "text-[9px] font-bold uppercase py-1 px-3",
-                      staff.status === 'active' ? 'bg-green-50 text-green-600 border-green-100' :
-                      staff.status === 'break' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                      'bg-slate-50 text-slate-400 border-slate-100'
-                    )}
-                  >
-                    {staff.status}
-                  </Badge>
-                  <p className="text-[10px] font-code mt-1 text-slate-400">{staff.shift} Shift</p>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  <div className="text-right">
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "text-[9px] font-bold uppercase py-1 px-3",
+                        staff.status === 'active' ? 'bg-green-50 text-green-600 border-green-100' :
+                        staff.status === 'break' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        'bg-slate-50 text-slate-400 border-slate-100'
+                      )}
+                    >
+                      {staff.status}
+                    </Badge>
+                    <p className="text-[10px] font-code mt-1 text-slate-400">{staff.shift} Shift</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-slate-400 opacity-40">
+              <UserX className="h-12 w-12 mb-4" />
+              <p className="text-xs font-bold uppercase tracking-widest">No staff members in database</p>
+            </div>
+          )}
 
           <Card className="p-8 border-slate-200 shadow-sm bg-white rounded-2xl">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Resource Skill Matrix</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               {[
-                { label: 'Milling', value: 80 },
-                { label: 'Turning', value: 65 },
-                { label: 'Quality Control', value: 95 },
-                { label: 'Logistics', value: 40 },
+                { label: 'Milling', value: 0 },
+                { label: 'Turning', value: 0 },
+                { label: 'Quality Control', value: 0 },
+                { label: 'Logistics', value: 0 },
               ].map((skill) => (
                 <div key={skill.label} className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -162,6 +157,11 @@ export function ManpowerUtilization() {
                     <TableCell className="text-center font-code text-sm text-primary font-bold">{lb.totalTaken} d</TableCell>
                   </TableRow>
                 ))}
+                {leaveBalances.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No leave records found</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -182,7 +182,7 @@ export function ManpowerUtilization() {
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Resource Name</Label>
-                  <Input defaultValue="Sarah Miller" className="h-12 bg-slate-50 border-none rounded-xl" />
+                  <Input placeholder="Search staff..." className="h-12 bg-slate-50 border-none rounded-xl" />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Start Date</Label>
@@ -210,7 +210,7 @@ export function ManpowerUtilization() {
           <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Upcoming Absences</h3>
-              <Badge variant="outline" className="bg-white font-bold text-[9px] uppercase">Approved: 5</Badge>
+              <Badge variant="outline" className="bg-white font-bold text-[9px] uppercase">Approved: 0</Badge>
             </div>
             <Table>
               <TableHeader>
@@ -219,7 +219,7 @@ export function ManpowerUtilization() {
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Resource</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Timeline</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Type</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right px-8">Status</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -238,6 +238,11 @@ export function ManpowerUtilization() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {plannedLeaves.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No upcoming absences recorded</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -252,10 +257,7 @@ export function ManpowerUtilization() {
             </p>
             <div className="grid grid-cols-12 gap-2 w-full max-w-4xl opacity-50">
               {Array.from({ length: 48 }).map((_, i) => (
-                <div key={i} className={cn(
-                  "aspect-square rounded-sm",
-                  i % 7 === 0 ? "bg-primary" : i % 11 === 0 ? "bg-amber-400" : "bg-slate-100"
-                )} />
+                <div key={i} className="aspect-square rounded-sm bg-slate-100" />
               ))}
             </div>
             <div className="mt-8 flex gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">

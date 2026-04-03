@@ -36,7 +36,8 @@ import {
   LineChart,
   Package,
   Truck,
-  Calendar
+  Calendar,
+  UserX
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -51,11 +52,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
-const usersData = [
-  { id: '1', name: 'Admin Root', email: 'admin@toolroom.io', role: 'System Admin', lastLogin: '2 mins ago', status: 'online' },
-  { id: '2', name: 'Miloš Kovařík', email: 'm.kovarik@toolroom.io', role: 'Plant Manager', lastLogin: '1 hour ago', status: 'offline' },
-  { id: '3', name: 'Sarah Miller', email: 's.miller@toolroom.io', role: 'Operator', lastLogin: 'Yesterday', status: 'offline' },
-];
+const usersData: any[] = [];
 
 const ACCESS_PAGES = [
   { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
@@ -143,7 +140,7 @@ export function UserManagement() {
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
-                          {user.name.split(' ').map(n => n[0]).join('')}
+                          {user.name.split(' ').map((n: any) => n[0]).join('')}
                         </div>
                         {user.status === 'online' && (
                           <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white shadow-sm" />
@@ -179,6 +176,16 @@ export function UserManagement() {
                   </TableCell>
                 </TableRow>
               ))}
+              {usersData.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center opacity-20 py-10">
+                      <UserX className="h-12 w-12 text-slate-400 mb-4" />
+                      <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">No users registered in system</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </Card>
@@ -189,7 +196,7 @@ export function UserManagement() {
             <div className="space-y-6">
                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Active Sessions</p>
-                  <p className="text-4xl font-display font-bold text-slate-900">12</p>
+                  <p className="text-4xl font-display font-bold text-slate-900">0</p>
                   <div className="h-1 w-12 bg-primary rounded-full mt-4" />
                </div>
                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">

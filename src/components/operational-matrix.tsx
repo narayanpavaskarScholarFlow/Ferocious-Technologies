@@ -46,82 +46,8 @@ export function OperationalMatrix() {
   const [activeCategory, setActiveCategory] = useState<MachineCategory>('All');
 
   useEffect(() => {
-    const mockAssets: Tool[] = [
-      {
-        id: '1',
-        name: 'Vertical Machining Center',
-        description: 'High-speed 3-axis milling',
-        category: 'Milling',
-        tags: ['CNC', '3-Axis'],
-        imageUrl: '',
-        status: 'active',
-        technicalId: 'ML-01-VMC',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: '2',
-        name: 'Precision Lathe X2',
-        description: 'Multi-tasking turning unit',
-        category: 'Turning',
-        tags: ['Lathe', 'Multi-task'],
-        imageUrl: '',
-        status: 'maintenance',
-        technicalId: 'TR-04-LTH',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: '3',
-        name: 'Surface Grinder 500',
-        description: 'Precision finishing station',
-        category: 'Grinding',
-        tags: ['Finishing'],
-        imageUrl: '',
-        status: 'active',
-        technicalId: 'GR-02-SRF',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: '4',
-        name: 'SLA Industrial Printer',
-        description: 'Large scale additive unit',
-        category: '3D Printing',
-        tags: ['SLA', 'Resin'],
-        imageUrl: '',
-        status: 'active',
-        technicalId: '3D-09-SLA',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: '5',
-        name: 'Wire EDM Station',
-        description: 'Electrical discharge machining',
-        category: 'EDM',
-        tags: ['Precision', 'Wire'],
-        imageUrl: '',
-        status: 'active',
-        technicalId: 'ED-01-WIR',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: '6',
-        name: 'Gantry Mill TR-80',
-        description: 'Heavy duty double column milling',
-        category: 'Double Column Milling',
-        tags: ['Heavy-Duty', 'Gantry'],
-        imageUrl: '',
-        status: 'active',
-        technicalId: 'DC-80-GNT',
-        createdAt: '',
-        updatedAt: '',
-      }
-    ];
-
-    setAssets(mockAssets);
+    // Clear all assets for clean run
+    setAssets([]);
     setLogs([]);
   }, []);
 
@@ -172,7 +98,7 @@ export function OperationalMatrix() {
             <div className="flex items-center gap-2">
               <Database className="h-4 w-4 text-primary" />
               <h2 className="font-headline font-bold text-sm uppercase tracking-[0.2em]">Operational Matrix</h2>
-              <Badge variant="outline" className="ml-2 font-code text-[10px] bg-primary/10 border-primary/20 text-primary">
+              <Badge variant="outline" className="ml-2 font-code text-[10px] bg-primary/10 border-primary/10 text-primary">
                 {activeCategory}
               </Badge>
             </div>

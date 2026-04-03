@@ -5,16 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Truck, ExternalLink, Star, Phone, ShieldCheck, FileCheck, Activity } from 'lucide-react';
+import { Truck, ExternalLink, Star, Phone, ShieldCheck, FileCheck, Activity, PackageX } from 'lucide-react';
 import { Vendor } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-const mockVendors: Vendor[] = [
-  { id: 'V-001', name: 'Precision Heat Treats', type: 'Heat Treatment', activeOrders: 3, rating: 4.8, contact: '+1 555-0123', status: 'Active' },
-  { id: 'V-002', name: 'Global Logistics Inc.', type: 'Logistics', activeOrders: 12, rating: 4.5, contact: '+1 555-0456', status: 'Active' },
-  { id: 'V-003', name: 'Electro-Chem Finishing', type: 'Surface Finishing', activeOrders: 1, rating: 3.9, contact: '+1 555-0789', status: 'Under Review' },
-  { id: 'V-004', name: 'Alpha Machining Services', type: 'Sub-contracting', activeOrders: 0, rating: 4.2, contact: '+1 555-0101', status: 'Inactive' },
-];
+const mockVendors: Vendor[] = [];
 
 export function VendorManagement() {
   return (
@@ -40,15 +35,15 @@ export function VendorManagement() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-primary/50 transition-colors">
           <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Total Partners</p>
-          <p className="text-3xl font-display font-bold text-slate-900">24</p>
+          <p className="text-3xl font-display font-bold text-slate-900">{mockVendors.length}</p>
         </Card>
         <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-blue-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Open Sub-Contracts</p>
-          <p className="text-3xl font-display font-bold text-blue-600">16</p>
+          <p className="text-3xl font-display font-bold text-blue-600">0</p>
         </Card>
         <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-green-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Avg. Lead Time</p>
-          <p className="text-3xl font-display font-bold text-green-600">4.2 Days</p>
+          <p className="text-3xl font-display font-bold text-green-600">0.0 Days</p>
         </Card>
       </div>
 
@@ -125,6 +120,16 @@ export function VendorManagement() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {mockVendors.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-20 py-10">
+                        <PackageX className="h-12 w-12 text-slate-400 mb-4" />
+                        <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">No vendor partners found in database</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -140,7 +145,7 @@ export function VendorManagement() {
         <TabsContent value="contracts" className="m-0">
           <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
             <FileCheck className="h-12 w-12 mb-4" />
-            <p className="text-xs font-bold uppercase tracking-widest">Legal Document Management | 12 Active NDAs</p>
+            <p className="text-xs font-bold uppercase tracking-widest">Legal Document Management | 0 Active NDAs</p>
           </Card>
         </TabsContent>
 

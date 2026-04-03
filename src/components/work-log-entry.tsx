@@ -8,19 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ClipboardList, Plus, History, Clock, User, Cpu, Save, Hash } from 'lucide-react';
+import { ClipboardList, Plus, History, Clock, User, Cpu, Save, Hash, ArchiveX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { WorkLogEntry as WorkLogEntryType } from '@/lib/types';
 
-const mockResources = [
-  { id: '01', name: 'VMC milling-BFW' },
-  { id: '02', name: 'VMC milling-BFW' },
-  { id: '03', name: 'VMC milling-HASS' },
-  { id: '04', name: 'VMC milling' },
-  { id: '05', name: 'CNC Turning -Jyothi' },
-  { id: '06', name: 'EDM ZNC' },
-];
+// Cleared resources for clean run
+const mockResources: any[] = [];
 
 interface WorkLogEntryProps {
   logs: WorkLogEntryType[];
@@ -34,7 +28,7 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
   const [workOrderId, setWorkOrderId] = useState('');
   const [duration, setDuration] = useState('');
   const [description, setDescription] = useState('');
-  const [operator, setOperator] = useState('Sarah Miller');
+  const [operator, setOperator] = useState('');
 
   const handleSaveLog = () => {
     if (!selectedResource || !workOrderId || !duration) {
@@ -51,8 +45,8 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
     const newLog: WorkLogEntryType = {
       id: `LOG-${Math.floor(100 + Math.random() * 900)}`,
       resourceId: selectedResource,
-      resourceName: `${resource?.name} (${selectedResource})`,
-      operator: operator,
+      resourceName: resource ? `${resource.name} (${selectedResource})` : `Resource ${selectedResource}`,
+      operator: operator || 'System User',
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       shift: 'Morning',
       type: activityType as any,
@@ -123,7 +117,7 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Select Machine / Resource</Label>
                 <Select onValueChange={setSelectedResource} value={selectedResource}>
                   <SelectTrigger className={darkSelectClasses}>
-                    <SelectValue placeholder="Select resource..." />
+                    <SelectValue placeholder={mockResources.length > 0 ? "Select resource..." : "No resources defined"} />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0f18] text-white border-none">
                     {mockResources.map(res => (
@@ -190,8 +184,9 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Operator Name</Label>
                 <div className="relative">
                   <Input 
-                    defaultValue="Sarah Miller" 
+                    placeholder="e.g. Sarah Miller" 
                     className={cn(darkInputClasses, "pr-12")}
+                    value={operator}
                     onChange={(e) => setOperator(e.target.value)}
                   />
                   <User className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
@@ -259,6 +254,16 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
                     </TableCell>
                   </TableRow>
                 ))}
+                {logs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-20 py-10">
+                        <ArchiveX className="h-12 w-12 text-slate-400 mb-4" />
+                        <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">No production logs recorded</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -269,19 +274,19 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-primary/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Total Logged (24h)</p>
-          <p className="text-3xl font-display font-bold text-slate-900">42.5h</p>
+          <p className="text-3xl font-display font-bold text-slate-900">0.0h</p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-green-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Production Time</p>
-          <p className="text-3xl font-display font-bold text-green-600">34.0h</p>
+          <p className="text-3xl font-display font-bold text-green-600">0.0h</p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-amber-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Maintenance Logged</p>
-          <p className="text-3xl font-display font-bold text-amber-600">6.5h</p>
+          <p className="text-3xl font-display font-bold text-amber-600">0.0h</p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-red-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Setup / Idle Time</p>
-          <p className="text-3xl font-display font-bold text-red-600">2.0h</p>
+          <p className="text-3xl font-display font-bold text-red-600">0.0h</p>
         </Card>
       </div>
     </div>

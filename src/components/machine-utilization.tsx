@@ -7,16 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { MachineLoadPlan } from '@/components/machine-load-plan';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { Cpu, Search, Activity, Zap } from 'lucide-react';
+import { Cpu, Search, Activity, Zap, BoxSelect } from 'lucide-react';
 
-const machines = [
-  { id: '01', name: 'VMC milling-BFW', load: 85, status: 'active', image: 'https://picsum.photos/seed/apple-vmc1/800/600' },
-  { id: '02', name: 'VMC milling-BFW', load: 72, status: 'active', image: 'https://picsum.photos/seed/apple-vmc2/800/600' },
-  { id: '03', name: 'VMC milling-HASS', load: 94, status: 'active', image: 'https://picsum.photos/seed/apple-hass/800/600' },
-  { id: '04', name: 'VMC milling', load: 45, status: 'fault', image: 'https://picsum.photos/seed/apple-milling4/800/600' },
-  { id: '05', name: 'CNC Turning -Jyothi', load: 88, status: 'active', image: 'https://picsum.photos/seed/apple-turning/800/600' },
-  { id: '06', name: 'EDM ZNC', load: 60, status: 'maintenance', image: 'https://picsum.photos/seed/apple-edm/800/600' },
-];
+const machines: any[] = [];
 
 export function MachineUtilization() {
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
@@ -52,7 +45,7 @@ export function MachineUtilization() {
               machineName={selectedMachine?.name || ''} 
               onBack={() => setSelectedMachineId(null)} 
             />
-          ) : (
+          ) : machines.length > 0 ? (
             <div className="apple-grid">
               {machines.map((machine) => (
                 <div 
@@ -104,6 +97,12 @@ export function MachineUtilization() {
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="h-[400px] glass-card flex flex-col items-center justify-center text-slate-400 opacity-40">
+              <BoxSelect className="h-16 w-16 mb-6" />
+              <h3 className="text-xl font-display font-bold uppercase tracking-tight">No resources registered</h3>
+              <p className="text-sm font-medium mt-2">The catalog is currently empty. Add machines via the management interface.</p>
+            </div>
           )}
         </div>
 
@@ -112,7 +111,7 @@ export function MachineUtilization() {
           <div className="glass-card p-8">
             <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-8">Load Distribution</h3>
             <div className="space-y-6">
-              {machines.map((machine) => (
+              {machines.length > 0 ? machines.map((machine) => (
                 <div 
                   key={machine.id} 
                   className="group cursor-pointer space-y-3"
@@ -142,7 +141,9 @@ export function MachineUtilization() {
                     />
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-[10px] font-bold text-slate-300 italic">SYSTEM_OFFLINE: Waiting for resource registration...</p>
+              )}
             </div>
           </div>
           
@@ -153,8 +154,8 @@ export function MachineUtilization() {
               </div>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">Fleet Efficiency</span>
             </div>
-            <p className="text-4xl font-display font-bold tracking-tighter mb-2">74.2%</p>
-            <p className="text-xs font-medium opacity-80 leading-relaxed">System performing within 4% of peak theoretical output.</p>
+            <p className="text-4xl font-display font-bold tracking-tighter mb-2">0.0%</p>
+            <p className="text-xs font-medium opacity-80 leading-relaxed">No operational nodes detected in current session.</p>
           </div>
         </div>
       </div>
@@ -164,19 +165,19 @@ export function MachineUtilization() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="glass-card p-8 group">
             <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Fleet Avg</p>
-            <p className="text-3xl font-display font-bold tracking-tight group-hover:text-primary transition-colors">74.2%</p>
+            <p className="text-3xl font-display font-bold tracking-tight group-hover:text-primary transition-colors">0.0%</p>
           </div>
           <div className="glass-card p-8 group">
             <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Peak Capacity</p>
-            <p className="text-3xl font-display font-bold tracking-tight text-green-500">94.0%</p>
+            <p className="text-3xl font-display font-bold tracking-tight text-green-500">0.0%</p>
           </div>
           <div className="glass-card p-8 group">
             <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Downtime</p>
-            <p className="text-3xl font-display font-bold tracking-tight text-red-500">12.4h</p>
+            <p className="text-3xl font-display font-bold tracking-tight text-red-500">0.0h</p>
           </div>
           <div className="glass-card p-8 group">
             <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Active Nodes</p>
-            <p className="text-3xl font-display font-bold tracking-tight">5 <span className="text-muted-foreground text-sm font-normal">/ 6</span></p>
+            <p className="text-3xl font-display font-bold tracking-tight">0 <span className="text-muted-foreground text-sm font-normal">/ 0</span></p>
           </div>
         </div>
       )}

@@ -15,7 +15,7 @@ interface OrderDetailsProps {
   onBack: () => void;
 }
 
-// Mock Data representing integrations
+// Simulated CRM Identities
 const CRM_CUSTOMERS = [
   "Automotive Corp",
   "Aerospace Dynamics",
@@ -24,6 +24,7 @@ const CRM_CUSTOMERS = [
   "Euro-Machining Group"
 ];
 
+// Simulated Staff Directory
 const STAFF_DIRECTORY = [
   "John Doe (Plant Controller)",
   "Sarah Miller (Production Lead)",
@@ -32,11 +33,20 @@ const STAFF_DIRECTORY = [
   "Sys_Admin_01"
 ];
 
+interface PartRow {
+  id: string;
+  name: string;
+  sku: string;
+  qty: string;
+  duration: string;
+}
+
 export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
   const isNew = !orderId;
-  const [displayId, setDisplayId] = useState(orderId || "");
-  const [customer, setCustomer] = useState(CRM_CUSTOMERS[0]);
-  const [lead, setLead] = useState(STAFF_DIRECTORY[0]);
+  const [displayId, setDisplayId] = useState("");
+  const [customer, setCustomer] = useState("");
+  const [lead, setLead] = useState("");
+  const [parts, setParts] = useState<PartRow[]>([]);
 
   // Auto-generate ID protocol for new orders
   useEffect(() => {
@@ -44,9 +54,20 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
       const generatedId = `WO-${Math.floor(80000 + Math.random() * 10000)}`;
       setDisplayId(generatedId);
     } else {
-      setDisplayId(orderId);
+      setDisplayId(orderId || "");
     }
   }, [orderId, isNew]);
+
+  const handleAddPart = () => {
+    const newPart: PartRow = {
+      id: (parts.length + 1).toString().padStart(2, '0'),
+      name: '',
+      sku: '',
+      qty: '0 UNITS',
+      duration: '0.0 HOURS'
+    };
+    setParts([...parts, newPart]);
+  };
 
   // Industrial Dark Input Styling
   const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-bold placeholder:text-white/20 rounded-xl";
@@ -54,7 +75,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
 
   return (
     <div className="space-y-8 max-w-[1300px] mx-auto pb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      {/* Header section with professional weight */}
+      {/* Header section */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 px-2">
         <div className="flex items-center gap-5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-12 w-12 text-slate-400 hover:bg-slate-100 rounded-2xl">
@@ -127,7 +148,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                   <Calendar className="h-3 w-3" /> Planned Start Date
                 </Label>
                 <div className="relative">
-                  <Input defaultValue="01-03-2025" className={cn(darkInputClasses, "pr-12")} />
+                  <Input type="date" className={cn(darkInputClasses, "pr-12")} />
                   <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
                 </div>
               </div>
@@ -137,7 +158,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                   <Calendar className="h-3 w-3" /> Target End Date
                 </Label>
                 <div className="relative">
-                  <Input defaultValue="15-03-2025" className={cn(darkInputClasses, "pr-12")} />
+                  <Input type="date" className={cn(darkInputClasses, "pr-12")} />
                   <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
                 </div>
               </div>
@@ -153,8 +174,8 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Amount Spent (Live Ledger)</Label>
                   <div className="relative group">
-                    <Input value="$12,450.00" readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <Input value="$0.00" readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-slate-200" />
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synced with Financial Hub v2.4</p>
                 </div>
@@ -180,7 +201,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Priority Classification</Label>
-                <Select defaultValue="high">
+                <Select defaultValue="medium">
                   <SelectTrigger className={darkSelectClasses}>
                     <SelectValue />
                   </SelectTrigger>
@@ -193,7 +214,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Live Production Status</Label>
-                <Select defaultValue="active">
+                <Select defaultValue="pending">
                   <SelectTrigger className={darkSelectClasses}>
                     <SelectValue />
                   </SelectTrigger>
@@ -208,7 +229,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
           </div>
         </Card>
 
-        {/* Updated Order Summary Sidebar */}
+        {/* Order Summary Sidebar */}
         <div className="lg:col-span-4 space-y-8 sticky top-24">
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] flex flex-col relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -224,10 +245,10 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Velocity Progress</span>
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-600/20">85%</Badge>
+                  <Badge className="bg-slate-100 text-slate-400 text-[10px] font-bold px-4 py-1.5 rounded-full">0%</Badge>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50 p-[1px]">
-                  <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 w-[85%] rounded-full shadow-[0_0_12px_rgba(37,99,235,0.4)] transition-all duration-1000" />
+                  <div className="h-full bg-slate-200 w-[0%] rounded-full transition-all duration-1000" />
                 </div>
 
                 <div className="pt-10 space-y-6">
@@ -237,11 +258,11 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Total Spent</span>
-                      <span className="text-xl font-display font-bold text-[#001F3D]">$12,450.00</span>
+                      <span className="text-xl font-display font-bold text-[#001F3D]">$0.00</span>
                     </div>
                     <div className="flex justify-between items-center px-4">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Ledger State</span>
-                      <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200 uppercase font-bold px-4 py-1">INVOICED_V2</Badge>
+                      <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-400 border-slate-200 uppercase font-bold px-4 py-1">UNINVOICED</Badge>
                     </div>
                   </div>
                 </div>
@@ -251,18 +272,7 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
                     <Trash2 className="h-3 w-3" /> Material Resource Status
                   </p>
                   <div className="grid grid-cols-1 gap-3">
-                    <div className="flex justify-between items-center text-[11px] font-bold p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
-                      <span className="text-slate-600">Alloy Steel 4140</span>
-                      <span className="text-emerald-600 flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> IN_STOCK
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-[11px] font-bold p-4 bg-amber-500/5 rounded-xl border border-amber-500/10">
-                      <span className="text-slate-600">Carbide Tooling Kit</span>
-                      <span className="text-amber-600 flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> LOW_LIMIT
-                      </span>
-                    </div>
+                    <p className="text-[10px] text-slate-400 italic font-medium px-4">No materials allocated yet.</p>
                   </div>
                 </div>
               </div>
@@ -278,8 +288,8 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
               <User className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Assignment Active</p>
-              <p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">{lead} assigned as Command Lead for this thread.</p>
+              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Assignment Pending</p>
+              <p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">Assign a Command Lead to initialize this thread.</p>
             </div>
           </div>
         </div>
@@ -292,7 +302,12 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
             <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Component Breakdown & Quantities</h3>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Master Routing Ledger</p>
           </div>
-          <Button variant="ghost" size="sm" className="h-12 text-slate-400 hover:text-primary hover:bg-primary/5 gap-3 text-[10px] font-bold uppercase tracking-widest px-6 rounded-xl transition-all">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleAddPart}
+            className="h-12 text-slate-400 hover:text-primary hover:bg-primary/5 gap-3 text-[10px] font-bold uppercase tracking-widest px-6 rounded-xl transition-all"
+          >
             <Plus className="h-4 w-4" /> Add Row to Spreadsheet
           </Button>
         </div>
@@ -306,27 +321,38 @@ export function OrderDetails({ orderId, onBack }: OrderDetailsProps) {
             <div className="col-span-1"></div>
           </div>
           
-          <div className="group grid grid-cols-12 gap-6 items-center py-6 px-4 hover:bg-slate-50/50 rounded-2xl transition-all border border-transparent hover:border-slate-100">
-            <div className="col-span-1 font-display font-bold text-lg text-slate-200 group-hover:text-primary transition-colors">01</div>
-            <div className="col-span-5 flex flex-col gap-1">
-              <span className="font-bold text-sm text-[#001F3D] uppercase tracking-tight">Front Axle Support Assembly</span>
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.2em] font-mono bg-slate-100 w-fit px-2 py-0.5 rounded">SKU-88452-A</span>
-            </div>
-            <div className="col-span-3 text-center">
-              <span className="font-mono text-sm font-bold text-slate-600 bg-slate-100/80 px-5 py-2 rounded-xl border border-slate-200/50">500 UNITS</span>
-            </div>
-            <div className="col-span-2 text-center">
-              <div className="flex flex-col items-center gap-1">
-                <span className="font-mono text-sm font-bold text-[#001F3D]">12.5 HOURS</span>
-                <span className="text-[8px] text-slate-400 uppercase font-bold">Standard_Rate</span>
+          {parts.map((part, idx) => (
+            <div key={part.id} className="group grid grid-cols-12 gap-6 items-center py-6 px-4 hover:bg-slate-50/50 rounded-2xl transition-all border border-transparent hover:border-slate-100">
+              <div className="col-span-1 font-display font-bold text-lg text-slate-200 group-hover:text-primary transition-colors">{part.id}</div>
+              <div className="col-span-5 flex flex-col gap-2">
+                <Input placeholder="Component Name..." className="h-9 bg-slate-50 border-none text-xs font-bold uppercase" />
+                <Input placeholder="SKU-XXXX-X" className="h-7 bg-slate-100 border-none text-[9px] font-bold font-mono w-fit px-2" />
+              </div>
+              <div className="col-span-3 text-center">
+                <Input placeholder="0 UNITS" className="h-10 text-center font-mono text-sm font-bold bg-slate-100/80 rounded-xl border-none" />
+              </div>
+              <div className="col-span-2 text-center">
+                <Input placeholder="0.0 HOURS" className="h-10 text-center font-mono text-sm font-bold bg-white border-slate-200 rounded-xl" />
+              </div>
+              <div className="col-span-1 flex justify-end">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                  onClick={() => setParts(parts.filter(p => p.id !== part.id))}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <div className="col-span-1 flex justify-end">
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all">
-                <Trash2 className="h-4 w-4" />
-              </Button>
+          ))}
+
+          {parts.length === 0 && (
+            <div className="py-20 text-center opacity-30 flex flex-col items-center">
+              <Plus className="h-12 w-12 text-slate-300 mb-4" />
+              <p className="text-[10px] font-bold uppercase tracking-widest">Append row to initialize breakdown</p>
             </div>
-          </div>
+          )}
         </div>
       </Card>
     </div>

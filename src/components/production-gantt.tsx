@@ -31,8 +31,10 @@ import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { format, addMonths, subMonths, addDays, subDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 
+// CLEAN DATABASE: Empty initial orders
 const mockOrders: Order[] = [];
 
+// CLEAN DATABASE: Empty initial operations
 const mockOperationsData: Record<string, any[]> = {};
 
 interface ProductionGanttProps {
@@ -199,8 +201,8 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
               </div>
             </div>
 
-            <div className="flex flex-col">
-              {filteredOrders.map((order) => {
+            <div className="flex flex-col min-h-[400px]">
+              {filteredOrders.length > 0 ? filteredOrders.map((order) => {
                 const orderStyles = getPositionStyles(order.startDate, order.endDate);
                 const orderOps = mockOperationsData[order.id] || [];
                 const isFocused = selectedOrderId === order.id;
@@ -313,11 +315,11 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
                     })}
                   </div>
                 );
-              })}
-              {filteredOrders.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 opacity-30">
-                  <Box className="h-12 w-12 mb-4" />
-                  <p className="text-xs font-bold uppercase tracking-widest">No matching Work Orders found in current timeline</p>
+              }) : (
+                <div className="flex flex-col items-center justify-center py-32 opacity-30">
+                  <Box className="h-12 w-12 mb-4 text-slate-300" />
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#001F3D]">Timeline Matrix Offline</p>
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">Register production orders to visualize the visual schedule.</p>
                 </div>
               )}
             </div>
@@ -333,7 +335,7 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Threads</p>
-            <p className="text-xl font-display font-bold text-slate-900">{mockOrders.filter(o => o.status === 'Active').length}</p>
+            <p className="text-xl font-display font-bold text-slate-900">0</p>
           </div>
         </div>
         <div className="glass-card p-6 flex items-center gap-4">

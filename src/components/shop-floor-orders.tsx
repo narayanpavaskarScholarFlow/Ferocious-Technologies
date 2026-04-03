@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Order } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ArchiveX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+// CLEAN DATABASE: Empty initial orders
 const mockOrders: Order[] = [];
 
 interface ShopFloorOrdersProps {
@@ -53,7 +54,7 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden min-h-[400px] flex flex-col">
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="hover:bg-transparent border-slate-200">
@@ -68,8 +69,8 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
               <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400">Status</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {filteredOrders.map((order) => (
+          <TableBody className="flex-1">
+            {filteredOrders.length > 0 ? filteredOrders.map((order) => (
               <TableRow key={order.id} className="hover:bg-slate-50/50 h-16 border-slate-100">
                 <TableCell 
                   className="font-bold text-sm text-[#003d6b] cursor-pointer hover:underline underline-offset-4"
@@ -122,11 +123,16 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
                    </div>
                 </TableCell>
               </TableRow>
-            ))}
-            {filteredOrders.length === 0 && (
+            )) : (
               <TableRow>
-                <TableCell colSpan={9} className="h-32 text-center text-slate-400 text-xs italic">
-                  NO_RECORDS_MATCHING_SEARCH_QUERY
+                <TableCell colSpan={9} className="h-[400px] text-center">
+                  <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                    <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
+                      <ArchiveX className="h-16 w-16 text-slate-300" />
+                    </div>
+                    <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Orders Ledger Offline</p>
+                    <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active production threads detected. Use the "New Order" protocol to initialize production.</p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -141,8 +147,7 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
             <div className="relative w-36 h-36">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="72" cy="72" r="62" stroke="#f1f5f9" strokeWidth="20" fill="transparent" />
-                <circle cx="72" cy="72" r="62" stroke="#003d6b" strokeWidth="20" fill="transparent" strokeDasharray="389" strokeDashoffset="140" />
-                <circle cx="72" cy="72" r="62" stroke="#f59e0b" strokeWidth="20" fill="transparent" strokeDasharray="389" strokeDashoffset="340" />
+                <circle cx="72" cy="72" r="62" stroke="#003d6b" strokeWidth="20" fill="transparent" strokeDasharray="389" strokeDashoffset="389" />
               </svg>
             </div>
             <div className="space-y-5">
@@ -165,15 +170,15 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
               </div>
               <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight mb-1">Net Productivity</p>
-                <p className="text-2xl font-bold text-[#003d6b]">0 %</p>
+                <p className="text-2xl font-bold text-slate-300">0 %</p>
               </div>
               <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight mb-1">Cycle Waste</p>
-                <p className="text-2xl font-bold text-red-500">0 %</p>
+                <p className="text-2xl font-bold text-slate-300">0 %</p>
               </div>
               <div className="bg-slate-50 p-5 rounded-lg border border-slate-100">
                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight mb-1">Effective Hours</p>
-                <p className="text-2xl font-bold text-green-600">00:00 h</p>
+                <p className="text-2xl font-bold text-slate-300">00:00 h</p>
               </div>
            </div>
         </div>

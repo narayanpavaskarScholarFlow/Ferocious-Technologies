@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ import { UserManagement } from '@/components/user-management';
 import { SystemUser, PermissionLevel } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 const ACCESS_PAGES = [
   { id: 'overview', label: 'Command Overview', icon: LayoutGrid },
@@ -72,7 +74,14 @@ export function ProfileSettings({
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(users[0]?.id || null);
+  const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
+
+  // Robustly find the user to display in the matrix
+  const currentUserMatrix = useMemo(() => {
+    if (users.length === 0) return null;
+    const found = users.find(u => u.id === selectedUserForMatrix);
+    return found || users[0];
+  }, [users, selectedUserForMatrix]);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -91,7 +100,7 @@ export function ProfileSettings({
       return {
         ...u,
         permissions: {
-          ...u.permissions,
+          ...(u.permissions || {}),
           [pageId]: level
         }
       };
@@ -101,8 +110,6 @@ export function ProfileSettings({
       description: `Access level for ${pageId} has been updated.`,
     });
   };
-
-  const currentUserMatrix = users.find(u => u.id === (selectedUserForMatrix || users[0]?.id));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
@@ -219,7 +226,7 @@ export function ProfileSettings({
               </div>
               <div className="flex items-center gap-4 w-full md:w-auto">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Select Identity:</span>
-                <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
+                <Select value={currentUserMatrix?.id || ''} onValueChange={setSelectedUserForMatrix}>
                   <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
                     <SelectValue placeholder="Select User..." />
                   </SelectTrigger>
@@ -238,7 +245,7 @@ export function ProfileSettings({
                   <div className="flex items-center justify-between mb-6 px-4">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">
-                        {currentUserMatrix.name.charAt(0)}
+                        {currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'}
                       </div>
                       <div>
                         <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{currentUserMatrix.name}</p>
@@ -250,7 +257,7 @@ export function ProfileSettings({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {ACCESS_PAGES.map(page => {
-                      const currentLevel = currentUserMatrix.permissions[page.id] || 'none';
+                      const currentLevel = (currentUserMatrix.permissions && currentUserMatrix.permissions[page.id]) || 'none';
                       const Icon = page.icon;
                       
                       return (

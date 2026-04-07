@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -92,8 +93,8 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
         ...u,
         name: formData.name,
         email: formData.email,
-        role: formData.jobTitle,
-        dept: formData.deptCode,
+        role: formData.jobTitle || u.role,
+        dept: formData.deptCode || u.dept,
       } : u));
 
       toast({
@@ -175,81 +176,85 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <Card className="lg:col-span-8 overflow-hidden border-slate-200/60 bg-white shadow-xl rounded-2xl min-h-[500px] flex flex-col">
-          <TableHeader className="bg-slate-50/50 border-b border-slate-100">
+          <div className="bg-slate-50/50 border-b border-slate-100">
             <div className="flex items-center gap-2 p-5 border-b border-slate-100">
               <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse-red" />
               <span className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">Live Identity Ledger</span>
             </div>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Functional Role</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Session</TableHead>
-              <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="flex-1">
-            {users.length > 0 ? users.map((user) => (
-              <TableRow key={user.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                <TableCell className="px-8">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
-                        {user.name.split(' ').map(n => n[0]).join('')}
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Functional Role</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Session</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="flex-1">
+                {users.length > 0 ? users.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                    <TableCell className="px-8">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
+                            {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
+                          </div>
+                          {user.status === 'online' && (
+                            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
+                          <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">{user.id}</span>
+                        </div>
                       </div>
-                      {user.status === 'online' && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
-                      <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">{user.id}</span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">{user.role}</span>
-                    <span className="text-[9px] text-slate-400 font-medium uppercase">{user.dept}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-[10px] font-code text-slate-400">{user.lastLogin}</span>
-                </TableCell>
-                <TableCell className="text-right px-8">
-                  <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-slate-400 hover:text-primary"
-                      onClick={() => handleEditUser(user)}
-                     >
-                       <Edit2 className="h-3.5 w-3.5" />
-                     </Button>
-                     <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-slate-400 hover:text-red-500"
-                      onClick={() => handleDeleteUser(user.id)}
-                     >
-                       <Trash2 className="h-3.5 w-3.5" />
-                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )) : (
-              <TableRow>
-                <TableCell colSpan={4} className="h-[400px] text-center">
-                  <div className="flex flex-col items-center justify-center opacity-30 py-10">
-                    <div className="p-6 bg-slate-50 rounded-full mb-6">
-                      <UserX className="h-12 w-12 text-slate-300" />
-                    </div>
-                    <p className="text-[#001F3D] font-headline font-bold text-xs uppercase tracking-widest">No Users Registered</p>
-                    <p className="text-[10px] text-slate-400 mt-2 max-w-xs mx-auto">Initialize security matrix by onboarding your first user.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">{user.role}</span>
+                        <span className="text-[9px] text-slate-400 font-medium uppercase">{user.dept}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[10px] font-code text-slate-400">{user.lastLogin}</span>
+                    </TableCell>
+                    <TableCell className="text-right px-8">
+                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-primary"
+                          onClick={() => handleEditUser(user)}
+                         >
+                           <Edit2 className="h-3.5 w-3.5" />
+                         </Button>
+                         <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-red-500"
+                          onClick={() => handleDeleteUser(user.id)}
+                         >
+                           <Trash2 className="h-3.5 w-3.5" />
+                         </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-[400px] text-center">
+                      <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                        <div className="p-6 bg-slate-50 rounded-full mb-6">
+                          <UserX className="h-12 w-12 text-slate-300" />
+                        </div>
+                        <p className="text-[#001F3D] font-headline font-bold text-xs uppercase tracking-widest">No Users Registered</p>
+                        <p className="text-[10px] text-slate-400 mt-2 max-w-xs mx-auto">Initialize security matrix by onboarding your first user.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
 
         <div className="lg:col-span-4 space-y-6">

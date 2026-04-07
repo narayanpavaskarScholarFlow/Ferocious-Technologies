@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -107,7 +106,7 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
         name: formData.name,
         email: formData.email,
         role: formData.jobTitle || 'Standard Operator',
-        dept: formData.deptCode || 'GEN-01',
+        dept: formData.deptCode || 'Admin',
         permissions: { overview: 'read' },
         lastLogin: 'Never',
         status: 'offline'
@@ -408,12 +407,12 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
                       <div className="h-1 w-8 bg-red-500 rounded-full" />
                       <div>
                         <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">03. Credentials</h3>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Secure Link Initialization</p>
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Secure Password Initialization</p>
                       </div>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Temporary Master Key</Label>
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Initial System Password</Label>
                         <div className="relative">
                           <Input 
                             type="password" 

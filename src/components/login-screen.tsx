@@ -39,7 +39,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       toast({
         variant: "destructive",
         title: "Incomplete Protocol",
-        description: "Please enter both Network ID and Master Key."
+        description: "Please enter both Username and Password."
       });
       return;
     }
@@ -115,7 +115,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-bold uppercase text-white/50 tracking-widest ml-1">Network Identity</Label>
+                  <Label className="text-[9px] font-bold uppercase text-white/50 tracking-widest ml-1">Network Username</Label>
                   <div className="relative">
                     <Input 
                       placeholder="e.g. Sys_Admin_01" 
@@ -129,7 +129,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-1">
-                    <Label className="text-[9px] font-bold uppercase text-white/50 tracking-widest">Master Key</Label>
+                    <Label className="text-[9px] font-bold uppercase text-white/50 tracking-widest">Security Password</Label>
                     <button 
                       type="button"
                       onClick={() => setView('reset')}

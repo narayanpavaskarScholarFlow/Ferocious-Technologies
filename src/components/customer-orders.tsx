@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -16,14 +16,14 @@ import {
   Plus, 
   Contact, 
   ArrowRight,
-  ShieldCheck,
-  Hash,
-  Phone,
-  User,
   CreditCard,
-  FileText
+  User,
+  Phone,
+  Hash,
+  ShieldCheck,
+  Building
 } from 'lucide-react';
-import { CustomerOrder, Customer } from '@/lib/types';
+import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -46,9 +46,9 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
   const [activeFilter, setActiveFilter] = useState('Active');
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   
-  // New Customer Form State
-  const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({
-    name: '', // Company Name
+  // New Customer Form State with explicit field initialization
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
     address: '',
     contactNumber: '',
     gstNumber: '',
@@ -63,36 +63,43 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     );
   }, [searchTerm, customers]);
 
+  const handleInputChange = (field: string, value: string) => {
+    setNewCustomer(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleAddCustomer = () => {
-    if (!newCustomer.name || !newCustomer.gstNumber || !newCustomer.contactPerson) {
+    // Strict Validation Protocol
+    if (!newCustomer.name.trim() || !newCustomer.gstNumber.trim() || !newCustomer.contactPerson.trim()) {
       toast({
         variant: "destructive",
-        title: "Protocol Error",
-        description: "Company Name, GST, and Contact Person are required for validation."
+        title: "Validation Error",
+        description: "Protocol requires Company Name, GST, and Contact Person for ledger registration."
       });
       return;
     }
 
     const customer: Customer = {
       id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: newCustomer.name,
-      gstNumber: newCustomer.gstNumber,
-      contactPerson: newCustomer.contactPerson,
-      contactNumber: newCustomer.contactNumber || 'N/A',
-      address: newCustomer.address || 'N/A',
+      name: newCustomer.name.trim(),
+      gstNumber: newCustomer.gstNumber.trim().toUpperCase(),
+      contactPerson: newCustomer.contactPerson.trim(),
+      contactNumber: newCustomer.contactNumber.trim() || 'N/A',
+      address: newCustomer.address.trim() || 'N/A',
       type: newCustomer.type as any || 'Corporate',
       email: '',
-      location: newCustomer.address || 'Global',
+      location: newCustomer.address.trim() || 'Global',
       totalOrders: 0
     };
 
+    // Execute parent update
     onCustomersChange([...customers, customer]);
 
     toast({
-      title: "Ledger Updated",
-      description: `${customer.name} has been successfully registered in the Master Directory.`
+      title: "Identity Verified",
+      description: `${customer.name} has been committed to the master directory.`
     });
     
+    // Reset and Close
     setIsAddCustomerOpen(false);
     setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
   };
@@ -131,7 +138,6 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Main Pipeline Ledger */}
         <Card className="lg:col-span-12 overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
           <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
@@ -152,68 +158,70 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
             </div>
           </div>
 
-          <Table>
-            <TableHeader className="bg-white">
-              <TableRow className="hover:bg-transparent border-slate-100">
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10 w-20">Seq.</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Client Name</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.length > 0 ? filteredCustomers.map((customer, idx) => (
-                <TableRow key={customer.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors group">
-                  <TableCell className="px-10 font-code text-[11px] text-slate-300 font-bold">
-                    {(idx + 1).toString().padStart(2, '0')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-[#001F3D]">{customer.name}</span>
-                      <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID_{customer.id}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
-                      {customer.gstNumber}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center">
-                        <Contact className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-700">{customer.contactPerson}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-[11px] font-medium text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3 text-slate-300" /> {customer.location}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right px-10">
-                    <Badge className="text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-100">
-                      Active
-                    </Badge>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-white">
+                <TableRow className="hover:bg-transparent border-slate-100">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10 w-20">Seq.</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Client Name</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status</TableHead>
                 </TableRow>
-              )) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-96 text-center">
-                    <div className="flex flex-col items-center justify-center opacity-30 py-10">
-                      <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
-                        <Building2 className="h-16 w-16 text-slate-300" />
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.length > 0 ? filteredCustomers.map((customer, idx) => (
+                  <TableRow key={customer.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors group">
+                    <TableCell className="px-10 font-code text-[11px] text-slate-300 font-bold">
+                      {(idx + 1).toString().padStart(2, '0')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-[#001F3D]">{customer.name}</span>
+                        <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID_{customer.id}</span>
                       </div>
-                      <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Ledger Matrix Offline</p>
-                      <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active pipeline records detected. Register a new account to initialize commercial telemetry.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
+                        {customer.gstNumber}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center">
+                          <Contact className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-700">{customer.contactPerson}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-[11px] font-medium text-slate-500">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-slate-300" /> {customer.location}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right px-10">
+                      <Badge className="text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-100">
+                        Active
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-96 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                        <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
+                          <Building2 className="h-16 w-16 text-slate-300" />
+                        </div>
+                        <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Ledger Matrix Offline</p>
+                        <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active pipeline records detected. Register a new account to initialize commercial telemetry.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       </div>
 
@@ -222,30 +230,31 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
           <DialogTitle className="sr-only">Account Onboarding Protocol</DialogTitle>
           <DialogDescription className="sr-only">Sequence for initializing new commercial identities in the ERP directory.</DialogDescription>
           
-          <div className="flex h-[600px]">
-            <div className="w-80 bg-slate-50/50 p-12 border-r border-slate-100 flex flex-col justify-between">
-              <div className="space-y-12">
+          <div className="flex flex-col md:flex-row h-[600px]">
+            {/* Sidebar Protocol Map */}
+            <div className="w-full md:w-80 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
+              <div className="space-y-10">
                 <div className="p-5 bg-[#001F3D] rounded-[1.5rem] w-fit shadow-2xl shadow-primary/20 relative">
                   <UserPlus className="h-8 w-8 text-white" />
                   <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                 </div>
-                <div className="space-y-10">
+                <div className="space-y-10 hidden md:block">
                   {[
                     { s: 1, label: 'Entity Identity', desc: 'NAME & GST', active: true },
                     { s: 2, label: 'Liaison Setup', desc: 'CONTACT NODES', active: false },
                     { s: 3, label: 'Logistics Matrix', desc: 'ADDRESS_SYNC', active: false },
                   ].map((item) => (
                     <div key={item.s} className="flex gap-6 group relative">
-                      {item.s < 3 && <div className="absolute left-3.5 top-10 w-[1px] h-12 bg-slate-200" />}
+                      {item.s < 3 && <div className="absolute left-3 top-8 w-[1px] h-12 bg-slate-200" />}
                       <div className={cn(
-                        "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10 shadow-sm",
-                        item.active ? "bg-[#001F3D] border-[#001F3D] text-white scale-110 shadow-lg shadow-primary/20" : "bg-white border-slate-200 text-slate-400"
+                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10 shadow-sm bg-white",
+                        item.active ? "border-[#001F3D] text-[#001F3D] scale-110" : "border-slate-200 text-slate-400"
                       )}>
                         {item.s}
                       </div>
                       <div className="flex flex-col">
                         <span className={cn(
-                          "text-xs font-bold transition-colors duration-500 leading-none",
+                          "text-[11px] font-bold transition-colors duration-500 leading-none",
                           item.active ? "text-[#001F3D]" : "text-slate-400"
                         )}>{item.label}</span>
                         <span className="text-[9px] text-slate-400 uppercase font-bold tracking-[0.2em] mt-2">{item.desc}</span>
@@ -254,13 +263,14 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                   ))}
                 </div>
               </div>
-              <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.4em]">
+              <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.4em] hidden md:block">
                 CRM_ONBOARD_SYS_V2.4
               </div>
             </div>
 
-            <div className="flex-1 p-16 flex flex-col justify-between bg-white overflow-y-auto">
-              <div className="space-y-12">
+            {/* Main Form Area */}
+            <div className="flex-1 p-8 md:p-16 flex flex-col bg-white overflow-y-auto">
+              <div className="space-y-12 flex-grow">
                 <div className="flex items-center gap-4">
                   <div className="h-1 w-10 bg-red-500 rounded-full" />
                   <div>
@@ -270,7 +280,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                 </div>
 
                 <div className="space-y-8">
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name</Label>
                       <div className="relative">
@@ -278,7 +288,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                           placeholder="Legal Account Identity" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
                           value={newCustomer.name}
-                          onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
                         />
                         <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
@@ -290,14 +300,14 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                           placeholder="TAX_ID / GSTIN" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20 uppercase"
                           value={newCustomer.gstNumber}
-                          onChange={(e) => setNewCustomer({...newCustomer, gstNumber: e.target.value})}
+                          onChange={(e) => handleInputChange('gstNumber', e.target.value)}
                         />
                         <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Person</Label>
                       <div className="relative">
@@ -305,7 +315,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                           placeholder="Liaison Officer Name" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
                           value={newCustomer.contactPerson}
-                          onChange={(e) => setNewCustomer({...newCustomer, contactPerson: e.target.value})}
+                          onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                         />
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
@@ -317,7 +327,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                           placeholder="+91 (000) 000-0000" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
                           value={newCustomer.contactNumber}
-                          onChange={(e) => setNewCustomer({...newCustomer, contactNumber: e.target.value})}
+                          onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                         />
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
@@ -331,7 +341,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                         placeholder="Full Node Location / Operational Base" 
                         className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
                         value={newCustomer.address}
-                        onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
                       />
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                     </div>
@@ -339,6 +349,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                 </div>
               </div>
 
+              {/* Action Toolbar */}
               <div className="flex gap-6 mt-12 pt-10 border-t border-slate-100">
                 <Button 
                   variant="ghost" 

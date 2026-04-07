@@ -23,7 +23,7 @@ import { ProfileSettings } from '@/components/profile-settings';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, X, ShieldAlert, LogOut, User, Settings } from 'lucide-react';
+import { Bell, Search, Command, Menu, ShieldAlert, LogOut, User, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -33,9 +33,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 
 const INITIAL_LOGS: WorkLogEntryType[] = [];
-
 const INITIAL_OP_STATUSES: Record<string, Record<string, string>> = {};
 
 export default function IndustrialERP() {
@@ -50,6 +51,7 @@ export default function IndustrialERP() {
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -79,6 +81,7 @@ export default function IndustrialERP() {
   };
 
   const handleViewChange = (view: ViewType) => {
+    setIsMobileMenuOpen(false);
     if (view === 'users') {
       setCurrentView('settings');
       setSettingsActiveTab('access');
@@ -114,16 +117,33 @@ export default function IndustrialERP() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 font-body">
-      <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
+        <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
+      </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-slate-200/60 sticky top-0 z-40 px-8 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
+        <header className="h-16 bg-white border-b border-slate-200/60 sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-6">
+            {/* Mobile Sidebar Trigger */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9 -ml-2">
+                  <Menu className="h-5 w-5 text-[#001F3D]" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-20 bg-[#001F3D] border-none">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Access all industrial modules</SheetDescription>
+                <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
+              </SheetContent>
+            </Sheet>
+
+            <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-[#001F3D]">
               TOOLROOM<span className="text-accent">2.0</span>
             </h1>
-            <div className="h-4 w-[1px] bg-slate-200" />
-            <div className="flex items-center gap-2">
+            <div className="h-4 w-[1px] bg-slate-200 hidden sm:block" />
+            <div className="items-center gap-2 hidden sm:flex">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
                 {currentView.replace('-', ' ')}
               </span>
@@ -131,31 +151,31 @@ export default function IndustrialERP() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative w-72 group">
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="relative w-40 md:w-72 group hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <Input 
-                placeholder="Search Work_Order_ID..." 
+                placeholder="Search WO..." 
                 className="h-9 pl-9 pr-10 rounded-lg bg-slate-100 border-none text-[11px] focus-visible:ring-1 focus-visible:ring-primary/20"
                 value={globalSearch}
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[8px] font-bold text-slate-400 border border-slate-200 rounded px-1 py-0.5 bg-white">
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[8px] font-bold text-slate-400 border border-slate-200 rounded px-1 py-0.5 bg-white">
                 <Command className="h-2 w-2" /> K
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <button className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors relative">
                 <Bell className="h-4.5 w-4.5 text-slate-600" />
                 <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-accent rounded-full border-2 border-white" />
               </button>
-              <div className="h-8 w-[1px] bg-slate-200" />
+              <div className="h-8 w-[1px] bg-slate-200 hidden xs:block" />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-3 pl-2 group cursor-pointer">
-                    <div className="text-right hidden sm:block">
+                    <div className="text-right hidden md:block">
                       <p className="text-[11px] font-bold leading-none text-[#001F3D]">{currentUser}</p>
                       <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
                     </div>
@@ -183,7 +203,7 @@ export default function IndustrialERP() {
           </div>
         </header>
 
-        <main className="flex-1 p-8 max-w-[1600px] mx-auto w-full overflow-visible">
+        <main className="flex-1 p-4 md:p-8 max-w-[1600px] mx-auto w-full overflow-x-hidden">
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
             {currentView === 'overview' && (
               <ShopFloorOverview 

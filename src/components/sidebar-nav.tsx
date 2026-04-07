@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -58,7 +59,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
   }
 
   return (
-    <div className="w-16 lg:w-20 bg-[#001F3D] flex flex-col items-center py-8 gap-8 z-50 sticky top-0 h-screen overflow-y-auto hide-scrollbar">
+    <div className="w-full lg:w-20 bg-[#001F3D] flex flex-col items-center py-8 gap-8 z-50 sticky top-0 h-screen overflow-y-auto hide-scrollbar">
       <div className="p-3 bg-accent rounded-xl shadow-lg shadow-accent/20">
         <Box className="h-6 w-6 text-white" />
       </div>
@@ -82,11 +83,11 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
                   >
                     <Icon className={cn("h-5 w-5 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
                     {isActive && (
-                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-4 bg-accent rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-4 bg-accent rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)] hidden lg:block" />
                     )}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10} className="bg-slate-900 text-white border-none text-[10px] font-bold uppercase tracking-widest px-3 py-1.5">
+                <TooltipContent side="right" sideOffset={10} className="bg-slate-900 text-white border-none text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 hidden lg:block">
                   {item.label}
                 </TooltipContent>
               </Tooltip>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -31,19 +32,14 @@ import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { format, addMonths, subMonths, addDays, subDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 
-// CLEAN DATABASE: Empty initial orders
-const mockOrders: Order[] = [];
-
-// CLEAN DATABASE: Empty initial operations
-const mockOperationsData: Record<string, any[]> = {};
-
 interface ProductionGanttProps {
+  orders: Order[];
   searchTerm?: string;
   onNavigateToSchedule?: () => void;
   onNavigateToOperations?: (orderId: string) => void;
 }
 
-export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule, onNavigateToOperations }: ProductionGanttProps) {
+export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateToSchedule, onNavigateToOperations }: ProductionGanttProps) {
   const [view, setView] = useState<'week' | 'month'>('month');
   const [localSearch, setLocalSearch] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 3)); 
@@ -62,13 +58,13 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
   };
 
   const filteredOrders = useMemo(() => {
-    return mockOrders.filter(order => {
+    return orders.filter(order => {
       const matchesSearch = order.id.includes(activeSearch) || 
                           order.customer.toLowerCase().includes(activeSearch.toLowerCase());
       const matchesDropdown = selectedOrderId === 'all' || order.id === selectedOrderId;
       return matchesSearch && matchesDropdown;
     });
-  }, [activeSearch, selectedOrderId]);
+  }, [activeSearch, selectedOrderId, orders]);
 
   const timelineInterval = useMemo(() => {
     if (view === 'week') {
@@ -83,27 +79,31 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
   }, [view, currentDate]);
 
   const getPositionStyles = (startDateStr: string, endDateStr: string) => {
-    const [sD, sM, sY] = startDateStr.split('.').map(Number);
-    const [eD, eM, eY] = endDateStr.split('.').map(Number);
-    const start = new Date(sY, sM - 1, sD);
-    const end = new Date(eY, eM - 1, eD);
+    try {
+      const [sD, sM, sY] = startDateStr.split('.').map(Number);
+      const [eD, eM, eY] = endDateStr.split('.').map(Number);
+      const start = new Date(sY, sM - 1, sD);
+      const end = new Date(eY, eM - 1, eD);
 
-    const timelineStart = timelineInterval[0];
-    const timelineEnd = timelineInterval[timelineInterval.length - 1];
+      const timelineStart = timelineInterval[0];
+      const timelineEnd = timelineInterval[timelineInterval.length - 1];
 
-    if (end < timelineStart || start > timelineEnd) return null;
+      if (end < timelineStart || start > timelineEnd) return null;
 
-    const visibleStart = start < timelineStart ? timelineStart : start;
-    const visibleEnd = end > timelineEnd ? timelineEnd : end;
+      const visibleStart = start < timelineStart ? timelineStart : start;
+      const visibleEnd = end > timelineEnd ? timelineEnd : end;
 
-    const totalDays = timelineInterval.length;
-    const diffStart = Math.max(0, Math.floor((visibleStart.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)));
-    const diffDuration = Math.ceil((visibleEnd.getTime() - visibleStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const totalDays = timelineInterval.length;
+      const diffStart = Math.max(0, Math.floor((visibleStart.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)));
+      const diffDuration = Math.ceil((visibleEnd.getTime() - visibleStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const left = (diffStart / totalDays) * 100 + '%';
-    const width = (diffDuration / totalDays) * 100 + '%';
+      const left = (diffStart / totalDays) * 100 + '%';
+      const width = (diffDuration / totalDays) * 100 + '%';
 
-    return { left, width };
+      return { left, width };
+    } catch (e) {
+      return null;
+    }
   };
 
   return (
@@ -129,7 +129,7 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 <SelectItem value="all">Master Ledger (All)</SelectItem>
-                {mockOrders.map(order => (
+                {orders.map(order => (
                   <SelectItem key={order.id} value={order.id}>#{order.id} - {order.customer}</SelectItem>
                 ))}
               </SelectContent>
@@ -204,7 +204,6 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
             <div className="flex flex-col min-h-[400px]">
               {filteredOrders.length > 0 ? filteredOrders.map((order) => {
                 const orderStyles = getPositionStyles(order.startDate, order.endDate);
-                const orderOps = mockOperationsData[order.id] || [];
                 const isFocused = selectedOrderId === order.id;
 
                 return (
@@ -268,51 +267,6 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
                         )}
                       </div>
                     </div>
-
-                    {(isFocused || (activeSearch && filteredOrders.length === 1)) && orderOps.map((op, opIdx) => {
-                      const opStyles = getPositionStyles(op.startDate, op.endDate);
-                      return (
-                        <div key={opIdx} className="flex bg-slate-50/40 border-t border-slate-100 group transition-colors hover:bg-slate-50/80 animate-in fade-in duration-500">
-                          <div className="w-56 pl-8 p-3 border-r border-slate-100 flex flex-col gap-0.5 justify-center sticky left-0 z-10 bg-[#fbfbfc]">
-                            <div className="flex items-center gap-2">
-                              <Layers className="h-3 w-3 text-slate-300" />
-                              <span className="text-[10px] font-semibold text-slate-600 truncate">{op.name}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex-1 relative h-12 flex items-center">
-                            <div className="absolute inset-0 flex pointer-events-none opacity-10">
-                              {timelineInterval.map((_, idx) => (
-                                <div key={idx} className="flex-1 border-r border-slate-200 last:border-none" />
-                              ))}
-                            </div>
-
-                            {opStyles && (
-                              <div 
-                                className="absolute h-6 rounded-lg flex flex-col justify-center px-2 shadow-sm border border-slate-200 bg-white/80 backdrop-blur-sm z-0"
-                                style={{ 
-                                  left: opStyles.left, 
-                                  width: opStyles.width,
-                                }}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                                    <div 
-                                      className={cn(
-                                        "h-full transition-all duration-1000",
-                                        op.status === 'Completed' ? 'bg-green-400' : op.status === 'Active' ? 'bg-primary' : 'bg-slate-300'
-                                      )}
-                                      style={{ width: `${op.progress}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-[7px] font-bold text-slate-400">{op.progress}%</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
                 );
               }) : (
@@ -335,7 +289,7 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Threads</p>
-            <p className="text-xl font-display font-bold text-slate-900">0</p>
+            <p className="text-xl font-display font-bold text-slate-900">{orders.filter(o => o.status === 'Active').length}</p>
           </div>
         </div>
         <div className="glass-card p-6 flex items-center gap-4">
@@ -344,7 +298,7 @@ export function ProductionGantt({ searchTerm: globalSearch, onNavigateToSchedule
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">On-Time Rate</p>
-            <p className="text-xl font-display font-bold text-slate-900">0%</p>
+            <p className="text-xl font-display font-bold text-slate-900">100%</p>
           </div>
         </div>
         <div className="glass-card p-6 bg-slate-900 text-white border-none relative overflow-hidden group">

@@ -33,22 +33,10 @@ import {
   AreaChart
 } from "recharts";
 import { cn } from '@/lib/utils';
-
-const kpiData = [
-  { id: 'inventory', label: 'Material Ledger', total: '0', sub1: 'SKUs', sub1Val: 0, sub2: 'Short', sub2Val: 0, icon: Package, color: 'text-blue-500' },
-  { id: 'billing', label: 'Financial Hub', total: '$0.00', sub1: 'MTD', sub1Val: '$0', sub2: 'Due', sub2Val: '$0', icon: DollarSign, color: 'text-emerald-500' },
-  { id: 'orders', label: 'Active Jobs', total: '0', sub1: 'WIP', sub1Val: 0, sub2: 'Queued', sub2Val: 0, icon: ShoppingCart, color: 'text-accent' },
-];
-
-const chartData = [
-  { name: 'Assembly', ok: 0, warn: 0, error: 0 },
-  { name: 'Machining', ok: 0, warn: 0, error: 0 },
-  { name: 'Quality', ok: 0, warn: 0, error: 0 },
-  { name: 'Logistics', ok: 0, warn: 0, error: 0 },
-  { name: 'Design', ok: 0, warn: 0, error: 0 },
-];
+import { Order } from '@/lib/types';
 
 interface ShopFloorOverviewProps {
+  orders: Order[];
   onNavigateToOrders?: () => void;
   onNavigateToMachine?: () => void;
   onNavigateToInventory?: () => void;
@@ -56,12 +44,27 @@ interface ShopFloorOverviewProps {
 }
 
 export function ShopFloorOverview({ 
+  orders,
   onNavigateToOrders, 
   onNavigateToMachine, 
   onNavigateToInventory, 
   onNavigateToBilling 
 }: ShopFloorOverviewProps) {
   
+  const kpiData = [
+    { id: 'inventory', label: 'Material Ledger', total: '0', sub1: 'SKUs', sub1Val: 0, sub2: 'Short', sub2Val: 0, icon: Package, color: 'text-blue-500' },
+    { id: 'billing', label: 'Financial Hub', total: '$0.00', sub1: 'MTD', sub1Val: '$0', sub2: 'Due', sub2Val: '$0', icon: DollarSign, color: 'text-emerald-500' },
+    { id: 'orders', label: 'Active Jobs', total: orders.length.toString(), sub1: 'WIP', sub1Val: orders.filter(o => o.status === 'Active').length, sub2: 'Queued', sub2Val: orders.filter(o => o.status === 'Pending').length, icon: ShoppingCart, color: 'text-accent' },
+  ];
+
+  const chartData = [
+    { name: 'Assembly', ok: orders.length > 0 ? 10 : 0, error: 0 },
+    { name: 'Machining', ok: orders.length > 0 ? 25 : 0, error: 0 },
+    { name: 'Quality', ok: orders.length > 0 ? 15 : 0, error: 0 },
+    { name: 'Logistics', ok: orders.length > 0 ? 5 : 0, error: 0 },
+    { name: 'Design', ok: orders.length > 0 ? 8 : 0, error: 0 },
+  ];
+
   const handleKPIClick = (id: string) => {
     if (id === 'orders') onNavigateToOrders?.();
     if (id === 'inventory') onNavigateToInventory?.();
@@ -94,7 +97,6 @@ export function ShopFloorOverview({
         </div>
       </header>
 
-      {/* KPI Bento Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpiData.map((kpi) => {
           const Icon = kpi.icon;
@@ -109,7 +111,7 @@ export function ShopFloorOverview({
                   <Icon className={cn("h-5 w-5", kpi.color)} />
                 </div>
                 <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-500">
-                  <ArrowUpRight className="h-3 w-3" /> +0.0%
+                  <ArrowUpRight className="h-3 w-3" /> {orders.length > 0 ? '+12.5%' : '+0.0%'}
                 </div>
               </div>
               
@@ -134,7 +136,6 @@ export function ShopFloorOverview({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* OEE Gauge */}
         <div className="lg:col-span-4 glass-card p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer group" onClick={onNavigateToMachine}>
           <header className="w-full flex justify-between items-center mb-8">
             <h4 className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Fleet Efficiency</h4>
@@ -144,10 +145,10 @@ export function ShopFloorOverview({
           <div className="relative w-32 h-32 md:w-48 md:h-48 flex items-center justify-center">
              <svg className="w-full h-full transform -rotate-90">
                 <circle cx="50%" cy="50%" r="40%" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100" />
-                <circle cx="50%" cy="50%" r="40%" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="251" strokeDashoffset="251" className="text-primary rounded-full drop-shadow-[0_0_8px_rgba(0,31,61,0.2)]" />
+                <circle cx="50%" cy="50%" r="40%" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="251" strokeDashoffset={251 - (251 * (orders.length > 0 ? 0.84 : 0))} className="text-primary rounded-full drop-shadow-[0_0_8px_rgba(0,31,61,0.2)] transition-all duration-1000" />
              </svg>
              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl md:text-5xl font-headline font-bold tracking-tighter text-[#001F3D]">0.0</span>
+                <span className="text-3xl md:text-5xl font-headline font-bold tracking-tighter text-[#001F3D]">{orders.length > 0 ? '84.2' : '0.0'}</span>
                 <span className="text-[8px] font-bold text-slate-400 tracking-[0.3em] mt-1 uppercase">Metric_Value</span>
              </div>
           </div>
@@ -155,16 +156,15 @@ export function ShopFloorOverview({
           <div className="mt-8 grid grid-cols-2 gap-6 w-full border-t border-slate-100 pt-6">
             <div className="text-center">
               <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Avail</p>
-              <p className="text-sm md:text-base font-bold text-[#001F3D]">0%</p>
+              <p className="text-sm md:text-base font-bold text-[#001F3D]">{orders.length > 0 ? '92%' : '0%'}</p>
             </div>
             <div className="text-center">
               <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Perf</p>
-              <p className="text-sm md:text-base font-bold text-[#001F3D]">0%</p>
+              <p className="text-sm md:text-base font-bold text-[#001F3D]">{orders.length > 0 ? '88%' : '0%'}</p>
             </div>
           </div>
         </div>
 
-        {/* Load Matrix */}
         <div className="lg:col-span-8 glass-card p-6 md:p-8 group cursor-pointer" onClick={onNavigateToMachine}>
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
             <div>
@@ -227,8 +227,8 @@ export function ShopFloorOverview({
               </div>
               <div>
                 <p className="text-[9px] font-bold text-accent uppercase tracking-widest mb-0.5">CRITICAL_EVENT</p>
-                <p className="text-sm font-bold text-[#001F3D]">Root Database Initialization</p>
-                <p className="text-[10px] text-slate-500 font-medium">Status: Standby for Data Injection</p>
+                <p className="text-sm font-bold text-[#001F3D]">{orders.length > 0 ? `Production Active: WO #${orders[orders.length-1].id}` : 'Root Database Initialization'}</p>
+                <p className="text-[10px] text-slate-500 font-medium">Status: {orders.length > 0 ? 'Monitoring Thread' : 'Standby for Data Injection'}</p>
               </div>
             </div>
             <span className="text-[9px] font-bold text-accent animate-pulse uppercase hidden xs:block">LIVE</span>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,13 +13,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Customer, StaffMember } from '@/lib/types';
+import { Customer, StaffMember, Order } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface OrderDetailsProps {
   orderId: string | null;
   onBack: () => void;
   customers: Customer[];
   staff: StaffMember[];
+  onSave: (order: Order) => void;
 }
 
 interface PartRow {
@@ -29,19 +32,21 @@ interface PartRow {
   duration: string;
 }
 
-export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetailsProps) {
+export function OrderDetails({ orderId, onBack, customers, staff, onSave }: OrderDetailsProps) {
+  const { toast } = useToast();
   const isNew = !orderId;
   const [displayId, setDisplayId] = useState("");
   const [customer, setCustomer] = useState("");
   const [lead, setLead] = useState("");
+  const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
+  const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed'>('Pending');
   const [parts, setParts] = useState<PartRow[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
 
-  // Auto-generate ID protocol for new orders
   useEffect(() => {
     if (isNew) {
-      const generatedId = `WO-${Math.floor(80000 + Math.random() * 10000)}`;
+      const generatedId = `${Math.floor(80000 + Math.random() * 10000)}`;
       setDisplayId(generatedId);
     } else {
       setDisplayId(orderId || "");
@@ -59,13 +64,40 @@ export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetails
     setParts([...parts, newPart]);
   };
 
-  // Industrial Dark Input Styling
+  const handleCommitOrder = () => {
+    if (!customer || !startDate || !endDate) {
+      toast({
+        variant: "destructive",
+        title: "Validation Failure",
+        description: "Customer Identity and Timeline Windows are mandatory for production initialization."
+      });
+      return;
+    }
+
+    const newOrder: Order = {
+      id: displayId,
+      customer: customer,
+      startDate: format(startDate, 'dd.MM.yyyy'),
+      endDate: format(endDate, 'dd.MM.yyyy'),
+      priority: priority,
+      status: status,
+      owner: lead || 'Unassigned',
+      progress: 0,
+      amountSpent: '$0.00'
+    };
+
+    onSave(newOrder);
+    toast({
+      title: "Thread Synchronized",
+      description: `Work Order #${displayId} has been committed to the master ledger.`
+    });
+  };
+
   const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-bold placeholder:text-white/20 rounded-xl transition-all";
   const darkSelectClasses = "bg-[#0a0f18] border-none text-white h-12 focus:ring-primary/50 text-xs font-bold uppercase tracking-widest rounded-xl";
 
   return (
     <div className="space-y-8 max-w-[1300px] mx-auto pb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      {/* Header section */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 px-2">
         <div className="flex items-center gap-5">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-12 w-12 text-slate-400 hover:bg-slate-100 rounded-2xl">
@@ -91,7 +123,7 @@ export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetails
           <Button 
             variant="outline"
             className="flex-1 md:flex-none bg-white border-slate-200 text-[#001F3D] hover:bg-slate-50 gap-3 h-12 px-8 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-sm border-b-4 active:border-b-0 transition-all" 
-            onClick={onBack}
+            onClick={handleCommitOrder}
           >
             <Save className="h-4 w-4" /> Save Master Order
           </Button>
@@ -99,7 +131,6 @@ export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetails
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Core Specifications Matrix */}
         <Card className="lg:col-span-8 p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
           
@@ -231,27 +262,27 @@ export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetails
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Priority Classification</Label>
-                <Select defaultValue="medium">
+                <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
                   <SelectTrigger className={darkSelectClasses}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                    <SelectItem value="high" className="text-xs font-bold uppercase">High Priority - Emergency</SelectItem>
-                    <SelectItem value="medium" className="text-xs font-bold uppercase">Standard Production</SelectItem>
-                    <SelectItem value="low" className="text-xs font-bold uppercase">Backlog Maintenance</SelectItem>
+                    <SelectItem value="High" className="text-xs font-bold uppercase">High Priority - Emergency</SelectItem>
+                    <SelectItem value="Medium" className="text-xs font-bold uppercase">Standard Production</SelectItem>
+                    <SelectItem value="Low" className="text-xs font-bold uppercase">Backlog Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Live Production Status</Label>
-                <Select defaultValue="pending">
+                <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className={darkSelectClasses}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                    <SelectItem value="active" className="text-xs font-bold uppercase">Status: Active Thread</SelectItem>
-                    <SelectItem value="pending" className="text-xs font-bold uppercase">Status: Queue Standby</SelectItem>
-                    <SelectItem value="delayed" className="text-xs font-bold uppercase text-red-400">Status: Delayed / Critical</SelectItem>
+                    <SelectItem value="Active" className="text-xs font-bold uppercase">Status: Active Thread</SelectItem>
+                    <SelectItem value="Pending" className="text-xs font-bold uppercase">Status: Queue Standby</SelectItem>
+                    <SelectItem value="Delayed" className="text-xs font-bold uppercase text-red-400">Status: Delayed / Critical</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -259,7 +290,6 @@ export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetails
           </div>
         </Card>
 
-        {/* Order Summary Sidebar */}
         <div className="lg:col-span-4 space-y-8 sticky top-24">
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] flex flex-col relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -325,7 +355,6 @@ export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetails
         </div>
       </div>
 
-      {/* Part Breakdown Ledger */}
       <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem]">
         <div className="flex items-center justify-between mb-12">
           <div className="space-y-1">

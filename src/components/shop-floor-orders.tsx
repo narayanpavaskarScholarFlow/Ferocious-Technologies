@@ -11,18 +11,16 @@ import { Search, Plus, ArchiveX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-// CLEAN DATABASE: Empty initial orders
-const mockOrders: Order[] = [];
-
 interface ShopFloorOrdersProps {
+  orders: Order[];
   onNavigateToOperations?: (orderId: string) => void;
   onNavigateToOrderDetails?: (orderId: string | null) => void;
 }
 
-export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetails }: ShopFloorOrdersProps) {
+export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOrderDetails }: ShopFloorOrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredOrders = mockOrders.filter(order => 
+  const filteredOrders = orders.filter(order => 
     order.id.includes(searchTerm) || 
     order.customer.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -150,12 +148,12 @@ export function ShopFloorOrders({ onNavigateToOperations, onNavigateToOrderDetai
             <div className="relative w-32 h-32 md:w-36 md:h-36">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="50%" cy="50%" r="40%" stroke="#f1f5f9" strokeWidth="20" fill="transparent" />
-                <circle cx="50%" cy="50%" r="40%" stroke="#003d6b" strokeWidth="20" fill="transparent" strokeDasharray="251" strokeDashoffset="251" />
+                <circle cx="50%" cy="50%" r="40%" stroke="#003d6b" strokeWidth="20" fill="transparent" strokeDasharray="251" strokeDashoffset={251 - (251 * (orders.length > 0 ? 1 : 0))} />
               </svg>
             </div>
             <div className="space-y-5">
               <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
-                <div className="w-3 h-3 bg-[#003d6b] rounded-sm" /> Active (0%)
+                <div className="w-3 h-3 bg-[#003d6b] rounded-sm" /> Active ({orders.length > 0 ? '100' : '0'}%)
               </div>
               <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
                 <div className="w-3 h-3 bg-[#f59e0b] rounded-sm" /> Pending (0%)

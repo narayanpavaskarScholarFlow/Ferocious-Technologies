@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember, Order } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -48,6 +49,7 @@ export default function IndustrialERP() {
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -100,6 +102,11 @@ export default function IndustrialERP() {
     setIsLoggedIn(false);
     setCurrentUser(null);
     setCurrentView('overview');
+  };
+
+  const handleAddOrder = (order: Order) => {
+    setOrders([...orders, order]);
+    setCurrentView('orders');
   };
 
   if (!mounted) {
@@ -207,6 +214,7 @@ export default function IndustrialERP() {
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
             {currentView === 'overview' && (
               <ShopFloorOverview 
+                orders={orders}
                 onNavigateToOrders={() => setCurrentView('orders')}
                 onNavigateToMachine={() => setCurrentView('machine-utilization')}
                 onNavigateToInventory={() => setCurrentView('inventory')}
@@ -215,6 +223,7 @@ export default function IndustrialERP() {
             )}
             {currentView === 'orders' && (
               <ShopFloorOrders 
+                orders={orders}
                 onNavigateToOperations={handleNavigateToOperations} 
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
@@ -254,6 +263,7 @@ export default function IndustrialERP() {
             )}
             {currentView === 'gantt' && (
               <ProductionGantt 
+                orders={orders}
                 searchTerm={globalSearch}
                 onNavigateToSchedule={() => setCurrentView('weekly-plan')}
                 onNavigateToOperations={handleNavigateToOperations}
@@ -270,6 +280,7 @@ export default function IndustrialERP() {
                 onBack={handleBackToOrders} 
                 customers={customers}
                 staff={staff}
+                onSave={handleAddOrder}
               />
             )}
             {currentView === 'operations' && (

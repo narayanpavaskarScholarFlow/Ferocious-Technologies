@@ -12,13 +12,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Customer, SystemUser } from '@/lib/types';
+import { Customer, StaffMember } from '@/lib/types';
 
 interface OrderDetailsProps {
   orderId: string | null;
   onBack: () => void;
   customers: Customer[];
-  users: SystemUser[];
+  staff: StaffMember[];
 }
 
 interface PartRow {
@@ -29,7 +29,7 @@ interface PartRow {
   duration: string;
 }
 
-export function OrderDetails({ orderId, onBack, customers, users }: OrderDetailsProps) {
+export function OrderDetails({ orderId, onBack, customers, staff }: OrderDetailsProps) {
   const isNew = !orderId;
   const [displayId, setDisplayId] = useState("");
   const [customer, setCustomer] = useState("");
@@ -216,10 +216,10 @@ export function OrderDetails({ orderId, onBack, customers, users }: OrderDetails
                   </Label>
                   <Select value={lead} onValueChange={setLead}>
                     <SelectTrigger className={darkSelectClasses}>
-                      <SelectValue placeholder={users.length > 0 ? "Assign Officer..." : "No Personnel Found"} />
+                      <SelectValue placeholder={staff.length > 0 ? "Assign Officer..." : "No Personnel Found"} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                      {users.map(s => (
+                      {staff.map(s => (
                         <SelectItem key={s.id} value={s.name} className="text-xs font-bold uppercase tracking-wider">{s.name} ({s.role})</SelectItem>
                       ))}
                     </SelectContent>

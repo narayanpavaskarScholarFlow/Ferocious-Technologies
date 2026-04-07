@@ -79,6 +79,7 @@ export interface StaffMember {
   id: string;
   name: string;
   role: string;
+  dept: string;
   status: 'active' | 'break' | 'off';
   shift: 'Morning' | 'Evening' | 'Night';
   efficiency: number;

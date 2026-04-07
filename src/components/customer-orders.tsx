@@ -49,7 +49,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   
-  // New Customer Form State with explicit field initialization
+  // New Customer Form State
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     address: '',
@@ -84,7 +84,6 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
   };
 
   const handleAddCustomer = () => {
-    // Strict Validation Protocol
     if (!newCustomer.name.trim() || !newCustomer.gstNumber.trim() || !newCustomer.contactPerson.trim()) {
       toast({
         variant: "destructive",
@@ -281,7 +280,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
           <DialogTitle className="sr-only">Account Onboarding Protocol</DialogTitle>
-          <DialogDescription className="sr-only">Sequence for initializing new commercial identities in the ERP directory.</DialogDescription>
+          <DialogDescription className="sr-only">Sequence for initializing or updating commercial identities in the ERP directory.</DialogDescription>
           
           <div className="flex flex-col md:flex-row h-[600px]">
             {/* Sidebar Protocol Map */}
@@ -328,7 +327,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                   <div className="h-1 w-10 bg-red-500 rounded-full" />
                   <div>
                     <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingCustomerId ? 'Update Protocol' : 'Account Protocol'}</h3>
-                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Master Data Initialization Sequence</p>
+                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Master Data Synchronization Sequence</p>
                   </div>
                 </div>
 

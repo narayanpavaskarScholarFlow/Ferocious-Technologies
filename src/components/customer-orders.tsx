@@ -21,7 +21,9 @@ import {
   Phone,
   Hash,
   ShieldCheck,
-  Building
+  Building,
+  Edit2,
+  Check
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('Active');
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   
   // New Customer Form State with explicit field initialization
   const [newCustomer, setNewCustomer] = useState({
@@ -67,6 +70,19 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     setNewCustomer(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleEditCustomer = (customer: Customer) => {
+    setNewCustomer({
+      name: customer.name,
+      address: customer.address,
+      contactNumber: customer.contactNumber,
+      gstNumber: customer.gstNumber,
+      contactPerson: customer.contactPerson,
+      type: customer.type
+    });
+    setEditingCustomerId(customer.id);
+    setIsAddCustomerOpen(true);
+  };
+
   const handleAddCustomer = () => {
     // Strict Validation Protocol
     if (!newCustomer.name.trim() || !newCustomer.gstNumber.trim() || !newCustomer.contactPerson.trim()) {
@@ -78,29 +94,52 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
       return;
     }
 
-    const customer: Customer = {
-      id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: newCustomer.name.trim(),
-      gstNumber: newCustomer.gstNumber.trim().toUpperCase(),
-      contactPerson: newCustomer.contactPerson.trim(),
-      contactNumber: newCustomer.contactNumber.trim() || 'N/A',
-      address: newCustomer.address.trim() || 'N/A',
-      type: newCustomer.type as any || 'Corporate',
-      email: '',
-      location: newCustomer.address.trim() || 'Global',
-      totalOrders: 0
-    };
+    if (editingCustomerId) {
+      // UPDATE PROTOCOL
+      const updatedCustomers = customers.map(c => 
+        c.id === editingCustomerId 
+          ? { 
+              ...c, 
+              name: newCustomer.name.trim(), 
+              gstNumber: newCustomer.gstNumber.trim().toUpperCase(),
+              contactPerson: newCustomer.contactPerson.trim(),
+              contactNumber: newCustomer.contactNumber.trim() || 'N/A',
+              address: newCustomer.address.trim() || 'N/A',
+              type: newCustomer.type as any || 'Corporate',
+              location: newCustomer.address.trim() || 'Global'
+            } 
+          : c
+      );
+      onCustomersChange(updatedCustomers);
+      toast({
+        title: "Identity Synchronized",
+        description: `${newCustomer.name} details have been updated in the master directory.`
+      });
+    } else {
+      // NEW REGISTRATION PROTOCOL
+      const customer: Customer = {
+        id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: newCustomer.name.trim(),
+        gstNumber: newCustomer.gstNumber.trim().toUpperCase(),
+        contactPerson: newCustomer.contactPerson.trim(),
+        contactNumber: newCustomer.contactNumber.trim() || 'N/A',
+        address: newCustomer.address.trim() || 'N/A',
+        type: newCustomer.type as any || 'Corporate',
+        email: '',
+        location: newCustomer.address.trim() || 'Global',
+        totalOrders: 0
+      };
 
-    // Execute parent update
-    onCustomersChange([...customers, customer]);
-
-    toast({
-      title: "Identity Verified",
-      description: `${customer.name} has been committed to the master directory.`
-    });
+      onCustomersChange([...customers, customer]);
+      toast({
+        title: "Identity Verified",
+        description: `${customer.name} has been committed to the master directory.`
+      });
+    }
     
     // Reset and Close
     setIsAddCustomerOpen(false);
+    setEditingCustomerId(null);
     setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
   };
 
@@ -129,7 +168,11 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
             />
           </div>
           <Button 
-            onClick={() => setIsAddCustomerOpen(true)}
+            onClick={() => {
+              setEditingCustomerId(null);
+              setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
+              setIsAddCustomerOpen(true);
+            }}
             className="bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
           >
             <UserPlus className="mr-3 h-4 w-4" /> Register New Account
@@ -167,7 +210,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status & Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -201,9 +244,19 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                       </div>
                     </TableCell>
                     <TableCell className="text-right px-10">
-                      <Badge className="text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-100">
-                        Active
-                      </Badge>
+                      <div className="flex items-center justify-end gap-3">
+                        <Badge className="text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-100">
+                          Active
+                        </Badge>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleEditCustomer(customer)}
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )) : (
@@ -235,12 +288,12 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
             <div className="w-full md:w-80 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
                 <div className="p-5 bg-[#001F3D] rounded-[1.5rem] w-fit shadow-2xl shadow-primary/20 relative">
-                  <UserPlus className="h-8 w-8 text-white" />
+                  {editingCustomerId ? <Edit2 className="h-8 w-8 text-white" /> : <UserPlus className="h-8 w-8 text-white" />}
                   <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                 </div>
                 <div className="space-y-10 hidden md:block">
                   {[
-                    { s: 1, label: 'Entity Identity', desc: 'NAME & GST', active: true },
+                    { s: 1, label: editingCustomerId ? 'Update Identity' : 'Entity Identity', desc: 'NAME & GST', active: true },
                     { s: 2, label: 'Liaison Setup', desc: 'CONTACT NODES', active: false },
                     { s: 3, label: 'Logistics Matrix', desc: 'ADDRESS_SYNC', active: false },
                   ].map((item) => (
@@ -274,7 +327,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                 <div className="flex items-center gap-4">
                   <div className="h-1 w-10 bg-red-500 rounded-full" />
                   <div>
-                    <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">Account Protocol</h3>
+                    <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingCustomerId ? 'Update Protocol' : 'Account Protocol'}</h3>
                     <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Master Data Initialization Sequence</p>
                   </div>
                 </div>
@@ -362,7 +415,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                   className="flex-[2] h-14 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-red-600/30 flex gap-3 group"
                   onClick={handleAddCustomer}
                 >
-                  Commit to Master Ledger
+                  {editingCustomerId ? 'Synchronize Identity' : 'Commit to Master Ledger'}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>

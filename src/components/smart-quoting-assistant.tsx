@@ -14,16 +14,14 @@ import {
   Trash2, 
   Sparkles, 
   Loader2, 
-  Calculator, 
   Maximize, 
   Clock, 
-  DollarSign, 
-  FileCheck,
+  ShieldCheck, 
+  Box, 
+  Cpu, 
+  Palette,
   ChevronRight,
-  ShieldCheck,
-  Box,
-  Cpu,
-  Palette
+  FileCheck
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { quoteAnalysis, type QuoteAnalysisOutput } from '@/ai/flows/quote-analysis-flow';
@@ -38,6 +36,16 @@ interface SmartQuotingAssistantProps {
 const INITIAL_OPERATIONS = [
   { name: 'VMC Milling', costPerHour: 150 },
   { name: 'CNC Turning', costPerHour: 120 },
+];
+
+const STANDARD_COLOR_CODES = [
+  { color: '#3b82f6', name: 'Blue', op: 'Milling / Surface' },
+  { color: '#06b6d4', name: 'Cyan', op: 'Reaming / Precision' },
+  { color: '#ef4444', name: 'Red', op: 'Tapping / Threads' },
+  { color: '#22c55e', name: 'Green', op: 'Grinding' },
+  { color: '#eab308', name: 'Yellow', op: 'Drilling' },
+  { color: '#d946ef', name: 'Magenta', op: 'EDM / Wire Cut' },
+  { color: '#f97316', name: 'Orange', op: 'Turning' },
 ];
 
 export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) {
@@ -373,6 +381,30 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
           </Card>
         </div>
       </div>
+
+      {/* Standard CAD Color Protocol Sheet - Common for all quotes */}
+      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] mt-8">
+        <div className="flex items-center gap-3 border-l-4 border-primary pl-4 mb-8">
+          <Palette className="h-5 w-5 text-primary" />
+          <div>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Standard CAD Color Protocol</h3>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Global reference for model geometry identification</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {STANDARD_COLOR_CODES.map((item) => (
+            <div key={item.name} className="flex flex-col items-center p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 transition-all text-center group">
+              <div 
+                className="h-8 w-8 rounded-full mb-3 shadow-lg transform group-hover:scale-110 transition-transform" 
+                style={{ backgroundColor: item.color, border: '2px solid white' }} 
+              />
+              <p className="text-[10px] font-bold text-slate-900 uppercase">{item.name}</p>
+              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter mt-1 leading-tight">{item.op}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

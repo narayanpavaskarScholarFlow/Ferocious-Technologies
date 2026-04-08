@@ -24,16 +24,22 @@ import {
   Box,
   Cpu
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { quoteAnalysis, type QuoteAnalysisOutput } from '@/ai/flows/quote-analysis-flow';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Machine } from '@/lib/types';
+
+interface SmartQuotingAssistantProps {
+  machines: Machine[];
+}
 
 const INITIAL_OPERATIONS = [
   { name: 'VMC Milling', costPerHour: 150 },
   { name: 'CNC Turning', costPerHour: 120 },
 ];
 
-export function SmartQuotingAssistant() {
+export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [fileUploaded, setFileUploaded] = useState(false);
@@ -186,13 +192,23 @@ export function SmartQuotingAssistant() {
                 {operations.map((op, idx) => (
                   <div key={idx} className="flex gap-4 items-end bg-slate-50/50 p-4 rounded-2xl border border-slate-100 group">
                     <div className="flex-1 space-y-2">
-                      <Label className="text-[8px] font-bold uppercase text-slate-400">Operation Included</Label>
-                      <Input 
-                        placeholder="e.g. VMC Milling" 
-                        value={op.name}
-                        onChange={(e) => updateOp(idx, 'name', e.target.value)}
-                        className="h-10 bg-white border-none rounded-lg text-xs font-bold shadow-sm"
-                      />
+                      <Label className="text-[8px] font-bold uppercase text-slate-400">Operation Included (from Asset Telemetry)</Label>
+                      <Select value={op.name} onValueChange={(val) => updateOp(idx, 'name', val)}>
+                        <SelectTrigger className="h-10 bg-white border-none rounded-lg text-xs font-bold shadow-sm">
+                          <SelectValue placeholder="Select machine node..." />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-100">
+                          {machines.length > 0 ? (
+                            machines.map(m => (
+                              <SelectItem key={m.id} value={m.name} className="text-xs font-bold uppercase">
+                                {m.name} ({m.mcNumber})
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="none" disabled className="text-[10px] font-bold italic">No Assets Found</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="w-40 space-y-2">
                       <Label className="text-[8px] font-bold uppercase text-slate-400">Cost per Hour ($)</Label>

@@ -232,7 +232,7 @@ export default function IndustrialERP() {
                 onNavigateToBilling={() => setCurrentView('billing')}
               />
             )}
-            {currentView === 'smart-quote' && <SmartQuotingAssistant />}
+            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
             {currentView === 'orders' && (
               <ShopFloorOrders 
                 orders={orders}

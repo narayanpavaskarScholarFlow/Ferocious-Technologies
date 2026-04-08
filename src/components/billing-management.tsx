@@ -27,7 +27,10 @@ import {
   ArrowLeft,
   FileText,
   CheckCircle2,
-  MoreVertical
+  MoreVertical,
+  Percent,
+  Hash,
+  Calculator
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -53,10 +56,12 @@ type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outwar
 interface LineItem {
   id: string;
   description: string;
+  hsn: string;
   unit: string;
   quantity: number;
   pricePerUnit: number;
-  gst: number; // percentage
+  gst: number; // total percentage
+  discount: number; // percentage or flat? I'll use flat amount for precision
 }
 
 interface BillingRecord {
@@ -90,13 +95,13 @@ export function BillingManagement({ customers }: BillingManagementProps) {
     date: new Date().toISOString().split('T')[0],
     number: '',
     note: 'Material cost 100% advance. Product warranty 1 year',
-    discount: 0,
+    globalDiscount: 0,
     amountPaid: 0,
     declaration: 'We declare that this quotation shows the actual price of the goods described and that all particulars are true and correct.'
   });
 
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { id: '1', description: 'Service 1', unit: 'Hour', quantity: 1, pricePerUnit: 50, gst: 12 },
+    { id: '1', description: 'Industrial Service', hsn: '9987', unit: 'Lot', quantity: 1, pricePerUnit: 0, gst: 18, discount: 0 },
   ]);
 
   const selectedCustomer = useMemo(() => 
@@ -104,13 +109,18 @@ export function BillingManagement({ customers }: BillingManagementProps) {
   [customers, formData.customerId]);
 
   const totals = useMemo(() => {
-    const subTotal = lineItems.reduce((acc, item) => acc + (item.quantity * item.pricePerUnit), 0);
-    const totalGst = lineItems.reduce((acc, item) => {
-      const amount = item.quantity * item.pricePerUnit;
-      return acc + (amount * (item.gst / 100));
+    const subTotal = lineItems.reduce((acc, item) => {
+      const lineAmt = (item.quantity * item.pricePerUnit) - item.discount;
+      return acc + Math.max(0, lineAmt);
     }, 0);
+
+    const totalGst = lineItems.reduce((acc, item) => {
+      const taxable = (item.quantity * item.pricePerUnit) - item.discount;
+      return acc + (Math.max(0, taxable) * (item.gst / 100));
+    }, 0);
+
     const grossTotal = subTotal + totalGst;
-    const finalAmount = grossTotal - formData.discount;
+    const finalAmount = grossTotal - formData.globalDiscount;
     const balance = finalAmount - formData.amountPaid;
 
     return {
@@ -120,16 +130,18 @@ export function BillingManagement({ customers }: BillingManagementProps) {
       finalAmount,
       balance
     };
-  }, [lineItems, formData.discount, formData.amountPaid]);
+  }, [lineItems, formData.globalDiscount, formData.amountPaid]);
 
   const handleAddLineItem = () => {
     const newItem: LineItem = {
       id: Math.random().toString(36).substr(2, 9),
       description: `Service ${lineItems.length + 1}`,
-      unit: 'Hour',
+      hsn: '9987',
+      unit: 'Lot',
       quantity: 1,
       pricePerUnit: 0,
-      gst: 12
+      gst: 18,
+      discount: 0
     };
     setLineItems([...lineItems, newItem]);
   };
@@ -151,11 +163,11 @@ export function BillingManagement({ customers }: BillingManagementProps) {
       date: new Date().toISOString().split('T')[0],
       number: `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`,
       note: 'Material cost 100% advance. Product warranty 1 year',
-      discount: 0,
+      globalDiscount: 0,
       amountPaid: 0,
       declaration: 'We declare that this record shows true particulars and actual pricing.'
     });
-    setLineItems([{ id: '1', description: 'Service 1', unit: 'Hour', quantity: 1, pricePerUnit: 0, gst: 12 }]);
+    setLineItems([{ id: '1', description: 'Industrial Service', hsn: '9987', unit: 'Lot', quantity: 1, pricePerUnit: 0, gst: 18, discount: 0 }]);
     setWizardStep('form');
     setIsCreateDialogOpen(true);
   };
@@ -390,13 +402,13 @@ export function BillingManagement({ customers }: BillingManagementProps) {
 
       {/* Creation Wizard Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-5xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
+        <DialogContent className="max-w-[95vw] lg:max-w-7xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
           <DialogTitle className="sr-only">Financial Document Protocol</DialogTitle>
           <DialogDescription className="sr-only">Sequence for creating and authorizing industrial financial records.</DialogDescription>
           {wizardStep === 'form' ? (
-            <div className="flex flex-col md:flex-row h-[85vh] max-h-[800px]">
+            <div className="flex flex-col lg:flex-row h-[90vh] max-h-[900px]">
               {/* Context Sidebar */}
-              <div className="w-full md:w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between overflow-y-auto">
+              <div className="w-full lg:w-80 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between overflow-y-auto">
                 <div className="space-y-8">
                   <div className="p-4 bg-[#001F3D] rounded-2xl w-fit shadow-xl shadow-primary/20">
                     <ClipboardList className="h-7 w-7 text-white" />
@@ -408,32 +420,44 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Industrial Ledger v2.4</p>
                   </div>
                   
-                  <div className="p-5 bg-primary/5 rounded-2xl border border-primary/10">
-                    <p className="text-[9px] font-bold text-primary uppercase tracking-widest leading-relaxed">
-                      Enter itemized specifications. All calculations will follow standardized industrial tax matrices.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="p-5 bg-primary/5 rounded-2xl border border-primary/10">
+                      <p className="text-[9px] font-bold text-primary uppercase tracking-widest leading-relaxed">
+                        Enter itemized specifications. All calculations will follow standardized industrial tax matrices.
+                      </p>
+                    </div>
+                    
+                    <div className="p-5 bg-amber-500/5 rounded-2xl border border-amber-500/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calculator className="h-3 w-3 text-amber-600" />
+                        <span className="text-[8px] font-bold text-amber-600 uppercase tracking-widest">Tax Rules</span>
+                      </div>
+                      <p className="text-[8px] font-medium text-amber-700 uppercase tracking-widest leading-relaxed">
+                        GST is automatically split into CGST (50%) and SGST (50%) for interstate compliance.
+                      </p>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="space-y-4 pt-10">
                   <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
-                    <span>Sub Total</span>
+                    <span>Taxable Amount</span>
                     <span>${totals.subTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
-                    <span>GST Total</span>
+                    <span>Total GST</span>
                     <span>${totals.totalGst.toFixed(2)}</span>
                   </div>
                   <div className="h-px bg-slate-200" />
                   <div className="flex justify-between items-center text-xs font-bold uppercase text-[#001F3D]">
-                    <span>Final Amount</span>
+                    <span>Net Payable</span>
                     <span className="text-primary font-display">${totals.finalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Main Form */}
-              <div className="flex-1 p-10 md:p-12 flex flex-col bg-white overflow-y-auto hide-scrollbar">
+              <div className="flex-1 p-8 lg:p-12 flex flex-col bg-white overflow-y-auto hide-scrollbar">
                 <div className="space-y-10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -481,55 +505,107 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                     </div>
 
                     <div className="space-y-4">
-                      {lineItems.map((item, idx) => (
-                        <div key={item.id} className="grid grid-cols-12 gap-4 items-end bg-slate-50/50 p-4 rounded-xl border border-slate-100 group">
-                          <div className="col-span-1 text-[10px] font-bold text-slate-300 mb-3">{idx + 1}</div>
-                          <div className="col-span-4 space-y-1.5">
-                            <Label className="text-[8px] font-bold uppercase text-slate-400">Description</Label>
-                            <Input 
-                              value={item.description} 
-                              onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                              className="h-9 bg-white border-none text-[11px] font-bold"
-                            />
+                      {lineItems.map((item, idx) => {
+                        const taxableAmt = (item.quantity * item.pricePerUnit) - item.discount;
+                        const cgst = (taxableAmt * (item.gst / 200));
+                        const sgst = (taxableAmt * (item.gst / 200));
+                        const totalItemPrice = taxableAmt + cgst + sgst;
+
+                        return (
+                          <div key={item.id} className="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 group relative">
+                            <div className="absolute top-4 left-4 h-5 w-5 bg-[#001F3D] text-white rounded-full flex items-center justify-center text-[10px] font-bold">{idx + 1}</div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                              <div className="md:col-span-4 space-y-1.5">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400 flex items-center gap-1">
+                                  <FileText className="h-2.5 w-2.5" /> Description / Service
+                                </Label>
+                                <Input 
+                                  value={item.description} 
+                                  onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                  className="h-10 bg-white border-none text-xs font-bold rounded-xl shadow-sm"
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1.5">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400 flex items-center gap-1">
+                                  <Hash className="h-2.5 w-2.5" /> HSN / SAC
+                                </Label>
+                                <Input 
+                                  value={item.hsn} 
+                                  onChange={(e) => updateLineItem(item.id, 'hsn', e.target.value)}
+                                  className="h-10 bg-white border-none text-xs font-bold rounded-xl shadow-sm uppercase"
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1.5">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Qty</Label>
+                                <Input 
+                                  type="number"
+                                  value={item.quantity} 
+                                  onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                  className="h-10 bg-white border-none text-xs font-bold rounded-xl shadow-sm text-center"
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1.5">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Price / Unit</Label>
+                                <Input 
+                                  type="number"
+                                  value={item.pricePerUnit} 
+                                  onChange={(e) => updateLineItem(item.id, 'pricePerUnit', parseFloat(e.target.value) || 0)}
+                                  className="h-10 bg-white border-none text-xs font-bold rounded-xl shadow-sm text-center"
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1.5">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Row Discount</Label>
+                                <Input 
+                                  type="number"
+                                  value={item.discount} 
+                                  onChange={(e) => updateLineItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                  className="h-10 bg-white border-none text-xs font-bold rounded-xl shadow-sm text-center"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-2 border-t border-slate-200/50 mt-2">
+                              <div className="md:col-span-3">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase">Taxable Value</p>
+                                <p className="text-sm font-display font-bold text-[#001F3D]">${taxableAmt.toFixed(2)}</p>
+                              </div>
+                              <div className="md:col-span-2 space-y-1.5">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400 flex items-center gap-1">
+                                  <Percent className="h-2.5 w-2.5" /> GST %
+                                </Label>
+                                <Input 
+                                  type="number"
+                                  value={item.gst} 
+                                  onChange={(e) => updateLineItem(item.id, 'gst', parseFloat(e.target.value) || 0)}
+                                  className="h-9 bg-white border-none text-[10px] font-bold rounded-lg shadow-sm text-center"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase">CGST ({(item.gst/2).toFixed(1)}%)</p>
+                                <p className="text-[11px] font-bold text-blue-600">${cgst.toFixed(2)}</p>
+                              </div>
+                              <div className="md:col-span-2">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase">SGST ({(item.gst/2).toFixed(1)}%)</p>
+                                <p className="text-[11px] font-bold text-blue-600">${sgst.toFixed(2)}</p>
+                              </div>
+                              <div className="md:col-span-2">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase">Row Total</p>
+                                <p className="text-sm font-display font-bold text-emerald-600">${totalItemPrice.toFixed(2)}</p>
+                              </div>
+                              <div className="md:col-span-1 flex justify-end">
+                                <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} className="h-9 w-9 text-slate-200 hover:text-red-500">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="col-span-2 space-y-1.5">
-                            <Label className="text-[8px] font-bold uppercase text-slate-400">Quantity</Label>
-                            <Input 
-                              type="number"
-                              value={item.quantity} 
-                              onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                              className="h-9 bg-white border-none text-[11px] font-bold text-center"
-                            />
-                          </div>
-                          <div className="col-span-2 space-y-1.5">
-                            <Label className="text-[8px] font-bold uppercase text-slate-400">Price / Unit</Label>
-                            <Input 
-                              type="number"
-                              value={item.pricePerUnit} 
-                              onChange={(e) => updateLineItem(item.id, 'pricePerUnit', parseFloat(e.target.value) || 0)}
-                              className="h-9 bg-white border-none text-[11px] font-bold text-center"
-                            />
-                          </div>
-                          <div className="col-span-2 space-y-1.5">
-                            <Label className="text-[8px] font-bold uppercase text-slate-400">GST %</Label>
-                            <Input 
-                              type="number"
-                              value={item.gst} 
-                              onChange={(e) => updateLineItem(item.id, 'gst', parseFloat(e.target.value) || 0)}
-                              className="h-9 bg-white border-none text-[11px] font-bold text-center"
-                            />
-                          </div>
-                          <div className="col-span-1 flex justify-end">
-                            <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} className="h-9 w-9 text-slate-200 hover:text-red-500">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-8 pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Commercial Note / Remark</Label>
                       <Input 
@@ -540,16 +616,16 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Discount ($)</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Global Discount ($)</Label>
                         <Input 
                           type="number"
-                          value={formData.discount}
-                          onChange={(e) => setFormData({...formData, discount: parseFloat(e.target.value) || 0})}
+                          value={formData.globalDiscount}
+                          onChange={(e) => setFormData({...formData, globalDiscount: parseFloat(e.target.value) || 0})}
                           className={darkInputClasses}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Amount Paid ($)</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Advance Received ($)</Label>
                         <Input 
                           type="number"
                           value={formData.amountPaid}
@@ -561,7 +637,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-12 pt-8 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row gap-4 mt-12 pt-8 border-t border-slate-100">
                   <Button 
                     variant="ghost" 
                     className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400"
@@ -603,7 +679,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
               </div>
 
               <div className="flex-1 overflow-y-auto p-12 bg-slate-100/30">
-                <div className="max-w-[800px] mx-auto bg-white shadow-2xl border-4 border-[#e8f5e9] p-0 relative overflow-hidden">
+                <div className="max-w-[1000px] mx-auto bg-white shadow-2xl border-4 border-[#e8f5e9] p-0 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 overflow-hidden pointer-events-none">
                     <div className="absolute top-6 right-[-35px] w-[150px] bg-[#22c55e] text-white text-[10px] font-bold text-center py-1 rotate-45 uppercase tracking-widest">
                       Draft
@@ -612,13 +688,13 @@ export function BillingManagement({ customers }: BillingManagementProps) {
 
                   <div className="p-10 space-y-8">
                     <header className="bg-[#e8f5e9] -mx-10 -mt-10 p-6 flex flex-col items-center border-b border-green-200">
-                      <h1 className="text-3xl font-display font-bold tracking-[0.2em] text-[#1b5e20] uppercase">Quotation</h1>
+                      <h1 className="text-3xl font-display font-bold tracking-[0.2em] text-[#1b5e20] uppercase">{activeCategory}</h1>
                     </header>
 
                     <div className="flex justify-end pt-4">
                       <div className="text-right space-y-1">
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Date: <span className="text-slate-900 ml-2">{formData.date}</span></p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Quotation No.: <span className="text-slate-900 ml-2">{formData.number}</span></p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Document No.: <span className="text-slate-900 ml-2">{formData.number}</span></p>
                       </div>
                     </div>
 
@@ -664,59 +740,65 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                       <Table>
                         <TableHeader className="bg-[#e8f5e9]">
                           <TableRow className="hover:bg-transparent border-b border-slate-900">
-                            <TableHead className="text-[9px] font-bold uppercase border-r border-slate-900 py-2 px-2 text-center text-[#1b5e20] w-10">S.No.</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase border-r border-slate-900 py-2 text-[#1b5e20]">Description</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase border-r border-slate-900 py-2 px-2 text-center text-[#1b5e20]">Unit</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase border-r border-slate-900 py-2 px-2 text-center text-[#1b5e20]">Quantity</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase border-r border-slate-900 py-2 px-2 text-center text-[#1b5e20]">Price/unit</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase border-r border-slate-900 py-2 px-2 text-center text-[#1b5e20]">GST (%)</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase py-2 px-4 text-right text-[#1b5e20]">Amount</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 px-2 text-center text-[#1b5e20] w-8">S.N</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-[#1b5e20]">Description</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-center text-[#1b5e20]">HSN</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-center text-[#1b5e20]">Qty</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-center text-[#1b5e20]">Rate</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-center text-[#1b5e20]">Taxable</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-center text-[#1b5e20]">CGST</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase border-r border-slate-900 py-2 text-center text-[#1b5e20]">SGST</TableHead>
+                            <TableHead className="text-[8px] font-bold uppercase py-2 px-4 text-right text-[#1b5e20]">Amount</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {lineItems.map((item, idx) => {
-                            const lineTotal = item.quantity * item.pricePerUnit;
-                            const lineWithGst = lineTotal * (1 + (item.gst / 100));
+                            const taxable = (item.quantity * item.pricePerUnit) - item.discount;
+                            const cgst = taxable * (item.gst / 200);
+                            const sgst = taxable * (item.gst / 200);
+                            const lineTotal = taxable + cgst + sgst;
                             return (
                               <TableRow key={item.id} className="border-b border-slate-900 hover:bg-transparent">
-                                <TableCell className="text-center border-r border-slate-900 font-bold text-[10px] py-2">{idx + 1}</TableCell>
-                                <TableCell className="border-r border-slate-900 text-[10px] py-2 font-medium">{item.description}</TableCell>
-                                <TableCell className="text-center border-r border-slate-900 text-[10px] py-2">{item.unit}</TableCell>
-                                <TableCell className="text-center border-r border-slate-900 text-[10px] py-2">{item.quantity}</TableCell>
-                                <TableCell className="text-center border-r border-slate-900 text-[10px] py-2">{item.pricePerUnit}</TableCell>
-                                <TableCell className="text-center border-r border-slate-900 text-[10px] py-2">{item.gst}%</TableCell>
-                                <TableCell className="text-right text-[10px] font-bold py-2 px-4">₹ {lineWithGst.toFixed(2)}</TableCell>
+                                <TableCell className="text-center border-r border-slate-900 font-bold text-[9px] py-2">{idx + 1}</TableCell>
+                                <TableCell className="border-r border-slate-900 text-[9px] py-2 font-medium">{item.description}</TableCell>
+                                <TableCell className="text-center border-r border-slate-900 text-[9px] py-2 uppercase">{item.hsn}</TableCell>
+                                <TableCell className="text-center border-r border-slate-900 text-[9px] py-2">{item.quantity}</TableCell>
+                                <TableCell className="text-center border-r border-slate-900 text-[9px] py-2">{item.pricePerUnit.toFixed(2)}</TableCell>
+                                <TableCell className="text-center border-r border-slate-900 text-[9px] py-2">{taxable.toFixed(2)}</TableCell>
+                                <TableCell className="text-center border-r border-slate-900 text-[9px] py-2">
+                                  <div className="flex flex-col">
+                                    <span>{cgst.toFixed(2)}</span>
+                                    <span className="text-[7px] text-slate-400">({(item.gst/2)}%)</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center border-r border-slate-900 text-[9px] py-2">
+                                  <div className="flex flex-col">
+                                    <span>{sgst.toFixed(2)}</span>
+                                    <span className="text-[7px] text-slate-400">({(item.gst/2)}%)</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right text-[9px] font-bold py-2 px-4">₹ {lineTotal.toFixed(2)}</TableCell>
                               </TableRow>
                             );
                           })}
                           
                           <TableRow className="bg-white hover:bg-transparent">
-                            <TableCell colSpan={5} className="border-r border-slate-900 pt-10">
+                            <TableCell colSpan={7} className="border-r border-slate-900 pt-10">
                               <p className="text-[9px] font-bold uppercase text-slate-400">Amount in Words:</p>
-                              <p className="text-[10px] font-medium italic mt-2">Zero Indian Rupees Only</p>
+                              <p className="text-[10px] font-medium italic mt-2">Precision Industrial Output - Ledger Verified</p>
                             </TableCell>
-                            <TableCell className="text-right border-r border-slate-900 text-[9px] font-bold uppercase text-[#1b5e20] py-2">Sub Total</TableCell>
-                            <TableCell className="text-right text-[10px] font-bold py-2 px-4">₹ {totals.subTotal.toFixed(2)}</TableCell>
+                            <TableCell className="text-right border-r border-slate-900 text-[8px] font-bold uppercase text-[#1b5e20] py-2">Sub Total</TableCell>
+                            <TableCell className="text-right text-[9px] font-bold py-2 px-4">₹ {totals.subTotal.toFixed(2)}</TableCell>
                           </TableRow>
                           <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={5} className="border-r border-slate-900" />
-                            <TableCell className="text-right border-r border-slate-900 text-[9px] font-bold uppercase text-[#1b5e20] py-2">Discount</TableCell>
-                            <TableCell className="text-right text-[10px] font-bold py-2 px-4">₹ {formData.discount.toFixed(2)}</TableCell>
+                            <TableCell colSpan={7} className="border-r border-slate-900" />
+                            <TableCell className="text-right border-r border-slate-900 text-[8px] font-bold uppercase text-[#1b5e20] py-2">Total GST</TableCell>
+                            <TableCell className="text-right text-[9px] font-bold py-2 px-4">₹ {totals.totalGst.toFixed(2)}</TableCell>
                           </TableRow>
                           <TableRow className="hover:bg-transparent bg-[#e8f5e9]">
-                            <TableCell colSpan={5} className="border-r border-slate-900" />
-                            <TableCell className="text-right border-r border-slate-900 text-[9px] font-bold uppercase text-[#1b5e20] py-2">Final Amount</TableCell>
+                            <TableCell colSpan={7} className="border-r border-slate-900" />
+                            <TableCell className="text-right border-r border-slate-900 text-[8px] font-bold uppercase text-[#1b5e20] py-2">Net Payable</TableCell>
                             <TableCell className="text-right text-[10px] font-bold py-2 px-4 text-[#1b5e20]">₹ {totals.finalAmount.toFixed(2)}</TableCell>
-                          </TableRow>
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={5} className="border-r border-slate-900" />
-                            <TableCell className="text-right border-r border-slate-900 text-[9px] font-bold uppercase text-[#1b5e20] py-2">Amount Paid</TableCell>
-                            <TableCell className="text-right text-[10px] font-bold py-2 px-4">₹ {formData.amountPaid.toFixed(2)}</TableCell>
-                          </TableRow>
-                          <TableRow className="hover:bg-transparent border-b border-slate-900">
-                            <TableCell colSpan={5} className="border-r border-slate-900" />
-                            <TableCell className="text-right border-r border-slate-900 text-[9px] font-bold uppercase text-[#1b5e20] py-2">Balance</TableCell>
-                            <TableCell className="text-right text-[10px] font-bold py-2 px-4">₹ {totals.balance.toFixed(2)}</TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>
@@ -732,16 +814,16 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                     <div className="grid grid-cols-2 pt-20 pb-10">
                       <div className="text-center">
                         <div className="h-px bg-slate-300 w-48 mx-auto mb-2" />
-                        <p className="text-[9px] font-bold uppercase text-slate-400">Client's Signature</p>
+                        <p className="text-[9px] font-bold uppercase text-slate-400">Authorized Receiver</p>
                       </div>
                       <div className="text-center">
                         <div className="h-px bg-slate-300 w-48 mx-auto mb-2" />
-                        <p className="text-[9px] font-bold uppercase text-slate-400">Business Signature</p>
+                        <p className="text-[9px] font-bold uppercase text-slate-400">For TOOLROOM 2.0 INDUSTRIAL</p>
                       </div>
                     </div>
 
                     <footer className="bg-[#e8f5e9] -mx-10 -mb-10 p-4 text-center border-t border-green-200">
-                      <p className="text-[10px] font-bold text-[#1b5e20]">Thanks for business with us!!! Please visit us again !!!</p>
+                      <p className="text-[10px] font-bold text-[#1b5e20]">Precision Engineered Financial Reporting System</p>
                     </footer>
                   </div>
                 </div>

@@ -158,7 +158,7 @@ export default function IndustrialERP() {
             </Sheet>
 
             <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-[#001F3D]">
-              TOOLROOM<span className="text-accent">2.0</span>
+              BHARAT<span className="text-accent">AXIS</span>
             </h1>
             <div className="h-4 w-[1px] bg-slate-200 hidden sm:block" />
             <div className="items-center gap-2 hidden sm:flex">

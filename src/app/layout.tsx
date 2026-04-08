@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TOOLROOM2.0 | Advanced Tool Management',
+  title: 'Bharat Axis Pvt Ltd | Advanced Tool Management',
   description: 'Precision resource management with intelligent AI categorization.',
 };
 

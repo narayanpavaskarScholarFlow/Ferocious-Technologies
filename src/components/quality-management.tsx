@@ -582,7 +582,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
                   <div className="p-2.5 bg-primary rounded-xl shadow-lg shadow-primary/20">
                     <Box className="h-6 w-6 text-white" />
                   </div>
-                  <h1 className="text-2xl font-display font-bold tracking-tight">TOOLROOM<span className="text-primary">2.0</span></h1>
+                  <h1 className="text-2xl font-display font-bold tracking-tight">BHARAT<span className="text-primary">AXIS</span></h1>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Precision Quality Control Division</p>

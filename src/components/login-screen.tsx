@@ -97,7 +97,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-display font-bold text-white tracking-tighter uppercase">
-              TOOLROOM<span className="text-accent">2.0</span>
+              BHARAT<span className="text-accent">AXIS</span>
             </h1>
             <p className="text-[10px] text-primary-foreground/40 font-bold uppercase tracking-[0.4em]">Enterprise Security Gate</p>
           </div>
@@ -188,7 +188,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                   <Label className="text-[9px] font-bold uppercase text-white/50 tracking-widest ml-1">Registered Network Email</Label>
                   <div className="relative">
                     <Input 
-                      placeholder="name@toolroom.tech" 
+                      placeholder="name@bharataxis.tech" 
                       className="h-12 bg-white/5 border-white/10 text-white text-xs rounded-xl pl-11 focus-visible:ring-accent/50"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}

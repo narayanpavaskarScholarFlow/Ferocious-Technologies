@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -720,12 +719,12 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                       <div className="space-y-4">
                         <div className="bg-[#e8f5e9] py-1.5 px-4 text-center font-bold text-[10px] uppercase tracking-widest text-[#1b5e20] border-b-2 border-green-600">Shipper</div>
                         <div className="px-2 space-y-3">
-                          <p className="text-xs font-bold text-[#001F3D]">Company name : <span className="font-normal text-slate-600 ml-2">TOOLROOM 2.0 INDUSTRIAL</span></p>
+                          <p className="text-xs font-bold text-[#001F3D]">Company name : <span className="font-normal text-slate-600 ml-2">BHARAT AXIS PVT LTD</span></p>
                           <p className="text-xs font-bold text-[#001F3D]">Address: <span className="font-normal text-slate-600 ml-2">Plot No. 45, Sector 12, Industrial Hub, IN</span></p>
                           <div className="pt-4 space-y-2">
                             <p className="text-[10px] font-bold text-[#001F3D]">Contact: <span className="font-normal text-slate-600 ml-2">+91 98765 43210</span></p>
                             <p className="text-[10px] font-bold text-[#001F3D]">CIN: <span className="font-normal text-slate-600 ml-2">U29253PN2025PTC123456</span></p>
-                            <p className="text-[10px] font-bold text-[#001F3D]">Email: <span className="font-normal text-slate-600 ml-2">accounts@toolroom.tech</span></p>
+                            <p className="text-[10px] font-bold text-[#001F3D]">Email: <span className="font-normal text-slate-600 ml-2">accounts@bharataxis.tech</span></p>
                           </div>
                           <div className="pt-2 border-t border-green-600 mt-4">
                             <p className="text-[10px] font-bold text-[#001F3D]">GSTIN: <span className="font-normal text-slate-600 ml-2">27AAACT1234A1Z1</span></p>
@@ -835,7 +834,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                       </div>
                       <div className="text-center">
                         <div className="h-px bg-slate-300 w-48 mx-auto mb-2" />
-                        <p className="text-[9px] font-bold uppercase text-slate-400">For TOOLROOM 2.0 INDUSTRIAL</p>
+                        <p className="text-[9px] font-bold uppercase text-slate-400">For BHARAT AXIS PVT LTD</p>
                       </div>
                     </div>
 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -23,7 +22,7 @@ export function Navbar() {
             <Box className="h-6 w-6 text-primary" />
           </div>
           <span className="text-xl font-headline font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-            TOOLROOM<span className="text-foreground">2.0</span>
+            BHARAT<span className="text-foreground">AXIS</span>
           </span>
         </Link>
 
@@ -53,7 +52,7 @@ export function Navbar() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">John Doe</p>
-                  <p className="text-xs leading-none text-muted-foreground">john.doe@toolroom.tech</p>
+                  <p className="text-xs leading-none text-muted-foreground">john.doe@bharataxis.tech</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/5" />

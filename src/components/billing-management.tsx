@@ -391,6 +391,8 @@ export function BillingManagement({ customers }: BillingManagementProps) {
       {/* Creation Wizard Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-5xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogTitle className="sr-only">Financial Document Protocol</DialogTitle>
+          <DialogDescription className="sr-only">Sequence for creating and authorizing industrial financial records.</DialogDescription>
           {wizardStep === 'form' ? (
             <div className="flex flex-col md:flex-row h-[85vh] max-h-[800px]">
               {/* Context Sidebar */}

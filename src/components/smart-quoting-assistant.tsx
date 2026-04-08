@@ -365,30 +365,30 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
               </p>
             </div>
           )}
-
-          <Card className="p-8 bg-slate-50/50 border-slate-200 rounded-3xl space-y-4">
-            <div className="flex gap-4 items-start">
-              <div className="p-2 bg-primary rounded-lg text-white shrink-0">
-                <FileCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Commercial Safety Rule</p>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1">
-                  The system automatically applies a <span className="font-bold text-accent">+2 hour operational buffer</span> to the total estimated lead time to account for setup variability and shift transitions.
-                </p>
-              </div>
-            </div>
-          </Card>
         </div>
       </div>
 
       {/* Standard CAD Color Protocol Sheet - Common for all quotes */}
       <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] mt-8">
-        <div className="flex items-center gap-3 border-l-4 border-primary pl-4 mb-8">
-          <Palette className="h-5 w-5 text-primary" />
-          <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Standard CAD Color Protocol</h3>
-            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Global reference for model geometry identification</p>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
+          <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
+            <Palette className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Standard CAD Color Protocol</h3>
+              <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Global reference for model geometry identification</p>
+            </div>
+          </div>
+
+          <div className="max-w-md p-4 bg-slate-50/50 border border-slate-200 rounded-2xl flex gap-4 items-start animate-in fade-in slide-in-from-right-2 duration-700">
+            <div className="p-2 bg-primary rounded-lg text-white shrink-0 shadow-lg shadow-primary/10">
+              <FileCheck className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Commercial Safety Rule</p>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1">
+                The system automatically applies a <span className="font-bold text-accent">+2 hour operational buffer</span> to the total estimated lead time to account for setup variability and shift transitions.
+              </p>
+            </div>
           </div>
         </div>
 

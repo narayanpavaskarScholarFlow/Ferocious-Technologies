@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +48,14 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
   const [activeFilter, setActiveFilter] = useState('Active');
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(1);
   
+  const sectionRefs = {
+    step1: useRef<HTMLDivElement>(null),
+    step2: useRef<HTMLDivElement>(null),
+    step3: useRef<HTMLDivElement>(null),
+  };
+
   // New Customer Form State
   const [newCustomer, setNewCustomer] = useState({
     name: '',
@@ -81,6 +88,13 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     });
     setEditingCustomerId(customer.id);
     setIsAddCustomerOpen(true);
+    setActiveStep(1);
+  };
+
+  const scrollToSection = (step: number) => {
+    setActiveStep(step);
+    const ref = step === 1 ? sectionRefs.step1 : step === 2 ? sectionRefs.step2 : sectionRefs.step3;
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleAddCustomer = () => {
@@ -94,7 +108,6 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     }
 
     if (editingCustomerId) {
-      // UPDATE PROTOCOL
       const updatedCustomers = customers.map(c => 
         c.id === editingCustomerId 
           ? { 
@@ -115,7 +128,6 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
         description: `${newCustomer.name} details have been updated in the master directory.`
       });
     } else {
-      // NEW REGISTRATION PROTOCOL
       const customer: Customer = {
         id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
         name: newCustomer.name.trim(),
@@ -136,10 +148,16 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
       });
     }
     
-    // Reset and Close
     setIsAddCustomerOpen(false);
     setEditingCustomerId(null);
     setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
+  };
+
+  const isStepComplete = (step: number) => {
+    if (step === 1) return !!(newCustomer.name && newCustomer.gstNumber);
+    if (step === 2) return !!(newCustomer.contactPerson && newCustomer.contactNumber);
+    if (step === 3) return !!newCustomer.address;
+    return false;
   };
 
   return (
@@ -171,6 +189,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
               setEditingCustomerId(null);
               setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
               setIsAddCustomerOpen(true);
+              setActiveStep(1);
             }}
             className="bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
           >
@@ -292,26 +311,32 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                 </div>
                 <div className="space-y-10 hidden md:block">
                   {[
-                    { s: 1, label: editingCustomerId ? 'Update Identity' : 'Entity Identity', desc: 'NAME & GST', active: true },
-                    { s: 2, label: 'Liaison Setup', desc: 'CONTACT NODES', active: false },
-                    { s: 3, label: 'Logistics Matrix', desc: 'ADDRESS_SYNC', active: false },
+                    { s: 1, label: editingCustomerId ? 'Update Identity' : 'Entity Identity', desc: 'NAME & GST' },
+                    { s: 2, label: 'Liaison Setup', desc: 'CONTACT NODES' },
+                    { s: 3, label: 'Logistics Matrix', desc: 'ADDRESS_SYNC' },
                   ].map((item) => (
-                    <div key={item.s} className="flex gap-6 group relative">
-                      {item.s < 3 && <div className="absolute left-3 top-8 w-[1px] h-12 bg-slate-200" />}
+                    <button 
+                      key={item.s} 
+                      onClick={() => scrollToSection(item.s)}
+                      className="flex text-left gap-6 group relative w-full outline-none"
+                    >
+                      {item.s < 3 && <div className={cn("absolute left-3 top-8 w-[1px] h-12 transition-colors", isStepComplete(item.s) ? "bg-emerald-500" : "bg-slate-200")} />}
                       <div className={cn(
                         "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10 shadow-sm bg-white",
-                        item.active ? "border-[#001F3D] text-[#001F3D] scale-110" : "border-slate-200 text-slate-400"
+                        activeStep === item.s ? "border-[#001F3D] text-[#001F3D] scale-110 shadow-lg shadow-primary/10" : 
+                        isStepComplete(item.s) ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-200 text-slate-400"
                       )}>
-                        {item.s}
+                        {isStepComplete(item.s) ? <Check className="h-3 w-3" /> : item.s}
                       </div>
                       <div className="flex flex-col">
                         <span className={cn(
                           "text-[11px] font-bold transition-colors duration-500 leading-none",
-                          item.active ? "text-[#001F3D]" : "text-slate-400"
+                          activeStep === item.s ? "text-[#001F3D]" : 
+                          isStepComplete(item.s) ? "text-emerald-600" : "text-slate-400"
                         )}>{item.label}</span>
                         <span className="text-[9px] text-slate-400 uppercase font-bold tracking-[0.2em] mt-2">{item.desc}</span>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -321,8 +346,8 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
             </div>
 
             {/* Main Form Area */}
-            <div className="flex-1 p-8 md:p-16 flex flex-col bg-white overflow-y-auto">
-              <div className="space-y-12 flex-grow">
+            <div className="flex-1 p-8 md:p-16 flex flex-col bg-white overflow-y-auto hide-scrollbar">
+              <div className="space-y-12 flex-grow pb-10">
                 <div className="flex items-center gap-4">
                   <div className="h-1 w-10 bg-red-500 rounded-full" />
                   <div>
@@ -331,71 +356,80 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                   </div>
                 </div>
 
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name</Label>
-                      <div className="relative">
-                        <Input 
-                          placeholder="Legal Account Identity" 
-                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                        />
-                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                <div className="space-y-16">
+                  {/* Step 1: Identity */}
+                  <div ref={sectionRefs.step1} className="space-y-8" onFocus={() => setActiveStep(1)}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Legal Account Identity" 
+                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                            value={newCustomer.name}
+                            onChange={(e) => handleInputChange('name', e.target.value)}
+                          />
+                          <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Number</Label>
-                      <div className="relative">
-                        <Input 
-                          placeholder="TAX_ID / GSTIN" 
-                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20 uppercase"
-                          value={newCustomer.gstNumber}
-                          onChange={(e) => handleInputChange('gstNumber', e.target.value)}
-                        />
-                        <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Person</Label>
-                      <div className="relative">
-                        <Input 
-                          placeholder="Liaison Officer Name" 
-                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.contactPerson}
-                          onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                        />
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Number</Label>
-                      <div className="relative">
-                        <Input 
-                          placeholder="+91 (000) 000-0000" 
-                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.contactNumber}
-                          onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                        />
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Number</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="TAX_ID / GSTIN" 
+                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20 uppercase"
+                            value={newCustomer.gstNumber}
+                            onChange={(e) => handleInputChange('gstNumber', e.target.value)}
+                          />
+                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Business Address</Label>
-                    <div className="relative">
-                      <Input 
-                        placeholder="Full Node Location / Operational Base" 
-                        className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                        value={newCustomer.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                      />
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                  {/* Step 2: Liaison */}
+                  <div ref={sectionRefs.step2} className="space-y-8" onFocus={() => setActiveStep(2)}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Person</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Liaison Officer Name" 
+                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                            value={newCustomer.contactPerson}
+                            onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                          />
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Number</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="+91 (000) 000-0000" 
+                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                            value={newCustomer.contactNumber}
+                            onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                          />
+                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Logistics */}
+                  <div ref={sectionRefs.step3} className="space-y-8" onFocus={() => setActiveStep(3)}>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Business Address</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="Full Node Location / Operational Base" 
+                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                          value={newCustomer.address}
+                          onChange={(e) => handleInputChange('address', e.target.value)}
+                        />
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
                     </div>
                   </div>
                 </div>

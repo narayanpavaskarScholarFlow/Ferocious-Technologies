@@ -16,7 +16,9 @@ import {
   ChevronRight,
   AlertTriangle,
   RefreshCw,
-  Box
+  Box,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +32,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [view, setView] = useState<'login' | 'reset'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
@@ -140,13 +143,20 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                   </div>
                   <div className="relative">
                     <Input 
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••" 
-                      className="h-12 bg-white/5 border-white/10 text-white text-xs rounded-xl pl-11 focus-visible:ring-accent/50 transition-all"
+                      className="h-12 bg-white/5 border-white/10 text-white text-xs rounded-xl pl-11 pr-12 focus-visible:ring-accent/50 transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
               </div>

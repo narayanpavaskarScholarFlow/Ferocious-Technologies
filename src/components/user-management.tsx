@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -19,6 +18,8 @@ import {
   Check,
   Edit2,
   UserX,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -64,6 +65,7 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Wizard Form State
   const [formData, setFormData] = useState({
@@ -150,6 +152,7 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
   const resetWizard = () => {
     setStep(1);
     setEditingUser(null);
+    setShowPassword(false);
     setFormData({
       name: '',
       email: '',
@@ -420,13 +423,20 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Initial System Password</Label>
                         <div className="relative">
                           <Input 
-                            type="password" 
+                            type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
                             className="h-12 bg-slate-50/50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20"
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
                           />
-                          <Key className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          <Key className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 pointer-events-none" />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
                         </div>
                       </div>
                       <div className="p-6 bg-red-500/[0.03] rounded-2xl border border-red-500/10 flex gap-5 items-center">

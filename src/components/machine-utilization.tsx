@@ -7,14 +7,82 @@ import { Badge } from '@/components/ui/badge';
 import { MachineLoadPlan } from '@/components/machine-load-plan';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { Cpu, Search, Activity, Zap, BoxSelect } from 'lucide-react';
+import { Cpu, Search, Activity, Zap, BoxSelect, Plus, Settings2, Ruler, Warehouse, Factory } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { Machine, MachineCategory } from '@/lib/types';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
-const machines: any[] = [];
+interface MachineUtilizationProps {
+  machines: Machine[];
+  onMachinesChange: (machines: Machine[]) => void;
+}
 
-export function MachineUtilization() {
+export function MachineUtilization({ machines, onMachinesChange }: MachineUtilizationProps) {
+  const { toast } = useToast();
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+  const [isAddMachineOpen, setIsAddMachineOpen] = useState(false);
+  const [newMachine, setNewMachine] = useState({
+    name: '',
+    type: 'Milling' as Exclude<MachineCategory, 'All'>,
+    mcNumber: '',
+    make: '',
+    bedSize: ''
+  });
 
   const selectedMachine = machines.find(m => m.id === selectedMachineId);
+
+  const handleAddMachine = () => {
+    if (!newMachine.name || !newMachine.mcNumber || !newMachine.make) {
+      toast({
+        variant: "destructive",
+        title: "Configuration Error",
+        description: "Protocol requires Node Name, MC Number, and Manufacturer for registration."
+      });
+      return;
+    }
+
+    // Assign image based on type from placeholders
+    const imgMap: Record<string, string> = {
+      'Milling': placeholderImages.placeholderImages.find(i => i.id === 'milling')?.imageUrl || '',
+      'Turning': placeholderImages.placeholderImages.find(i => i.id === 'turning')?.imageUrl || '',
+      'Grinding': placeholderImages.placeholderImages.find(i => i.id === 'grinding')?.imageUrl || '',
+      '3D Printing': placeholderImages.placeholderImages.find(i => i.id === '3d-printing')?.imageUrl || '',
+      'EDM': placeholderImages.placeholderImages.find(i => i.id === 'edm')?.imageUrl || '',
+      'Double Column Milling': placeholderImages.placeholderImages.find(i => i.id === 'double-column')?.imageUrl || '',
+    };
+
+    const machine: Machine = {
+      id: newMachine.mcNumber,
+      name: newMachine.name,
+      type: newMachine.type,
+      mcNumber: newMachine.mcNumber,
+      make: newMachine.make,
+      bedSize: newMachine.bedSize || 'Standard',
+      load: Math.floor(Math.random() * 40) + 40, // Random initial load
+      status: 'active',
+      image: imgMap[newMachine.type] || 'https://picsum.photos/seed/machine/600/400'
+    };
+
+    onMachinesChange([...machines, machine]);
+    toast({
+      title: "Node Registered",
+      description: `${machine.name} has been synchronized with Asset Telemetry.`
+    });
+
+    setIsAddMachineOpen(false);
+    setNewMachine({ name: '', type: 'Milling', mcNumber: '', make: '', bedSize: '' });
+  };
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
@@ -29,11 +97,19 @@ export function MachineUtilization() {
           </h2>
           <p className="text-muted-foreground font-medium">Real-time load balancing across {machines.length} active nodes.</p>
         </div>
-        {!selectedMachineId && (
-          <div className="px-6 py-2.5 bg-black/[0.03] dark:bg-white/[0.05] rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest border border-black/5 dark:border-white/5">
-            Operational Target: <span className="text-primary ml-1">90% Efficiency</span>
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => setIsAddMachineOpen(true)}
+            className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-3 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
+          >
+            <Plus className="h-4 w-4" /> Register New Asset
+          </Button>
+          {!selectedMachineId && (
+            <div className="px-6 py-2.5 bg-black/[0.03] dark:bg-white/[0.05] rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest border border-black/5 dark:border-white/5">
+              Operational Target: <span className="text-primary ml-1">90% Efficiency</span>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -46,27 +122,28 @@ export function MachineUtilization() {
               onBack={() => setSelectedMachineId(null)} 
             />
           ) : machines.length > 0 ? (
-            <div className="apple-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {machines.map((machine) => (
                 <div 
                   key={machine.id}
                   onClick={() => setSelectedMachineId(machine.id)}
                   className="glass-card p-0 group cursor-pointer hover:scale-[1.02]"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden">
                     <Image 
                       src={machine.image} 
                       alt={machine.name} 
                       fill 
                       className="object-cover transition-all duration-1000 group-hover:scale-110"
-                      data-ai-hint="precision machine"
+                      data-ai-hint="industrial machine"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-6 left-6 right-6">
                       <div className="flex justify-between items-end">
                         <div>
-                          <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.2em] mb-1">NODE {machine.id}</p>
+                          <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.2em] mb-1">NODE {machine.mcNumber}</p>
                           <h3 className="text-lg font-bold text-white leading-tight">{machine.name}</h3>
+                          <p className="text-[9px] text-white/40 font-bold uppercase tracking-widest mt-1">{machine.make} • {machine.bedSize}</p>
                         </div>
                         <div className={cn(
                           "h-2 w-2 rounded-full mb-1 animate-pulse",
@@ -154,33 +231,117 @@ export function MachineUtilization() {
               </div>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">Fleet Efficiency</span>
             </div>
-            <p className="text-4xl font-display font-bold tracking-tighter mb-2">0.0%</p>
-            <p className="text-xs font-medium opacity-80 leading-relaxed">No operational nodes detected in current session.</p>
+            <p className="text-4xl font-display font-bold tracking-tighter mb-2">
+              {machines.length > 0 
+                ? (machines.reduce((acc, m) => acc + m.load, 0) / machines.length).toFixed(1)
+                : '0.0'}%
+            </p>
+            <p className="text-xs font-medium opacity-80 leading-relaxed">
+              {machines.length > 0 
+                ? `Monitoring ${machines.length} operational nodes in current session.`
+                : 'No operational nodes detected in current session.'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Modern KPI Row */}
-      {!selectedMachineId && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="glass-card p-8 group">
-            <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Fleet Avg</p>
-            <p className="text-3xl font-display font-bold tracking-tight group-hover:text-primary transition-colors">0.0%</p>
+      <Dialog open={isAddMachineOpen} onOpenChange={setIsAddMachineOpen}>
+        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
+          <DialogHeader className="space-y-4 mb-8">
+            <div className="p-4 bg-primary/10 rounded-2xl w-fit">
+              <Factory className="h-8 w-8 text-primary" />
+            </div>
+            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Asset Registration Protocol</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Configure technical specifications for industrial node integration.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Name</Label>
+                <Input 
+                  placeholder="e.g. VMC Milling Haas" 
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
+                  value={newMachine.name}
+                  onChange={(e) => setNewMachine({...newMachine, name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Machine Category</Label>
+                <Select value={newMachine.type} onValueChange={(val: any) => setNewMachine({...newMachine, type: val})}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="Milling" className="text-xs font-bold uppercase">Milling Center</SelectItem>
+                    <SelectItem value="Turning" className="text-xs font-bold uppercase">Turning Center</SelectItem>
+                    <SelectItem value="Grinding" className="text-xs font-bold uppercase">Grinding Unit</SelectItem>
+                    <SelectItem value="3D Printing" className="text-xs font-bold uppercase">Additive Mfg</SelectItem>
+                    <SelectItem value="EDM" className="text-xs font-bold uppercase">EDM Machine</SelectItem>
+                    <SelectItem value="Double Column Milling" className="text-xs font-bold uppercase">Double Column</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MC Number / Technical ID</Label>
+                <div className="relative">
+                  <Input 
+                    placeholder="e.g. TR-MC-001" 
+                    className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code pl-10"
+                    value={newMachine.mcNumber}
+                    onChange={(e) => setNewMachine({...newMachine, mcNumber: e.target.value})}
+                  />
+                  <Settings2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Manufacturer (Make)</Label>
+                <div className="relative">
+                  <Input 
+                    placeholder="e.g. Haas, BFW" 
+                    className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10"
+                    value={newMachine.make}
+                    onChange={(e) => setNewMachine({...newMachine, make: e.target.value})}
+                  />
+                  <Warehouse className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Bed Size / Spatial Capacity</Label>
+              <div className="relative">
+                <Input 
+                  placeholder="e.g. 1000 x 500 x 600 mm" 
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10"
+                  value={newMachine.bedSize}
+                  onChange={(e) => setNewMachine({...newMachine, bedSize: e.target.value})}
+                />
+                <Ruler className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-6">
+              <Button 
+                variant="ghost" 
+                className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400"
+                onClick={() => setIsAddMachineOpen(false)}
+              >
+                Abort Protocol
+              </Button>
+              <Button 
+                className="flex-[2] h-14 bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20"
+                onClick={handleAddMachine}
+              >
+                Execute Registration
+              </Button>
+            </div>
           </div>
-          <div className="glass-card p-8 group">
-            <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Peak Capacity</p>
-            <p className="text-3xl font-display font-bold tracking-tight text-green-500">0.0%</p>
-          </div>
-          <div className="glass-card p-8 group">
-            <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Downtime</p>
-            <p className="text-3xl font-display font-bold tracking-tight text-red-500">0.0h</p>
-          </div>
-          <div className="glass-card p-8 group">
-            <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-2">Active Nodes</p>
-            <p className="text-3xl font-display font-bold tracking-tight">0 <span className="text-muted-foreground text-sm font-normal">/ 0</span></p>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

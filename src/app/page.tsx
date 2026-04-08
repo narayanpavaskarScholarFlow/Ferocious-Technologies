@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember, Order } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember, Order, Machine } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -50,6 +49,7 @@ export default function IndustrialERP() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -232,7 +232,12 @@ export default function IndustrialERP() {
             {currentView === 'inventory' && <InventoryManagement />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={(l) => setLogs([l, ...logs])} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
-            {currentView === 'machine-utilization' && <MachineUtilization />}
+            {currentView === 'machine-utilization' && (
+              <MachineUtilization 
+                machines={machines}
+                onMachinesChange={setMachines}
+              />
+            )}
             {currentView === 'manpower' && (
               <ManpowerUtilization 
                 staff={staff}

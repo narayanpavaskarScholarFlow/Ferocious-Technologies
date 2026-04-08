@@ -22,6 +22,18 @@ export interface Tool {
   updatedAt: string;
 }
 
+export interface Machine {
+  id: string;
+  name: string;
+  type: Exclude<MachineCategory, 'All'>;
+  mcNumber: string;
+  make: string;
+  bedSize: string;
+  load: number;
+  status: 'active' | 'maintenance' | 'fault';
+  image: string;
+}
+
 export type ViewType = 
   | 'overview' 
   | 'orders' 

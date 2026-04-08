@@ -51,7 +51,8 @@ export type ViewType =
   | 'inventory'
   | 'quality'
   | 'settings'
-  | 'gantt';
+  | 'gantt'
+  | 'smart-quote';
 
 export interface Order {
   id: string;

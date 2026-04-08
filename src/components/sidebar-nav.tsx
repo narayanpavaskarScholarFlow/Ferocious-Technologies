@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,7 +19,8 @@ import {
   Boxes,
   LineChart,
   ShieldCheck,
-  LayoutGrid
+  LayoutGrid,
+  BrainCircuit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -39,6 +39,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
 
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Command Overview' },
+    { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: 'Smart Quoting' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Production Orders' },
     { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Visual Timeline' },
     { id: 'operations' as ViewType, icon: Layers, label: 'Routing Spreadsheet' },

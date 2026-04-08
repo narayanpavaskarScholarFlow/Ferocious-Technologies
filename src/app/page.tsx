@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,6 +19,7 @@ import { InventoryManagement } from '@/components/inventory-management';
 import { QualityManagement } from '@/components/quality-management';
 import { ProductionGantt } from '@/components/production-gantt';
 import { ProfileSettings } from '@/components/profile-settings';
+import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -232,6 +232,7 @@ export default function IndustrialERP() {
                 onNavigateToBilling={() => setCurrentView('billing')}
               />
             )}
+            {currentView === 'smart-quote' && <SmartQuotingAssistant />}
             {currentView === 'orders' && (
               <ShopFloorOrders 
                 orders={orders}

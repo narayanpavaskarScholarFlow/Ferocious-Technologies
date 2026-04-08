@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview AI Intelligent CAD Quoting flow with Operation Color Identification.
+ * @fileOverview AI Intelligent CAD Quoting flow with Operation Color Identification and Industrial Cost Logic.
  *
  * - quoteAnalysis - Analyzes part metadata and operations to suggest material, costs, and identifies operation colors.
  * - QuoteAnalysisInput - The input type for the quoteAnalysis function.
@@ -22,21 +22,23 @@ export type QuoteAnalysisInput = z.infer<typeof QuoteAnalysisInputSchema>;
 
 const QuoteAnalysisOutputSchema = z.object({
   rawMaterial: z.object({
-    length: z.number().describe('Recommended raw material length in mm'),
-    width: z.number().describe('Recommended raw material width in mm'),
-    height: z.number().describe('Recommended raw material height in mm'),
+    length: z.number().describe('Recommended raw material length in mm (including 5-10mm safety margin)'),
+    width: z.number().describe('Recommended raw material width in mm (including 5-10mm safety margin)'),
+    height: z.number().describe('Recommended raw material height in mm (including 5-10mm safety margin)'),
     materialType: z.string().describe('Suggested material type based on description'),
   }),
   estimations: z.array(z.object({
     operationName: z.string(),
-    estimatedHours: z.number().describe('Estimated machining time in hours'),
-    cost: z.number().describe('Calculated cost for this operation'),
-    identifiedColor: z.string().optional().describe('The color associated with this operation in the CAD model (e.g., "Blue", "Red", "Cyan").'),
+    setupHours: z.number().describe('Estimated setup time in hours (standard 0.5 - 1.5h)'),
+    machiningHours: z.number().describe('Estimated actual machining time in hours'),
+    totalOperationHours: z.number().describe('Sum of setup and machining hours'),
+    cost: z.number().describe('Calculated cost for this operation (Total Hours * Rate)'),
+    identifiedColor: z.string().optional().describe('The color associated with this operation in the CAD model.'),
     hexColor: z.string().optional().describe('A CSS-friendly hex code for the identified color.'),
   })),
-  totalMachiningCost: z.number().describe('The sum of all estimated operation costs.'),
-  totalLeadTime: z.number().describe('Total estimated hours including buffers.'),
-  leadTimeWithBuffer: z.number().describe('Total hours + 2 hours extra buffer as requested.'),
+  totalMachiningCost: z.number().describe('The sum of all estimated operation costs in ₹.'),
+  totalLeadTime: z.number().describe('Total estimated production hours.'),
+  leadTimeWithBuffer: z.number().describe('Total hours + 2 hours extra buffer as per industrial protocol.'),
   complexityScore: z.string().describe('Part complexity rating (Low, Medium, High)'),
 });
 export type QuoteAnalysisOutput = z.infer<typeof QuoteAnalysisOutputSchema>;
@@ -45,30 +47,31 @@ const analyzeQuotePrompt = ai.definePrompt({
   name: 'analyzeQuotePrompt',
   input: {schema: QuoteAnalysisInputSchema},
   output: {schema: QuoteAnalysisOutputSchema},
-  prompt: `You are a precision industrial quoting agent for Bharat Axis Pvt Ltd. 
-Your task is to analyze a machining part based on its name and description to provide a professional cost and lead-time estimation.
+  prompt: `You are a precision industrial quoting agent for Bharat Axis Pvt Ltd, an expert in CNC VMC and Tool Room operations.
+Your task is to analyze a machining part to provide a professional, realistic cost and lead-time estimation in Indian Rupees (₹).
 
 Part Identity: {{{partName}}}
 Geometry & Color Description: {{{modelDescription}}}
 
-Available Operational Nodes (Asset Telemetry):
+Available Operational Nodes (Rates in ₹/hr):
 {{#each operations}}
 - {{name}} (Rate: ₹{{costPerHour}}/hr)
 {{/each}}
 
-Based on the provided description, please perform the following:
-1. RAW MATERIAL: Estimate the bounding box dimensions (Length, Width, Height in mm) required to machine this part. Suggest a realistic material type (e.g., Aluminum 6061, P20 Steel, SS304).
-2. OPERATIONS: For each provided operation, estimate the required machining hours based on part complexity.
-3. COLOR MAPPING: Identify which operation likely corresponds to which color if color coding was mentioned in the description (e.g., "Blue faces are milling").
-4. COSTS: Calculate cost = (Estimated Hours * Node Rate).
-5. TOTALS: Sum all costs. 
-6. TIMELINE: Sum all hours for "Total Lead Time".
-7. BUFFER: Calculate "Lead Time With Buffer" as (Total Lead Time + 2 hours). This is a mandatory industrial protocol.
-8. COMPLEXITY: Rate the part as "Low", "Medium", or "High" complexity.
+Strict Industrial Protocol:
+1. RAW MATERIAL: Estimate the bounding box dimensions based on the finished part description. Add 5-10mm safety margin to each dimension for stock selection.
+2. OPERATIONS: For each provided operation, estimate realistic hours. 
+   - Setup Time: 0.5h to 1.5h depending on complexity.
+   - Machining Time: Based on material removal and feature complexity (e.g., deep pockets, precise bores).
+3. COLOR MAPPING: Map colors mentioned (e.g., "Blue is milling") to the specific operation rows.
+4. COSTS: Calculate cost = (Setup Hours + Machining Hours) * Node Hourly Rate.
+5. TOTALS: Total Machining Cost = Sum of all individual operation costs.
+6. TIMELINE: Sum all total operation hours for "Total Lead Time".
+7. BUFFER: "Lead Time With Buffer" = (Total Lead Time + 2 hours).
 
-If information is sparse, use your expert knowledge of CNC milling, turning, and EDM to provide the most realistic industry-standard values. Do not leave fields empty.
+Use your expert knowledge of Indian tool room standards to ensure the cost is neither too low (loss-making) nor too high (non-competitive). 
 
-Important: Your output must be a valid JSON object matching the requested schema.`,
+Important: Output must be valid JSON matching the schema. All currency is ₹.`,
 });
 
 export async function quoteAnalysis(input: QuoteAnalysisInput): Promise<QuoteAnalysisOutput> {
@@ -89,7 +92,7 @@ const quoteAnalysisFlow = ai.defineFlow(
       try {
         const {output} = await analyzeQuotePrompt(input);
         if (!output) {
-          throw new Error('AI Engine failed to generate a valid estimation. Please provide a more detailed model description.');
+          throw new Error('AI Engine failed to generate a valid estimation.');
         }
         return output;
       } catch (err: any) {
@@ -100,22 +103,16 @@ const quoteAnalysisFlow = ai.defineFlow(
                           err.message?.includes('429');
 
         if (isTransient && attempts < maxAttempts) {
-          // Wait before retrying (exponential backoff: 2s, 4s...)
           await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
           continue;
         }
-
         console.error('Genkit Flow Error:', err);
-        
-        // Final attempt failed or non-transient error
         if (isTransient) {
-          throw new Error('The AI Engine is currently experiencing heavy traffic. Please wait a moment and try the "Execute" protocol again.');
+          throw new Error('The AI Engine is currently experiencing heavy traffic. Please retry in a moment.');
         }
-        
         throw new Error(err.message || 'AI sequence failed to process model metadata.');
       }
     }
-    
-    throw new Error('AI analysis sequence timed out. Please check your inputs and try again.');
+    throw new Error('AI analysis sequence timed out. Please check your inputs.');
   }
 );

@@ -66,7 +66,6 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
     const newOps = [...operations];
     (newOps[idx] as any)[field] = field === 'costPerHour' ? parseFloat(value) || 0 : value;
     
-    // Auto-populate cost if machine name is changed
     if (field === 'name') {
       const machine = machines.find(m => m.name === value);
       if (machine) {
@@ -101,7 +100,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
     }
 
     setIsAnalyzing(true);
-    setResult(null); // Clear previous results during analysis
+    setResult(null);
 
     try {
       const output = await quoteAnalysis({
@@ -113,15 +112,13 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
       toast({ title: "Analysis Synchronized", description: "Industrial estimations calculated successfully." });
     } catch (error: any) {
       console.error('Analysis Protocol Failure:', error);
-      
       const isUnavailable = error.message?.includes('demand') || error.message?.includes('traffic');
-      
       toast({ 
         variant: "destructive", 
         title: isUnavailable ? "AI Engine Busy" : "Analysis Protocol Error", 
         description: isUnavailable 
-          ? "The AI models are currently at high capacity. Retrying... If this persists, please try again in a few seconds."
-          : (error.message || "Could not process model geometry. Ensure a detailed description is provided.")
+          ? "The AI models are currently at high capacity. Please try again in a few seconds."
+          : (error.message || "Could not process model geometry.")
       });
     } finally {
       setIsAnalyzing(false);
@@ -145,7 +142,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
         <div className="flex items-center gap-2">
           <div className="px-4 py-2 bg-primary/5 rounded-lg border border-primary/10 flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Analysis Engine v1.1</span>
+            <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Analysis Engine v1.2</span>
           </div>
         </div>
       </header>
@@ -166,7 +163,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Part Name / ID</Label>
                   <Input 
-                    placeholder="e.g. Front Spindle Block" 
+                    placeholder="e.g. Spindle Block TC1" 
                     className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
                     value={partName}
                     onChange={(e) => setPartName(e.target.value)}
@@ -200,17 +197,17 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 <div className="flex justify-between items-center">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Model Complexity & Color Coding</Label>
                   <Badge variant="outline" className="text-[8px] font-bold uppercase gap-1.5 border-amber-200 text-amber-600 bg-amber-50">
-                    <AlertCircle className="h-2.5 w-2.5" /> Required for AI Analysis
+                    <AlertCircle className="h-2.5 w-2.5" /> Required for Precise Costing
                   </Badge>
                 </div>
                 <Textarea 
-                  placeholder="Describe geometry and specify operation colors (e.g. Blue=Milling, Red=Tapping, Green=Grinding). AI uses this description to calculate material and time." 
+                  placeholder="e.g. Aluminum 6061 Block. Blue faces are milling, Red holes are tapping. High complexity pockets." 
                   className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium resize-none focus-visible:ring-primary/20"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
                 <p className="text-[9px] text-slate-400 font-medium italic">
-                  * Note: AI analyzes the textual description provided to simulate model geometric reading in this prototype.
+                  * Tip: Detailed descriptions of setup requirements help AI calculate billable hours accurately.
                 </p>
               </div>
             </div>
@@ -230,26 +227,22 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 {operations.map((op, idx) => (
                   <div key={idx} className="flex gap-4 items-end bg-slate-50/50 p-4 rounded-2xl border border-slate-100 group">
                     <div className="flex-1 space-y-2">
-                      <Label className="text-[8px] font-bold uppercase text-slate-400">Operation Included (from Asset Telemetry)</Label>
+                      <Label className="text-[8px] font-bold uppercase text-slate-400">Operation Included (from Assets)</Label>
                       <Select value={op.name} onValueChange={(val) => updateOp(idx, 'name', val)}>
                         <SelectTrigger className="h-10 bg-white border-none rounded-lg text-xs font-bold shadow-sm">
-                          <SelectValue placeholder="Select machine node..." />
+                          <SelectValue placeholder="Select machine..." />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100">
-                          {machines.length > 0 ? (
-                            machines.map(m => (
-                              <SelectItem key={m.id} value={m.name} className="text-xs font-bold uppercase">
-                                {m.name} ({m.mcNumber})
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="none" disabled className="text-[10px] font-bold italic">No Assets Found</SelectItem>
-                          )}
+                          {machines.map(m => (
+                            <SelectItem key={m.id} value={m.name} className="text-xs font-bold uppercase">
+                              {m.name} (₹{m.costPerHour}/hr)
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="w-40 space-y-2">
-                      <Label className="text-[8px] font-bold uppercase text-slate-400">Cost per Hour (₹)</Label>
+                      <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹/hr)</Label>
                       <Input 
                         type="number"
                         placeholder="0.00" 
@@ -299,7 +292,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 <div className="flex justify-between items-start">
                   <div>
                     <Badge className="bg-accent text-white border-none text-[8px] font-bold uppercase px-3 mb-2">Analysis Result</Badge>
-                    <h3 className="text-2xl font-display font-bold tracking-tight uppercase">{partName}</h3>
+                    <h3 className="text-2xl font-display font-bold tracking-tight uppercase truncate max-w-[200px]">{partName}</h3>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Complexity</p>
@@ -351,19 +344,15 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                             )}
                             <span className="text-xs font-bold text-white/90">{est.operationName}</span>
                           </div>
-                          <span className="text-sm font-bold font-code text-accent">₹ {est.cost.toFixed(2)}</span>
+                          <span className="text-sm font-bold font-code text-accent">₹ {est.cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase">
-                          <span className="text-white/40">Estimated Duration</span>
-                          <span className="text-white/60">{est.estimatedHours} Hours</span>
-                        </div>
-                        {est.identifiedColor && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="border-white/10 text-[7px] font-bold uppercase text-white/40 px-2 h-4">
-                              Color: {est.identifiedColor}
-                            </Badge>
+                          <div className="flex gap-2">
+                            <span className="text-white/40">Setup: {est.setupHours}h</span>
+                            <span className="text-white/40">Mach: {est.machiningHours}h</span>
                           </div>
-                        )}
+                          <span className="text-white/60">Total: {est.totalOperationHours} Hours</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -372,7 +361,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 <div className="pt-6 border-t border-white/10 flex justify-between items-end">
                   <div className="space-y-1">
                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Total Machining Cost</p>
-                    <p className="text-4xl font-display font-bold text-white">₹ {result.totalMachiningCost.toFixed(2)}</p>
+                    <p className="text-4xl font-display font-bold text-white">₹ {result.totalMachiningCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                   </div>
                   <Button className="bg-white hover:bg-white/90 text-[#001F3D] rounded-xl font-bold uppercase text-[9px] tracking-widest h-12 px-6 flex gap-2">
                     Export to Quote <ChevronRight className="h-3.5 w-3.5" />
@@ -391,8 +380,8 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
               <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Operation Identification</h4>
               <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
                 {isAnalyzing 
-                  ? "AI sequence initialized. Analyzing geometric metadata and color codes..."
-                  : "Provide a detailed geometry description above. AI mapping requires context to identify Milling, Tapping, and Drilling faces."
+                  ? "AI sequence initialized. Analyzing industrial complexity and applying setup buffers..."
+                  : "Provide a detailed geometry and material description. AI analysis factors in setup times and feature complexity for ₹ accuracy."
                 }
               </p>
             </div>
@@ -400,7 +389,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
         </div>
       </div>
 
-      {/* Standard CAD Color Protocol Sheet - Common for all quotes */}
+      {/* Standard CAD Color Protocol Sheet */}
       <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] mt-8">
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
           <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
@@ -418,7 +407,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
             <div>
               <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Commercial Safety Rule</p>
               <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1">
-                The system automatically applies a <span className="font-bold text-accent">+2 hour operational buffer</span> to the total estimated lead time to account for setup variability and shift transitions.
+                The system automatically applies a <span className="font-bold text-accent">+2 hour operational buffer</span> to the total lead time. AI estimations now explicitly include <span className="font-bold text-[#001F3D]">billable setup times</span> per operation.
               </p>
             </div>
           </div>

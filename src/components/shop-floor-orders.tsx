@@ -109,7 +109,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                     {order.owner}
                   </TableCell>
                   <TableCell className="text-xs font-code font-bold text-slate-600">
-                    {order.amountSpent || '$0.00'}
+                    {order.amountSpent || '₹ 0.00'}
                   </TableCell>
                   <TableCell className="text-center">
                      <div className={cn(

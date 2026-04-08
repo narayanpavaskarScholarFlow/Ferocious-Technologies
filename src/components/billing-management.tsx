@@ -267,7 +267,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
               <ArrowUpRight className="h-3 w-3" /> +{records.length > 0 ? '12' : '0'}%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-[#001F3D]">${financialSummary.totalReceivables.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+          <p className="text-3xl font-display font-bold text-[#001F3D]">₹ {financialSummary.totalReceivables.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
              <div className="h-full bg-primary" style={{ width: records.length > 0 ? '45%' : '0%' }} />
           </div>
@@ -280,7 +280,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
               <ArrowUpRight className="h-3 w-3" /> +0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-green-600">${financialSummary.paid.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+          <p className="text-3xl font-display font-bold text-green-600">₹ {financialSummary.paid.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
              <div className="h-full bg-green-500" style={{ width: financialSummary.paid > 0 ? '20%' : '0%' }} />
           </div>
@@ -293,7 +293,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
               <ArrowDownRight className="h-3 w-3" /> -0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-red-600">${financialSummary.overdue.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+          <p className="text-3xl font-display font-bold text-red-600">₹ {financialSummary.overdue.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
              <div className="h-full bg-red-500" style={{ width: financialSummary.overdue > 0 ? '10%' : '0%' }} />
           </div>
@@ -361,7 +361,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                           <span className="text-[11px] font-medium text-slate-500">{record.date}</span>
                         </TableCell>
                         <TableCell className="text-right font-display font-bold text-[#001F3D]">
-                          ${record.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          ₹ {record.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge className={cn(
@@ -451,16 +451,16 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                 <div className="space-y-4 pt-10">
                   <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
                     <span>Taxable Amount</span>
-                    <span>${totals.subTotal.toFixed(2)}</span>
+                    <span>₹ {totals.subTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
                     <span>Total GST</span>
-                    <span>${totals.totalGst.toFixed(2)}</span>
+                    <span>₹ {totals.totalGst.toFixed(2)}</span>
                   </div>
                   <div className="h-px bg-slate-200" />
                   <div className="flex justify-between items-center text-xs font-bold uppercase text-[#001F3D]">
                     <span>Net Payable</span>
-                    <span className="text-primary font-display">${totals.finalAmount.toFixed(2)}</span>
+                    <span className="text-primary font-display">₹ {totals.finalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -493,7 +493,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                             ))
                           ) : (
                             customers.map(c => (
-                              <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>
+                              <SelectItem key={c.id} value={c.name} className="text-xs font-bold uppercase">{c.name}</SelectItem>
                             ))
                           )}
                         </SelectContent>
@@ -584,7 +584,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-2 border-t border-slate-200/50 mt-2">
                               <div className="md:col-span-3">
                                 <p className="text-[8px] font-bold text-slate-400 uppercase">Taxable Value</p>
-                                <p className="text-sm font-display font-bold text-[#001F3D]">${taxableAmt.toFixed(2)}</p>
+                                <p className="text-sm font-display font-bold text-[#001F3D]">₹ {taxableAmt.toFixed(2)}</p>
                               </div>
                               <div className="md:col-span-2 space-y-1.5">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400 flex items-center gap-1">
@@ -599,15 +599,15 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                               </div>
                               <div className="md:col-span-2">
                                 <p className="text-[8px] font-bold text-slate-400 uppercase">CGST ({(item.gst/2).toFixed(1)}%)</p>
-                                <p className="text-[11px] font-bold text-blue-600">${cgst.toFixed(2)}</p>
+                                <p className="text-[11px] font-bold text-blue-600">₹ {cgst.toFixed(2)}</p>
                               </div>
                               <div className="md:col-span-2">
                                 <p className="text-[8px] font-bold text-slate-400 uppercase">SGST ({(item.gst/2).toFixed(1)}%)</p>
-                                <p className="text-[11px] font-bold text-blue-600">${sgst.toFixed(2)}</p>
+                                <p className="text-[11px] font-bold text-blue-600">₹ {sgst.toFixed(2)}</p>
                               </div>
                               <div className="md:col-span-2">
                                 <p className="text-[8px] font-bold text-slate-400 uppercase">Row Total</p>
-                                <p className="text-sm font-display font-bold text-emerald-600">${totalItemPrice.toFixed(2)}</p>
+                                <p className="text-sm font-display font-bold text-emerald-600">₹ {totalItemPrice.toFixed(2)}</p>
                               </div>
                               <div className="md:col-span-1 flex justify-end">
                                 <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} className="h-9 w-9 text-slate-200 hover:text-red-500">
@@ -632,7 +632,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Global Discount ($)</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Global Discount (₹)</Label>
                         <Input 
                           type="number"
                           value={formData.globalDiscount}
@@ -641,7 +641,7 @@ export function BillingManagement({ customers, vendors }: BillingManagementProps
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Advance Received ($)</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Advance Received (₹)</Label>
                         <Input 
                           type="number"
                           value={formData.amountPaid}

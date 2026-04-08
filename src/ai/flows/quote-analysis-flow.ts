@@ -53,7 +53,7 @@ Geometry & Color Description: {{{modelDescription}}}
 
 Available Operational Nodes (Asset Telemetry):
 {{#each operations}}
-- {{name}} (Rate: \${{costPerHour}}/hr)
+- {{name}} (Rate: ₹{{costPerHour}}/hr)
 {{/each}}
 
 Based on the provided description, please perform the following:

@@ -327,11 +327,11 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Machine Per Hour Cost ($)</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Machine Per Hour Cost (₹)</Label>
                 <div className="relative">
                   <Input 
                     type="number"
-                    placeholder="e.g. 150.00" 
+                    placeholder="e.g. 1500.00" 
                     className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10"
                     value={newMachine.costPerHour}
                     onChange={(e) => setNewMachine({...newMachine, costPerHour: e.target.value})}

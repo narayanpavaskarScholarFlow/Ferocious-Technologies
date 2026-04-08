@@ -249,7 +249,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                       </Select>
                     </div>
                     <div className="w-40 space-y-2">
-                      <Label className="text-[8px] font-bold uppercase text-slate-400">Cost per Hour ($)</Label>
+                      <Label className="text-[8px] font-bold uppercase text-slate-400">Cost per Hour (₹)</Label>
                       <Input 
                         type="number"
                         placeholder="0.00" 
@@ -351,7 +351,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                             )}
                             <span className="text-xs font-bold text-white/90">{est.operationName}</span>
                           </div>
-                          <span className="text-sm font-bold font-code text-accent">${est.cost.toFixed(2)}</span>
+                          <span className="text-sm font-bold font-code text-accent">₹ {est.cost.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase">
                           <span className="text-white/40">Estimated Duration</span>
@@ -372,7 +372,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 <div className="pt-6 border-t border-white/10 flex justify-between items-end">
                   <div className="space-y-1">
                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Total Machining Cost</p>
-                    <p className="text-4xl font-display font-bold text-white">${result.totalMachiningCost.toFixed(2)}</p>
+                    <p className="text-4xl font-display font-bold text-white">₹ {result.totalMachiningCost.toFixed(2)}</p>
                   </div>
                   <Button className="bg-white hover:bg-white/90 text-[#001F3D] rounded-xl font-bold uppercase text-[9px] tracking-widest h-12 px-6 flex gap-2">
                     Export to Quote <ChevronRight className="h-3.5 w-3.5" />

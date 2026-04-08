@@ -109,7 +109,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       status: status,
       owner: lead || 'Unassigned',
       progress: isNew ? 0 : (orders.find(o => o.id === displayId)?.progress || 0),
-      amountSpent: isNew ? '$0.00' : (orders.find(o => o.id === displayId)?.amountSpent || '$0.00')
+      amountSpent: isNew ? '₹ 0.00' : (orders.find(o => o.id === displayId)?.amountSpent || '₹ 0.00')
     };
 
     onSave(newOrder);
@@ -261,7 +261,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Amount Spent (Live Ledger)</Label>
                   <div className="relative group">
-                    <Input value={!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "$0.00") : "$0.00"} readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
+                    <Input value={!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "₹ 0.00") : "₹ 0.00"} readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-slate-200" />
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synced with Financial Hub v2.4</p>
@@ -351,7 +351,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                     <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Total Spent</span>
                       <span className="text-xl font-display font-bold text-[#001F3D]">
-                        {!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "$0.00") : "$0.00"}
+                        {!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "₹ 0.00") : "₹ 0.00"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center px-4">

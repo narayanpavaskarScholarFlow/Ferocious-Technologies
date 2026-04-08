@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -22,6 +21,7 @@ interface OrderDetailsProps {
   customers: Customer[];
   staff: StaffMember[];
   onSave: (order: Order) => void;
+  orders: Order[];
 }
 
 interface PartRow {
@@ -32,7 +32,7 @@ interface PartRow {
   duration: string;
 }
 
-export function OrderDetails({ orderId, onBack, customers, staff, onSave }: OrderDetailsProps) {
+export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders }: OrderDetailsProps) {
   const { toast } = useToast();
   const isNew = !orderId;
   const [displayId, setDisplayId] = useState("");
@@ -45,13 +45,39 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
   const [endDate, setEndDate] = useState<Date>();
 
   useEffect(() => {
-    if (isNew) {
+    if (orderId) {
+      const existing = orders.find(o => o.id === orderId);
+      if (existing) {
+        setDisplayId(existing.id);
+        setCustomer(existing.customer);
+        setLead(existing.owner || "");
+        setPriority(existing.priority);
+        setStatus(existing.status);
+        
+        if (existing.startDate) {
+          try {
+            const [d, m, y] = existing.startDate.split('.').map(Number);
+            setStartDate(new Date(y, m - 1, d));
+          } catch (e) {}
+        }
+        if (existing.endDate) {
+          try {
+            const [d, m, y] = existing.endDate.split('.').map(Number);
+            setEndDate(new Date(y, m - 1, d));
+          } catch (e) {}
+        }
+      }
+    } else {
       const generatedId = `${Math.floor(80000 + Math.random() * 10000)}`;
       setDisplayId(generatedId);
-    } else {
-      setDisplayId(orderId || "");
+      setCustomer("");
+      setLead("");
+      setPriority("Medium");
+      setStatus("Pending");
+      setStartDate(undefined);
+      setEndDate(undefined);
     }
-  }, [orderId, isNew]);
+  }, [orderId, orders]);
 
   const handleAddPart = () => {
     const newPart: PartRow = {
@@ -82,13 +108,13 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
       priority: priority,
       status: status,
       owner: lead || 'Unassigned',
-      progress: 0,
-      amountSpent: '$0.00'
+      progress: isNew ? 0 : (orders.find(o => o.id === displayId)?.progress || 0),
+      amountSpent: isNew ? '$0.00' : (orders.find(o => o.id === displayId)?.amountSpent || '$0.00')
     };
 
     onSave(newOrder);
     toast({
-      title: "Thread Synchronized",
+      title: isNew ? "Thread Synchronized" : "Identity Updated",
       description: `Work Order #${displayId} has been committed to the master ledger.`
     });
   };
@@ -125,7 +151,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
             className="flex-1 md:flex-none bg-white border-slate-200 text-[#001F3D] hover:bg-slate-50 gap-3 h-12 px-8 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-sm border-b-4 active:border-b-0 transition-all" 
             onClick={handleCommitOrder}
           >
-            <Save className="h-4 w-4" /> Save Master Order
+            <Save className="h-4 w-4" /> {isNew ? 'Save Master Order' : 'Synchronize Identity'}
           </Button>
         </div>
       </div>
@@ -235,7 +261,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Amount Spent (Live Ledger)</Label>
                   <div className="relative group">
-                    <Input value="$0.00" readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
+                    <Input value={!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "$0.00") : "$0.00"} readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-slate-200" />
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synced with Financial Hub v2.4</p>
@@ -283,6 +309,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
                     <SelectItem value="Active" className="text-xs font-bold uppercase">Status: Active Thread</SelectItem>
                     <SelectItem value="Pending" className="text-xs font-bold uppercase">Status: Queue Standby</SelectItem>
                     <SelectItem value="Delayed" className="text-xs font-bold uppercase text-red-400">Status: Delayed / Critical</SelectItem>
+                    <SelectItem value="Completed" className="text-xs font-bold uppercase text-green-400">Status: Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -305,10 +332,15 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Velocity Progress</span>
-                  <Badge className="bg-slate-100 text-slate-400 text-[10px] font-bold px-4 py-1.5 rounded-full">0%</Badge>
+                  <Badge className="bg-slate-100 text-slate-400 text-[10px] font-bold px-4 py-1.5 rounded-full">
+                    {!isNew ? (orders.find(o => o.id === displayId)?.progress || 0) : 0}%
+                  </Badge>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50 p-[1px]">
-                  <div className="h-full bg-slate-200 w-[0%] rounded-full transition-all duration-1000" />
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all duration-1000" 
+                    style={{ width: `${!isNew ? (orders.find(o => o.id === displayId)?.progress || 0) : 0}%` }}
+                  />
                 </div>
 
                 <div className="pt-10 space-y-6">
@@ -318,7 +350,9 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
                   <div className="space-y-4">
                     <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Total Spent</span>
-                      <span className="text-xl font-display font-bold text-[#001F3D]">$0.00</span>
+                      <span className="text-xl font-display font-bold text-[#001F3D]">
+                        {!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "$0.00") : "$0.00"}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center px-4">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Ledger State</span>
@@ -348,8 +382,10 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave }: Orde
               <User className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Assignment Pending</p>
-              <p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">Assign a Command Lead to initialize this thread.</p>
+              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Assignment Verified</p>
+              <p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">
+                {lead ? `${lead} is overseeing this thread.` : 'Assign a Command Lead to initialize this thread.'}
+              </p>
             </div>
           </div>
         </div>

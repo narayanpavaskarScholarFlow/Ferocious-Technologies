@@ -62,7 +62,7 @@ export default function IndustrialERP() {
   const handleSearchChange = (val: string) => {
     setGlobalSearch(val);
     const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
-    if (isOrderPattern) {
+    if (isOrderPattern && orders.find(o => o.id === val)) {
       setActiveWorkOrderId(val);
       setCurrentView('operations');
     }
@@ -104,8 +104,14 @@ export default function IndustrialERP() {
     setCurrentView('overview');
   };
 
-  const handleAddOrder = (order: Order) => {
-    setOrders([...orders, order]);
+  const handleSaveOrder = (order: Order) => {
+    setOrders(prev => {
+      const exists = prev.find(o => o.id === order.id);
+      if (exists) {
+        return prev.map(o => o.id === order.id ? { ...exists, ...order } : o);
+      }
+      return [order, ...prev];
+    });
     setCurrentView('orders');
   };
 
@@ -285,7 +291,8 @@ export default function IndustrialERP() {
                 onBack={handleBackToOrders} 
                 customers={customers}
                 staff={staff}
-                onSave={handleAddOrder}
+                onSave={handleSaveOrder}
+                orders={orders}
               />
             )}
             {currentView === 'operations' && (

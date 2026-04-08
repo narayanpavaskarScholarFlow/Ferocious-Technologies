@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Order } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, Plus, ArchiveX } from 'lucide-react';
+import { Search, Plus, ArchiveX, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -66,12 +65,13 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[100px]">Priority</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[120px]">Project Owner</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[100px]">Amount Spent</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400 min-w-[100px]">Status</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400 min-w-[100px]">Status</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-right text-slate-400 pr-8">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="flex-1">
               {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-slate-50/50 h-16 border-slate-100">
+                <TableRow key={order.id} className="hover:bg-slate-50/50 h-16 border-slate-100 group">
                   <TableCell 
                     className="font-bold text-sm text-[#003d6b] cursor-pointer hover:underline underline-offset-4"
                     onClick={() => onNavigateToOrderDetails?.(order.id)}
@@ -87,9 +87,9 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                   >
                     <div className="flex flex-col gap-1.5">
                       <div className="flex justify-between text-[10px] font-bold">
-                        <span className="text-slate-400 group-hover/cell:text-primary">{order.progress}%</span>
+                        <span className="text-slate-400 group-hover/cell:text-primary">{order.progress || 0}%</span>
                       </div>
-                      <Progress value={order.progress} className="h-1" />
+                      <Progress value={order.progress || 0} className="h-1" />
                     </div>
                   </TableCell>
                   <TableCell>
@@ -109,9 +109,9 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                     {order.owner}
                   </TableCell>
                   <TableCell className="text-xs font-code font-bold text-slate-600">
-                    {order.amountSpent}
+                    {order.amountSpent || '$0.00'}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-center">
                      <div className={cn(
                        "inline-flex px-3 py-1 rounded-full text-[10px] font-bold min-w-[80px] justify-center uppercase",
                        order.status === 'Active' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
@@ -122,10 +122,22 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                        {order.status}
                      </div>
                   </TableCell>
+                  <TableCell className="text-right pr-8">
+                    <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-slate-400 hover:text-primary"
+                        onClick={() => onNavigateToOrderDetails?.(order.id)}
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-[400px] text-center">
+                  <TableCell colSpan={10} className="h-[400px] text-center">
                     <div className="flex flex-col items-center justify-center opacity-30 py-10">
                       <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
                         <ArchiveX className="h-16 w-16 text-slate-300" />

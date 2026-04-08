@@ -34,8 +34,7 @@ interface SmartQuotingAssistantProps {
 }
 
 const INITIAL_OPERATIONS = [
-  { name: 'VMC Milling', costPerHour: 150 },
-  { name: 'CNC Turning', costPerHour: 120 },
+  { name: '', costPerHour: 0 },
 ];
 
 const STANDARD_COLOR_CODES = [
@@ -65,6 +64,15 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
   const updateOp = (idx: number, field: string, value: any) => {
     const newOps = [...operations];
     (newOps[idx] as any)[field] = field === 'costPerHour' ? parseFloat(value) || 0 : value;
+    
+    // Auto-populate cost if machine name is changed
+    if (field === 'name') {
+      const machine = machines.find(m => m.name === value);
+      if (machine) {
+        newOps[idx].costPerHour = machine.costPerHour;
+      }
+    }
+    
     setOperations(newOps);
   };
 

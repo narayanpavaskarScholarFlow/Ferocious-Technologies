@@ -29,6 +29,7 @@ export interface Machine {
   mcNumber: string;
   make: string;
   bedSize: string;
+  costPerHour: number;
   load: number;
   status: 'active' | 'maintenance' | 'fault';
   image: string;

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { MachineLoadPlan } from '@/components/machine-load-plan';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { Cpu, Search, Activity, Zap, BoxSelect, Plus, Settings2, Ruler, Warehouse, Factory } from 'lucide-react';
+import { Cpu, Search, Activity, Zap, BoxSelect, Plus, Settings2, Ruler, Warehouse, Factory, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,7 +37,8 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
     type: 'Milling' as Exclude<MachineCategory, 'All'>,
     mcNumber: '',
     make: '',
-    bedSize: ''
+    bedSize: '',
+    costPerHour: ''
   });
 
   const selectedMachine = machines.find(m => m.id === selectedMachineId);
@@ -47,7 +48,7 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
       toast({
         variant: "destructive",
         title: "Configuration Error",
-        description: "Protocol requires Node Name, MC Number, and Manufacturer for registration."
+        description: "Protocol requires Machine Name, MC Number, and Manufacturer for registration."
       });
       return;
     }
@@ -69,6 +70,7 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
       mcNumber: newMachine.mcNumber,
       make: newMachine.make,
       bedSize: newMachine.bedSize || 'Standard',
+      costPerHour: parseFloat(newMachine.costPerHour) || 0,
       load: Math.floor(Math.random() * 40) + 40, // Random initial load
       status: 'active',
       image: imgMap[newMachine.type] || 'https://picsum.photos/seed/machine/600/400'
@@ -81,7 +83,7 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
     });
 
     setIsAddMachineOpen(false);
-    setNewMachine({ name: '', type: 'Milling', mcNumber: '', make: '', bedSize: '' });
+    setNewMachine({ name: '', type: 'Milling', mcNumber: '', make: '', bedSize: '', costPerHour: '' });
   };
 
   return (
@@ -258,7 +260,7 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
           <div className="space-y-8">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Name</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Machine Name</Label>
                 <Input 
                   placeholder="e.g. VMC Milling Haas" 
                   className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
@@ -311,16 +313,31 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Bed Size / Spatial Capacity</Label>
-              <div className="relative">
-                <Input 
-                  placeholder="e.g. 1000 x 500 x 600 mm" 
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10"
-                  value={newMachine.bedSize}
-                  onChange={(e) => setNewMachine({...newMachine, bedSize: e.target.value})}
-                />
-                <Ruler className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Bed Size / Spatial Capacity</Label>
+                <div className="relative">
+                  <Input 
+                    placeholder="e.g. 1000 x 500" 
+                    className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10"
+                    value={newMachine.bedSize}
+                    onChange={(e) => setNewMachine({...newMachine, bedSize: e.target.value})}
+                  />
+                  <Ruler className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Machine Per Hour Cost ($)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number"
+                    placeholder="e.g. 150.00" 
+                    className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10"
+                    value={newMachine.costPerHour}
+                    onChange={(e) => setNewMachine({...newMachine, costPerHour: e.target.value})}
+                  />
+                  <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                </div>
               </div>
             </div>
 

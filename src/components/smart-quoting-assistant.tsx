@@ -101,6 +101,8 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
     }
 
     setIsAnalyzing(true);
+    setResult(null); // Clear previous results during analysis
+
     try {
       const output = await quoteAnalysis({
         partName,
@@ -111,10 +113,15 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
       toast({ title: "Analysis Synchronized", description: "Industrial estimations calculated successfully." });
     } catch (error: any) {
       console.error('Analysis Protocol Failure:', error);
+      
+      const isUnavailable = error.message?.includes('demand') || error.message?.includes('traffic');
+      
       toast({ 
         variant: "destructive", 
-        title: "AI Analysis Error", 
-        description: error.message || "Could not process model geometry. Ensure a detailed description is provided." 
+        title: isUnavailable ? "AI Engine Busy" : "Analysis Protocol Error", 
+        description: isUnavailable 
+          ? "The AI models are currently at high capacity. Retrying... If this persists, please try again in a few seconds."
+          : (error.message || "Could not process model geometry. Ensure a detailed description is provided.")
       });
     } finally {
       setIsAnalyzing(false);
@@ -383,7 +390,10 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
               </div>
               <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Operation Identification</h4>
               <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
-                Provide a detailed geometry description above. AI mapping requires context to identify Milling, Tapping, and Drilling faces.
+                {isAnalyzing 
+                  ? "AI sequence initialized. Analyzing geometric metadata and color codes..."
+                  : "Provide a detailed geometry description above. AI mapping requires context to identify Milling, Tapping, and Drilling faces."
+                }
               </p>
             </div>
           )}

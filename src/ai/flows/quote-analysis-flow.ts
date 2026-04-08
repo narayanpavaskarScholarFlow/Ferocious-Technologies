@@ -82,15 +82,40 @@ const quoteAnalysisFlow = ai.defineFlow(
     outputSchema: QuoteAnalysisOutputSchema,
   },
   async input => {
-    try {
-      const {output} = await analyzeQuotePrompt(input);
-      if (!output) {
-        throw new Error('AI Engine failed to generate a valid estimation. Please provide a more detailed model description.');
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        const {output} = await analyzeQuotePrompt(input);
+        if (!output) {
+          throw new Error('AI Engine failed to generate a valid estimation. Please provide a more detailed model description.');
+        }
+        return output;
+      } catch (err: any) {
+        attempts++;
+        const isTransient = err.message?.includes('503') || 
+                          err.message?.includes('unavailable') || 
+                          err.message?.includes('high demand') ||
+                          err.message?.includes('429');
+
+        if (isTransient && attempts < maxAttempts) {
+          // Wait before retrying (exponential backoff: 2s, 4s...)
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+          continue;
+        }
+
+        console.error('Genkit Flow Error:', err);
+        
+        // Final attempt failed or non-transient error
+        if (isTransient) {
+          throw new Error('The AI Engine is currently experiencing heavy traffic. Please wait a moment and try the "Execute" protocol again.');
+        }
+        
+        throw new Error(err.message || 'AI sequence failed to process model metadata.');
       }
-      return output;
-    } catch (err: any) {
-      console.error('Genkit Flow Error:', err);
-      throw new Error(err.message || 'AI sequence failed to process model metadata.');
     }
+    
+    throw new Error('AI analysis sequence timed out. Please check your inputs and try again.');
   }
 );

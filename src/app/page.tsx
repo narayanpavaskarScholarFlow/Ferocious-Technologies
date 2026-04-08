@@ -23,7 +23,7 @@ import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, Menu, ShieldAlert, LogOut, User, Settings } from 'lucide-react';
+import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -62,6 +62,12 @@ export default function IndustrialERP() {
 
   useEffect(() => {
     setMounted(true);
+    // Persist login state
+    const savedUser = localStorage.getItem('bharat_axis_user');
+    if (savedUser) {
+      setCurrentUser(savedUser);
+      setIsLoggedIn(true);
+    }
   }, []);
 
   const handleSearchChange = (val: string) => {
@@ -99,11 +105,13 @@ export default function IndustrialERP() {
   };
 
   const handleLogin = (user: string) => {
+    localStorage.setItem('bharat_axis_user', user);
     setCurrentUser(user);
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('bharat_axis_user');
     setIsLoggedIn(false);
     setCurrentUser(null);
     setCurrentView('overview');
@@ -134,86 +142,97 @@ export default function IndustrialERP() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-body">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-body">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-slate-200/60 sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-6">
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-slate-200/20">
+          <div className="flex items-center gap-2 md:gap-8">
             {/* Mobile Sidebar Trigger */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9 -ml-2">
-                  <Menu className="h-5 w-5 text-[#001F3D]" />
+                <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10 -ml-2 rounded-xl hover:bg-slate-100">
+                  <Menu className="h-5 w-5 text-slate-600" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-20 bg-[#001F3D] border-none">
+              <SheetContent side="left" className="p-0 w-24 bg-[#0f172a] border-none">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <SheetDescription className="sr-only">Access all industrial modules</SheetDescription>
+                <SheetDescription className="sr-only">Access all Bharat Axis Pvt Ltd modules</SheetDescription>
                 <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
               </SheetContent>
             </Sheet>
 
-            <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-[#001F3D]">
-              BHARAT<span className="text-accent">AXIS</span>
-            </h1>
-            <div className="h-4 w-[1px] bg-slate-200 hidden sm:block" />
-            <div className="items-center gap-2 hidden sm:flex">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                {currentView.replace('-', ' ')}
-              </span>
-              <div className="h-1 w-1 rounded-full bg-accent animate-pulse-red" />
+            <div className="flex flex-col">
+              <h1 className="font-headline font-bold text-lg md:text-xl tracking-tighter text-[#0f172a] flex items-center gap-2">
+                BHARAT<span className="text-primary">AXIS</span>
+                <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-md uppercase tracking-widest hidden xs:block">PRO</span>
+              </h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] hidden sm:block">
+                {currentView.replace('-', ' ')} protocol active
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-6">
-            <div className="relative w-40 md:w-72 group hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <div className="flex items-center gap-4 md:gap-8">
+            <div className="relative w-48 md:w-80 group hidden sm:block">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-primary" />
               <Input 
-                placeholder="Search WO..." 
-                className="h-9 pl-9 pr-10 rounded-lg bg-slate-100 border-none text-[11px] focus-visible:ring-1 focus-visible:ring-primary/20"
+                placeholder="Global Search WO..." 
+                className="h-11 pl-11 pr-12 rounded-[1.25rem] bg-slate-100/80 border-none text-xs font-bold focus-visible:ring-2 focus-visible:ring-primary/20 transition-all"
                 value={globalSearch}
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[8px] font-bold text-slate-400 border border-slate-200 rounded px-1 py-0.5 bg-white">
-                <Command className="h-2 w-2" /> K
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[9px] font-bold text-slate-400 border border-slate-200 rounded-lg px-1.5 py-1 bg-white">
+                <Command className="h-2.5 w-2.5" /> K
               </div>
             </div>
             
-            <div className="flex items-center gap-2 md:gap-4">
-              <button className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors relative">
-                <Bell className="h-4.5 w-4.5 text-slate-600" />
-                <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-accent rounded-full border-2 border-white" />
-              </button>
-              <div className="h-8 w-[1px] bg-slate-200 hidden xs:block" />
+            <div className="flex items-center gap-3 md:gap-6">
+              <div className="flex items-center gap-2">
+                <button className="h-11 w-11 flex items-center justify-center rounded-xl bg-slate-100/80 hover:bg-slate-200/80 transition-all relative">
+                  <Bell className="h-5 w-5 text-slate-600" />
+                  <span className="absolute top-3 right-3 h-2 w-2 bg-accent rounded-full border-2 border-white shadow-[0_0_8px_rgba(244,63,94,0.4)]" />
+                </button>
+                <button 
+                  onClick={() => setCurrentView('smart-quote')}
+                  className="h-11 w-11 flex items-center justify-center rounded-xl bg-primary/5 hover:bg-primary/10 transition-all text-primary"
+                >
+                  <Sparkles className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="h-10 w-[1px] bg-slate-200 hidden xs:block" />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-3 pl-2 group cursor-pointer">
+                  <div className="flex items-center gap-4 pl-2 group cursor-pointer">
                     <div className="text-right hidden md:block">
-                      <p className="text-[11px] font-bold leading-none text-[#001F3D]">{currentUser}</p>
-                      <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1 group-hover:text-accent transition-colors">Plant Controller</p>
+                      <p className="text-xs font-bold leading-none text-[#0f172a]">{currentUser}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1.5 group-hover:text-primary transition-colors">Plant Controller</p>
                     </div>
-                    <Avatar className="h-8 w-8 border border-slate-200">
-                      <AvatarImage src="https://picsum.photos/seed/erp-user/100/100" />
-                      <AvatarFallback className="bg-primary text-white text-[10px] font-bold">SA</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-11 w-11 border-2 border-white shadow-xl shadow-slate-200 transition-transform group-hover:scale-105">
+                        <AvatarImage src="https://picsum.photos/seed/axis-user/100/100" />
+                        <AvatarFallback className="bg-primary text-white text-xs font-bold">SA</AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
+                    </div>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl border-slate-100">
-                  <DropdownMenuLabel className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Account Matrix</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs font-bold gap-2 cursor-pointer rounded-lg h-10">
-                    <User className="h-4 w-4" /> My Profile
+                <DropdownMenuContent align="end" className="w-64 p-2 rounded-[1.5rem] shadow-2xl border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                  <DropdownMenuLabel className="text-[10px] uppercase font-bold text-slate-400 tracking-widest px-3 py-2">Administrative Node</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 cursor-pointer">
+                    <div className="p-2 bg-slate-50 rounded-lg text-slate-600"><User className="h-4 w-4" /></div> My Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs font-bold gap-2 cursor-pointer rounded-lg h-10">
-                    <Settings className="h-4 w-4" /> Control Center
+                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 cursor-pointer">
+                    <div className="p-2 bg-slate-50 rounded-lg text-slate-600"><Settings className="h-4 w-4" /></div> System Matrix
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-xs font-bold gap-2 text-red-600 cursor-pointer rounded-lg h-10 focus:bg-red-50 focus:text-red-700">
-                    <LogOut className="h-4 w-4" /> Terminate Session
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuItem onClick={handleLogout} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 text-rose-600 cursor-pointer focus:bg-rose-50 focus:text-rose-700">
+                    <div className="p-2 bg-rose-50 rounded-lg text-rose-600"><LogOut className="h-4 w-4" /></div> Terminate Session
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -221,8 +240,8 @@ export default function IndustrialERP() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 max-w-[1600px] mx-auto w-full overflow-x-hidden">
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
+        <main className="flex-1 p-6 md:p-10 max-w-[1800px] mx-auto w-full overflow-x-hidden">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
             {currentView === 'overview' && (
               <ShopFloorOverview 
                 orders={orders}

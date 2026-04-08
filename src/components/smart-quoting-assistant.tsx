@@ -21,7 +21,8 @@ import {
   Cpu, 
   Palette,
   ChevronRight,
-  FileCheck
+  FileCheck,
+  AlertCircle
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { quoteAnalysis, type QuoteAnalysisOutput } from '@/ai/flows/quote-analysis-flow';
@@ -85,7 +86,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
     if (file) {
       setFileName(file.name);
       setFileUploaded(true);
-      toast({ title: "Model Loaded", description: `${file.name} ready for AI analysis.` });
+      toast({ title: "Model Metadata Cached", description: `${file.name} sequence initialized.` });
     }
   };
 
@@ -108,8 +109,13 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
       });
       setResult(output);
       toast({ title: "Analysis Synchronized", description: "Industrial estimations calculated successfully." });
-    } catch (error) {
-      toast({ variant: "destructive", title: "AI Analysis Error", description: "Could not process model geometry." });
+    } catch (error: any) {
+      console.error('Analysis Protocol Failure:', error);
+      toast({ 
+        variant: "destructive", 
+        title: "AI Analysis Error", 
+        description: error.message || "Could not process model geometry. Ensure a detailed description is provided." 
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -183,14 +189,22 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Model Complexity & Color Coding</Label>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Model Complexity & Color Coding</Label>
+                  <Badge variant="outline" className="text-[8px] font-bold uppercase gap-1.5 border-amber-200 text-amber-600 bg-amber-50">
+                    <AlertCircle className="h-2.5 w-2.5" /> Required for AI Analysis
+                  </Badge>
+                </div>
                 <Textarea 
-                  placeholder="Describe geometry and specify operation colors (e.g. Blue=Milling, Red=Tapping, Green=Grinding)..." 
+                  placeholder="Describe geometry and specify operation colors (e.g. Blue=Milling, Red=Tapping, Green=Grinding). AI uses this description to calculate material and time." 
                   className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium resize-none focus-visible:ring-primary/20"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
+                <p className="text-[9px] text-slate-400 font-medium italic">
+                  * Note: AI analyzes the textual description provided to simulate model geometric reading in this prototype.
+                </p>
               </div>
             </div>
 
@@ -258,7 +272,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
               {isAnalyzing ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Processing CAD Metadata...
+                  Synchronizing AI sequence...
                 </>
               ) : (
                 <>
@@ -369,7 +383,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
               </div>
               <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Operation Identification</h4>
               <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
-                Describe the model face colors to help AI map operations. (e.g., "Milling=Blue, Drills=Red")
+                Provide a detailed geometry description above. AI mapping requires context to identify Milling, Tapping, and Drilling faces.
               </p>
             </div>
           )}

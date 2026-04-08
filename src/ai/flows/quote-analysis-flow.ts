@@ -41,35 +41,39 @@ const QuoteAnalysisOutputSchema = z.object({
 });
 export type QuoteAnalysisOutput = z.infer<typeof QuoteAnalysisOutputSchema>;
 
-export async function quoteAnalysis(input: QuoteAnalysisInput): Promise<QuoteAnalysisOutput> {
-  return quoteAnalysisFlow(input);
-}
-
 const analyzeQuotePrompt = ai.definePrompt({
   name: 'analyzeQuotePrompt',
   input: {schema: QuoteAnalysisInputSchema},
   output: {schema: QuoteAnalysisOutputSchema},
-  prompt: `You are an expert industrial quoting engine for a precision tool room.
-Analyze the following part and machining operations to provide a professional estimation for a quotation.
+  prompt: `You are a precision industrial quoting agent for Bharat Axis Pvt Ltd. 
+Your task is to analyze a machining part based on its name and description to provide a professional cost and lead-time estimation.
 
-Part Name: {{{partName}}}
-Model Description: {{{modelDescription}}}
+Part Identity: {{{partName}}}
+Geometry & Color Description: {{{modelDescription}}}
 
-Operations Matrix:
+Available Operational Nodes (Asset Telemetry):
 {{#each operations}}
-- {{name}}: \${{costPerHour}}/hr
+- {{name}} (Rate: \${{costPerHour}}/hr)
 {{/each}}
 
-Based on the complexity of the part described and any color-coded features mentioned (e.g., "Blue faces are milling", "Red holes are tapping"), please:
-1. Estimate the raw material block size (LxWxH in mm) required to machine this part.
-2. For each operation, estimate the required machining hours based on part complexity and identify the associated color and its hex code if mentioned or logically inferred.
-3. Calculate the cost for each operation (Hours * Cost per hour).
-4. Provide the total machining cost.
-5. Provide the total lead time in hours.
-6. Provide the total lead time + exactly 2 hours of buffer.
+Based on the provided description, please perform the following:
+1. RAW MATERIAL: Estimate the bounding box dimensions (Length, Width, Height in mm) required to machine this part. Suggest a realistic material type (e.g., Aluminum 6061, P20 Steel, SS304).
+2. OPERATIONS: For each provided operation, estimate the required machining hours based on part complexity.
+3. COLOR MAPPING: Identify which operation likely corresponds to which color if color coding was mentioned in the description (e.g., "Blue faces are milling").
+4. COSTS: Calculate cost = (Estimated Hours * Node Rate).
+5. TOTALS: Sum all costs. 
+6. TIMELINE: Sum all hours for "Total Lead Time".
+7. BUFFER: Calculate "Lead Time With Buffer" as (Total Lead Time + 2 hours). This is a mandatory industrial protocol.
+8. COMPLEXITY: Rate the part as "Low", "Medium", or "High" complexity.
 
-Be realistic with industrial standards for CNC milling, turning, and EDM operations.`,
+If information is sparse, use your expert knowledge of CNC milling, turning, and EDM to provide the most realistic industry-standard values. Do not leave fields empty.
+
+Important: Your output must be a valid JSON object matching the requested schema.`,
 });
+
+export async function quoteAnalysis(input: QuoteAnalysisInput): Promise<QuoteAnalysisOutput> {
+  return quoteAnalysisFlow(input);
+}
 
 const quoteAnalysisFlow = ai.defineFlow(
   {
@@ -78,7 +82,15 @@ const quoteAnalysisFlow = ai.defineFlow(
     outputSchema: QuoteAnalysisOutputSchema,
   },
   async input => {
-    const {output} = await analyzeQuotePrompt(input);
-    return output!;
+    try {
+      const {output} = await analyzeQuotePrompt(input);
+      if (!output) {
+        throw new Error('AI Engine failed to generate a valid estimation. Please provide a more detailed model description.');
+      }
+      return output;
+    } catch (err: any) {
+      console.error('Genkit Flow Error:', err);
+      throw new Error(err.message || 'AI sequence failed to process model metadata.');
+    }
   }
 );

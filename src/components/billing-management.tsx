@@ -17,23 +17,17 @@ import {
   ArrowDownRight,
   Filter,
   Receipt,
-  ArrowDownLeft,
-  ArrowUpRight as ArrowUpRightIcon,
-  Wallet,
   ClipboardList,
   Share2,
-  CheckCircle2,
   Building2,
   Calendar,
-  DollarSign,
-  Package,
-  Truck,
   Trash2,
-  FileText,
   Printer,
   ChevronRight,
-  User,
-  ArrowLeft
+  ArrowLeft,
+  FileText,
+  CheckCircle2,
+  MoreVertical
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -47,6 +41,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses';
 
@@ -59,6 +59,19 @@ interface LineItem {
   gst: number; // percentage
 }
 
+interface BillingRecord {
+  id: string;
+  type: BillingCategory;
+  customerName: string;
+  customerId: string;
+  date: string;
+  number: string;
+  amount: number;
+  status: string;
+  items: LineItem[];
+  note: string;
+}
+
 interface BillingManagementProps {
   customers: Customer[];
 }
@@ -69,12 +82,13 @@ export function BillingManagement({ customers }: BillingManagementProps) {
   const [activeCategory, setActiveCategory] = useState<BillingCategory>('quotation');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<'form' | 'preview'>('form');
+  const [records, setRecords] = useState<BillingRecord[]>([]);
 
   // Form states
   const [formData, setFormData] = useState({
     customerId: '',
     date: new Date().toISOString().split('T')[0],
-    quotationNo: `QT-${Math.floor(1000 + Math.random() * 9000)}`,
+    number: '',
     note: 'Material cost 100% advance. Product warranty 1 year',
     discount: 0,
     amountPaid: 0,
@@ -131,11 +145,22 @@ export function BillingManagement({ customers }: BillingManagementProps) {
   };
 
   const handleCreateNew = () => {
+    const prefix = activeCategory === 'quotation' ? 'QT' : activeCategory === 'invoice' ? 'INV' : 'DOC';
+    setFormData({
+      customerId: '',
+      date: new Date().toISOString().split('T')[0],
+      number: `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`,
+      note: 'Material cost 100% advance. Product warranty 1 year',
+      discount: 0,
+      amountPaid: 0,
+      declaration: 'We declare that this record shows true particulars and actual pricing.'
+    });
+    setLineItems([{ id: '1', description: 'Service 1', unit: 'Hour', quantity: 1, pricePerUnit: 0, gst: 12 }]);
     setWizardStep('form');
     setIsCreateDialogOpen(true);
   };
 
-  const handleCommitRecord = (share = false) => {
+  const handleSaveRecord = (status: string = 'Active') => {
     if (!formData.customerId) {
       toast({
         variant: "destructive",
@@ -145,13 +170,44 @@ export function BillingManagement({ customers }: BillingManagementProps) {
       return;
     }
 
-    toast({
-      title: share ? "Authorized & Dispatched" : "Ledger Entry Committed",
-      description: `${activeCategory.toUpperCase()} #${formData.quotationNo} has been processed for ${selectedCustomer?.name}.`
-    });
+    const newRecord: BillingRecord = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: activeCategory,
+      customerName: selectedCustomer?.name || 'Unknown',
+      customerId: formData.customerId,
+      date: formData.date,
+      number: formData.number,
+      amount: totals.finalAmount,
+      status: status,
+      items: [...lineItems],
+      note: formData.note
+    };
 
+    setRecords([newRecord, ...records]);
     setIsCreateDialogOpen(false);
+    
+    toast({
+      title: "Ledger Entry Committed",
+      description: `${activeCategory.toUpperCase()} #${formData.number} has been saved for ${selectedCustomer?.name}.`
+    });
   };
+
+  const filteredRecords = useMemo(() => {
+    return records.filter(r => 
+      r.type === activeCategory && 
+      (r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       r.number.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [records, activeCategory, searchTerm]);
+
+  const financialSummary = useMemo(() => {
+    const total = records.filter(r => r.type === 'invoice').reduce((acc, curr) => acc + curr.amount, 0);
+    return {
+      totalReceivables: total,
+      paid: records.filter(r => r.status === 'Paid').reduce((acc, curr) => acc + curr.amount, 0),
+      overdue: records.filter(r => r.status === 'Overdue').reduce((acc, curr) => acc + curr.amount, 0),
+    };
+  }, [records]);
 
   const darkInputClasses = "h-12 bg-slate-50 border-none rounded-xl text-xs font-bold focus-visible:ring-primary/20";
   const darkSelectClasses = "h-12 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-primary/20";
@@ -187,12 +243,12 @@ export function BillingManagement({ customers }: BillingManagementProps) {
           <div className="flex justify-between items-start mb-6">
             <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Total Receivables</p>
             <div className="flex items-center gap-1 text-green-500 font-bold text-xs">
-              <ArrowUpRight className="h-3 w-3" /> +0%
+              <ArrowUpRight className="h-3 w-3" /> +{records.length > 0 ? '12' : '0'}%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-[#001F3D]">$0.00</p>
+          <p className="text-3xl font-display font-bold text-[#001F3D]">${financialSummary.totalReceivables.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
-             <div className="h-full bg-primary w-[0%]" />
+             <div className="h-full bg-primary" style={{ width: records.length > 0 ? '45%' : '0%' }} />
           </div>
         </Card>
 
@@ -203,9 +259,9 @@ export function BillingManagement({ customers }: BillingManagementProps) {
               <ArrowUpRight className="h-3 w-3" /> +0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-green-600">$0.00</p>
+          <p className="text-3xl font-display font-bold text-green-600">${financialSummary.paid.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
-             <div className="h-full bg-green-500 w-[0%]" />
+             <div className="h-full bg-green-500" style={{ width: financialSummary.paid > 0 ? '20%' : '0%' }} />
           </div>
         </Card>
 
@@ -216,9 +272,9 @@ export function BillingManagement({ customers }: BillingManagementProps) {
               <ArrowDownRight className="h-3 w-3" /> -0%
             </div>
           </div>
-          <p className="text-3xl font-display font-bold text-red-600">$0.00</p>
+          <p className="text-3xl font-display font-bold text-red-600">${financialSummary.overdue.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
           <div className="h-1 bg-slate-100 rounded-full mt-6 overflow-hidden">
-             <div className="h-full bg-red-500 w-[0%]" />
+             <div className="h-full bg-red-500" style={{ width: financialSummary.overdue > 0 ? '10%' : '0%' }} />
           </div>
         </Card>
       </div>
@@ -256,11 +312,77 @@ export function BillingManagement({ customers }: BillingManagementProps) {
 
           <div className="min-h-[400px]">
             <TabsContent value={activeCategory} className="m-0">
-              <div className="h-96 flex flex-col items-center justify-center opacity-30 text-center">
-                <ClipboardList className="h-16 w-16 mb-6 text-slate-300" />
-                <p className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">{activeCategory.replace('-', ' ')} Ledger Offline</p>
-                <p className="text-[10px] text-slate-400 mt-2 max-w-xs mx-auto">No active records detected. Click "Create New" to initialize data entry.</p>
-              </div>
+              {filteredRecords.length > 0 ? (
+                <Table>
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="hover:bg-transparent border-slate-100">
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Identity / Ref</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Name</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Date Issued</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
+                      <TableHead className="text-right px-8"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRecords.map((record) => (
+                      <TableRow key={record.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                        <TableCell className="px-8">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-[#001F3D]">{record.number}</span>
+                            <span className="text-[9px] text-slate-400 font-code uppercase">REF_{record.id.substr(0,6)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-bold text-slate-700 uppercase tracking-tight">{record.customerName}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-[11px] font-medium text-slate-500">{record.date}</span>
+                        </TableCell>
+                        <TableCell className="text-right font-display font-bold text-[#001F3D]">
+                          ${record.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className={cn(
+                            "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
+                            record.status === 'Paid' ? "bg-green-50 text-green-700 border-green-100" :
+                            record.status === 'Overdue' ? "bg-red-50 text-red-700 border-red-100" :
+                            "bg-blue-50 text-blue-700 border-blue-100"
+                          )}>
+                            {record.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right px-8">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl border-slate-100 shadow-2xl">
+                              <DropdownMenuItem className="text-xs font-bold gap-2">
+                                <FileText className="h-3.5 w-3.5" /> Open Sheet
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-xs font-bold gap-2">
+                                <Printer className="h-3.5 w-3.5" /> Print PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-xs font-bold gap-2 text-red-600">
+                                <Trash2 className="h-3.5 w-3.5" /> Void Entry
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="h-96 flex flex-col items-center justify-center opacity-30 text-center">
+                  <ClipboardList className="h-16 w-16 mb-6 text-slate-300" />
+                  <p className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">{activeCategory.replace('-', ' ')} Ledger Offline</p>
+                  <p className="text-[10px] text-slate-400 mt-2 max-w-xs mx-auto">No active records detected. Click "Create New" to initialize data entry.</p>
+                </div>
+              )}
             </TabsContent>
           </div>
         </Card>
@@ -316,7 +438,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                       <div className="h-1 w-8 bg-primary rounded-full" />
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Transaction Metadata</h4>
                     </div>
-                    <Badge variant="outline" className="font-code text-[10px]">{formData.quotationNo}</Badge>
+                    <Badge variant="outline" className="font-code text-[10px]">{formData.number}</Badge>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -446,6 +568,13 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                     Abort Protocol
                   </Button>
                   <Button 
+                    variant="outline"
+                    className="flex-1 h-14 border-slate-200 text-[#001F3D] rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50"
+                    onClick={() => handleSaveRecord()}
+                  >
+                    Save to Ledger
+                  </Button>
+                  <Button 
                     className="flex-[2] h-14 bg-primary hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 flex gap-2"
                     onClick={() => setWizardStep('preview')}
                   >
@@ -455,7 +584,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
               </div>
             </div>
           ) : (
-            /* PREVIEW STEP: Matching the Quotation Sheet in the image */
+            /* PREVIEW STEP */
             <div className="flex flex-col h-[90vh] max-h-[900px] bg-white">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <Button variant="ghost" size="sm" onClick={() => setWizardStep('form')} className="text-[10px] font-bold uppercase gap-2">
@@ -465,7 +594,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                   <Button variant="outline" className="h-10 rounded-xl gap-2 font-bold text-[10px] uppercase">
                     <Printer className="h-4 w-4" /> Print PDF
                   </Button>
-                  <Button className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold text-[10px] uppercase shadow-lg shadow-emerald-600/20" onClick={() => handleCommitRecord(true)}>
+                  <Button className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold text-[10px] uppercase shadow-lg shadow-emerald-600/20" onClick={() => handleSaveRecord('Shared')}>
                     <Share2 className="h-4 w-4" /> Authorize & Share
                   </Button>
                 </div>
@@ -473,14 +602,12 @@ export function BillingManagement({ customers }: BillingManagementProps) {
 
               <div className="flex-1 overflow-y-auto p-12 bg-slate-100/30">
                 <div className="max-w-[800px] mx-auto bg-white shadow-2xl border-4 border-[#e8f5e9] p-0 relative overflow-hidden">
-                  {/* Free Ribbon Placeholder */}
                   <div className="absolute top-0 right-0 w-32 h-32 overflow-hidden pointer-events-none">
                     <div className="absolute top-6 right-[-35px] w-[150px] bg-[#22c55e] text-white text-[10px] font-bold text-center py-1 rotate-45 uppercase tracking-widest">
                       Draft
                     </div>
                   </div>
 
-                  {/* Document Content */}
                   <div className="p-10 space-y-8">
                     <header className="bg-[#e8f5e9] -mx-10 -mt-10 p-6 flex flex-col items-center border-b border-green-200">
                       <h1 className="text-3xl font-display font-bold tracking-[0.2em] text-[#1b5e20] uppercase">Quotation</h1>
@@ -489,7 +616,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                     <div className="flex justify-end pt-4">
                       <div className="text-right space-y-1">
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Date: <span className="text-slate-900 ml-2">{formData.date}</span></p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Quotation No.: <span className="text-slate-900 ml-2">{formData.quotationNo}</span></p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Quotation No.: <span className="text-slate-900 ml-2">{formData.number}</span></p>
                       </div>
                     </div>
 
@@ -561,7 +688,6 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                             );
                           })}
                           
-                          {/* Summary Rows */}
                           <TableRow className="bg-white hover:bg-transparent">
                             <TableCell colSpan={5} className="border-r border-slate-900 pt-10">
                               <p className="text-[9px] font-bold uppercase text-slate-400">Amount in Words:</p>

@@ -30,7 +30,7 @@ import {
   Package,
   Truck
 } from 'lucide-react';
-import { Invoice } from '@/lib/types';
+import { Invoice, Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   DropdownMenu, 
@@ -51,7 +51,11 @@ import { useToast } from '@/hooks/use-toast';
 
 type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses';
 
-export function BillingManagement() {
+interface BillingManagementProps {
+  customers: Customer[];
+}
+
+export function BillingManagement({ customers }: BillingManagementProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<BillingCategory>('invoice');
@@ -101,6 +105,7 @@ export function BillingManagement() {
   };
 
   const darkInputClasses = "h-12 bg-slate-50 border-none rounded-xl text-xs font-bold focus-visible:ring-primary/20";
+  const darkSelectClasses = "h-12 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-primary/20";
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
@@ -225,7 +230,6 @@ export function BillingManagement() {
               </div>
             </TabsContent>
 
-            {/* Other content views follow the same placeholder pattern */}
             <TabsContent value="proforma" className="m-0">
               <div className="h-96 flex flex-col items-center justify-center opacity-30 text-center">
                 <FileText className="h-16 w-16 mb-6 text-slate-300" />
@@ -302,12 +306,19 @@ export function BillingManagement() {
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                       <Building2 className="h-3 w-3" /> Account Identity
                     </Label>
-                    <Input 
-                      placeholder="Select Customer..." 
-                      className={darkInputClasses}
-                      value={formData.customer}
-                      onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                    />
+                    <Select value={formData.customer} onValueChange={(val) => setFormData({...formData, customer: val})}>
+                      <SelectTrigger className={darkSelectClasses}>
+                        <SelectValue placeholder="Select Customer..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-100">
+                        {customers.map(c => (
+                          <SelectItem key={c.id} value={c.name} className="text-xs font-bold uppercase">{c.name}</SelectItem>
+                        ))}
+                        {customers.length === 0 && (
+                          <div className="p-4 text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest">No customers found</div>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">

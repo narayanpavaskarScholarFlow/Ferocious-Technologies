@@ -234,7 +234,7 @@ export default function IndustrialERP() {
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
             )}
-            {currentView === 'billing' && <BillingManagement />}
+            {currentView === 'billing' && <BillingManagement customers={customers} />}
             {currentView === 'inventory' && <InventoryManagement />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={(l) => setLogs([l, ...logs])} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}

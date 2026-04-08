@@ -22,7 +22,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Box,
-  Cpu
+  Cpu,
+  Palette
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { quoteAnalysis, type QuoteAnalysisOutput } from '@/ai/flows/quote-analysis-flow';
@@ -115,7 +116,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
         <div className="flex items-center gap-2">
           <div className="px-4 py-2 bg-primary/5 rounded-lg border border-primary/10 flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Analysis Engine v1.0</span>
+            <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Analysis Engine v1.1</span>
           </div>
         </div>
       </header>
@@ -167,9 +168,9 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Model Complexity / Details</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Model Complexity & Color Coding</Label>
                 <Textarea 
-                  placeholder="Describe part geometry, precision requirements, and surface finish needs..." 
+                  placeholder="Describe geometry and specify operation colors (e.g. Blue=Milling, Red=Tapping, Green=Grinding)..." 
                   className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium resize-none focus-visible:ring-primary/20"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -296,12 +297,36 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
                 </div>
 
                 <div className="space-y-6">
-                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-[0.3em]">Estimated Breakdown</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-bold text-white/40 uppercase tracking-[0.3em]">Operation Color Analysis</p>
+                    <Palette className="h-3.5 w-3.5 text-white/20" />
+                  </div>
                   <div className="space-y-3">
                     {result.estimations.map((est, i) => (
-                      <div key={i} className="flex justify-between items-center py-3 border-b border-white/5 last:border-none">
-                        <span className="text-xs font-medium text-white/70">{est.operationName} ({est.estimatedHours}h)</span>
-                        <span className="text-sm font-bold font-code">${est.cost.toFixed(2)}</span>
+                      <div key={i} className="flex flex-col gap-2 py-4 px-5 bg-white/5 rounded-2xl border border-white/5 transition-all hover:bg-white/10">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            {est.hexColor && (
+                              <div 
+                                className="h-3 w-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" 
+                                style={{ backgroundColor: est.hexColor }} 
+                              />
+                            )}
+                            <span className="text-xs font-bold text-white/90">{est.operationName}</span>
+                          </div>
+                          <span className="text-sm font-bold font-code text-accent">${est.cost.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-bold uppercase">
+                          <span className="text-white/40">Estimated Duration</span>
+                          <span className="text-white/60">{est.estimatedHours} Hours</span>
+                        </div>
+                        {est.identifiedColor && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="border-white/10 text-[7px] font-bold uppercase text-white/40 px-2 h-4">
+                              Color: {est.identifiedColor}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -324,11 +349,11 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
           ) : (
             <div className="h-full flex flex-col items-center justify-center py-32 opacity-30 text-center border-4 border-dashed border-slate-200 rounded-[2.5rem]">
               <div className="p-8 bg-slate-50 rounded-full mb-6">
-                <Calculator className="h-16 w-16 text-slate-300" />
+                <Palette className="h-16 w-16 text-slate-300" />
               </div>
-              <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Awaiting Protocol</h4>
+              <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Operation Identification</h4>
               <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
-                Initialize the AI Analysis by uploading model metadata and configuring the operations matrix.
+                Describe the model face colors to help AI map operations. (e.g., "Milling=Blue, Drills=Red")
               </p>
             </div>
           )}

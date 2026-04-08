@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview AI Intelligent CAD Quoting flow.
+ * @fileOverview AI Intelligent CAD Quoting flow with Operation Color Identification.
  *
- * - quoteAnalysis - Analyzes part metadata and operations to suggest material and costs.
+ * - quoteAnalysis - Analyzes part metadata and operations to suggest material, costs, and identifies operation colors.
  * - QuoteAnalysisInput - The input type for the quoteAnalysis function.
  * - QuoteAnalysisOutput - The return type for the quoteAnalysis function.
  */
@@ -12,7 +12,7 @@ import {z} from 'genkit';
 
 const QuoteAnalysisInputSchema = z.object({
   partName: z.string().describe('The name of the part to be quoted.'),
-  modelDescription: z.string().describe('A description of the 3D model geometry and complexity.'),
+  modelDescription: z.string().describe('A description of the 3D model geometry, complexity, and any color-coded features.'),
   operations: z.array(z.object({
     name: z.string(),
     costPerHour: z.number()
@@ -31,6 +31,8 @@ const QuoteAnalysisOutputSchema = z.object({
     operationName: z.string(),
     estimatedHours: z.number().describe('Estimated machining time in hours'),
     cost: z.number().describe('Calculated cost for this operation'),
+    identifiedColor: z.string().optional().describe('The color associated with this operation in the CAD model (e.g., "Blue", "Red", "Cyan").'),
+    hexColor: z.string().optional().describe('A CSS-friendly hex code for the identified color.'),
   })),
   totalMachiningCost: z.number().describe('The sum of all estimated operation costs.'),
   totalLeadTime: z.number().describe('Total estimated hours including buffers.'),
@@ -58,9 +60,9 @@ Operations Matrix:
 - {{name}}: \${{costPerHour}}/hr
 {{/each}}
 
-Based on the complexity of the part described, please:
+Based on the complexity of the part described and any color-coded features mentioned (e.g., "Blue faces are milling", "Red holes are tapping"), please:
 1. Estimate the raw material block size (LxWxH in mm) required to machine this part.
-2. For each operation, estimate the required machining hours based on part complexity.
+2. For each operation, estimate the required machining hours based on part complexity and identify the associated color and its hex code if mentioned or logically inferred.
 3. Calculate the cost for each operation (Hours * Cost per hour).
 4. Provide the total machining cost.
 5. Provide the total lead time in hours.

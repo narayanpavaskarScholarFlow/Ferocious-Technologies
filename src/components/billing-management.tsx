@@ -30,9 +30,10 @@ import {
   MoreVertical,
   Percent,
   Hash,
-  Calculator
+  Calculator,
+  Truck
 } from 'lucide-react';
-import { Customer } from '@/lib/types';
+import { Customer, Vendor } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -61,7 +62,7 @@ interface LineItem {
   quantity: number;
   pricePerUnit: number;
   gst: number; // total percentage
-  discount: number; // percentage or flat? I'll use flat amount for precision
+  discount: number; // flat amount
 }
 
 interface BillingRecord {
@@ -79,9 +80,10 @@ interface BillingRecord {
 
 interface BillingManagementProps {
   customers: Customer[];
+  vendors: Vendor[];
 }
 
-export function BillingManagement({ customers }: BillingManagementProps) {
+export function BillingManagement({ customers, vendors }: BillingManagementProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<BillingCategory>('quotation');
@@ -97,16 +99,21 @@ export function BillingManagement({ customers }: BillingManagementProps) {
     note: 'Material cost 100% advance. Product warranty 1 year',
     globalDiscount: 0,
     amountPaid: 0,
-    declaration: 'We declare that this quotation shows the actual price of the goods described and that all particulars are true and correct.'
+    declaration: 'We declare that this record shows true particulars and actual pricing.'
   });
 
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { id: '1', description: 'Industrial Service', hsn: '9987', unit: 'Lot', quantity: 1, pricePerUnit: 0, gst: 18, discount: 0 },
   ]);
 
-  const selectedCustomer = useMemo(() => 
-    customers.find(c => c.id === formData.customerId), 
-  [customers, formData.customerId]);
+  const isLogisticsCategory = activeCategory === 'inward' || activeCategory === 'outward';
+
+  const selectedEntity = useMemo(() => {
+    if (isLogisticsCategory) {
+      return vendors.find(v => v.id === formData.customerId);
+    }
+    return customers.find(c => c.id === formData.customerId);
+  }, [customers, vendors, formData.customerId, isLogisticsCategory]);
 
   const totals = useMemo(() => {
     const subTotal = lineItems.reduce((acc, item) => {
@@ -157,12 +164,15 @@ export function BillingManagement({ customers }: BillingManagementProps) {
   };
 
   const handleCreateNew = () => {
-    const prefix = activeCategory === 'quotation' ? 'QT' : activeCategory === 'invoice' ? 'INV' : 'DOC';
+    const prefix = activeCategory === 'quotation' ? 'QT' : 
+                   activeCategory === 'invoice' ? 'INV' : 
+                   activeCategory === 'inward' ? 'INW' : 
+                   activeCategory === 'outward' ? 'OUT' : 'DOC';
     setFormData({
       customerId: '',
       date: new Date().toISOString().split('T')[0],
       number: `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`,
-      note: 'Material cost 100% advance. Product warranty 1 year',
+      note: 'Terms & Conditions as per Industrial Standard Protocol.',
       globalDiscount: 0,
       amountPaid: 0,
       declaration: 'We declare that this record shows true particulars and actual pricing.'
@@ -177,7 +187,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
       toast({
         variant: "destructive",
         title: "Protocol Interrupted",
-        description: "Customer Identity is required for ledger entry."
+        description: `${isLogisticsCategory ? 'Vendor' : 'Customer'} Identity is required for ledger entry.`
       });
       return;
     }
@@ -185,7 +195,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
     const newRecord: BillingRecord = {
       id: Math.random().toString(36).substr(2, 9),
       type: activeCategory,
-      customerName: selectedCustomer?.name || 'Unknown',
+      customerName: selectedEntity?.name || 'Unknown',
       customerId: formData.customerId,
       date: formData.date,
       number: formData.number,
@@ -200,7 +210,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
     
     toast({
       title: "Ledger Entry Committed",
-      description: `${activeCategory.toUpperCase()} #${formData.number} has been saved for ${selectedCustomer?.name}.`
+      description: `${activeCategory.toUpperCase()} #${formData.number} has been saved.`
     });
   };
 
@@ -329,7 +339,7 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-slate-100">
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Identity / Ref</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Name</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">{isLogisticsCategory ? 'Vendor Name' : 'Customer Name'}</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Date Issued</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
@@ -470,16 +480,23 @@ export function BillingManagement({ customers }: BillingManagementProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Building2 className="h-3 w-3" /> Receiver Identity
+                        {isLogisticsCategory ? <Truck className="h-3 w-3" /> : <Building2 className="h-3 w-3" />} 
+                        {isLogisticsCategory ? 'Vendor Identity' : 'Receiver Identity'}
                       </Label>
                       <Select value={formData.customerId} onValueChange={(val) => setFormData({...formData, customerId: val})}>
                         <SelectTrigger className={darkSelectClasses}>
-                          <SelectValue placeholder="Select Customer from CRM..." />
+                          <SelectValue placeholder={isLogisticsCategory ? "Select Vendor from ecosystem..." : "Select Customer from CRM..."} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100">
-                          {customers.map(c => (
-                            <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>
-                          ))}
+                          {isLogisticsCategory ? (
+                            vendors.map(v => (
+                              <SelectItem key={v.id} value={v.id} className="text-xs font-bold uppercase">{v.name}</SelectItem>
+                            ))
+                          ) : (
+                            customers.map(c => (
+                              <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -718,14 +735,14 @@ export function BillingManagement({ customers }: BillingManagementProps) {
 
                       {/* Receiver */}
                       <div className="space-y-4">
-                        <div className="bg-[#e8f5e9] py-1.5 px-4 text-center font-bold text-[10px] uppercase tracking-widest text-[#1b5e20] border-b-2 border-green-600">Receiver</div>
+                        <div className="bg-[#e8f5e9] py-1.5 px-4 text-center font-bold text-[10px] uppercase tracking-widest text-[#1b5e20] border-b-2 border-green-600">{isLogisticsCategory ? 'Vendor / Partner' : 'Receiver'}</div>
                         <div className="px-2 space-y-3">
-                          <p className="text-xs font-bold text-[#001F3D]">Name: <span className="font-normal text-slate-600 ml-2">{selectedCustomer?.name || '---'}</span></p>
-                          <p className="text-xs font-bold text-[#001F3D]">Address: <span className="font-normal text-slate-600 ml-2">{selectedCustomer?.address || '---'}</span></p>
+                          <p className="text-xs font-bold text-[#001F3D]">Name: <span className="font-normal text-slate-600 ml-2">{selectedEntity?.name || '---'}</span></p>
+                          <p className="text-xs font-bold text-[#001F3D]">Address: <span className="font-normal text-slate-600 ml-2">{(selectedEntity as any)?.address || '---'}</span></p>
                           <div className="pt-4 space-y-2">
-                            <p className="text-[10px] font-bold text-[#001F3D]">Cell: <span className="font-normal text-slate-600 ml-2">{selectedCustomer?.contactNumber || '---'}</span></p>
-                            <p className="text-[10px] font-bold text-[#001F3D]">Email: <span className="font-normal text-slate-600 ml-2">{selectedCustomer?.email || '---'}</span></p>
-                            <p className="text-[10px] font-bold text-[#001F3D]">GSTIN: <span className="font-normal text-slate-600 ml-2">{selectedCustomer?.gstNumber || '---'}</span></p>
+                            <p className="text-[10px] font-bold text-[#001F3D]">Cell: <span className="font-normal text-slate-600 ml-2">{(selectedEntity as any)?.contactNumber || (selectedEntity as any)?.contact || '---'}</span></p>
+                            <p className="text-[10px] font-bold text-[#001F3D]">Email: <span className="font-normal text-slate-600 ml-2">{(selectedEntity as any)?.email || '---'}</span></p>
+                            <p className="text-[10px] font-bold text-[#001F3D]">GSTIN: <span className="font-normal text-slate-600 ml-2">{(selectedEntity as any)?.gstNumber || '---'}</span></p>
                           </div>
                         </div>
                       </div>

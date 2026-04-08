@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember, Order, Machine } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember, Order, Machine, Vendor } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -50,6 +51,10 @@ export default function IndustrialERP() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([
+    { id: 'V-001', name: 'Precision Heat Treaters', type: 'Service', activeOrders: 2, rating: 4.8, contact: '+91 90000 11111', status: 'Active' },
+    { id: 'V-002', name: 'Global Tooling Solutions', type: 'Raw Material', activeOrders: 5, rating: 4.5, contact: '+91 90000 22222', status: 'Active' },
+  ]);
   const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -234,7 +239,7 @@ export default function IndustrialERP() {
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
             )}
-            {currentView === 'billing' && <BillingManagement customers={customers} />}
+            {currentView === 'billing' && <BillingManagement customers={customers} vendors={vendors} />}
             {currentView === 'inventory' && <InventoryManagement />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={(l) => setLogs([l, ...logs])} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}

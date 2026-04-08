@@ -139,6 +139,9 @@ export interface Customer {
   email: string;
   location: string;
   totalOrders: number;
+  outstanding?: string;
+  pendingPOs?: number;
+  status?: 'Active' | 'Closed';
 }
 
 export interface OperationStep {

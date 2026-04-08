@@ -1,13 +1,13 @@
-
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Search, 
   UserPlus, 
@@ -19,11 +19,10 @@ import {
   CreditCard,
   User,
   Phone,
-  Hash,
-  ShieldCheck,
-  Building,
   Edit2,
-  Check
+  Check,
+  Printer,
+  XCircle
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -49,6 +48,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState(1);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   
   const sectionRefs = {
     step1: useRef<HTMLDivElement>(null),
@@ -63,7 +63,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     contactNumber: '',
     gstNumber: '',
     contactPerson: '',
-    type: 'Corporate'
+    type: 'Corporate' as 'Corporate' | 'Individual'
   });
 
   const filteredCustomers = useMemo(() => {
@@ -89,6 +89,32 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     setEditingCustomerId(customer.id);
     setIsAddCustomerOpen(true);
     setActiveStep(1);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedCustomers(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCustomers.length === filteredCustomers.length) {
+      setSelectedCustomers([]);
+    } else {
+      setSelectedCustomers(filteredCustomers.map(c => c.id));
+    }
+  };
+
+  const handleCloseAccount = (id: string) => {
+    const updated = customers.map(c => 
+      c.id === id ? { ...c, status: 'Closed' as const } : c
+    );
+    onCustomersChange(updated);
+    toast({
+      title: "Account Decommissioned",
+      description: "Customer status has been moved to Closed archive.",
+      variant: "destructive"
+    });
   };
 
   const scrollToSection = (step: number) => {
@@ -117,7 +143,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
               contactPerson: newCustomer.contactPerson.trim(),
               contactNumber: newCustomer.contactNumber.trim() || 'N/A',
               address: newCustomer.address.trim() || 'N/A',
-              type: newCustomer.type as any || 'Corporate',
+              type: newCustomer.type,
               location: newCustomer.address.trim() || 'Global'
             } 
           : c
@@ -135,10 +161,13 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
         contactPerson: newCustomer.contactPerson.trim(),
         contactNumber: newCustomer.contactNumber.trim() || 'N/A',
         address: newCustomer.address.trim() || 'N/A',
-        type: newCustomer.type as any || 'Corporate',
+        type: newCustomer.type,
         email: '',
         location: newCustomer.address.trim() || 'Global',
-        totalOrders: 0
+        totalOrders: 0,
+        outstanding: '$0.00',
+        pendingPOs: 0,
+        status: 'Active'
       };
 
       onCustomersChange([...customers, customer]);
@@ -205,17 +234,23 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
               <h3 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">Active Accounts Ledger</h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Total Pipeline Valuation: $0.00</p>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filter:</span>
-              <Select value={activeFilter} onValueChange={setActiveFilter}>
-                <SelectTrigger className="w-[180px] h-10 bg-white text-[10px] font-bold uppercase tracking-widest border-slate-200 rounded-xl shadow-sm">
-                  <SelectValue placeholder="All States" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100">
-                  <SelectItem value="Active" className="text-[10px] font-bold uppercase">Active Pipeline</SelectItem>
-                  <SelectItem value="Closed" className="text-[10px] font-bold uppercase">Closed Contracts</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm">
+                <Printer className="h-3.5 w-3.5 text-slate-400" /> Print Out
+              </Button>
+              <div className="h-8 w-px bg-slate-200 mx-2" />
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filter:</span>
+                <Select value={activeFilter} onValueChange={setActiveFilter}>
+                  <SelectTrigger className="w-[180px] h-10 bg-white text-[10px] font-bold uppercase tracking-widest border-slate-200 rounded-xl shadow-sm">
+                    <SelectValue placeholder="All States" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-100">
+                    <SelectItem value="Active" className="text-[10px] font-bold uppercase">Active Pipeline</SelectItem>
+                    <SelectItem value="Closed" className="text-[10px] font-bold uppercase">Closed Contracts</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -223,18 +258,27 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
             <Table>
               <TableHeader className="bg-white">
                 <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10 w-20">Seq.</TableHead>
+                  <TableHead className="w-12 py-6 px-6">
+                    <Checkbox checked={selectedCustomers.length === filteredCustomers.length && filteredCustomers.length > 0} onCheckedChange={handleSelectAll} />
+                  </TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 w-20">Seq.</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Client Name</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Type of Com</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Outstanding</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Pending PO</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status & Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCustomers.length > 0 ? filteredCustomers.map((customer, idx) => (
                   <TableRow key={customer.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-colors group">
-                    <TableCell className="px-10 font-code text-[11px] text-slate-300 font-bold">
+                    <TableCell className="px-6">
+                      <Checkbox checked={selectedCustomers.includes(customer.id)} onCheckedChange={() => handleToggleSelect(customer.id)} />
+                    </TableCell>
+                    <TableCell className="font-code text-[11px] text-slate-300 font-bold">
                       {(idx + 1).toString().padStart(2, '0')}
                     </TableCell>
                     <TableCell>
@@ -242,6 +286,11 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                         <span className="text-sm font-bold text-[#001F3D]">{customer.name}</span>
                         <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID_{customer.id}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px] font-bold uppercase px-2 py-0.5 border-slate-100 bg-slate-50 text-slate-500">
+                        {customer.type}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
@@ -261,25 +310,46 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                         <MapPin className="h-3 w-3 text-slate-300" /> {customer.location}
                       </div>
                     </TableCell>
+                    <TableCell className="font-code text-[11px] font-bold text-red-500">
+                      {customer.outstanding || '$0.00'}
+                    </TableCell>
+                    <TableCell className="font-code text-[11px] font-bold text-primary">
+                      {customer.pendingPOs || 0}
+                    </TableCell>
                     <TableCell className="text-right px-10">
                       <div className="flex items-center justify-end gap-3">
-                        <Badge className="text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm bg-green-50 text-green-700 border-green-100">
-                          Active
+                        <Badge className={cn(
+                          "text-[9px] uppercase font-bold tracking-wider px-4 py-1.5 rounded-full border shadow-sm",
+                          customer.status === 'Closed' 
+                            ? "bg-slate-100 text-slate-400 border-slate-200" 
+                            : "bg-green-50 text-green-700 border-green-100"
+                        )}>
+                          {customer.status || 'Active'}
                         </Badge>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-slate-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleEditCustomer(customer)}
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-slate-400 hover:text-primary"
+                            onClick={() => handleEditCustomer(customer)}
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-slate-400 hover:text-red-500"
+                            onClick={() => handleCloseAccount(customer.id)}
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-96 text-center">
+                    <TableCell colSpan={10} className="h-96 text-center">
                       <div className="flex flex-col items-center justify-center opacity-30 py-10">
                         <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
                           <Building2 className="h-16 w-16 text-slate-300" />

@@ -3,130 +3,129 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * TOOLROOM 2.0 SECURITY RULES (PROTOTYPING MODE)
+     * TOOLROOM2.0 Security Rules
      * 
-     * Core Philosophy:
-     * This ruleset implements a robust Database-Backed Access Control (DBAC) system. 
-     * Security is achieved through two primary mechanisms: Path-based ownership for 
-     * user-specific data and an explicit global admin role managed via the 
-     * '/roles_admin' collection.
+     * Core Philosophy: 
+     * This ruleset implements a hybrid security model combining strict Path-Based Ownership 
+     * for user profiles and Marker-Based Administrative Access (DBAC) for system-wide 
+     * configurations and the tool catalog.
      * 
      * Data Structure:
-     * - /user_profiles/{userId}: User-owned documents containing profile and role info.
-     * - /tools, /categories, /tags: Global catalog data accessible to all signed-in users.
-     * - /roles_admin/{userId}: A "gatekeeper" collection where the presence of a 
-     *   UID grants global administrative privileges.
+     * - /user_profiles/{userId}: Private user data, keyed by Firebase Auth UID.
+     * - /categories/{categoryId} & /tags/{tagId}: Global system metadata.
+     * - /tools/{toolId}: A global catalog of resources.
+     * - /roles_admin/{userId}: A restricted collection used to identify administrator accounts.
      * 
      * Key Security Decisions:
-     * 1. Authorization Independence: Read/Write rules for global entities check the 
-     *    'roles_admin' collection directly using exists(), avoiding slow lookups 
-     *    to the user_profiles collection.
-     * 2. Strict Admin Control: All catalog modifications (create, update, delete) 
-     *    are restricted exclusively to users verified in the 'roles_admin' collection.
-     * 3. Identity Verification: All operations require a valid Firebase Auth UID.
-     * 
-     * Denormalization for Authorization:
-     * - The 'id' field is denormalized on all entities to allow for relational 
-     *   integrity checks (e.g., ensuring a document's internal ID matches its path).
-     * - 'addedByUserId' is stored in Tools for audit logs, though primary 
-     *   authorization remains with the global Admin role.
+     * - Authorization Independence: Critical fields like 'ownerId' are denormalized onto 
+     *   Tool documents to allow for atomic write validation without cross-document lookups.
+     * - DBAC (Database Access Control): Administrative rights are granted via the existence 
+     *   of a document in the 'roles_admin' collection, checked via the `exists()` function.
+     * - QAP Compliance: Read rules allow broad access (list) where appropriate (catalog/metadata) 
+     *   while write rules strictly enforce identity and role requirements.
+     * - Relational Integrity: On creation of user-scoped data, the rules enforce that the 
+     *   internal ID field matches the document path ID.
      */
 
     // --- Helper Functions ---
 
-    /** @description Checks if the request is from an authenticated user. */
+    /** Checks if the request is from a signed-in user. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Checks if the authenticated user's UID matches the provided userId. */
+    /** Checks if the authenticated user's UID matches the provided userId (Path-based). */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** @description Checks if the user is explicitly registered as an admin in the DBAC collection. */
+    /** Checks if the authenticated user has a marker in the roles_admin collection. */
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
-    /** @description Checks ownership and ensures the document exists for destructive operations. */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+    /** Validates that the user is the owner of the existing document in the resource. */
+    function isExistingOwner(ownerId) {
+      return isSignedIn() && resource != null && request.auth.uid == ownerId;
     }
 
-    /** @description Checks if the user is an admin and the document exists. */
-    function isExistingAdmin() {
-      return isAdmin() && resource != null;
+    /** Validates that the user is either the owner of the document or an administrator. */
+    function isOwnerOrAdmin(ownerId) {
+      return isExistingOwner(ownerId) || isAdmin();
+    }
+
+    /** Validates that critical relational fields remain unchanged during an update. */
+    function isUnchanged(field) {
+      return request.resource.data[field] == resource.data[field];
     }
 
     // --- Collection Rules ---
 
     /**
-     * @description Rules for the UserProfile collection. Users can manage their own data; Admins can manage everyone.
+     * @description Rules for user profiles. Users manage their own data; visibility is restricted to the owner.
      * @path /user_profiles/{userId}
-     * @allow (get) If request.auth.uid is 'abc' and path is /user_profiles/abc
-     * @deny (list) If request.auth.uid is 'abc' and user attempts to list all profiles (unless admin).
-     * @principle Enforces path-based ownership with administrative override for user management.
+     * @allow (create) if auth.uid matches {userId} and data.id matches {userId}.
+     * @deny (list) if request is from a different user.
+     * @principle Ownership and Path-based consistency.
      */
     match /user_profiles/{userId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin();
+      allow update: if isOwner(userId) && resource != null && isUnchanged('id');
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Rules for the Tool catalog. Global read access for users; write access for admins only.
-     * @path /tools/{toolId}
-     * @allow (get) Any authenticated user reading a tool document.
-     * @deny (create) An authenticated user without an admin record in /roles_admin.
-     * @principle Implements global read access with DBAC-protected write operations.
-     */
-    match /tools/{toolId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin() && request.resource.data.id == toolId;
-      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingAdmin();
-    }
-
-    /**
-     * @description Rules for tool categories. Global read access; admin-only writes.
+     * @description System-defined categories. Publicly readable for filtering, but restricted to admins for writes.
      * @path /categories/{categoryId}
-     * @allow (list) Any signed-in user browsing the category list.
-     * @deny (delete) Any user who is not explicitly verified as an admin.
-     * @principle Protects taxonomy integrity by restricting updates to authorized admins.
+     * @allow (list) if signed in.
+     * @deny (update) if user is not an admin.
+     * @principle Role-based access control (DBAC).
      */
     match /categories/{categoryId} {
       allow get, list: if isSignedIn();
-      allow create: if isAdmin() && request.resource.data.id == categoryId;
-      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && resource != null;
     }
 
     /**
-     * @description Rules for tool tags. Global read access; admin-only writes.
+     * @description System-defined tags. Publicly readable for discovery, restricted to admins for management.
      * @path /tags/{tagId}
-     * @allow (get) Any signed-in user fetching tag details.
-     * @deny (update) Any user attempting to rename a tag without admin privileges.
-     * @principle Maintains global metadata consistency via admin-only write permissions.
+     * @allow (get) if signed in.
+     * @deny (create) if user is not an admin.
+     * @principle Role-based access control (DBAC).
      */
     match /tags/{tagId} {
       allow get, list: if isSignedIn();
-      allow create: if isAdmin() && request.resource.data.id == tagId;
-      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && resource != null;
     }
 
     /**
-     * @description Security gate for administrative privileges. Managed primarily by system admins.
+     * @description Global tool catalog. Shared visibility with owner-specific or admin-specific write controls.
+     * @path /tools/{toolId}
+     * @allow (create) if ownerId in data matches auth.uid.
+     * @deny (delete) if user is not the owner or an admin.
+     * @principle Denormalized ownership for performant authorization.
+     */
+    match /tools/{toolId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && (request.resource.data.ownerId == request.auth.uid || isAdmin());
+      allow update: if resource != null && (isOwnerOrAdmin(resource.data.ownerId)) && isUnchanged('ownerId');
+      allow delete: if resource != null && (isOwnerOrAdmin(resource.data.ownerId));
+    }
+
+    /**
+     * @description Marker collection for admin roles. Existence of a document here grants elevated permissions.
      * @path /roles_admin/{userId}
-     * @allow (get) Admins checking their own or others' status.
-     * @deny (create) Users attempting to grant themselves administrative rights.
-     * @principle Uses an existence-based check for high-performance, atomic authorization decisions.
+     * @allow (get) if checking own admin status.
+     * @deny (write) always (to be managed via Firebase Console or Admin SDK).
+     * @principle Database Access Control (DBAC).
      */
     match /roles_admin/{userId} {
-      allow get, list: if isAdmin();
-      allow create, update, delete: if false; // Admin roles are managed manually or via backend functions for safety.
+      allow get: if isOwner(userId);
+      allow list: if isAdmin();
+      allow create, update, delete: if false; 
     }
   }
 }

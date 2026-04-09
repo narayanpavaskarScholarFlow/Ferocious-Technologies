@@ -4,15 +4,19 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Stores user profile information, excluding sensitive authentication credentials, and defines user roles and personal settings.",
+      "description": "Represents a user's profile within the TOOLROOM2.0 application. This entity stores non-authentication related user data.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the UserProfile entity."
         },
+        "username": {
+          "type": "string",
+          "description": "A unique username chosen by the user."
+        },
         "email": {
           "type": "string",
-          "description": "The user's email address, used for communication and linking to an external authentication system.",
+          "description": "The user's contact email address.",
           "format": "email"
         },
         "firstName": {
@@ -23,111 +27,30 @@
           "type": "string",
           "description": "The last name of the user."
         },
-        "role": {
-          "type": "string",
-          "description": "The role assigned to the user, determining their permissions within the application (e.g., 'admin', 'standard', 'viewer')."
-        },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the user profile was created.",
+          "description": "Timestamp when the user profile was created.",
           "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp indicating when the user profile was last updated.",
+          "description": "Timestamp when the user profile was last updated.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
+        "username",
         "email",
-        "firstName",
-        "lastName",
-        "role"
-      ]
-    },
-    "Tool": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Tool",
-      "type": "object",
-      "description": "Represents a single tool or resource available in the TOOLROOM2.0 catalog, including its details and categorization.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Tool entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The common name of the tool or resource."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the tool, used by the AI assistant for intelligent categorization and tagging."
-        },
-        "manufacturer": {
-          "type": "string",
-          "description": "The manufacturer or vendor of the tool."
-        },
-        "modelNumber": {
-          "type": "string",
-          "description": "The specific model number or product identifier of the tool."
-        },
-        "serialNumber": {
-          "type": "string",
-          "description": "A unique serial number for an individual physical tool item, if applicable."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL to an image of the tool for visual identification in the catalog.",
-          "format": "uri"
-        },
-        "quantity": {
-          "type": "number",
-          "description": "The number of units of this tool currently available in the inventory."
-        },
-        "location": {
-          "type": "string",
-          "description": "The physical or digital location where the tool can be found or accessed."
-        },
-        "categoryId": {
-          "type": "string",
-          "description": "Reference to the Category this tool belongs to. (Relationship: Category 1:N Tool)"
-        },
-        "tagIds": {
-          "type": "array",
-          "description": "References to Tags associated with this tool for advanced filtering and search. (Relationship: Tag N:N Tool)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "addedByUserId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who added this tool to the catalog. (Relationship: UserProfile 1:N Tool)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the tool record was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the tool record was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "categoryId",
-        "addedByUserId"
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Defines logical groupings for tools, aiding in organization and discoverability.",
+      "description": "Defines categories for organizing tools, enabling efficient browsing and filtering.",
       "properties": {
         "id": {
           "type": "string",
@@ -135,23 +58,35 @@
         },
         "name": {
           "type": "string",
-          "description": "The name of the tool category (e.g., 'Hand Tools', 'Software Development', 'Measuring Devices')."
+          "description": "The name of the category (e.g., 'Hand Tools', 'Power Tools', 'Measurement')."
         },
         "description": {
           "type": "string",
-          "description": "A brief description explaining the purpose or scope of the category."
+          "description": "A brief description of the category."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the category was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the category was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
-        "name"
+        "name",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Tag": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Tag",
       "type": "object",
-      "description": "Provides keywords or labels for tools, enabling flexible filtering and search capabilities.",
+      "description": "Represents a descriptive tag used to further organize and discover tools through a flexible keyword system.",
       "properties": {
         "id": {
           "type": "string",
@@ -159,12 +94,98 @@
         },
         "name": {
           "type": "string",
-          "description": "The name of the tag (e.g., 'woodworking', 'electronics', 'backend', 'frontend')."
+          "description": "The name of the tag (e.g., 'woodworking', 'electrical', 'automotive')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the tag was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the tag was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
-        "name"
+        "name",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Tool": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tool",
+      "type": "object",
+      "description": "Represents a single tool or resource managed within the TOOLROOM2.0 catalog, including its details, status, and associations.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Tool entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The official name or title of the tool."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the tool, its purpose, and features."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to an image of the tool for visual identification.",
+          "format": "uri"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The current number of this specific tool available in the inventory."
+        },
+        "location": {
+          "type": "string",
+          "description": "The physical storage location of the tool (e.g., 'Shelf 3A', 'Toolbox Drawer 2')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current operational status of the tool (e.g., 'available', 'in-use', 'maintenance', 'lost')."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to UserProfile. Indicates which user 'owns' or is primarily responsible for this tool. (Relationship: UserProfile 1:N Tool)"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. Specifies the main category this tool belongs to. (Relationship: Category 1:N Tool)"
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tags. A list of unique identifiers for tags associated with this tool. (Relationship: Tag N:N Tool)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the tool record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the tool record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "quantity",
+        "location",
+        "status",
+        "ownerId",
+        "categoryId",
+        "createdAt",
+        "updatedAt"
       ]
     }
   },
@@ -183,27 +204,11 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores individual user profile data. Access is primarily path-based (users own their profile) with admin override. Includes a 'role' field for application logic, but admin authorization in rules relies on the '/roles_admin/{userId}' collection. Includes denormalized 'id' field which matches the {userId} wildcard.",
+          "description": "Stores non-authentication related user data, private to the user. Each user can only read and write their own profile.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique Firebase Authentication UID of the user whose profile is being stored/accessed."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/tools/{toolId}",
-        "definition": {
-          "entityName": "Tool",
-          "schema": {
-            "$ref": "#/backend/entities/Tool"
-          },
-          "description": "Represents a single tool in the TOOLROOM2.0 catalog. All authenticated users can read. Only users with the 'admin' role (as defined in '/roles_admin') can create, update, or delete tools. The 'addedByUserId' field is for audit, not primary authorization. Includes denormalized 'id' field which matches the {toolId} wildcard.",
-          "params": [
-            {
-              "name": "toolId",
-              "description": "The unique identifier for a specific tool."
+              "description": "The unique Firebase Authentication UID of the user."
             }
           ]
         }
@@ -215,7 +220,7 @@
           "schema": {
             "$ref": "#/backend/entities/Category"
           },
-          "description": "Defines categories for tools. All authenticated users can read. Only users with the 'admin' role (as defined in '/roles_admin') can create, update, or delete categories. Includes denormalized 'id' field which matches the {categoryId} wildcard.",
+          "description": "System-defined categories for organizing tools. Readable by all authenticated users for display and filtering, writable only by administrators.",
           "params": [
             {
               "name": "categoryId",
@@ -231,7 +236,7 @@
           "schema": {
             "$ref": "#/backend/entities/Tag"
           },
-          "description": "Defines tags for tools. All authenticated users can read. Only users with the 'admin' role (as defined in '/roles_admin') can create, update, or delete tags. Includes denormalized 'id' field which matches the {tagId} wildcard.",
+          "description": "System-defined descriptive tags for tools. Readable by all authenticated users for display and filtering, writable only by administrators.",
           "params": [
             {
               "name": "tagId",
@@ -241,22 +246,38 @@
         }
       },
       {
+        "path": "/tools/{toolId}",
+        "definition": {
+          "entityName": "Tool",
+          "schema": {
+            "$ref": "#/backend/entities/Tool"
+          },
+          "description": "A global catalog of all tools within the system. Readable by all authenticated users. Writable by the tool's 'ownerId' or by an administrator. Includes denormalized 'ownerId' for authorization independence, enabling robust QAP for read and efficient write access control.",
+          "params": [
+            {
+              "name": "toolId",
+              "description": "The unique identifier for a specific tool."
+            }
+          ]
+        }
+      },
+      {
         "path": "/roles_admin/{userId}",
         "definition": {
-          "entityName": "UserProfile",
+          "entityName": "Tag",
           "schema": {
-            "$ref": "#/backend/entities/UserProfile"
+            "$ref": "#/backend/entities/Tag"
           },
-          "description": "A dedicated collection for Database-Backed Access Control (DBAC) to identify administrators. The existence of a document for a given 'userId' implies admin status. This collection is for security rule checks, adhering to the 'existence over content' principle for global roles. Documents in this collection can be minimal (e.g., `{ active: true }`).",
+          "description": "A marker collection for Database Access Control (DBAC). The existence of a document at this path, where 'userId' matches 'request.auth.uid', grants global administrative privileges. The 'Tag' schema is used as a generic document type to satisfy schema requirements, as a dedicated 'Role' entity schema is not provided.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique Firebase Authentication UID of a user who holds the 'admin' role."
+              "description": "The unique Firebase Authentication UID of the user designated as an administrator."
             }
           ]
         }
       }
     ],
-    "reasoning": "The recommended Firestore structure for TOOLROOM2.0 prioritizes secure, scalable, and debuggable access control by strictly adhering to the core design principles, especially Authorization Independence and Structural Segregation.\n\n1.  **Authorization Independence & QAPs:**\n    *   **User Profiles (`/user_profiles/{userId}`):** User-specific data is stored in a path-based ownership model (`/user_profiles/{userId}`). A user can read/update their own profile by matching `request.auth.uid` with `{userId}`. This makes authorization atomic and does not require `get()` calls to other documents for a user to manage their own data. For administrators to list all users, the system leverages the explicit `roles_admin` collection for an existence check, which acts as a secure 'admin' gate for broader read/write permissions across the collection. This allows `list` queries on `/user_profiles` to be secure and efficient for admins, returning all documents without rule-based filtering issues (QAPs).\n    *   **Global Entities (`/tools/{toolId}`, `/categories/{categoryId}`, `/tags/{tagId}`):** These collections are designed for global access patterns. All authenticated users have read access to these collections, meaning `list` operations (QAPs) are fully supported and will return all documents they are authorized to see (which is everything). Write, update, and delete operations on these global entities are restricted to users with an 'admin' role, determined by an existence check against the `/roles_admin/{userId}` collection. This completely avoids `get()` calls to other documents (e.g., a user's profile document) for authorization, ensuring authorization independence for these critical, shared resources.\n    *   **Admin Roles (`/roles_admin/{userId}`):** This collection is a dedicated, existence-based role store. The presence of a user's UID as a document in this collection (`exists(/roles_admin/$(request.auth.uid))`) directly confers 'admin' privileges in security rules. This is the purest form of Authorization Independence for global roles, as it's an atomic check without content dependency or traversal of the main data hierarchy.\n\n2.  **Structural Segregation:** Each collection (`user_profiles`, `tools`, `categories`, `tags`, `roles_admin`) maintains a homogeneous security posture. For example, all `Tool` documents share the same read/write rules (global read, admin write). There are no mixed access requirements within a single collection (e.g., public vs. private tools), which simplifies security rules significantly and enhances clarity of intent.\n\n3.  **DBAC (Database-Backed Access Control):** User roles are managed within the database. The `UserProfile.role` field provides application-level role information, while the `roles_admin` collection provides a granular, performance-optimized, and secure mechanism for authorization rule checks for global administrative privileges."
+    "reasoning": "The Firestore structure for TOOLROOM2.0 is designed around the core principles of Authorization Independence, Structural Segregation, and DBAC, ensuring robust security and debuggability. \n\n**Authorization Independence:**\n1.  **UserProfile:** User profiles are stored in `/user_profiles/{userId}`. Authorization is path-based, with rules directly checking `request.auth.uid == userId`. This removes the need for `get()` calls to verify ownership, making profile access atomic and debuggable.\n2.  **Category & Tag:** These collections (`/categories/{categoryId}` and `/tags/{tagId}`) are global reference data, readable by all authenticated users. Write access is restricted to administrators, determined by checking for the *existence* of a document in the `/roles_admin/{userId}` collection (as explained below). This `exists()` check is a direct lookup by `request.auth.uid` and does not rely on content or `get()` operations, maintaining independence.\n3.  **Tool:** Tools are stored in a top-level collection `/tools/{toolId}`. The `ownerId` field is denormalized directly within each `Tool` document. This is critical for authorization independence: write rules for tools can directly check `request.auth.uid == resource.data.ownerId` or `exists(/roles_admin/$(request.auth.uid))` without needing to perform a `get()` call to a parent document or another collection to determine ownership or management rights. This allows for atomic `create` and `update` operations and simplifies rule logic.\n\n**QAPs (Rules are not Filters):**\n1.  **UserProfile:** While technically allowing `list`, rules would typically limit listing to the authenticated user's own profile (effectively a `get` operation for their specific document), or require admin privileges for broader listing. This ensures that unauthorized wide-ranging queries are prevented.\n2.  **Category & Tag:** These collections are explicitly designed for global readability (`allow list: if request.auth.uid != null`). This perfectly supports the 'Advanced Search & Filtering' feature, allowing clients to fetch all categories and tags for populating UI filters. The security rules grant full read access without attempting to filter the results, adhering to QAP.\n3.  **Tool:** The `/tools/{toolId}` collection is designed for global readability by all authenticated users (`allow list: if request.auth.uid != null`). This directly supports the 'Tool Catalog Display' feature, allowing users to browse a comprehensive catalog without rules filtering individual tools. The security rules provide the necessary broad read access, and any client-side filtering (e.g., 'show only my tools') is handled by client queries, not by the rules themselves, fully adhering to QAP.\n\n**DBAC (Database Access Control):**\nThe `/roles_admin/{userId}` collection is introduced specifically for DBAC. It serves as a marker collection where the *existence* of a document at `/roles_admin/{request.auth.uid}` signifies administrative privileges. This avoids custom claims and ensures that role-based authorization is managed within the database using simple, atomic `exists()` checks in security rules."
   }
 }

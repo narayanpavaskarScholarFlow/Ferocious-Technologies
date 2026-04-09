@@ -4,7 +4,7 @@
  *
  * - quoteAnalysis - Analyzes part metadata and operations to suggest material, costs, and identifies operation colors.
  * - QuoteAnalysisInput - The input type for the quoteAnalysis function.
- * - QuoteAnalysisOutput - The return type for the quoteAnalysis function.
+ * - QuoteAnalysisResult - The return type for the quoteAnalysis function, including success/error states.
  */
 
 import {ai} from '@/ai/genkit';
@@ -43,6 +43,10 @@ const QuoteAnalysisOutputSchema = z.object({
 });
 export type QuoteAnalysisOutput = z.infer<typeof QuoteAnalysisOutputSchema>;
 
+export type QuoteAnalysisResult = 
+  | { success: true; data: QuoteAnalysisOutput }
+  | { success: false; error: string };
+
 const analyzeQuotePrompt = ai.definePrompt({
   name: 'analyzeQuotePrompt',
   input: {schema: QuoteAnalysisInputSchema},
@@ -59,23 +63,30 @@ Available Operational Nodes (Rates in ₹/hr):
 {{/each}}
 
 Strict Industrial Protocol:
-1. RAW MATERIAL: Estimate the bounding box dimensions based on the finished part description. Add 5-10mm safety margin to each dimension for stock selection.
-2. OPERATIONS: For each provided operation, estimate realistic hours. 
-   - Setup Time: 0.5h to 1.5h depending on complexity.
-   - Machining Time: Based on material removal and feature complexity (e.g., deep pockets, precise bores).
-3. COLOR MAPPING: Map colors mentioned (e.g., "Blue is milling") to the specific operation rows.
-4. COSTS: Calculate cost = (Setup Hours + Machining Hours) * Node Hourly Rate.
-5. TOTALS: Total Machining Cost = Sum of all individual operation costs.
-6. TIMELINE: Sum all total operation hours for "Total Lead Time".
-7. BUFFER: "Lead Time With Buffer" = (Total Lead Time + 2 hours).
+1. RAW MATERIAL: Estimate the bounding box dimensions. If description is vague, assume a standard block of 100x100x50mm as a baseline. Add 5-10mm safety margin.
+2. OPERATIONS: Estimate realistic hours for EVERY provided operation.
+   - Setup Time: 0.5h to 1.5h depending on description.
+   - Machining Time: Based on complexity.
+3. COLOR MAPPING: If colors are mentioned, map them to operations.
+4. COSTS: cost = (Setup + Machining) * Rate.
+5. BUFFER: Always add exactly 2 hours to the final lead time.
 
-Use your expert knowledge of Indian tool room standards to ensure the cost is neither too low (loss-making) nor too high (non-competitive). 
+If the input description is very minimal (e.g., "Calculate price"), assume a "Standard Precision Component" with "Medium Complexity" and provide a realistic industrial estimation based on those assumptions.
 
 Important: Output must be valid JSON matching the schema. All currency is ₹.`,
 });
 
-export async function quoteAnalysis(input: QuoteAnalysisInput): Promise<QuoteAnalysisOutput> {
-  return quoteAnalysisFlow(input);
+export async function quoteAnalysis(input: QuoteAnalysisInput): Promise<QuoteAnalysisResult> {
+  try {
+    const data = await quoteAnalysisFlow(input);
+    return { success: true, data };
+  } catch (err: any) {
+    console.error('Quote Analysis Flow Error:', err);
+    return { 
+      success: false, 
+      error: err.message || 'The AI Engine failed to process the request. Please verify inputs.' 
+    };
+  }
 }
 
 const quoteAnalysisFlow = ai.defineFlow(
@@ -92,27 +103,22 @@ const quoteAnalysisFlow = ai.defineFlow(
       try {
         const {output} = await analyzeQuotePrompt(input);
         if (!output) {
-          throw new Error('AI Engine failed to generate a valid estimation.');
+          throw new Error('AI Engine returned an empty response.');
         }
         return output;
       } catch (err: any) {
         attempts++;
         const isTransient = err.message?.includes('503') || 
                           err.message?.includes('unavailable') || 
-                          err.message?.includes('high demand') ||
                           err.message?.includes('429');
 
         if (isTransient && attempts < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
           continue;
         }
-        console.error('Genkit Flow Error:', err);
-        if (isTransient) {
-          throw new Error('The AI Engine is currently experiencing heavy traffic. Please retry in a moment.');
-        }
-        throw new Error(err.message || 'AI sequence failed to process model metadata.');
+        throw err;
       }
     }
-    throw new Error('AI analysis sequence timed out. Please check your inputs.');
+    throw new Error('Analysis sequence timed out after multiple retry attempts.');
   }
 );

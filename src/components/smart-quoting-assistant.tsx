@@ -103,22 +103,28 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
     setResult(null);
 
     try {
-      const output = await quoteAnalysis({
+      const result = await quoteAnalysis({
         partName,
         modelDescription: description,
         operations
       });
-      setResult(output);
-      toast({ title: "Analysis Synchronized", description: "Industrial estimations calculated successfully." });
+
+      if (result.success) {
+        setResult(result.data);
+        toast({ title: "Analysis Synchronized", description: "Industrial estimations calculated successfully." });
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Analysis Protocol Error", 
+          description: result.error 
+        });
+      }
     } catch (error: any) {
-      console.error('Analysis Protocol Failure:', error);
-      const isUnavailable = error.message?.includes('demand') || error.message?.includes('traffic');
+      console.error('Critical Analysis Failure:', error);
       toast({ 
         variant: "destructive", 
-        title: isUnavailable ? "AI Engine Busy" : "Analysis Protocol Error", 
-        description: isUnavailable 
-          ? "The AI models are currently at high capacity. Please try again in a few seconds."
-          : (error.message || "Could not process model geometry.")
+        title: "Critical System Error", 
+        description: "The analysis sequence encountered a fatal error. Check network and retry."
       });
     } finally {
       setIsAnalyzing(false);

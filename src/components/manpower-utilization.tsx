@@ -109,7 +109,8 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
 
   // Annual Leaves Collection
   const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
-  const { data: annualLeaves = [] } = useCollection<AnnualLeaveEntry>(annualQuery);
+  const { data: annualLeavesRaw } = useCollection<AnnualLeaveEntry>(annualQuery);
+  const annualLeaves = annualLeavesRaw || [];
 
   const handleEditStaff = (user: SystemUser) => {
     setEditingUserId(user.id);
@@ -202,6 +203,8 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     });
   };
 
+  const safeUsers = users || [];
+
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
@@ -217,7 +220,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 h-10 px-6 font-bold text-[10px] uppercase tracking-widest rounded-full">
-            Available Resources: {users.length}
+            Available Resources: {safeUsers.length}
           </Badge>
         </div>
       </header>
@@ -242,9 +245,9 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
         </TabsList>
 
         <TabsContent value="overview" className="space-y-8 m-0">
-          {users.length > 0 ? (
+          {safeUsers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {users.map((member) => (
+              {safeUsers.map((member) => (
                 <Card key={member.id} className="p-8 border-slate-200/60 shadow-xl bg-white hover:border-primary/50 transition-all rounded-[2rem] group relative overflow-hidden">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-5">
@@ -310,10 +313,10 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-10 border-l-4 border-primary pl-4">Resource Skill Matrix</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
               {[
-                { label: 'Milling', value: users.filter(s => s.dept === 'VMC Milling').length * 20 },
-                { label: 'Turning', value: users.filter(s => s.dept === 'CNC Turning').length * 20 },
-                { label: 'Quality Assurance', value: users.filter(s => s.dept === 'Quality').length * 20 },
-                { label: 'Logistics Node', value: users.filter(s => s.dept === 'Market').length * 20 },
+                { label: 'Milling', value: safeUsers.filter(s => s.dept === 'VMC Milling').length * 20 },
+                { label: 'Turning', value: safeUsers.filter(s => s.dept === 'CNC Turning').length * 20 },
+                { label: 'Quality Assurance', value: safeUsers.filter(s => s.dept === 'Quality').length * 20 },
+                { label: 'Logistics Node', value: safeUsers.filter(s => s.dept === 'Market').length * 20 },
               ].map((skill) => (
                 <div key={skill.label} className="space-y-4">
                   <div className="flex justify-between items-center px-1">
@@ -364,7 +367,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {annualLeaves.length > 0 ? annualLeaves.map((plan) => (
+                  {annualLeaves && annualLeaves.length > 0 ? annualLeaves.map((plan) => (
                     <TableRow key={plan.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group transition-colors">
                       <TableCell className="px-10">
                         <div className="flex items-center gap-4">
@@ -445,7 +448,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {safeUsers.map((user) => (
                   <TableRow key={user.id} className="h-20 border-slate-50 hover:bg-slate-50/30 transition-colors">
                     <TableCell className="px-10">
                       <div className="flex flex-col">
@@ -459,7 +462,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                     <TableCell className="text-center font-code text-sm text-primary font-bold px-10">26 DAYS</TableCell>
                   </TableRow>
                 ))}
-                {users.length === 0 && (
+                {safeUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-[10px] italic uppercase tracking-widest">_NO_RESOURCE_DATA_FOUND_</TableCell>
                   </TableRow>
@@ -500,7 +503,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                       <SelectValue placeholder="Identify user..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {users.map(u => (
+                      {safeUsers.map(u => (
                         <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -549,7 +552,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                   <SelectValue placeholder="Select identity from directory..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {users.map(u => (
+                  {safeUsers.map(u => (
                     <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
                   ))}
                 </SelectContent>

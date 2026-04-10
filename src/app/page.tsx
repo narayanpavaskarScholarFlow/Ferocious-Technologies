@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -36,33 +37,47 @@ import {
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 
-const INITIAL_LOGS: WorkLogEntryType[] = [];
-const INITIAL_OP_STATUSES: Record<string, Record<string, string>> = {};
+import { 
+  useFirestore, 
+  useCollection, 
+  useMemoFirebase,
+  setDocumentNonBlocking,
+  updateDocumentNonBlocking,
+  deleteDocumentNonBlocking,
+  FirebaseClientProvider
+} from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 
-export default function IndustrialERP() {
+function IndustrialERPInternal() {
+  const db = useFirestore();
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
-  const [logs, setLogs] = useState<WorkLogEntryType[]>(INITIAL_LOGS);
+  
+  // Firestore Collections
+  const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
+  const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
+  const staffQuery = useMemoFirebase(() => collection(db, 'staff'), [db]);
+  const machinesQuery = useMemoFirebase(() => collection(db, 'machines'), [db]);
+  const vendorsQuery = useMemoFirebase(() => collection(db, 'vendors'), [db]);
+  const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
+
+  const { data: orders = [] } = useCollection<Order>(ordersQuery);
+  const { data: customers = [] } = useCollection<Customer>(customersQuery);
+  const { data: staff = [] } = useCollection<StaffMember>(staffQuery);
+  const { data: machines = [] } = useCollection<Machine>(machinesQuery);
+  const { data: vendors = [] } = useCollection<Vendor>(vendorsQuery);
+  const { data: logs = [] } = useCollection<WorkLogEntryType>(logsQuery);
+
   const [users, setUsers] = useState<SystemUser[]>([]);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [machines, setMachines] = useState<Machine[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([
-    { id: 'V-001', name: 'Precision Heat Treaters', type: 'Service', activeOrders: 2, rating: 4.8, contact: '+91 90000 11111', status: 'Active' },
-    { id: 'V-002', name: 'Global Tooling Solutions', type: 'Raw Material', activeOrders: 5, rating: 4.5, contact: '+91 90000 22222', status: 'Active' },
-  ]);
-  const [globalOpStatuses, setGlobalOpStatuses] = useState<Record<string, Record<string, string>>>(INITIAL_OP_STATUSES);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Persist login state
     const savedUser = localStorage.getItem('bharat_axis_user');
     if (savedUser) {
       setCurrentUser(savedUser);
@@ -73,7 +88,7 @@ export default function IndustrialERP() {
   const handleSearchChange = (val: string) => {
     setGlobalSearch(val);
     const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
-    if (isOrderPattern && orders.find(o => o.id === val)) {
+    if (isOrderPattern && orders?.find(o => o.id === val)) {
       setActiveWorkOrderId(val);
       setCurrentView('operations');
     }
@@ -118,14 +133,26 @@ export default function IndustrialERP() {
   };
 
   const handleSaveOrder = (order: Order) => {
-    setOrders(prev => {
-      const exists = prev.find(o => o.id === order.id);
-      if (exists) {
-        return prev.map(o => o.id === order.id ? { ...exists, ...order } : o);
-      }
-      return [order, ...prev];
-    });
+    setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
     setCurrentView('orders');
+  };
+
+  const handleMachinesChange = (updatedMachines: Machine[]) => {
+    updatedMachines.forEach(m => {
+      setDocumentNonBlocking(doc(db, 'machines', m.id), m, { merge: true });
+    });
+  };
+
+  const handleCustomersChange = (updatedCustomers: Customer[]) => {
+    updatedCustomers.forEach(c => {
+      setDocumentNonBlocking(doc(db, 'customers', c.id), c, { merge: true });
+    });
+  };
+
+  const handleStaffChange = (updatedStaff: StaffMember[]) => {
+    updatedStaff.forEach(s => {
+      setDocumentNonBlocking(doc(db, 'staff', s.id), s, { merge: true });
+    });
   };
 
   if (!mounted) {
@@ -143,7 +170,6 @@ export default function IndustrialERP() {
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-body">
-      {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
       </div>
@@ -151,7 +177,6 @@ export default function IndustrialERP() {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-slate-200/20">
           <div className="flex items-center gap-2 md:gap-8">
-            {/* Mobile Sidebar Trigger */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10 -ml-2 rounded-xl hover:bg-slate-100">
@@ -244,46 +269,51 @@ export default function IndustrialERP() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
             {currentView === 'overview' && (
               <ShopFloorOverview 
-                orders={orders}
+                orders={orders || []}
                 onNavigateToOrders={() => setCurrentView('orders')}
                 onNavigateToMachine={() => setCurrentView('machine-utilization')}
                 onNavigateToInventory={() => setCurrentView('inventory')}
                 onNavigateToBilling={() => setCurrentView('billing')}
               />
             )}
-            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
+            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines || []} />}
             {currentView === 'orders' && (
               <ShopFloorOrders 
-                orders={orders}
+                orders={orders || []}
                 onNavigateToOperations={handleNavigateToOperations} 
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
             )}
-            {currentView === 'billing' && <BillingManagement customers={customers} vendors={vendors} />}
+            {currentView === 'billing' && <BillingManagement customers={customers || []} vendors={vendors || []} />}
             {currentView === 'inventory' && <InventoryManagement />}
-            {currentView === 'work-log' && <WorkLogEntry logs={logs} onAddLog={(l) => setLogs([l, ...logs])} />}
+            {currentView === 'work-log' && (
+              <WorkLogEntry 
+                logs={logs || []} 
+                onAddLog={(l) => setDocumentNonBlocking(doc(db, 'work_logs', l.id), l, { merge: true })} 
+              />
+            )}
             {currentView === 'sqcdp' && <ShopFloorSQCDP />}
             {currentView === 'machine-utilization' && (
               <MachineUtilization 
-                machines={machines}
-                onMachinesChange={setMachines}
+                machines={machines || []}
+                onMachinesChange={handleMachinesChange}
               />
             )}
             {currentView === 'manpower' && (
               <ManpowerUtilization 
-                staff={staff}
-                onStaffChange={setStaff}
+                staff={staff || []}
+                onStaffChange={handleStaffChange}
               />
             )}
             {currentView === 'customer-orders' && (
               <CustomerOrders 
-                customers={customers} 
-                onCustomersChange={setCustomers} 
+                customers={customers || []} 
+                onCustomersChange={handleCustomersChange} 
               />
             )}
             {currentView === 'weekly-plan' && (
               <WeeklyPlan 
-                logs={logs} 
+                logs={logs || []} 
                 onNavigateToGantt={() => setCurrentView('gantt')}
               />
             )}
@@ -299,25 +329,23 @@ export default function IndustrialERP() {
             )}
             {currentView === 'gantt' && (
               <ProductionGantt 
-                orders={orders}
+                orders={orders || []}
                 searchTerm={globalSearch}
                 onNavigateToSchedule={() => setCurrentView('weekly-plan')}
                 onNavigateToOperations={handleNavigateToOperations}
               />
             )}
             {currentView === 'quality' && <QualityManagement onUpdateStatus={(o, op, s) => {
-              setGlobalOpStatuses(prev => ({
-                ...prev, [o]: { ...(prev[o] || {}), [op]: s }
-              }))
+              // Quality updates can be persisted here if needed
             }} />}
             {currentView === 'order-details' && (
               <OrderDetails 
                 orderId={activeWorkOrderId} 
                 onBack={handleBackToOrders} 
-                customers={customers}
-                staff={staff}
+                customers={customers || []}
+                staff={staff || []}
                 onSave={handleSaveOrder}
-                orders={orders}
+                orders={orders || []}
               />
             )}
             {currentView === 'operations' && (
@@ -325,11 +353,8 @@ export default function IndustrialERP() {
                 initialOrderId={activeWorkOrderId} 
                 onOrderIdChange={setActiveWorkOrderId} 
                 onNavigateToVendor={() => setCurrentView('vendor')}
-                externalOpStatuses={globalOpStatuses}
                 onStatusChange={(o, op, s) => {
-                  setGlobalOpStatuses(prev => ({
-                    ...prev, [o]: { ...(prev[o] || {}), [op]: s }
-                  }))
+                  // Persistence for operations status if mapped to a schema
                 }}
               />
             )}
@@ -339,5 +364,13 @@ export default function IndustrialERP() {
 
       <Toaster />
     </div>
+  );
+}
+
+export default function IndustrialERP() {
+  return (
+    <FirebaseClientProvider>
+      <IndustrialERPInternal />
+    </FirebaseClientProvider>
   );
 }

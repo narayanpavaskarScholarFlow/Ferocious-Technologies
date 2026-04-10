@@ -25,7 +25,8 @@ import {
   Plus,
   CalendarDays,
   Clock,
-  ClipboardList
+  ClipboardList,
+  Info
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -67,8 +68,7 @@ const MONTHS = [
 
 interface AnnualLeaveEntry {
   id: string;
-  userId: string;
-  userName: string;
+  description: string;
   month: string;
   dates: string;
   year: number;
@@ -90,9 +90,9 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   
-  // Annual Leave Form State
+  // Annual Leave Form State (Now general/company-wide)
   const [newAnnual, setNewAnnual] = useState({
-    userId: '',
+    description: '',
     month: MONTHS[new Date().getMonth()],
     dates: '',
     reason: '',
@@ -161,21 +161,19 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
   };
 
   const handleAddAnnualLeave = () => {
-    if (!newAnnual.userId || !newAnnual.dates || !newAnnual.month) {
+    if (!newAnnual.description || !newAnnual.dates || !newAnnual.month) {
       toast({
         variant: "destructive",
         title: "Protocol Interrupted",
-        description: "Resource identity, target month, and specific dates are required."
+        description: "Holiday description, target month, and specific dates are required."
       });
       return;
     }
 
-    const selectedUser = users.find(u => u.id === newAnnual.userId);
     const entryId = `AL-${Date.now()}`;
     const entry: AnnualLeaveEntry = {
       id: entryId,
-      userId: newAnnual.userId,
-      userName: selectedUser?.name || 'Unknown',
+      description: newAnnual.description,
       month: newAnnual.month,
       dates: newAnnual.dates,
       year: newAnnual.year,
@@ -187,18 +185,18 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     
     toast({
       title: "Plan Synchronized",
-      description: `Annual leave entry for ${entry.userName} has been committed to the ledger.`
+      description: `Company holiday "${entry.description}" has been committed to the ledger.`
     });
 
     setIsAddAnnualOpen(false);
-    setNewAnnual({ userId: '', month: MONTHS[new Date().getMonth()], dates: '', reason: '', year: new Date().getFullYear() });
+    setNewAnnual({ description: '', month: MONTHS[new Date().getMonth()], dates: '', reason: '', year: new Date().getFullYear() });
   };
 
   const handleDeleteAnnual = (id: string) => {
     deleteDocumentNonBlocking(doc(db, 'annual_leaves', id));
     toast({
       title: "Plan Removed",
-      description: "The annual leave record has been purged from the directory.",
+      description: "The holiday record has been purged from the directory.",
       variant: "destructive"
     });
   };
@@ -240,7 +238,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
             Planned Leave
           </TabsTrigger>
           <TabsTrigger value="annual" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            Annual Leave Plan
+            Annual Holiday Matrix
           </TabsTrigger>
         </TabsList>
 
@@ -340,8 +338,8 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                   <CalendarDays className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Annual Holiday Matrix</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Resource Capacity Planning Ledger</p>
+                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Plant Holiday Matrix</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">General Capacity Availability Ledger</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -349,7 +347,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                   onClick={() => setIsAddAnnualOpen(true)}
                   className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20 transition-all"
                 >
-                  <Plus className="h-4 w-4" /> Add Planning Entry
+                  <Plus className="h-4 w-4" /> Add Matrix Entry
                 </Button>
               </div>
             </div>
@@ -358,9 +356,9 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
               <Table>
                 <TableHeader className="bg-white">
                   <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Resource Name</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Month Focus</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Dates / Period</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Holiday / Event Description</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Target Month</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Specific Period</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400">Rational / Reason</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
                     <TableHead className="text-right px-10"></TableHead>
@@ -372,9 +370,9 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                       <TableCell className="px-10">
                         <div className="flex items-center gap-4">
                           <div className="h-9 w-9 rounded-lg bg-primary/5 flex items-center justify-center font-bold text-primary text-[10px] border border-primary/10 uppercase">
-                            {plan.userName.split(' ').map(n => n[0]).join('')}
+                            <Info className="h-4 w-4" />
                           </div>
-                          <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{plan.userName}</span>
+                          <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{plan.description}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -414,7 +412,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                             <CalendarDays className="h-16 w-16 text-slate-300" />
                           </div>
                           <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Planning Ledger Offline</p>
-                          <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No annual holiday plans detected. Execute the "Add Planning Entry" protocol to initialize.</p>
+                          <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No annual holiday plans detected. Execute the "Add Matrix Entry" protocol to initialize.</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -533,7 +531,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
         </TabsContent>
       </Tabs>
 
-      {/* Add Annual Planning Entry Dialog */}
+      {/* Add Matrix Planning Entry Dialog */}
       <Dialog open={isAddAnnualOpen} onOpenChange={setIsAddAnnualOpen}>
         <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
           <DialogHeader className="space-y-4 mb-8">
@@ -541,22 +539,18 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
               <CalendarDays className="h-8 w-8 text-primary" />
             </div>
             <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Holiday Matrix Entry</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Execute planning protocol for long-term holiday allocation.</DialogDescription>
+            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Execute planning protocol for plant-wide holiday allocation.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-8">
             <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Target Resource</Label>
-              <Select value={newAnnual.userId} onValueChange={(val) => setNewAnnual({...newAnnual, userId: val})}>
-                <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
-                  <SelectValue placeholder="Select identity from directory..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {safeUsers.map(u => (
-                    <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Holiday / Event Description</Label>
+              <Input 
+                placeholder="e.g. Ganesh Chaturthi / Annual Maintenance Shutdown" 
+                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
+                value={newAnnual.description}
+                onChange={(e) => setNewAnnual({...newAnnual, description: e.target.value})}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-6">

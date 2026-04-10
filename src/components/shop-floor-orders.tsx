@@ -117,6 +117,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                        order.status === 'Active' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                        order.status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
                        order.status === 'Delayed' ? 'bg-red-50 text-red-700 border border-red-100' :
+                       order.status === 'Yet to start' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
                        'bg-slate-50 text-slate-700 border border-slate-100'
                      )}>
                        {order.status}

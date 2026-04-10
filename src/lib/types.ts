@@ -78,7 +78,7 @@ export interface Order {
   startDate: string;
   endDate: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'Active' | 'Pending' | 'Completed' | 'Delayed';
+  status: 'Active' | 'Pending' | 'Completed' | 'Delayed' | 'Yet to start';
   owner?: string;
   progress?: number;
   amountSpent?: string;

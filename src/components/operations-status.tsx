@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -30,7 +29,8 @@ import {
   Trash2,
   Calendar,
   FileSpreadsheet,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,7 @@ const INITIAL_STEPS = [
 ];
 
 const STATUS_OPTIONS = [
+  { label: "Yet to start", color: "text-purple-600 bg-purple-50 border-purple-200" },
   { label: "Completed", color: "text-green-600 bg-green-50 border-green-200" },
   { label: "WIP", color: "text-blue-600 bg-blue-50 border-blue-200" },
   { label: "Hold", color: "text-red-600 bg-red-50 border-red-200" },
@@ -112,8 +113,14 @@ export function OperationsStatus({
     const updated = [...ops];
     for (let i = startIndex; i < updated.length; i++) {
       const current = updated[i];
-      // Rule: End date is start date + 1
-      current.endDate = getNextDay(current.startDate);
+      
+      // Rule: If NA, duration is 0 (Start = End). Otherwise, duration is 1 day.
+      if (current.status === 'NA') {
+        current.endDate = current.startDate;
+      } else {
+        current.endDate = getNextDay(current.startDate);
+      }
+      
       // Rule: Next operation starts when current ends
       if (i + 1 < updated.length) {
         updated[i + 1].startDate = current.endDate;
@@ -139,7 +146,7 @@ export function OperationsStatus({
           name,
           startDate: currentStart,
           endDate: getNextDay(currentStart),
-          status: "NA",
+          status: "Yet to start",
           subTasks: []
         };
         currentStart = op.endDate;
@@ -192,7 +199,7 @@ export function OperationsStatus({
         name: newOpName.trim(),
         startDate: startFrom,
         endDate: getNextDay(startFrom),
-        status: "NA",
+        status: "Yet to start",
         subTasks: []
       };
       saveRouting([...operations, newOp]);
@@ -254,8 +261,12 @@ export function OperationsStatus({
     if (status === 'Vendor' && vendorName) {
       finalStatus = `Vendor: ${vendorName}`;
     }
+    const idx = operations.findIndex(o => o.id === opId);
     const updatedRouting = operations.map(op => op.id === opId ? { ...op, status: finalStatus } : op);
-    saveRouting(updatedRouting);
+    
+    // Re-propagate dates from this point because if status is NA, duration changes to 0
+    const final = propagateSequentialDates(updatedRouting, idx);
+    saveRouting(final);
   };
 
   const getStatusStyles = (status?: string) => {
@@ -328,12 +339,16 @@ export function OperationsStatus({
                 {selectedWorkOrder ? (
                   <>
                     {operations.map((op, idx) => {
-                      const currentStatus = op.status || "NA";
+                      const currentStatus = op.status || "Yet to start";
                       const isExpanded = !!expandedOps[idx];
+                      const isNA = currentStatus === 'NA';
                       
                       return (
                         <React.Fragment key={op.id}>
-                          <TableRow className="h-20 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
+                          <TableRow className={cn(
+                            "h-20 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group",
+                            isNA && "opacity-50 grayscale bg-slate-50/50"
+                          )}>
                             <TableCell className="px-8 font-code text-xs text-slate-300 font-bold">
                               <div className="flex items-center gap-2">
                                 <Button 
@@ -349,8 +364,11 @@ export function OperationsStatus({
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{op.name}</span>
-                                {op.subTasks.length > 0 && (
+                                <span className={cn(
+                                  "text-sm font-bold uppercase tracking-tight",
+                                  isNA ? "text-slate-400 line-through" : "text-slate-700"
+                                )}>{op.name}</span>
+                                {op.subTasks.length > 0 && !isNA && (
                                   <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest mt-0.5">
                                     {op.subTasks.length} nested items
                                   </span>
@@ -369,7 +387,11 @@ export function OperationsStatus({
                               <Input 
                                 type="date"
                                 value={op.endDate}
-                                className="bg-transparent border-none text-center text-xs h-8 p-0"
+                                className={cn(
+                                  "bg-transparent border-none text-center text-xs h-8 p-0",
+                                  isNA && "opacity-50"
+                                )}
+                                readOnly={isNA}
                                 onChange={(e) => handleEndDateChange(op.id, idx, e.target.value)}
                               />
                             </TableCell>
@@ -436,7 +458,7 @@ export function OperationsStatus({
                             </TableCell>
                           </TableRow>
                           
-                          {isExpanded && (
+                          {isExpanded && !isNA && (
                             <TableRow className="bg-slate-50/40 border-b border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
                               <TableCell colSpan={6} className="pl-8 sm:pl-24 py-8 pr-4 sm:pr-12">
                                 <div className="space-y-6">

@@ -39,7 +39,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [customer, setCustomer] = useState("");
   const [lead, setLead] = useState("");
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
-  const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed'>('Pending');
+  const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start'>('Yet to start');
   const [parts, setParts] = useState<PartRow[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -73,7 +73,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setCustomer("");
       setLead("");
       setPriority("Medium");
-      setStatus("Pending");
+      setStatus("Yet to start");
       setStartDate(undefined);
       setEndDate(undefined);
     }
@@ -306,6 +306,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
+                    <SelectItem value="Yet to start" className="text-xs font-bold uppercase">Status: Yet to start</SelectItem>
                     <SelectItem value="Active" className="text-xs font-bold uppercase">Status: Active Thread</SelectItem>
                     <SelectItem value="Pending" className="text-xs font-bold uppercase">Status: Queue Standby</SelectItem>
                     <SelectItem value="Delayed" className="text-xs font-bold uppercase text-red-400">Status: Delayed / Critical</SelectItem>

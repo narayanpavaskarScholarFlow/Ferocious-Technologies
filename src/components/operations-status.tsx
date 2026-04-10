@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,18 +22,14 @@ import {
   Layers, 
   Truck, 
   ExternalLink, 
-  Activity, 
   Plus, 
-  Hash, 
   Settings2, 
   ChevronDown, 
   ChevronUp,
   CircleDot,
   Trash2,
   Calendar,
-  Cpu,
   FileSpreadsheet,
-  Clock,
   ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -88,7 +84,6 @@ export function OperationsStatus({
   const [newOpName, setNewOpName] = useState('');
   const [expandedOps, setExpandedOps] = useState<Record<number, boolean>>({});
 
-  // Sync with Firestore Order document
   const orderDocRef = useMemoFirebase(() => 
     selectedWorkOrder ? doc(db, 'orders', selectedWorkOrder) : null,
     [db, selectedWorkOrder]
@@ -97,10 +92,9 @@ export function OperationsStatus({
   const { data: orderData } = useDoc<Order>(orderDocRef);
   const operations = orderData?.routing || [];
 
-  // Helper: Convert dd.MM.yyyy to yyyy-MM-dd
   const formatToInputDate = (dateStr?: string) => {
     if (!dateStr) return new Date().toISOString().split('T')[0];
-    if (dateStr.includes('-')) return dateStr; // Already in yyyy-MM-dd
+    if (dateStr.includes('-')) return dateStr;
     const parts = dateStr.split('.');
     if (parts.length === 3) {
       return `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -108,34 +102,48 @@ export function OperationsStatus({
     return new Date().toISOString().split('T')[0];
   };
 
-  // Update selected work order when prop changes
+  const getNextDay = (dateStr: string) => {
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().split('T')[0];
+  };
+
+  const propagateSequentialDates = (ops: RoutingOperation[], startIndex: number) => {
+    const updated = [...ops];
+    for (let i = startIndex; i < updated.length; i++) {
+      const current = updated[i];
+      // Rule: End date is start date + 1
+      current.endDate = getNextDay(current.startDate);
+      // Rule: Next operation starts when current ends
+      if (i + 1 < updated.length) {
+        updated[i + 1].startDate = current.endDate;
+      }
+    }
+    return updated;
+  };
+
   useEffect(() => {
     if (initialOrderId) {
       setSelectedWorkOrder(initialOrderId);
     }
   }, [initialOrderId]);
 
-  // Initialize spreadsheet data if it doesn't exist
   useEffect(() => {
-    if (selectedWorkOrder && orderData && !orderData.routing) {
-      const projectStartDate = formatToInputDate(orderData.startDate);
+    if (selectedWorkOrder && orderData && (!orderData.routing || orderData.routing.length === 0)) {
+      const projectStart = formatToInputDate(orderData.startDate);
+      let currentStart = projectStart;
       
       const seededOps: RoutingOperation[] = INITIAL_STEPS.map((name, i) => {
-        // If it's the first step, use project start date
-        // Otherwise, we'll initialize with subsequent dates for the seed
-        const start = new Date(projectStartDate);
-        start.setDate(start.getDate() + (i * 2));
-        const end = new Date(start);
-        end.setDate(end.getDate() + 1);
-        
-        return {
+        const op = {
           id: `OP-${i}-${Date.now()}`,
           name,
-          startDate: start.toISOString().split('T')[0],
-          endDate: end.toISOString().split('T')[0],
+          startDate: currentStart,
+          endDate: getNextDay(currentStart),
           status: "NA",
           subTasks: []
         };
+        currentStart = op.endDate;
+        return op;
       });
       
       saveRouting(seededOps);
@@ -154,45 +162,28 @@ export function OperationsStatus({
     onOrderIdChange?.(val);
   };
 
-  const handleLocalStatusChange = (opId: string, status: string, vendorName?: string) => {
-    let finalStatus = status;
-    if (status === 'Vendor' && vendorName) {
-      finalStatus = `Vendor: ${vendorName}`;
-    }
-    
-    const updatedRouting = operations.map(op => 
-      op.id === opId ? { ...op, status: finalStatus } : op
-    );
-    
-    saveRouting(updatedRouting);
-    
-    if (selectedWorkOrder && onStatusChange) {
-      const op = operations.find(o => o.id === opId);
-      if (op) onStatusChange(selectedWorkOrder, op.name, finalStatus);
-    }
-  };
-
   const handleStartDateChange = (opId: string, idx: number, newDate: string) => {
     const updated = [...operations];
     updated[idx].startDate = newDate;
-    saveRouting(updated);
+    const final = propagateSequentialDates(updated, idx);
+    saveRouting(final);
   };
 
   const handleEndDateChange = (opId: string, idx: number, newDate: string) => {
     const updated = [...operations];
     updated[idx].endDate = newDate;
-    
-    // Propagation Logic: Next operation starts from this operation's end date
+    // Push the next operation to start on this end date
     if (idx + 1 < updated.length) {
       updated[idx + 1].startDate = newDate;
+      const final = propagateSequentialDates(updated, idx + 1);
+      saveRouting(final);
+    } else {
+      saveRouting(updated);
     }
-    
-    saveRouting(updated);
   };
 
   const handleAddOperation = () => {
     if (newOpName.trim()) {
-      // Propagation logic for new row: inherit end date of previous row
       const lastOp = operations[operations.length - 1];
       const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
       
@@ -200,7 +191,7 @@ export function OperationsStatus({
         id: `OP-${Math.random().toString(36).substr(2, 9)}`,
         name: newOpName.trim(),
         startDate: startFrom,
-        endDate: startFrom,
+        endDate: getNextDay(startFrom),
         status: "NA",
         subTasks: []
       };
@@ -209,17 +200,18 @@ export function OperationsStatus({
     }
   };
 
-  const toggleExpand = (idx: number) => {
-    setExpandedOps(prev => ({ ...prev, [idx]: !prev[idx] }));
-  };
-
   const handleAddSubTask = (idx: number, taskName: string) => {
     if (!taskName.trim()) return;
+    
+    const op = operations[idx];
+    const lastSub = op.subTasks[op.subTasks.length - 1];
+    const startFrom = lastSub ? lastSub.endDate || op.startDate : op.startDate;
+
     const newSubTask: SubTask = {
       id: Math.random().toString(36).substr(2, 9),
       name: taskName.trim(),
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      startDate: startFrom,
+      endDate: getNextDay(startFrom),
     };
     
     const updatedRouting = operations.map((op, i) => 
@@ -231,10 +223,21 @@ export function OperationsStatus({
   const handleUpdateSubTask = (opIdx: number, subIdx: number, updates: Partial<SubTask>) => {
     const updatedRouting = operations.map((op, i) => {
       if (i !== opIdx) return op;
-      return {
-        ...op,
-        subTasks: op.subTasks.map((st, j) => j === subIdx ? { ...st, ...updates } : st)
-      };
+      const subTasks = [...op.subTasks];
+      subTasks[subIdx] = { ...subTasks[subIdx], ...updates };
+      
+      // Sub-task auto-date logic
+      if (updates.startDate) {
+        subTasks[subIdx].endDate = getNextDay(updates.startDate);
+      }
+      
+      // Cascade sub-tasks
+      for (let j = subIdx + 1; j < subTasks.length; j++) {
+        subTasks[j].startDate = subTasks[j-1].endDate;
+        subTasks[j].endDate = getNextDay(subTasks[j].startDate);
+      }
+
+      return { ...op, subTasks };
     });
     saveRouting(updatedRouting);
   };
@@ -246,10 +249,17 @@ export function OperationsStatus({
     saveRouting(updatedRouting);
   };
 
-  const getStatusStyles = (status?: string) => {
-    if (status?.startsWith('Vendor')) {
-      return "text-purple-600 bg-purple-50 border-purple-200";
+  const handleLocalStatusChange = (opId: string, status: string, vendorName?: string) => {
+    let finalStatus = status;
+    if (status === 'Vendor' && vendorName) {
+      finalStatus = `Vendor: ${vendorName}`;
     }
+    const updatedRouting = operations.map(op => op.id === opId ? { ...op, status: finalStatus } : op);
+    saveRouting(updatedRouting);
+  };
+
+  const getStatusStyles = (status?: string) => {
+    if (status?.startsWith('Vendor')) return "text-purple-600 bg-purple-50 border-purple-200";
     const match = STATUS_OPTIONS.find(opt => opt.label === status);
     return match?.color || "text-slate-400 bg-slate-100 border-slate-200";
   };
@@ -263,7 +273,7 @@ export function OperationsStatus({
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-display font-bold uppercase tracking-tight text-slate-900">Operational Spreadsheet</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Detailed Routing Schedule Ledger</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Cascading Sequential Date Protocol Active</p>
           </div>
         </div>
         
@@ -308,7 +318,7 @@ export function OperationsStatus({
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[200px]">Operation / Spreadsheet Row</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">Start Date</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">End Date</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-[200px]">Status</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center w-[200px]">Status</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-8 w-20">
                     <Settings2 className="h-3.5 w-3.5 ml-auto" />
                   </TableHead>
@@ -330,7 +340,7 @@ export function OperationsStatus({
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-6 w-6 text-slate-300 hover:text-primary hover:bg-primary/5 -ml-4"
-                                  onClick={() => toggleExpand(idx)}
+                                  onClick={() => setExpandedOps(prev => ({ ...prev, [idx]: !prev[idx] }))}
                                 >
                                   {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                 </Button>
@@ -431,7 +441,7 @@ export function OperationsStatus({
                               <TableCell colSpan={6} className="pl-8 sm:pl-24 py-8 pr-4 sm:pr-12">
                                 <div className="space-y-6">
                                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-                                    <CircleDot className="h-3 w-3 text-primary" /> Detailed Item Breakdown for {op.name}
+                                    <CircleDot className="h-3 w-3 text-primary" /> Detailed Sequential Breakdown for {op.name}
                                   </div>
                                   
                                   <div className="space-y-4">
@@ -459,15 +469,15 @@ export function OperationsStatus({
                                             </div>
                                           </div>
                                           <div className="space-y-2">
-                                            <Label className="text-[9px] font-bold uppercase text-slate-400">End</Label>
+                                            <Label className="text-[9px] font-bold uppercase text-slate-400">End (Auto)</Label>
                                             <div className="relative">
                                               <Input 
                                                 type="date"
                                                 value={task.endDate}
-                                                onChange={(e) => handleUpdateSubTask(idx, sIdx, { endDate: e.target.value })}
-                                                className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
+                                                className="h-9 bg-slate-100 border-none rounded-lg text-[10px] pr-8 cursor-not-allowed opacity-60" 
+                                                readOnly
                                               />
-                                              <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
+                                              <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
                                             </div>
                                           </div>
                                         </div>
@@ -509,7 +519,7 @@ export function OperationsStatus({
                                   <div className="flex flex-col sm:flex-row gap-3 max-w-md pt-4">
                                     <div className="relative flex-1">
                                       <Input 
-                                        placeholder="Add item to this step..." 
+                                        placeholder="Add sequential sub-item..." 
                                         className="h-11 bg-white border-slate-200 rounded-xl pl-10 text-[10px] font-bold uppercase tracking-widest focus-visible:ring-primary/20"
                                         onKeyDown={(e) => {
                                           if (e.key === 'Enter') {

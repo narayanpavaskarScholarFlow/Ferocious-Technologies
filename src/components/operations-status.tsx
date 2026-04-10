@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,14 +30,16 @@ import {
   Calendar,
   FileSpreadsheet,
   ArrowRight,
-  Clock
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import React from 'react';
 import { Order, RoutingOperation, SubTask } from '@/lib/types';
-import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
+import { AnnualLeaveEntry } from './manpower-utilization';
 
 const INITIAL_STEPS = [
   "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
@@ -85,6 +87,9 @@ export function OperationsStatus({
   const [newOpName, setNewOpName] = useState('');
   const [expandedOps, setExpandedOps] = useState<Record<number, boolean>>({});
 
+  const holidaysQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
+  const { data: holidays = [] } = useCollection<AnnualLeaveEntry>(holidaysQuery);
+
   const orderDocRef = useMemoFirebase(() => 
     selectedWorkOrder ? doc(db, 'orders', selectedWorkOrder) : null,
     [db, selectedWorkOrder]
@@ -103,9 +108,24 @@ export function OperationsStatus({
     return new Date().toISOString().split('T')[0];
   };
 
-  const getNextDay = (dateStr: string) => {
-    const date = new Date(dateStr);
+  const isHoliday = (dateStr: string) => {
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    return holidays.some(h => {
+      const start = new Date(h.startDate);
+      const end = new Date(h.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      return target >= start && target <= end;
+    });
+  };
+
+  const getNextAvailableDay = (dateStr: string) => {
+    let date = new Date(dateStr);
     date.setDate(date.getDate() + 1);
+    while (isHoliday(date.toISOString().split('T')[0])) {
+      date.setDate(date.getDate() + 1);
+    }
     return date.toISOString().split('T')[0];
   };
 
@@ -114,14 +134,17 @@ export function OperationsStatus({
     for (let i = startIndex; i < updated.length; i++) {
       const current = updated[i];
       
-      // Rule: If NA, duration is 0 (Start = End). Otherwise, duration is 1 day.
+      // If current start is a holiday, push it to next available
+      if (isHoliday(current.startDate)) {
+        current.startDate = getNextAvailableDay(new Date(new Date(current.startDate).getTime() - 86400000).toISOString().split('T')[0]);
+      }
+
       if (current.status === 'NA') {
         current.endDate = current.startDate;
       } else {
-        current.endDate = getNextDay(current.startDate);
+        current.endDate = getNextAvailableDay(current.startDate);
       }
       
-      // Rule: Next operation starts when current ends
       if (i + 1 < updated.length) {
         updated[i + 1].startDate = current.endDate;
       }
@@ -145,7 +168,7 @@ export function OperationsStatus({
           id: `OP-${i}-${Date.now()}`,
           name,
           startDate: currentStart,
-          endDate: getNextDay(currentStart),
+          endDate: getNextAvailableDay(currentStart),
           status: "Yet to start",
           subTasks: []
         };
@@ -155,7 +178,7 @@ export function OperationsStatus({
       
       saveRouting(seededOps);
     }
-  }, [selectedWorkOrder, orderData]);
+  }, [selectedWorkOrder, orderData, holidays]);
 
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
@@ -179,7 +202,6 @@ export function OperationsStatus({
   const handleEndDateChange = (opId: string, idx: number, newDate: string) => {
     const updated = [...operations];
     updated[idx].endDate = newDate;
-    // Push the next operation to start on this end date
     if (idx + 1 < updated.length) {
       updated[idx + 1].startDate = newDate;
       const final = propagateSequentialDates(updated, idx + 1);
@@ -198,7 +220,7 @@ export function OperationsStatus({
         id: `OP-${Math.random().toString(36).substr(2, 9)}`,
         name: newOpName.trim(),
         startDate: startFrom,
-        endDate: getNextDay(startFrom),
+        endDate: getNextAvailableDay(startFrom),
         status: "Yet to start",
         subTasks: []
       };
@@ -218,7 +240,7 @@ export function OperationsStatus({
       id: Math.random().toString(36).substr(2, 9),
       name: taskName.trim(),
       startDate: startFrom,
-      endDate: getNextDay(startFrom),
+      endDate: getNextAvailableDay(startFrom),
     };
     
     const updatedRouting = operations.map((op, i) => 
@@ -228,20 +250,32 @@ export function OperationsStatus({
   };
 
   const handleUpdateSubTask = (opIdx: number, subIdx: number, updates: Partial<SubTask>) => {
+    const parent = operations[opIdx];
     const updatedRouting = operations.map((op, i) => {
       if (i !== opIdx) return op;
       const subTasks = [...op.subTasks];
-      subTasks[subIdx] = { ...subTasks[subIdx], ...updates };
+      const currentSub = { ...subTasks[subIdx], ...updates };
+
+      // Boundary Validation: Sub-tasks must stay within parent window
+      const parentStart = new Date(parent.startDate);
+      const parentEnd = new Date(parent.endDate);
+      const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
+      const checkEnd = updates.endDate ? new Date(updates.endDate) : new Date(currentSub.endDate!);
+
+      if (checkStart < parentStart || checkEnd > parentEnd) {
+        // Silently correct or block? User says "it should not allow if it is cross"
+        return op;
+      }
+
+      subTasks[subIdx] = currentSub;
       
-      // Sub-task auto-date logic
       if (updates.startDate) {
-        subTasks[subIdx].endDate = getNextDay(updates.startDate);
+        subTasks[subIdx].endDate = getNextAvailableDay(updates.startDate);
       }
       
-      // Cascade sub-tasks
       for (let j = subIdx + 1; j < subTasks.length; j++) {
         subTasks[j].startDate = subTasks[j-1].endDate;
-        subTasks[j].endDate = getNextDay(subTasks[j].startDate);
+        subTasks[j].endDate = getNextAvailableDay(subTasks[j].startDate);
       }
 
       return { ...op, subTasks };
@@ -263,8 +297,6 @@ export function OperationsStatus({
     }
     const idx = operations.findIndex(o => o.id === opId);
     const updatedRouting = operations.map(op => op.id === opId ? { ...op, status: finalStatus } : op);
-    
-    // Re-propagate dates from this point because if status is NA, duration changes to 0
     const final = propagateSequentialDates(updatedRouting, idx);
     saveRouting(final);
   };
@@ -342,6 +374,7 @@ export function OperationsStatus({
                       const currentStatus = op.status || "Yet to start";
                       const isExpanded = !!expandedOps[idx];
                       const isNA = currentStatus === 'NA';
+                      const startIsHoliday = isHoliday(op.startDate);
                       
                       return (
                         <React.Fragment key={op.id}>
@@ -364,10 +397,13 @@ export function OperationsStatus({
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className={cn(
-                                  "text-sm font-bold uppercase tracking-tight",
-                                  isNA ? "text-slate-400 line-through" : "text-slate-700"
-                                )}>{op.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    "text-sm font-bold uppercase tracking-tight",
+                                    isNA ? "text-slate-400 line-through" : "text-slate-700"
+                                  )}>{op.name}</span>
+                                  {startIsHoliday && <Badge variant="outline" className="text-[8px] border-amber-200 text-amber-600 bg-amber-50 h-4">Holiday Shifted</Badge>}
+                                </div>
                                 {op.subTasks.length > 0 && !isNA && (
                                   <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest mt-0.5">
                                     {op.subTasks.length} nested items
@@ -379,7 +415,10 @@ export function OperationsStatus({
                               <Input 
                                 type="date"
                                 value={op.startDate}
-                                className="bg-transparent border-none text-center text-xs h-8 p-0"
+                                className={cn(
+                                  "bg-transparent border-none text-center text-xs h-8 p-0",
+                                  startIsHoliday && "text-amber-600 font-bold"
+                                )}
                                 onChange={(e) => handleStartDateChange(op.id, idx, e.target.value)}
                               />
                             </TableCell>
@@ -462,8 +501,11 @@ export function OperationsStatus({
                             <TableRow className="bg-slate-50/40 border-b border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
                               <TableCell colSpan={6} className="pl-8 sm:pl-24 py-8 pr-4 sm:pr-12">
                                 <div className="space-y-6">
-                                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-                                    <CircleDot className="h-3 w-3 text-primary" /> Detailed Sequential Breakdown for {op.name}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                      <CircleDot className="h-3 w-3 text-primary" /> Detailed Sequential Breakdown for {op.name}
+                                    </div>
+                                    <Badge variant="outline" className="text-[8px] bg-white text-slate-400">Locked within {op.startDate} to {op.endDate}</Badge>
                                   </div>
                                   
                                   <div className="space-y-4">
@@ -479,7 +521,7 @@ export function OperationsStatus({
                                         </div>
                                         <div className="grid grid-cols-2 md:col-span-4 gap-4">
                                           <div className="space-y-2">
-                                            <Label className="text-[9px] font-bold uppercase text-slate-400">Start</Label>
+                                            <Label className="text-[9px] font-bold uppercase text-slate-500">Start</Label>
                                             <div className="relative">
                                               <Input 
                                                 type="date"
@@ -491,7 +533,7 @@ export function OperationsStatus({
                                             </div>
                                           </div>
                                           <div className="space-y-2">
-                                            <Label className="text-[9px] font-bold uppercase text-slate-400">End (Auto)</Label>
+                                            <Label className="text-[9px] font-bold uppercase text-slate-500">End (Auto)</Label>
                                             <div className="relative">
                                               <Input 
                                                 type="date"
@@ -616,6 +658,18 @@ export function OperationsStatus({
           </div>
         </Card>
       </div>
+
+      {holidays.length > 0 && (
+        <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex items-start gap-4">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Active Planning Buffer</p>
+            <p className="text-[11px] text-amber-700 font-medium leading-snug">
+              The scheduling engine is currently bypassing <b>{holidays.length} plant holidays</b>. Any operation falling on these dates is automatically shifted to the next available working day.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

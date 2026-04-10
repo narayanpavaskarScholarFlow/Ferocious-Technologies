@@ -9,11 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SystemUser, LeaveBalance, LeaveRequest } from '@/lib/types';
+import { SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Users, 
-  Calendar, 
   Search,
   UserX,
   UserPlus,
@@ -66,7 +65,7 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-interface AnnualLeaveEntry {
+export interface AnnualLeaveEntry {
   id: string;
   description: string;
   month: string;
@@ -74,6 +73,8 @@ interface AnnualLeaveEntry {
   year: number;
   reason: string;
   status: 'Planned' | 'Approved';
+  startDate: string; // ISO date
+  endDate: string;   // ISO date
 }
 
 interface ManpowerUtilizationProps {
@@ -90,13 +91,14 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   
-  // Annual Leave Form State (Now general/company-wide)
   const [newAnnual, setNewAnnual] = useState({
     description: '',
     month: MONTHS[new Date().getMonth()],
     dates: '',
     reason: '',
-    year: new Date().getFullYear()
+    year: new Date().getFullYear(),
+    startDate: '',
+    endDate: ''
   });
 
   const [newStaff, setNewStaff] = useState({
@@ -107,7 +109,6 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     email: ''
   });
 
-  // Annual Leaves Collection
   const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
   const { data: annualLeavesRaw } = useCollection<AnnualLeaveEntry>(annualQuery);
   const annualLeaves = annualLeavesRaw || [];
@@ -161,11 +162,11 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
   };
 
   const handleAddAnnualLeave = () => {
-    if (!newAnnual.description || !newAnnual.dates || !newAnnual.month) {
+    if (!newAnnual.description || !newAnnual.startDate || !newAnnual.endDate) {
       toast({
         variant: "destructive",
         title: "Protocol Interrupted",
-        description: "Holiday description, target month, and specific dates are required."
+        description: "Holiday description and specific start/end dates are required."
       });
       return;
     }
@@ -175,10 +176,12 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
       id: entryId,
       description: newAnnual.description,
       month: newAnnual.month,
-      dates: newAnnual.dates,
-      year: newAnnual.year,
+      dates: `${new Date(newAnnual.startDate).getDate()} - ${new Date(newAnnual.endDate).getDate()}`,
+      year: new Date(newAnnual.startDate).getFullYear(),
       reason: newAnnual.reason,
-      status: 'Planned'
+      status: 'Planned',
+      startDate: newAnnual.startDate,
+      endDate: newAnnual.endDate
     };
 
     setDocumentNonBlocking(doc(db, 'annual_leaves', entryId), entry, { merge: true });
@@ -189,7 +192,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     });
 
     setIsAddAnnualOpen(false);
-    setNewAnnual({ description: '', month: MONTHS[new Date().getMonth()], dates: '', reason: '', year: new Date().getFullYear() });
+    setNewAnnual({ description: '', month: MONTHS[new Date().getMonth()], dates: '', reason: '', year: new Date().getFullYear(), startDate: '', endDate: '' });
   };
 
   const handleDeleteAnnual = (id: string) => {
@@ -357,8 +360,8 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                 <TableHeader className="bg-white">
                   <TableRow className="hover:bg-transparent border-slate-100">
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Holiday / Event Description</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Target Month</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Specific Period</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Month & Year</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Specific Dates</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400">Rational / Reason</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
                     <TableHead className="text-right px-10"></TableHead>
@@ -382,7 +385,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-2 font-code text-xs font-bold text-slate-600">
-                          <Clock className="h-3 w-3 text-slate-300" /> {plan.dates}
+                          <Clock className="h-3 w-3 text-slate-300" /> {plan.startDate} to {plan.endDate}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -531,7 +534,6 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
         </TabsContent>
       </Tabs>
 
-      {/* Add Matrix Planning Entry Dialog */}
       <Dialog open={isAddAnnualOpen} onOpenChange={setIsAddAnnualOpen}>
         <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
           <DialogHeader className="space-y-4 mb-8">
@@ -555,25 +557,21 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
 
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Month Period</Label>
-                <Select value={newAnnual.month} onValueChange={(val) => setNewAnnual({...newAnnual, month: val})}>
-                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {MONTHS.map(m => (
-                      <SelectItem key={m} value={m} className="text-xs font-bold uppercase">{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Start Date</Label>
+                <Input 
+                  type="date"
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
+                  value={newAnnual.startDate}
+                  onChange={(e) => setNewAnnual({...newAnnual, startDate: e.target.value})}
+                />
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Specific Dates</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">End Date</Label>
                 <Input 
-                  placeholder="e.g. 12th - 15th" 
+                  type="date"
                   className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
-                  value={newAnnual.dates}
-                  onChange={(e) => setNewAnnual({...newAnnual, dates: e.target.value})}
+                  value={newAnnual.endDate}
+                  onChange={(e) => setNewAnnual({...newAnnual, endDate: e.target.value})}
                 />
               </div>
             </div>

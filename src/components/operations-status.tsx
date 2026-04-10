@@ -97,6 +97,17 @@ export function OperationsStatus({
   const { data: orderData } = useDoc<Order>(orderDocRef);
   const operations = orderData?.routing || [];
 
+  // Helper: Convert dd.MM.yyyy to yyyy-MM-dd
+  const formatToInputDate = (dateStr?: string) => {
+    if (!dateStr) return new Date().toISOString().split('T')[0];
+    if (dateStr.includes('-')) return dateStr; // Already in yyyy-MM-dd
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return new Date().toISOString().split('T')[0];
+  };
+
   // Update selected work order when prop changes
   useEffect(() => {
     if (initialOrderId) {
@@ -107,8 +118,12 @@ export function OperationsStatus({
   // Initialize spreadsheet data if it doesn't exist
   useEffect(() => {
     if (selectedWorkOrder && orderData && !orderData.routing) {
+      const projectStartDate = formatToInputDate(orderData.startDate);
+      
       const seededOps: RoutingOperation[] = INITIAL_STEPS.map((name, i) => {
-        const start = new Date();
+        // If it's the first step, use project start date
+        // Otherwise, we'll initialize with subsequent dates for the seed
+        const start = new Date(projectStartDate);
         start.setDate(start.getDate() + (i * 2));
         const end = new Date(start);
         end.setDate(end.getDate() + 1);
@@ -123,7 +138,6 @@ export function OperationsStatus({
         };
       });
       
-      // Auto-save initial steps to Firestore
       saveRouting(seededOps);
     }
   }, [selectedWorkOrder, orderData]);
@@ -158,13 +172,35 @@ export function OperationsStatus({
     }
   };
 
+  const handleStartDateChange = (opId: string, idx: number, newDate: string) => {
+    const updated = [...operations];
+    updated[idx].startDate = newDate;
+    saveRouting(updated);
+  };
+
+  const handleEndDateChange = (opId: string, idx: number, newDate: string) => {
+    const updated = [...operations];
+    updated[idx].endDate = newDate;
+    
+    // Propagation Logic: Next operation starts from this operation's end date
+    if (idx + 1 < updated.length) {
+      updated[idx + 1].startDate = newDate;
+    }
+    
+    saveRouting(updated);
+  };
+
   const handleAddOperation = () => {
     if (newOpName.trim()) {
+      // Propagation logic for new row: inherit end date of previous row
+      const lastOp = operations[operations.length - 1];
+      const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
+      
       const newOp: RoutingOperation = {
         id: `OP-${Math.random().toString(36).substr(2, 9)}`,
         name: newOpName.trim(),
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: startFrom,
+        endDate: startFrom,
         status: "NA",
         subTasks: []
       };
@@ -215,7 +251,7 @@ export function OperationsStatus({
       return "text-purple-600 bg-purple-50 border-purple-200";
     }
     const match = STATUS_OPTIONS.find(opt => opt.label === status);
-    return match?.color || "text-slate-400 bg-slate-50 border-slate-100";
+    return match?.color || "text-slate-400 bg-slate-100 border-slate-200";
   };
 
   return (
@@ -316,10 +352,7 @@ export function OperationsStatus({
                                 type="date"
                                 value={op.startDate}
                                 className="bg-transparent border-none text-center text-xs h-8 p-0"
-                                onChange={(e) => {
-                                  const updated = operations.map(o => o.id === op.id ? { ...o, startDate: e.target.value } : o);
-                                  saveRouting(updated);
-                                }}
+                                onChange={(e) => handleStartDateChange(op.id, idx, e.target.value)}
                               />
                             </TableCell>
                             <TableCell className="text-center font-code text-xs text-slate-500">
@@ -327,10 +360,7 @@ export function OperationsStatus({
                                 type="date"
                                 value={op.endDate}
                                 className="bg-transparent border-none text-center text-xs h-8 p-0"
-                                onChange={(e) => {
-                                  const updated = operations.map(o => o.id === op.id ? { ...o, endDate: e.target.value } : o);
-                                  saveRouting(updated);
-                                }}
+                                onChange={(e) => handleEndDateChange(op.id, idx, e.target.value)}
                               />
                             </TableCell>
                             <TableCell>

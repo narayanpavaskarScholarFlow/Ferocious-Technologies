@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -169,13 +168,13 @@ function IndustrialERPInternal() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-body">
+    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body">
       <div className="hidden lg:block">
         <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-slate-200/20">
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-blue-100/60 sticky top-0 z-40 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-blue-200/20">
           <div className="flex items-center gap-2 md:gap-8">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>

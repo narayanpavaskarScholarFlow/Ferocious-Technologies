@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -42,6 +41,7 @@ import {
   useCollection, 
   useMemoFirebase,
   setDocumentNonBlocking,
+  deleteDocumentNonBlocking,
   FirebaseClientProvider
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
@@ -129,27 +129,27 @@ function IndustrialERPInternal() {
     setCurrentView('overview');
   };
 
+  // --- Persistence Handlers ---
+
   const handleSaveOrder = (order: Order) => {
     setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
     setCurrentView('orders');
   };
 
-  const handleMachinesChange = (updatedMachines: Machine[]) => {
-    updatedMachines.forEach(m => {
-      setDocumentNonBlocking(doc(db, 'machines', m.id), m, { merge: true });
-    });
+  const handleSaveMachine = (machine: Machine) => {
+    setDocumentNonBlocking(doc(db, 'machines', machine.id), machine, { merge: true });
   };
 
-  const handleCustomersChange = (updatedCustomers: Customer[]) => {
-    updatedCustomers.forEach(c => {
-      setDocumentNonBlocking(doc(db, 'customers', c.id), c, { merge: true });
-    });
+  const handleSaveCustomer = (customer: Customer) => {
+    setDocumentNonBlocking(doc(db, 'customers', customer.id), customer, { merge: true });
   };
 
-  const handleUsersChange = (updatedUsers: SystemUser[]) => {
-    updatedUsers.forEach(u => {
-      setDocumentNonBlocking(doc(db, 'users', u.id), u, { merge: true });
-    });
+  const handleSaveUser = (user: SystemUser) => {
+    setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    deleteDocumentNonBlocking(doc(db, 'users', userId));
   };
 
   if (!mounted) {
@@ -293,19 +293,19 @@ function IndustrialERPInternal() {
             {currentView === 'machine-utilization' && (
               <MachineUtilization 
                 machines={machines || []}
-                onMachinesChange={handleMachinesChange}
+                onSaveMachine={handleSaveMachine}
               />
             )}
             {currentView === 'manpower' && (
               <ManpowerUtilization 
                 users={usersData || []}
-                onUsersChange={handleUsersChange}
+                onSaveUser={handleSaveUser}
               />
             )}
             {currentView === 'customer-orders' && (
               <CustomerOrders 
                 customers={customers || []} 
-                onCustomersChange={handleCustomersChange} 
+                onSaveCustomer={handleSaveCustomer} 
               />
             )}
             {currentView === 'weekly-plan' && (
@@ -320,8 +320,10 @@ function IndustrialERPInternal() {
                 activeTab={settingsActiveTab} 
                 onTabChange={setSettingsActiveTab} 
                 onLogout={handleLogout}
+                currentUser={currentUser}
                 users={usersData || []}
-                onUsersChange={handleUsersChange}
+                onSaveUser={handleSaveUser}
+                onDeleteUser={handleDeleteUser}
               />
             )}
             {currentView === 'gantt' && (
@@ -351,7 +353,7 @@ function IndustrialERPInternal() {
                 onOrderIdChange={setActiveWorkOrderId} 
                 onNavigateToVendor={() => setCurrentView('vendor')}
                 onStatusChange={(o, op, s) => {
-                  // Persistence for operations status if mapped to a schema
+                  // Persistence handled inside via useDoc and auto-save
                 }}
               />
             )}

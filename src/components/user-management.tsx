@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -57,10 +58,11 @@ const DEPARTMENTS = [
 
 interface UserManagementProps {
   users: SystemUser[];
-  onUsersChange: (users: SystemUser[]) => void;
+  onSaveUser: (user: SystemUser) => void;
+  onDeleteUser: (userId: string) => void;
 }
 
-export function UserManagement({ users, onUsersChange }: UserManagementProps) {
+export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManagementProps) {
   const { toast } = useToast();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
@@ -91,13 +93,15 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
     }
 
     if (editingUser) {
-      onUsersChange(users.map(u => u.id === editingUser.id ? {
-        ...u,
+      const updatedUser: SystemUser = {
+        ...editingUser,
         name: formData.name,
         email: formData.email,
-        role: formData.jobTitle || u.role,
-        dept: formData.deptCode || u.dept,
-      } : u));
+        role: formData.jobTitle || editingUser.role,
+        dept: formData.deptCode || editingUser.dept,
+      };
+      
+      onSaveUser(updatedUser);
 
       toast({
         title: "Identity Updated",
@@ -115,7 +119,8 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
         status: 'offline'
       };
 
-      onUsersChange([...users, newUser]);
+      onSaveUser(newUser);
+
       toast({
         title: "User Registered",
         description: `${newUser.name} has been added. Manage permissions in the Access Matrix.`,
@@ -141,7 +146,7 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
   };
 
   const handleDeleteUser = (id: string) => {
-    onUsersChange(users.filter(u => u.id !== id));
+    onDeleteUser(id);
     toast({
       title: "User Revoked",
       description: "Access privileges have been terminated.",
@@ -350,7 +355,7 @@ export function UserManagement({ users, onUsersChange }: UserManagementProps) {
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
                         <Input 
-                          placeholder="e.g. Miloš Kovařík" 
+                          placeholder="e.g. John Operator" 
                           className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}

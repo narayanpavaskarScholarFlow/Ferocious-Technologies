@@ -38,10 +38,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CustomerOrdersProps {
   customers: Customer[];
-  onCustomersChange: (customers: Customer[]) => void;
+  onSaveCustomer: (customer: Customer) => void;
 }
 
-export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersProps) {
+export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('Active');
@@ -105,11 +105,8 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     }
   };
 
-  const handleCloseAccount = (id: string) => {
-    const updated = customers.map(c => 
-      c.id === id ? { ...c, status: 'Closed' as const } : c
-    );
-    onCustomersChange(updated);
+  const handleCloseAccount = (customer: Customer) => {
+    onSaveCustomer({ ...customer, status: 'Closed' as const });
     toast({
       title: "Account Decommissioned",
       description: "Customer status has been moved to Closed archive.",
@@ -134,21 +131,20 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
     }
 
     if (editingCustomerId) {
-      const updatedCustomers = customers.map(c => 
-        c.id === editingCustomerId 
-          ? { 
-              ...c, 
-              name: newCustomer.name.trim(), 
-              gstNumber: newCustomer.gstNumber.trim().toUpperCase(),
-              contactPerson: newCustomer.contactPerson.trim(),
-              contactNumber: newCustomer.contactNumber.trim() || 'N/A',
-              address: newCustomer.address.trim() || 'N/A',
-              type: newCustomer.type,
-              location: newCustomer.address.trim() || 'Global'
-            } 
-          : c
-      );
-      onCustomersChange(updatedCustomers);
+      const updatedCustomer: Customer = {
+        id: editingCustomerId,
+        name: newCustomer.name.trim(), 
+        gstNumber: newCustomer.gstNumber.trim().toUpperCase(),
+        contactPerson: newCustomer.contactPerson.trim(),
+        contactNumber: newCustomer.contactNumber.trim() || 'N/A',
+        address: newCustomer.address.trim() || 'N/A',
+        type: newCustomer.type,
+        email: customers.find(c => c.id === editingCustomerId)?.email || '',
+        location: newCustomer.address.trim() || 'Global',
+        totalOrders: customers.find(c => c.id === editingCustomerId)?.totalOrders || 0,
+        status: customers.find(c => c.id === editingCustomerId)?.status || 'Active'
+      };
+      onSaveCustomer(updatedCustomer);
       toast({
         title: "Identity Synchronized",
         description: `${newCustomer.name} details have been updated in the master directory.`
@@ -165,12 +161,10 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
         email: '',
         location: newCustomer.address.trim() || 'Global',
         totalOrders: 0,
-        outstanding: '$0.00',
-        pendingPOs: 0,
         status: 'Active'
       };
 
-      onCustomersChange([...customers, customer]);
+      onSaveCustomer(customer);
       toast({
         title: "Identity Verified",
         description: `${customer.name} has been committed to the master directory.`
@@ -232,7 +226,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
           <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
               <h3 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">Active Accounts Ledger</h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Total Pipeline Valuation: $0.00</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Total Pipeline Valuation: ₹ 0.00</p>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm">
@@ -267,8 +261,6 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Outstanding</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Pending PO</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-10">Status & Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -310,12 +302,6 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                         <MapPin className="h-3 w-3 text-slate-300" /> {customer.location}
                       </div>
                     </TableCell>
-                    <TableCell className="font-code text-[11px] font-bold text-red-500">
-                      {customer.outstanding || '$0.00'}
-                    </TableCell>
-                    <TableCell className="font-code text-[11px] font-bold text-primary">
-                      {customer.pendingPOs || 0}
-                    </TableCell>
                     <TableCell className="text-right px-10">
                       <div className="flex items-center justify-end gap-3">
                         <Badge className={cn(
@@ -339,7 +325,7 @@ export function CustomerOrders({ customers, onCustomersChange }: CustomerOrdersP
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8 text-slate-400 hover:text-red-500"
-                            onClick={() => handleCloseAccount(customer.id)}
+                            onClick={() => handleCloseAccount(customer)}
                           >
                             <XCircle className="h-3.5 w-3.5" />
                           </Button>

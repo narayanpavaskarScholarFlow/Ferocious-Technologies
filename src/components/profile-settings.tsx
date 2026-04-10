@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,50 +61,90 @@ interface ProfileSettingsProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onLogout?: () => void;
+  currentUser: string | null;
   users: SystemUser[];
-  onUsersChange: (users: SystemUser[]) => void;
+  onSaveUser: (user: SystemUser) => void;
+  onDeleteUser: (userId: string) => void;
 }
 
 export function ProfileSettings({ 
   activeTab = 'profile', 
   onTabChange, 
   onLogout,
+  currentUser,
   users,
-  onUsersChange
+  onSaveUser,
+  onDeleteUser
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
 
-  // Robustly find the user to display in the matrix
+  // Admin Profile State
+  const activeAdmin = useMemo(() => {
+    return users.find(u => u.name === currentUser || u.email?.includes(String(currentUser).toLowerCase())) || null;
+  }, [users, currentUser]);
+
+  const [adminName, setAdminName] = useState('');
+  const [adminRole, setAdminRole] = useState('');
+
+  useEffect(() => {
+    if (activeAdmin) {
+      setAdminName(activeAdmin.name);
+      setAdminRole(activeAdmin.role);
+    } else {
+      setAdminName(currentUser || 'Sys_Admin_01');
+      setAdminRole('Plant Controller');
+    }
+  }, [activeAdmin, currentUser]);
+
   const currentUserMatrix = useMemo(() => {
     if (users.length === 0) return null;
     const found = users.find(u => u.id === selectedUserForMatrix);
     return found || users[0];
   }, [users, selectedUserForMatrix]);
 
-  const handleSave = () => {
+  const handleSaveAdminProfile = () => {
     setIsSaving(true);
+    
+    const profileToSave: SystemUser = activeAdmin ? {
+      ...activeAdmin,
+      name: adminName,
+      role: adminRole
+    } : {
+      id: `ADMIN-${Date.now()}`,
+      name: adminName,
+      email: `${adminName.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
+      role: adminRole,
+      dept: 'Admin',
+      permissions: { overview: 'full' },
+      lastLogin: new Date().toISOString(),
+      status: 'online'
+    };
+
+    onSaveUser(profileToSave);
+
     setTimeout(() => {
       setIsSaving(false);
       toast({
         title: "Configuration Synchronized",
-        description: "Administrative profile for Sys_Admin_01 has been updated."
+        description: `Administrative profile for ${adminName} has been updated in the master ledger.`
       });
-    }, 1000);
+    }, 800);
   };
 
   const handleUpdatePermission = (userId: string, pageId: string, level: PermissionLevel) => {
-    onUsersChange(users.map(u => {
-      if (u.id !== userId) return u;
-      return {
-        ...u,
-        permissions: {
-          ...(u.permissions || {}),
-          [pageId]: level
-        }
-      };
-    }));
+    const userToUpdate = users.find(u => u.id === userId);
+    if (!userToUpdate) return;
+
+    onSaveUser({
+      ...userToUpdate,
+      permissions: {
+        ...(userToUpdate.permissions || {}),
+        [pageId]: level
+      }
+    });
+
     toast({
       title: "Permission Escalated",
       description: `Access level for ${pageId} has been updated.`,
@@ -128,7 +168,7 @@ export function ProfileSettings({
           <div className="flex items-center gap-3">
              <Button 
               className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
-              onClick={handleSave}
+              onClick={handleSaveAdminProfile}
               disabled={isSaving}
              >
                {isSaving ? "Synchronizing..." : <Save className="h-4 w-4" />} {isSaving ? "" : "Save Protocol"}
@@ -156,7 +196,7 @@ export function ProfileSettings({
               <Card className="p-8 bg-white border-slate-200/60 shadow-xl rounded-2xl flex flex-col items-center text-center">
                 <div className="relative mb-6">
                   <Avatar className="h-24 w-24 border-4 border-slate-50 shadow-xl">
-                    <AvatarImage src="https://picsum.photos/seed/erp-user/200/200" />
+                    <AvatarImage src={`https://picsum.photos/seed/${currentUser || 'admin'}/200/200`} />
                     <AvatarFallback className="bg-primary text-white text-xl font-bold">SA</AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full border-4 border-white shadow-sm flex items-center justify-center">
@@ -165,14 +205,14 @@ export function ProfileSettings({
                 </div>
                 
                 <div className="space-y-1">
-                  <h3 className="text-xl font-display font-bold text-[#001F3D]">Sys_Admin_01</h3>
-                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-[0.2em]">Plant Controller / Root Admin</p>
+                  <h3 className="text-xl font-display font-bold text-[#001F3D]">{adminName}</h3>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-[0.2em]">{adminRole}</p>
                 </div>
 
                 <div className="w-full grid grid-cols-2 gap-3 mt-8 pt-8 border-t border-slate-50">
                   <div className="p-3 bg-slate-50 rounded-xl text-left">
                     <p className="text-[8px] text-slate-400 uppercase font-bold mb-1">Employee ID</p>
-                    <p className="text-[11px] font-bold text-[#001F3D]">ID_PR_0012</p>
+                    <p className="text-[11px] font-bold text-[#001F3D]">{activeAdmin?.id.split('-')[0] || 'ID_PR_XXXX'}</p>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl text-left">
                     <p className="text-[8px] text-slate-400 uppercase font-bold mb-1">Access Tier</p>
@@ -200,11 +240,19 @@ export function ProfileSettings({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Network Alias</Label>
-                      <Input defaultValue="Sys_Admin_01" className="h-11 bg-slate-50 border-none text-xs rounded-xl" />
+                      <Input 
+                        value={adminName} 
+                        onChange={(e) => setAdminName(e.target.value)}
+                        className="h-11 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20" 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Functional Role</Label>
-                      <Input defaultValue="Plant Controller" className="h-11 bg-slate-50 border-none text-xs rounded-xl" />
+                      <Input 
+                        value={adminRole} 
+                        onChange={(e) => setAdminRole(e.target.value)}
+                        className="h-11 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -214,7 +262,7 @@ export function ProfileSettings({
         </TabsContent>
 
         <TabsContent value="access" className="m-0">
-          <UserManagement users={users} onUsersChange={onUsersChange} />
+          <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
         </TabsContent>
 
         <TabsContent value="matrix" className="m-0">

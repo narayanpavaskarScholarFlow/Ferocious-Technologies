@@ -25,10 +25,10 @@ import placeholderImages from '@/app/lib/placeholder-images.json';
 
 interface MachineUtilizationProps {
   machines: Machine[];
-  onMachinesChange: (machines: Machine[]) => void;
+  onSaveMachine: (machine: Machine) => void;
 }
 
-export function MachineUtilization({ machines, onMachinesChange }: MachineUtilizationProps) {
+export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizationProps) {
   const { toast } = useToast();
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   const [isAddMachineOpen, setIsAddMachineOpen] = useState(false);
@@ -76,7 +76,7 @@ export function MachineUtilization({ machines, onMachinesChange }: MachineUtiliz
       image: imgMap[newMachine.type] || 'https://picsum.photos/seed/machine/600/400'
     };
 
-    onMachinesChange([...machines, machine]);
+    onSaveMachine(machine);
     toast({
       title: "Node Registered",
       description: `${machine.name} has been synchronized with Asset Telemetry.`

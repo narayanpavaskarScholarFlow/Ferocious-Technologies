@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -58,10 +57,10 @@ const DEPARTMENTS = [
 
 interface ManpowerUtilizationProps {
   users: SystemUser[];
-  onUsersChange: (users: SystemUser[]) => void;
+  onSaveUser: (user: SystemUser) => void;
 }
 
-export function ManpowerUtilization({ users, onUsersChange }: ManpowerUtilizationProps) {
+export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
@@ -97,7 +96,7 @@ export function ManpowerUtilization({ users, onUsersChange }: ManpowerUtilizatio
       lastLogin: 'Never'
     };
 
-    onUsersChange([...users, member]);
+    onSaveUser(member);
     toast({
       title: "Resource Synchronized",
       description: `${member.name} has been added to the master resource pool.`
@@ -254,7 +253,6 @@ export function ManpowerUtilization({ users, onUsersChange }: ManpowerUtilizatio
           </Card>
         </TabsContent>
 
-        {/* Apply Leave, Planned, Annual remain simplified for now */}
         <TabsContent value="apply" className="m-0 max-w-2xl mx-auto">
           <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-3xl">
             <div className="space-y-8">

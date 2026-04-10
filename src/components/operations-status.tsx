@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,22 +39,9 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import React from 'react';
-
-interface SubTask {
-  id: string;
-  name: string;
-  startDate?: string;
-  endDate?: string;
-  machineId?: string;
-}
-
-interface Operation {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  subTasks: SubTask[];
-}
+import { Order, RoutingOperation, SubTask } from '@/lib/types';
+import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const INITIAL_STEPS = [
   "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
@@ -87,7 +74,6 @@ interface OperationsStatusProps {
   initialOrderId?: string | null;
   onOrderIdChange?: (orderId: string | null) => void;
   onNavigateToVendor?: () => void;
-  externalOpStatuses?: Record<string, Record<string, string>>;
   onStatusChange?: (orderId: string, operation: string, status: string) => void;
 }
 
@@ -95,64 +81,94 @@ export function OperationsStatus({
   initialOrderId, 
   onOrderIdChange, 
   onNavigateToVendor,
-  externalOpStatuses = {},
   onStatusChange
 }: OperationsStatusProps) {
+  const db = useFirestore();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
-  const [operations, setOperations] = useState<Operation[]>([]);
   const [newOpName, setNewOpName] = useState('');
   const [expandedOps, setExpandedOps] = useState<Record<number, boolean>>({});
 
-  // Initialize spreadsheet data when order changes
+  // Sync with Firestore Order document
+  const orderDocRef = useMemoFirebase(() => 
+    selectedWorkOrder ? doc(db, 'orders', selectedWorkOrder) : null,
+    [db, selectedWorkOrder]
+  );
+  
+  const { data: orderData } = useDoc<Order>(orderDocRef);
+  const operations = orderData?.routing || [];
+
+  // Update selected work order when prop changes
   useEffect(() => {
     if (initialOrderId) {
       setSelectedWorkOrder(initialOrderId);
-      
-      // Seed dummy operations with dates relative to "now"
-      const seededOps = INITIAL_STEPS.map((name, i) => {
+    }
+  }, [initialOrderId]);
+
+  // Initialize spreadsheet data if it doesn't exist
+  useEffect(() => {
+    if (selectedWorkOrder && orderData && !orderData.routing) {
+      const seededOps: RoutingOperation[] = INITIAL_STEPS.map((name, i) => {
         const start = new Date();
         start.setDate(start.getDate() + (i * 2));
         const end = new Date(start);
         end.setDate(end.getDate() + 1);
         
         return {
-          id: `OP-${i}`,
+          id: `OP-${i}-${Date.now()}`,
           name,
           startDate: start.toISOString().split('T')[0],
           endDate: end.toISOString().split('T')[0],
+          status: "NA",
           subTasks: []
         };
       });
-      setOperations(seededOps);
+      
+      // Auto-save initial steps to Firestore
+      saveRouting(seededOps);
     }
-  }, [initialOrderId]);
+  }, [selectedWorkOrder, orderData]);
+
+  const saveRouting = (newRouting: RoutingOperation[]) => {
+    if (!selectedWorkOrder) return;
+    setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
+      routing: newRouting
+    }, { merge: true });
+  };
 
   const handleSelectChange = (val: string) => {
     setSelectedWorkOrder(val);
     onOrderIdChange?.(val);
   };
 
-  const handleLocalStatusChange = (column: string, status: string, vendorName?: string) => {
-    if (!selectedWorkOrder || !onStatusChange) return;
-    
+  const handleLocalStatusChange = (opId: string, status: string, vendorName?: string) => {
     let finalStatus = status;
     if (status === 'Vendor' && vendorName) {
       finalStatus = `Vendor: ${vendorName}`;
     }
     
-    onStatusChange(selectedWorkOrder, column, finalStatus);
+    const updatedRouting = operations.map(op => 
+      op.id === opId ? { ...op, status: finalStatus } : op
+    );
+    
+    saveRouting(updatedRouting);
+    
+    if (selectedWorkOrder && onStatusChange) {
+      const op = operations.find(o => o.id === opId);
+      if (op) onStatusChange(selectedWorkOrder, op.name, finalStatus);
+    }
   };
 
   const handleAddOperation = () => {
     if (newOpName.trim()) {
-      const newOp: Operation = {
-        id: Math.random().toString(36).substr(2, 9),
+      const newOp: RoutingOperation = {
+        id: `OP-${Math.random().toString(36).substr(2, 9)}`,
         name: newOpName.trim(),
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
+        status: "NA",
         subTasks: []
       };
-      setOperations(prev => [...prev, newOp]);
+      saveRouting([...operations, newOp]);
       setNewOpName('');
     }
   };
@@ -169,25 +185,29 @@ export function OperationsStatus({
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0],
     };
-    setOperations(prev => prev.map((op, i) => 
+    
+    const updatedRouting = operations.map((op, i) => 
       i === idx ? { ...op, subTasks: [...op.subTasks, newSubTask] } : op
-    ));
+    );
+    saveRouting(updatedRouting);
   };
 
   const handleUpdateSubTask = (opIdx: number, subIdx: number, updates: Partial<SubTask>) => {
-    setOperations(prev => prev.map((op, i) => {
+    const updatedRouting = operations.map((op, i) => {
       if (i !== opIdx) return op;
       return {
         ...op,
         subTasks: op.subTasks.map((st, j) => j === subIdx ? { ...st, ...updates } : st)
       };
-    }));
+    });
+    saveRouting(updatedRouting);
   };
 
   const handleRemoveSubTask = (opIdx: number, taskIdx: number) => {
-    setOperations(prev => prev.map((op, i) => 
+    const updatedRouting = operations.map((op, i) => 
       i === opIdx ? { ...op, subTasks: op.subTasks.filter((_, j) => j !== taskIdx) } : op
-    ));
+    );
+    saveRouting(updatedRouting);
   };
 
   const getStatusStyles = (status?: string) => {
@@ -197,8 +217,6 @@ export function OperationsStatus({
     const match = STATUS_OPTIONS.find(opt => opt.label === status);
     return match?.color || "text-slate-400 bg-slate-50 border-slate-100";
   };
-
-  const currentOpStatuses = selectedWorkOrder ? externalOpStatuses[selectedWorkOrder] || {} : {};
 
   return (
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
@@ -264,16 +282,11 @@ export function OperationsStatus({
                 {selectedWorkOrder ? (
                   <>
                     {operations.map((op, idx) => {
-                      let defaultStatus = "NA";
-                      const orderNum = parseInt(selectedWorkOrder);
-                      if (idx < (orderNum % 10)) defaultStatus = "Completed";
-                      if (idx === (orderNum % 10)) defaultStatus = "WIP";
-                      
-                      const currentStatus = currentOpStatuses[op.name] || defaultStatus;
+                      const currentStatus = op.status || "NA";
                       const isExpanded = !!expandedOps[idx];
                       
                       return (
-                        <React.Fragment key={idx}>
+                        <React.Fragment key={op.id}>
                           <TableRow className="h-20 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
                             <TableCell className="px-8 font-code text-xs text-slate-300 font-bold">
                               <div className="flex items-center gap-2">
@@ -299,10 +312,26 @@ export function OperationsStatus({
                               </div>
                             </TableCell>
                             <TableCell className="text-center font-code text-xs text-slate-500">
-                              {op.startDate}
+                              <Input 
+                                type="date"
+                                value={op.startDate}
+                                className="bg-transparent border-none text-center text-xs h-8 p-0"
+                                onChange={(e) => {
+                                  const updated = operations.map(o => o.id === op.id ? { ...o, startDate: e.target.value } : o);
+                                  saveRouting(updated);
+                                }}
+                              />
                             </TableCell>
                             <TableCell className="text-center font-code text-xs text-slate-500">
-                              {op.endDate}
+                              <Input 
+                                type="date"
+                                value={op.endDate}
+                                className="bg-transparent border-none text-center text-xs h-8 p-0"
+                                onChange={(e) => {
+                                  const updated = operations.map(o => o.id === op.id ? { ...o, endDate: e.target.value } : o);
+                                  saveRouting(updated);
+                                }}
+                              />
                             </TableCell>
                             <TableCell>
                               <div className="flex justify-center">
@@ -324,7 +353,7 @@ export function OperationsStatus({
                                     {STATUS_OPTIONS.map((opt) => (
                                       <DropdownMenuItem 
                                         key={opt.label}
-                                        onClick={() => handleLocalStatusChange(op.name, opt.label)}
+                                        onClick={() => handleLocalStatusChange(op.id, opt.label)}
                                         className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50"
                                       >
                                         <div className={cn("h-2 w-2 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
@@ -342,7 +371,7 @@ export function OperationsStatus({
                                           {RESOURCE_LIST.filter(r => r.type === 'vendor').map((vendor) => (
                                             <DropdownMenuItem 
                                               key={vendor.id}
-                                              onClick={() => handleLocalStatusChange(op.name, 'Vendor', vendor.name)}
+                                              onClick={() => handleLocalStatusChange(op.id, 'Vendor', vendor.name)}
                                               className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
                                             >
                                               {vendor.name}
@@ -356,7 +385,14 @@ export function OperationsStatus({
                               </div>
                             </TableCell>
                             <TableCell className="text-right px-8">
-                               <div className="h-2 w-2 rounded-full bg-slate-100 group-hover:bg-primary/20 transition-colors ml-auto" />
+                               <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-slate-200 hover:text-red-500 rounded-full"
+                                onClick={() => saveRouting(operations.filter(o => o.id !== op.id))}
+                               >
+                                 <Trash2 className="h-3.5 w-3.5" />
+                               </Button>
                             </TableCell>
                           </TableRow>
                           

@@ -55,6 +55,23 @@ export type ViewType =
   | 'gantt'
   | 'smart-quote';
 
+export interface SubTask {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  machineId?: string;
+}
+
+export interface RoutingOperation {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status?: string;
+  subTasks: SubTask[];
+}
+
 export interface Order {
   id: string;
   customer: string;
@@ -69,6 +86,7 @@ export interface Order {
   laborCost?: string;
   taxAmount?: string;
   totalQuoted?: string;
+  routing?: RoutingOperation[];
 }
 
 export interface Invoice {

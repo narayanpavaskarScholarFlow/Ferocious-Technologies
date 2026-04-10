@@ -45,7 +45,33 @@
         "status": { "type": "string" },
         "owner": { "type": "string" },
         "progress": { "type": "number" },
-        "amountSpent": { "type": "string" }
+        "amountSpent": { "type": "string" },
+        "routing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "startDate": { "type": "string" },
+              "endDate": { "type": "string" },
+              "status": { "type": "string" },
+              "subTasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "startDate": { "type": "string" },
+                    "endDate": { "type": "string" },
+                    "machineId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "Customer": {

@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
+  Edit2,
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -64,6 +65,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -72,6 +74,19 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     shift: 'Morning' as any,
     email: ''
   });
+
+  const handleEditStaff = (user: SystemUser) => {
+    setEditingUserId(user.id);
+    setNewStaff({
+      name: user.name,
+      role: user.role,
+      dept: user.dept,
+      shift: user.shift || 'Morning',
+      email: user.email
+    });
+    setStep(1);
+    setIsAddStaffOpen(true);
+  };
 
   const handleAddStaff = () => {
     if (!newStaff.name.trim() || !newStaff.role || !newStaff.dept) {
@@ -84,25 +99,26 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     }
 
     const member: SystemUser = {
-      id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingUserId || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
       name: newStaff.name.trim(),
       email: newStaff.email || `${newStaff.name.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
       role: newStaff.role,
       dept: newStaff.dept,
-      status: 'active',
+      status: editingUserId ? (users.find(u => u.id === editingUserId)?.status || 'active') : 'active',
       shift: newStaff.shift,
-      efficiency: 0,
-      permissions: { overview: 'read' },
-      lastLogin: 'Never'
+      efficiency: editingUserId ? (users.find(u => u.id === editingUserId)?.efficiency || 0) : 0,
+      permissions: editingUserId ? (users.find(u => u.id === editingUserId)?.permissions || { overview: 'read' }) : { overview: 'read' },
+      lastLogin: editingUserId ? (users.find(u => u.id === editingUserId)?.lastLogin || 'Never') : 'Never'
     };
 
     onSaveUser(member);
     toast({
-      title: "Resource Synchronized",
-      description: `${member.name} has been added to the master resource pool.`
+      title: editingUserId ? "Identity Synchronized" : "Resource Synchronized",
+      description: `${member.name} has been updated in the master resource pool.`
     });
 
     setIsAddStaffOpen(false);
+    setEditingUserId(null);
     setStep(1);
     setNewStaff({ name: '', role: '', dept: '', shift: 'Morning', email: '' });
   };
@@ -121,14 +137,8 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
           <p className="text-muted-foreground font-medium">Coordinate manpower availability, leave planning, and shift efficiency.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => setIsAddStaffOpen(true)}
-            className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
-          >
-            <UserPlus className="h-4 w-4" /> Register New Resource
-          </Button>
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 h-10 px-4 font-bold text-[10px] uppercase tracking-widest">
-            Available: {users.length}
+            Available Resources: {users.length}
           </Badge>
         </div>
       </header>
@@ -156,30 +166,46 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
           {users.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {users.map((member) => (
-                <Card key={member.id} className="p-6 flex items-center justify-between border-slate-200 shadow-sm bg-white hover:border-primary/50 transition-colors rounded-2xl">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12 border-2 border-slate-50">
-                      <AvatarImage src={`https://picsum.photos/seed/${member.id}/100/100`} />
-                      <AvatarFallback className="bg-primary/5 text-primary font-bold">{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{member.name}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{member.role} • {member.dept}</p>
+                <Card key={member.id} className="p-6 border-slate-200 shadow-sm bg-white hover:border-primary/50 transition-colors rounded-2xl group relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12 border-2 border-slate-50">
+                        <AvatarImage src={`https://picsum.photos/seed/${member.id}/100/100`} />
+                        <AvatarFallback className="bg-primary/5 text-primary font-bold">{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{member.name}</p>
+                        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{member.role} • {member.dept}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge 
-                      variant="outline" 
-                      className={cn(
-                        "text-[9px] font-bold uppercase py-1 px-3",
-                        member.status === 'active' || member.status === 'online' ? 'bg-green-50 text-green-600 border-green-100' :
-                        member.status === 'break' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-slate-50 text-slate-400 border-slate-100'
-                      )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleEditStaff(member)}
                     >
-                      {member.status}
-                    </Badge>
-                    <p className="text-[10px] font-code mt-1 text-slate-400">{member.shift || 'Morning'} Shift</p>
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    <div className="text-left">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Assigned Shift</p>
+                      <p className="text-[10px] font-bold text-slate-700">{member.shift || 'Morning'}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[9px] font-bold uppercase py-1 px-3",
+                          member.status === 'active' || member.status === 'online' ? 'bg-green-50 text-green-600 border-green-100' :
+                          member.status === 'break' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                          'bg-slate-50 text-slate-400 border-slate-100'
+                        )}
+                      >
+                        {member.status}
+                      </Badge>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -302,22 +328,25 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+      <Dialog open={isAddStaffOpen} onOpenChange={(open) => {
+        setIsAddStaffOpen(open);
+        if (!open) setEditingUserId(null);
+      }}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
-          <DialogTitle className="sr-only">Personnel Registration Protocol</DialogTitle>
-          <DialogDescription className="sr-only">Register new human resources for operational tracking and scheduling.</DialogDescription>
+          <DialogTitle className="sr-only">{editingUserId ? 'Edit Personnel Identity' : 'Personnel Registration Protocol'}</DialogTitle>
+          <DialogDescription className="sr-only">Update or register human resources for operational tracking and scheduling.</DialogDescription>
           
           <div className="flex h-[600px]">
             <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
                 <div className="p-4 bg-[#001F3D] rounded-2xl w-fit shadow-xl shadow-primary/20 relative">
-                  <UserPlus className="h-7 w-7 text-white" />
-                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+                  {editingUserId ? <Edit2 className="h-7 w-7 text-white" /> : <UserPlus className="h-7 w-7 text-white" />}
+                  <div className={cn("absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white animate-pulse", editingUserId ? "bg-primary" : "bg-green-500")} />
                 </div>
                 <div className="space-y-8">
                   {[
-                    { s: 1, label: 'Identify Resource', desc: 'NAME & PERSONAL' },
-                    { s: 2, label: 'Deployment', desc: 'DEPT & SHIFT' },
+                    { s: 1, label: editingUserId ? 'Modify Identity' : 'Identify Resource', desc: 'NAME & PERSONAL' },
+                    { s: 2, label: 'Redeployment', desc: 'DEPT & SHIFT' },
                   ].map((item) => (
                     <div key={item.s} className="flex gap-5 group relative">
                       {item.s < 2 && (
@@ -345,7 +374,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                 </div>
               </div>
               <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">
-                RESOURCE_REG_V2.4
+                {editingUserId ? 'RESOURCE_MOD_V2.4' : 'RESOURCE_REG_V2.4'}
               </div>
             </div>
 
@@ -356,7 +385,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                     <div className="flex items-center gap-3">
                       <div className="h-1 w-8 bg-primary rounded-full" />
                       <div>
-                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">01. Identity</h3>
+                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">01. {editingUserId ? 'Update' : 'Identity'}</h3>
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Resource Registration Base</p>
                       </div>
                     </div>
@@ -401,7 +430,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                     <div className="flex items-center gap-3">
                       <div className="h-1 w-8 bg-primary rounded-full" />
                       <div>
-                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">02. Deployment</h3>
+                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">02. {editingUserId ? 'Re-Allocation' : 'Deployment'}</h3>
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Operational Allocation</p>
                       </div>
                     </div>
@@ -449,7 +478,10 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                 <div className="flex items-center gap-4">
                   <Button 
                     variant="ghost"
-                    onClick={() => setIsAddStaffOpen(false)}
+                    onClick={() => {
+                      setIsAddStaffOpen(false);
+                      setEditingUserId(null);
+                    }}
                     className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400"
                   >
                     Abort
@@ -461,7 +493,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                       step === 2 ? "bg-primary hover:bg-[#002d4f] shadow-primary/30" : "bg-slate-900 hover:bg-black shadow-black/20"
                     )}
                   >
-                    {step === 2 ? 'Commit & Finalize' : 'Execute Next Step'}
+                    {step === 2 ? (editingUserId ? 'Synchronize Identity' : 'Commit & Finalize') : 'Execute Next Step'}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

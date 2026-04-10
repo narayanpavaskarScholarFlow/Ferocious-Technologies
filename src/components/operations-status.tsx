@@ -111,6 +111,7 @@ export function OperationsStatus({
   };
 
   const isHoliday = (dateStr: string) => {
+    if (!dateStr) return false;
     const target = new Date(dateStr);
     target.setHours(0, 0, 0, 0);
     return holidays.some(h => {
@@ -136,7 +137,6 @@ export function OperationsStatus({
     for (let i = startIndex; i < updated.length; i++) {
       const current = updated[i];
       
-      // If current start is a holiday, push it to next available
       if (isHoliday(current.startDate)) {
         current.startDate = getNextAvailableDay(new Date(new Date(current.startDate).getTime() - 86400000).toISOString().split('T')[0]);
       }
@@ -184,8 +184,27 @@ export function OperationsStatus({
 
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
+
+    // Calculate Progress % based on top-level task completion
+    const activeOps = newRouting.filter(op => op.status !== 'NA');
+    const completedOps = activeOps.filter(op => op.status === 'Completed');
+    
+    const progress = activeOps.length > 0 
+      ? Math.round((completedOps.length / activeOps.length) * 100) 
+      : 0;
+
+    // Update master order status based on progress
+    let orderStatus = orderData?.status || 'Yet to start';
+    if (progress === 100) {
+      orderStatus = 'Completed';
+    } else if (progress > 0) {
+      orderStatus = 'Active';
+    }
+
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
-      routing: newRouting
+      routing: newRouting,
+      progress: progress,
+      status: orderStatus
     }, { merge: true });
   };
 

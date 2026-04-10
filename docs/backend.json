@@ -91,17 +91,20 @@
         "status": { "type": "string" }
       }
     },
-    "StaffMember": {
-      "title": "StaffMember",
+    "SystemUser": {
+      "title": "SystemUser",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "email": { "type": "string" },
         "role": { "type": "string" },
         "dept": { "type": "string" },
         "status": { "type": "string" },
         "shift": { "type": "string" },
-        "efficiency": { "type": "number" }
+        "efficiency": { "type": "number" },
+        "lastLogin": { "type": "string" },
+        "permissions": { "type": "object" }
       }
     },
     "Vendor": {
@@ -161,10 +164,10 @@
         }
       },
       {
-        "path": "/staff/{staffId}",
+        "path": "/users/{userId}",
         "definition": {
-          "entityName": "StaffMember",
-          "description": "HR resource and personnel directory."
+          "entityName": "SystemUser",
+          "description": "System users and operational resources directory."
         }
       },
       {

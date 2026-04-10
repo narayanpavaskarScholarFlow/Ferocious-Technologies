@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, StaffMember, Order, Machine, Vendor } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -41,8 +42,6 @@ import {
   useCollection, 
   useMemoFirebase,
   setDocumentNonBlocking,
-  updateDocumentNonBlocking,
-  deleteDocumentNonBlocking,
   FirebaseClientProvider
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
@@ -58,19 +57,18 @@ function IndustrialERPInternal() {
   // Firestore Collections
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
   const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
-  const staffQuery = useMemoFirebase(() => collection(db, 'staff'), [db]);
+  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
   const machinesQuery = useMemoFirebase(() => collection(db, 'machines'), [db]);
   const vendorsQuery = useMemoFirebase(() => collection(db, 'vendors'), [db]);
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
 
   const { data: orders = [] } = useCollection<Order>(ordersQuery);
   const { data: customers = [] } = useCollection<Customer>(customersQuery);
-  const { data: staff = [] } = useCollection<StaffMember>(staffQuery);
+  const { data: usersData = [] } = useCollection<SystemUser>(usersQuery);
   const { data: machines = [] } = useCollection<Machine>(machinesQuery);
   const { data: vendors = [] } = useCollection<Vendor>(vendorsQuery);
   const { data: logs = [] } = useCollection<WorkLogEntryType>(logsQuery);
 
-  const [users, setUsers] = useState<SystemUser[]>([]);
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -148,9 +146,9 @@ function IndustrialERPInternal() {
     });
   };
 
-  const handleStaffChange = (updatedStaff: StaffMember[]) => {
-    updatedStaff.forEach(s => {
-      setDocumentNonBlocking(doc(db, 'staff', s.id), s, { merge: true });
+  const handleUsersChange = (updatedUsers: SystemUser[]) => {
+    updatedUsers.forEach(u => {
+      setDocumentNonBlocking(doc(db, 'users', u.id), u, { merge: true });
     });
   };
 
@@ -300,8 +298,8 @@ function IndustrialERPInternal() {
             )}
             {currentView === 'manpower' && (
               <ManpowerUtilization 
-                staff={staff || []}
-                onStaffChange={handleStaffChange}
+                users={usersData || []}
+                onUsersChange={handleUsersChange}
               />
             )}
             {currentView === 'customer-orders' && (
@@ -322,8 +320,8 @@ function IndustrialERPInternal() {
                 activeTab={settingsActiveTab} 
                 onTabChange={setSettingsActiveTab} 
                 onLogout={handleLogout}
-                users={users}
-                onUsersChange={setUsers}
+                users={usersData || []}
+                onUsersChange={handleUsersChange}
               />
             )}
             {currentView === 'gantt' && (
@@ -342,7 +340,7 @@ function IndustrialERPInternal() {
                 orderId={activeWorkOrderId} 
                 onBack={handleBackToOrders} 
                 customers={customers || []}
-                staff={staff || []}
+                staff={usersData || []}
                 onSave={handleSaveOrder}
                 orders={orders || []}
               />

@@ -1,3 +1,4 @@
+
 export type ToolStatus = 'active' | 'obsolete' | 'maintenance' | 'fault';
 
 export type MachineCategory = 
@@ -107,16 +108,6 @@ export interface SQCDPData {
   history: { date: string; value: number }[];
 }
 
-export interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  dept: string;
-  status: 'active' | 'break' | 'off';
-  shift: 'Morning' | 'Evening' | 'Night';
-  efficiency: number;
-}
-
 export interface LeaveBalance {
   id: string;
   resourceName: string;
@@ -136,21 +127,9 @@ export interface LeaveRequest {
   reason?: string;
 }
 
-export interface CustomerOrder {
-  siNo: number;
-  id: string;
-  customer: string;
-  customerType: string;
-  numberOfPOs: number;
-  value: string;
-  quantity: number;
-  location: string;
-  status: 'Pending' | 'Production' | 'Shipping' | 'Delivered';
-}
-
 export interface Customer {
   id: string;
-  name: string; // Company name
+  name: string;
   address: string;
   contactNumber: string;
   gstNumber: string;
@@ -162,15 +141,6 @@ export interface Customer {
   outstanding?: string;
   pendingPOs?: number;
   status?: 'Active' | 'Closed';
-}
-
-export interface OperationStep {
-  id: string;
-  partId: string;
-  operationName: string;
-  machineId: string;
-  status: 'Queued' | 'In Progress' | 'Completed' | 'Blocked';
-  startTime?: string;
 }
 
 export interface Vendor {
@@ -208,14 +178,7 @@ export interface InventoryItem {
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }
 
-export interface QualityCheck {
-  id: string;
-  operation: string;
-  status: 'Pass' | 'Fail' | 'Pending' | 'NA';
-  remarks?: string;
-}
-
-export type PermissionLevel = 'read' | 'edit' | 'full';
+export type PermissionLevel = 'read' | 'edit' | 'full' | 'none';
 
 export interface SystemUser {
   id: string;
@@ -225,5 +188,7 @@ export interface SystemUser {
   dept: string;
   permissions: Record<string, PermissionLevel>;
   lastLogin: string;
-  status: 'online' | 'offline';
+  status: 'online' | 'offline' | 'active' | 'break' | 'off';
+  shift?: 'Morning' | 'Evening' | 'Night';
+  efficiency?: number;
 }

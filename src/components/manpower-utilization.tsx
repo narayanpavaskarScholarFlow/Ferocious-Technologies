@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { StaffMember, LeaveBalance, LeaveRequest } from '@/lib/types';
+import { SystemUser, LeaveBalance, LeaveRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Users, 
@@ -20,8 +21,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-  Building2,
-  Briefcase
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -58,11 +57,11 @@ const DEPARTMENTS = [
 ];
 
 interface ManpowerUtilizationProps {
-  staff: StaffMember[];
-  onStaffChange: (staff: StaffMember[]) => void;
+  users: SystemUser[];
+  onUsersChange: (users: SystemUser[]) => void;
 }
 
-export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizationProps) {
+export function ManpowerUtilization({ users, onUsersChange }: ManpowerUtilizationProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
@@ -71,7 +70,8 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
     name: '',
     role: '',
     dept: '',
-    shift: 'Morning' as any
+    shift: 'Morning' as any,
+    email: ''
   });
 
   const handleAddStaff = () => {
@@ -84,17 +84,20 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
       return;
     }
 
-    const member: StaffMember = {
-      id: `RES-${Math.floor(1000 + Math.random() * 9000)}`,
+    const member: SystemUser = {
+      id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
       name: newStaff.name.trim(),
+      email: newStaff.email || `${newStaff.name.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
       role: newStaff.role,
       dept: newStaff.dept,
       status: 'active',
       shift: newStaff.shift,
-      efficiency: 0
+      efficiency: 0,
+      permissions: { overview: 'read' },
+      lastLogin: 'Never'
     };
 
-    onStaffChange([...staff, member]);
+    onUsersChange([...users, member]);
     toast({
       title: "Resource Synchronized",
       description: `${member.name} has been added to the master resource pool.`
@@ -102,7 +105,7 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
 
     setIsAddStaffOpen(false);
     setStep(1);
-    setNewStaff({ name: '', role: '', dept: '', shift: 'Morning' });
+    setNewStaff({ name: '', role: '', dept: '', shift: 'Morning', email: '' });
   };
 
   return (
@@ -126,7 +129,7 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
             <UserPlus className="h-4 w-4" /> Register New Resource
           </Button>
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 h-10 px-4 font-bold text-[10px] uppercase tracking-widest">
-            Available: {staff.length}
+            Available: {users.length}
           </Badge>
         </div>
       </header>
@@ -151,9 +154,9 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
         </TabsList>
 
         <TabsContent value="overview" className="space-y-8 m-0">
-          {staff.length > 0 ? (
+          {users.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {staff.map((member) => (
+              {users.map((member) => (
                 <Card key={member.id} className="p-6 flex items-center justify-between border-slate-200 shadow-sm bg-white hover:border-primary/50 transition-colors rounded-2xl">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12 border-2 border-slate-50">
@@ -170,14 +173,14 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
                       variant="outline" 
                       className={cn(
                         "text-[9px] font-bold uppercase py-1 px-3",
-                        member.status === 'active' ? 'bg-green-50 text-green-600 border-green-100' :
+                        member.status === 'active' || member.status === 'online' ? 'bg-green-50 text-green-600 border-green-100' :
                         member.status === 'break' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                         'bg-slate-50 text-slate-400 border-slate-100'
                       )}
                     >
                       {member.status}
                     </Badge>
-                    <p className="text-[10px] font-code mt-1 text-slate-400">{member.shift} Shift</p>
+                    <p className="text-[10px] font-code mt-1 text-slate-400">{member.shift || 'Morning'} Shift</p>
                   </div>
                 </Card>
               ))}
@@ -193,10 +196,10 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Resource Skill Matrix</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               {[
-                { label: 'Milling', value: staff.filter(s => s.dept === 'VMC Milling').length * 20 },
-                { label: 'Turning', value: staff.filter(s => s.dept === 'CNC Turning').length * 20 },
-                { label: 'Quality Control', value: staff.filter(s => s.dept === 'Quality').length * 20 },
-                { label: 'Logistics', value: staff.filter(s => s.dept === 'Market').length * 20 },
+                { label: 'Milling', value: users.filter(s => s.dept === 'VMC Milling').length * 20 },
+                { label: 'Turning', value: users.filter(s => s.dept === 'CNC Turning').length * 20 },
+                { label: 'Quality Control', value: users.filter(s => s.dept === 'Quality').length * 20 },
+                { label: 'Logistics', value: users.filter(s => s.dept === 'Market').length * 20 },
               ].map((skill) => (
                 <div key={skill.label} className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -228,7 +231,7 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Annual Leave</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Sick Leave</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Casual Leave</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Total Taken</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center">Total Taken</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -251,7 +254,7 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
           </Card>
         </TabsContent>
 
-        {/* Other Tabs remain same but could be linked to state as well */}
+        {/* Apply Leave, Planned, Annual remain simplified for now */}
         <TabsContent value="apply" className="m-0 max-w-2xl mx-auto">
           <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-3xl">
             <div className="space-y-8">
@@ -267,7 +270,16 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Resource Name</Label>
-                  <Input placeholder="Search staff..." className="h-12 bg-slate-50 border-none rounded-xl" />
+                  <Select>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl">
+                      <SelectValue placeholder="Select user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map(u => (
+                        <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Start Date</Label>
@@ -287,68 +299,6 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
               <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg shadow-primary/20">
                 Submit Leave Application
               </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="planned" className="m-0">
-          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Upcoming Absences</h3>
-              <Badge variant="outline" className="bg-white font-bold text-[9px] uppercase">Approved: 0</Badge>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/50 border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-8">Request ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Resource</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Timeline</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Type</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {plannedLeaves.map((pl) => (
-                  <TableRow key={pl.id} className="h-20 border-slate-50">
-                    <TableCell className="px-8 font-code text-xs text-slate-400">{pl.id}</TableCell>
-                    <TableCell className="font-bold text-sm text-slate-900">{pl.resourceName}</TableCell>
-                    <TableCell className="text-xs font-medium text-slate-500">{pl.startDate} — {pl.endDate}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary" className="bg-slate-100 text-[9px] font-bold uppercase">{pl.type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right px-8">
-                      <Badge className="bg-green-50 text-green-700 border border-green-100 text-[9px] font-bold uppercase px-3">
-                        {pl.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {plannedLeaves.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No upcoming absences recorded</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="annual" className="m-0">
-          <Card className="p-10 border-slate-200 bg-white shadow-xl rounded-3xl min-h-[500px] flex flex-col justify-center items-center text-center">
-            <Calendar className="h-16 w-16 text-primary/20 mb-6" />
-            <h3 className="text-2xl font-display font-bold text-slate-900 mb-2">Company Annual Leave Plan Sheet</h3>
-            <p className="text-muted-foreground max-w-lg mb-8">
-              This interactive heat-map tracks plant-wide availability for the 2025 financial year, ensuring critical operation staffing levels are maintained during peak vacation periods.
-            </p>
-            <div className="grid grid-cols-12 gap-2 w-full max-w-4xl opacity-50">
-              {Array.from({ length: 48 }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-sm bg-slate-100" />
-              ))}
-            </div>
-            <div className="mt-8 flex gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-               <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-sm bg-primary" /> Peak (0-20% Avail)</div>
-               <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-sm bg-amber-400" /> Caution (21-50%)</div>
-               <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-sm bg-slate-100" /> Optimal (&gt;50%)</div>
             </div>
           </Card>
         </TabsContent>
@@ -420,6 +370,15 @@ export function ManpowerUtilization({ staff, onStaffChange }: ManpowerUtilizatio
                           className="h-12 bg-slate-50/50 border-none text-xs font-bold rounded-xl"
                           value={newStaff.name}
                           onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Email Address</Label>
+                        <Input 
+                          placeholder="e.g. john@bharataxis.tech" 
+                          className="h-12 bg-slate-50/50 border-none text-xs font-bold rounded-xl"
+                          value={newStaff.email}
+                          onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
                         />
                       </div>
                       <div className="space-y-2">

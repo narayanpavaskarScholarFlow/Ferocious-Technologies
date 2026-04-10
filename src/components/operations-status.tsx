@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -88,7 +89,8 @@ export function OperationsStatus({
   const [expandedOps, setExpandedOps] = useState<Record<number, boolean>>({});
 
   const holidaysQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
-  const { data: holidays = [] } = useCollection<AnnualLeaveEntry>(holidaysQuery);
+  const { data: holidaysData } = useCollection<AnnualLeaveEntry>(holidaysQuery);
+  const holidays = holidaysData || [];
 
   const orderDocRef = useMemoFirebase(() => 
     selectedWorkOrder ? doc(db, 'orders', selectedWorkOrder) : null,
@@ -256,14 +258,12 @@ export function OperationsStatus({
       const subTasks = [...op.subTasks];
       const currentSub = { ...subTasks[subIdx], ...updates };
 
-      // Boundary Validation: Sub-tasks must stay within parent window
       const parentStart = new Date(parent.startDate);
       const parentEnd = new Date(parent.endDate);
       const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
       const checkEnd = updates.endDate ? new Date(updates.endDate) : new Date(currentSub.endDate!);
 
       if (checkStart < parentStart || checkEnd > parentEnd) {
-        // Silently correct or block? User says "it should not allow if it is cross"
         return op;
       }
 

@@ -40,7 +40,9 @@ import {
   AlertCircle,
   FileWarning,
   ArchiveX,
-  ExternalLink
+  ExternalLink,
+  ClipboardCheck,
+  History
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -55,8 +57,8 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord } from '@/lib/types';
-import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, collection, query, where } from 'firebase/firestore';
 
 type QualityStep = 'list' | 'upload' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
@@ -100,15 +102,22 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
   
-  // Persistent tracking of URLs to avoid Chrome blob blockage
   const createdUrlsRef = useRef<string[]>([]);
 
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Fetch all reports for the selected order to show in the Onboarding Hub
+  const reportsQuery = useMemoFirebase(() => {
+    if (!selectedOrder) return null;
+    return query(collection(db, 'quality_reports'), where('workOrderId', '==', selectedOrder.id));
+  }, [db, selectedOrder?.id]);
+  
+  const { data: orderReports } = useCollection<QualityReport>(reportsQuery);
+  const reports = orderReports || [];
+
   useEffect(() => {
-    // Final cleanup on module exit
     return () => {
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
@@ -155,10 +164,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   }, [qcEntries]);
 
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
-    if (selectedOrder?.id !== order.id || selectedOp?.id !== op.id) {
+    if (selectedOrder?.id !== order.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
-      // Clean up previous URLs before resetting if it's a new task context
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       createdUrlsRef.current = [];
       setUploadedFiles([]);
@@ -304,10 +312,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       updatedAt: new Date().toISOString()
     });
 
-    setCurrentStep('review');
+    setCurrentStep('upload'); // Return to hub as requested
+    setActiveReportId(null);
+    setDimensions(INITIAL_DIMENSIONS);
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Review Pending');
     }
+    toast({ title: "Report Transmitted", description: "Audit data sent for final compliance review." });
   };
 
   const finalApproval = () => {
@@ -319,14 +330,16 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       updatedAt: new Date().toISOString()
     });
 
-    // Update drawing status to Completed in the session list
     if (activeDrawingId) {
       setUploadedFiles(prev => prev.map(f => 
         f.id === activeDrawingId ? { ...f, status: 'Completed' } : f
       ));
     }
 
-    setCurrentStep('approval');
+    setCurrentStep('upload'); // Return to Hub
+    setActiveReportId(null);
+    setDimensions(INITIAL_DIMENSIONS);
+    
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
     }
@@ -336,6 +349,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const hasFailures = useMemo(() => dimensions.some(d => d.status === 'Fail'), [dimensions]);
   const passCount = dimensions.filter(d => d.status === 'Pass').length;
   const failCount = dimensions.filter(d => d.status === 'Fail').length;
+
+  const pendingReviews = reports.filter(r => r.status === 'Review Pending');
+  const releasedReports = reports.filter(r => r.status === 'Released');
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -347,7 +363,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D]">
             {currentStep === 'list' && 'Master Inspection Pipeline'}
-            {currentStep === 'upload' && 'Drawing Onboarding'}
+            {currentStep === 'upload' && 'Drawing Onboarding Hub'}
             {currentStep === 'checklist' && 'Dimensional Matrix Entry'}
             {currentStep === 'report' && 'Compliance Report Preview'}
             {currentStep === 'review' && 'Final Review & Approval'}
@@ -459,7 +475,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         className="rounded-xl bg-[#001F3D] hover:bg-black text-white text-[10px] font-bold uppercase h-10 px-6 opacity-0 group-hover:opacity-100 transition-all shadow-xl"
                         onClick={() => handleSelectTask(order, operation)}
                       >
-                        Initialize Audit <ChevronRight className="ml-2 h-4 w-4" />
+                        Initialize Hub <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -489,80 +505,127 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <div className="flex justify-between items-start mb-8 relative z-10">
               <div className="flex items-center gap-4">
                 <div className="p-4 bg-primary/5 rounded-2xl">
-                  <FileSearch className="h-8 w-8 text-primary" />
+                  <ClipboardCheck className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Onboard Blueprints</h3>
-                  <p className="text-xs text-slate-500">Upload technical drawings for Order #{selectedOrder.id}.</p>
+                  <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Onboarding Hub</h3>
+                  <p className="text-xs text-slate-500">Technical artifacts and review ledger for Order #{selectedOrder.id}.</p>
                 </div>
               </div>
               <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold tracking-widest uppercase">WO #{selectedOrder.id}</Badge>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow mb-8 relative z-10 overflow-hidden">
-              <div className="lg:col-span-4 space-y-6 flex flex-col min-h-0">
-                <input 
-                  type="file" 
-                  id="multi-cad-upload" 
-                  className="hidden" 
-                  accept=".pdf"
-                  multiple
-                  onChange={handleFileChange}
-                />
-                <label 
-                  htmlFor="multi-cad-upload"
-                  className="h-32 rounded-2xl border-2 border-dashed border-slate-200 hover:border-primary/50 bg-slate-50/50 hover:bg-primary/5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all group shrink-0"
-                >
-                  <Upload className="h-6 w-6 text-slate-300 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attach PDF Drawing</span>
-                </label>
+              <div className="lg:col-span-4 space-y-8 flex flex-col min-h-0">
+                <div className="space-y-4">
+                  <input 
+                    type="file" 
+                    id="multi-cad-upload" 
+                    className="hidden" 
+                    accept=".pdf"
+                    multiple
+                    onChange={handleFileChange}
+                  />
+                  <label 
+                    htmlFor="multi-cad-upload"
+                    className="h-24 rounded-2xl border-2 border-dashed border-slate-200 hover:border-primary/50 bg-slate-50/50 hover:bg-primary/5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all group shrink-0"
+                  >
+                    <Upload className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Onboard New Blueprint</span>
+                  </label>
 
-                <div className="flex-grow flex flex-col min-h-0">
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <Layers className="h-3.5 w-3.5 text-primary" />
-                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Attachment Matrix</h4>
-                  </div>
-                  
-                  <ScrollArea className="flex-1 pr-2">
-                    <div className="space-y-2">
-                      {uploadedFiles.map((file) => (
-                        <div 
-                          key={file.id}
-                          onClick={() => setActiveDrawingId(file.id)}
-                          className={cn(
-                            "p-4 rounded-xl border flex items-center justify-between group transition-all cursor-pointer relative",
-                            activeDrawingId === file.id ? "bg-[#001F3D] border-[#001F3D] text-white shadow-lg" : "bg-white border-slate-100 hover:border-primary/20",
-                            file.status === 'Completed' && "border-emerald-200"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            {file.status === 'Completed' ? (
-                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            ) : (
-                              <FileIcon className={cn("h-4 w-4", activeDrawingId === file.id ? "text-accent" : "text-primary")} />
-                            )}
-                            <span className="text-[11px] font-bold truncate max-w-[150px]">{file.name}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={(e) => { e.stopPropagation(); removeFile(file.id); }} 
-                            className={cn(
-                              "h-7 w-7 rounded-lg",
-                              activeDrawingId === file.id ? "text-white/40 hover:text-white" : "text-slate-300 hover:text-red-500"
-                            )}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
+                  <div className="flex flex-col min-h-0 space-y-6">
+                    {/* Drawing Matrix */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 px-1">
+                        <Layers className="h-3.5 w-3.5 text-primary" />
+                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Matrix</h4>
+                      </div>
+                      
+                      <ScrollArea className="max-h-[250px] pr-2">
+                        <div className="space-y-2">
+                          {uploadedFiles.map((file) => (
+                            <div 
+                              key={file.id}
+                              onClick={() => setActiveDrawingId(file.id)}
+                              className={cn(
+                                "p-4 rounded-xl border flex items-center justify-between group transition-all cursor-pointer relative",
+                                activeDrawingId === file.id ? "bg-[#001F3D] border-[#001F3D] text-white shadow-lg" : "bg-white border-slate-100 hover:border-primary/20",
+                                file.status === 'Completed' && "border-emerald-200"
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                {file.status === 'Completed' ? (
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                ) : (
+                                  <FileIcon className={cn("h-4 w-4", activeDrawingId === file.id ? "text-accent" : "text-primary")} />
+                                )}
+                                <span className="text-[11px] font-bold truncate max-w-[150px]">{file.name}</span>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => { e.stopPropagation(); removeFile(file.id); }} 
+                                className={cn(
+                                  "h-7 w-7 rounded-lg",
+                                  activeDrawingId === file.id ? "text-white/40 hover:text-white" : "text-slate-300 hover:text-red-500"
+                                )}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                      {uploadedFiles.length === 0 && (
-                        <div className="py-12 text-center opacity-20 border-2 border-dashed border-slate-100 rounded-2xl">
-                          <p className="text-[10px] font-bold uppercase tracking-widest">Protocol Null</p>
-                        </div>
-                      )}
+                      </ScrollArea>
                     </div>
-                  </ScrollArea>
+
+                    {/* Review & Release Registry */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 px-1">
+                        <History className="h-3.5 w-3.5 text-accent" />
+                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Review & Release Registry</h4>
+                      </div>
+                      
+                      <ScrollArea className="max-h-[350px] pr-2">
+                        <div className="space-y-3">
+                          {reports.length > 0 ? reports.map((report) => (
+                            <div key={report.id} className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
+                              <div className="flex justify-between items-start">
+                                <Badge className={cn(
+                                  "text-[8px] font-bold uppercase px-2",
+                                  report.status === 'Released' ? "bg-emerald-500" : "bg-blue-500"
+                                )}>
+                                  {report.status}
+                                </Badge>
+                                <span className="text-[8px] font-code text-slate-400">{report.updatedAt.split('T')[0]}</span>
+                              </div>
+                              <p className="text-[10px] font-bold text-slate-700 uppercase truncate">{report.drawingName}</p>
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-7 rounded-lg text-[8px] font-bold uppercase flex-1 border-slate-200 bg-white"
+                                  onClick={() => {
+                                    setActiveReportId(report.id);
+                                    // Manually set dimensions and checks from report to preview
+                                    setDimensions(report.dimensions);
+                                    setChecks(report.checks as any);
+                                    setCurrentStep(report.status === 'Review Pending' ? 'review' : 'approval');
+                                  }}
+                                >
+                                  <FileSearch className="h-3 w-3 mr-1" /> View Report
+                                </Button>
+                              </div>
+                            </div>
+                          )) : (
+                            <div className="py-8 text-center border border-dashed border-slate-100 rounded-xl opacity-20">
+                              <p className="text-[9px] font-bold uppercase tracking-widest">No active reports</p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -579,17 +642,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <FileWarning className="h-16 w-16 text-amber-500" />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-lg font-bold text-slate-900 uppercase tracking-tight">Preview Blocked by System</p>
-                        <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed font-medium">
-                          Your browser security protocol is preventing inline rendering of the technical blob. Access the document via the secure external node.
-                        </p>
+                        <p className="text-lg font-bold text-slate-900 uppercase tracking-tight">Security Protocol Block</p>
+                        <p className="text-xs text-slate-500 font-medium">Access technical artifacts via secure external node.</p>
                       </div>
                       <Button 
                         variant="outline" 
                         onClick={() => window.open(activeDrawing.url, '_blank')}
-                        className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 hover:bg-slate-50 shadow-sm flex gap-2"
+                        className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 flex gap-2"
                       >
-                        <ExternalLink className="h-4 w-4" /> Open Drawing in New Tab
+                        <ExternalLink className="h-4 w-4" /> Open Technical Blob
                       </Button>
                     </div>
                   </object>
@@ -599,23 +660,20 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     <p className="text-[10px] font-bold uppercase tracking-[0.3em]">Drawing Selection Required</p>
                   </div>
                 )}
-                <div className="absolute top-4 left-4 pointer-events-none">
-                   <Badge className="bg-black/60 text-white border-none backdrop-blur-md font-code text-[10px] px-3">SECURE_VIEWER_v2.4</Badge>
-                </div>
               </div>
             </div>
 
             <div className="pt-8 border-t border-slate-100 flex justify-between items-center relative z-10 mt-auto">
               <div className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Blueprint validation active. Procedural hand-off ready.</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Procedural Registry Synchronized.</span>
               </div>
               <Button 
                 disabled={!activeDrawingId || activeDrawing?.status === 'Completed'}
                 className="h-14 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-2xl shadow-primary/20 flex gap-3 transition-all"
                 onClick={() => setCurrentStep('checklist')}
               >
-                {activeDrawing?.status === 'Completed' ? 'Inspection Finalized' : 'Start Measurement Audit'} <ChevronRight className="h-4 w-4" />
+                Initialize Dimensional Audit <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </Card>
@@ -951,102 +1009,49 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </div>
           </Card>
 
-          {currentStep === 'report' && (
-            <div className="flex justify-center pt-10 print:hidden">
+          {(currentStep === 'report' || currentStep === 'review') && (
+            <div className="flex justify-center pt-10 print:hidden gap-6">
               <Button 
-                className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all"
-                onClick={submitForReview}
+                variant="ghost"
+                className="rounded-2xl h-16 px-10 font-bold uppercase text-slate-400"
+                onClick={() => setCurrentStep('upload')}
               >
-                Transmit for Final Compliance Review
+                Return to Hub
               </Button>
-            </div>
-          )}
-
-          {currentStep === 'review' && (
-            <div className={cn(
-              "border-none rounded-[3rem] p-12 max-w-[900px] mx-auto space-y-10 animate-in slide-in-from-bottom-4 duration-500 print:hidden shadow-2xl transition-all",
-              hasFailures ? "bg-red-950 border-red-900" : "bg-[#001F3D]"
-            )}>
-              <div className="flex items-center gap-6">
-                <div className={cn(
-                  "p-5 rounded-[1.5rem] border",
-                  hasFailures ? "bg-red-500/20 border-red-500/30" : "bg-white/10 border-white/10"
-                )}>
-                  {hasFailures ? <FileWarning className="h-10 w-10 text-red-400 animate-pulse" /> : <ShieldCheck className="h-10 w-10 text-accent" />}
-                </div>
-                <div>
-                  <h4 className="text-2xl font-display font-bold text-white uppercase tracking-tight">
-                    {hasFailures ? 'Deviation Protocol Locked' : 'Security Review Locked'}
-                  </h4>
-                  <p className={cn(
-                    "text-sm font-medium",
-                    hasFailures ? "text-red-300" : "text-white/40"
-                  )}>
-                    {hasFailures 
-                      ? "Dimensional deviations detected. Verify internal rework requirements before force release."
-                      : `Verify dimensional benchmarks for ${activeDrawing.name} before authorization.`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-6">
+              {currentStep === 'report' ? (
+                <Button 
+                  className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl"
+                  onClick={submitForReview}
+                >
+                  Transmit for Final Compliance Review
+                </Button>
+              ) : (
                 <Button 
                   className={cn(
-                    "flex-1 h-16 rounded-2xl font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl transition-all",
-                    hasFailures ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20" : "bg-accent hover:bg-accent/90 text-white shadow-accent/20"
+                    "rounded-2xl h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl",
+                    hasFailures ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"
                   )}
                   onClick={finalApproval}
                 >
-                  <CheckCircle2 className="h-5 w-5" /> 
                   {hasFailures ? 'Force Release with Deviations' : 'Authorize Final Release'}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="flex-1 h-16 rounded-2xl border border-white/10 text-white hover:bg-white/5 font-bold uppercase text-[10px] tracking-widest gap-3"
-                  onClick={() => setCurrentStep('checklist')}
-                >
-                  <AlertTriangle className="h-5 w-5 text-amber-400" /> Return for Rectification
-                </Button>
-              </div>
+              )}
             </div>
           )}
 
           {currentStep === 'approval' && (
             <div className="text-center space-y-10 pt-10 print:hidden">
-              <div className={cn(
-                "inline-flex items-center gap-3 px-10 py-4 rounded-full border-2 font-bold text-xs uppercase tracking-[0.3em] shadow-xl",
-                hasFailures ? "bg-red-50 text-red-700 border-red-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
-              )}>
+              <div className="inline-flex items-center gap-3 px-10 py-4 rounded-full border-2 border-emerald-100 bg-emerald-50 text-emerald-700 font-bold text-xs uppercase tracking-[0.3em] shadow-xl">
                 <CheckCircle2 className="h-5 w-5" /> 
-                PROTOCOL_STATUS: {hasFailures ? 'FORCE_RELEASED' : 'FINAL_APPROVED'}
+                PROTOCOL_STATUS: FINAL_RELEASED
               </div>
-              <div className="flex flex-col items-center gap-6">
-                <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium">Procedural cycle complete for blueprint <b>{activeDrawing.name}</b>. Audit trail synchronized with master ledger.</p>
-                <div className="flex gap-4">
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      setCurrentStep('list');
-                      setSelectedOrder(null);
-                      setSelectedOp(null);
-                      toast({ title: "Task Cycle Closed", description: "Returning to inspection pipeline." });
-                    }}
-                    className="rounded-2xl border-slate-200 h-14 px-10 font-bold uppercase text-[10px] tracking-widest"
-                  >
-                    Close & Return to Pipeline
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      setActiveDrawingId(null);
-                      setCurrentStep('upload');
-                      setDimensions(INITIAL_DIMENSIONS);
-                      setActiveReportId(null);
-                      toast({ title: "Reset Sequence", description: "Select another blueprint from the onboarding matrix." });
-                    }}
-                    className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex gap-3 transition-all"
-                  >
-                    <Plus className="h-4 w-4" /> Start Report for Next Drawing
-                  </Button>
-                </div>
+              <div className="flex justify-center">
+                <Button 
+                  onClick={() => setCurrentStep('upload')}
+                  className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
+                >
+                  Return to Onboarding Hub <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}

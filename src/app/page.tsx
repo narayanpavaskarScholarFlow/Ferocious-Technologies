@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
@@ -23,6 +23,7 @@ import { ProfileSettings } from '@/components/profile-settings';
 import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ import { collection, doc } from 'firebase/firestore';
 
 function IndustrialERPInternal() {
   const db = useFirestore();
+  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -96,6 +98,48 @@ function IndustrialERPInternal() {
     }
   }, []);
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('bharat_axis_user');
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    setCurrentView('overview');
+  }, []);
+
+  // Automatic Logout Logic (3 minutes of inactivity)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    let inactivityTimer: NodeJS.Timeout;
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        handleLogout();
+        toast({
+          variant: "destructive",
+          title: "Session Timeout",
+          description: "You have been logged out due to 3 minutes of inactivity.",
+        });
+      }, 3 * 60 * 1000); // 180,000 ms = 3 minutes
+    };
+
+    // Activity listeners
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    activityEvents.forEach(event => {
+      window.addEventListener(event, resetInactivityTimer);
+    });
+
+    resetInactivityTimer(); // Initialize timer
+
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, resetInactivityTimer);
+      });
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+    };
+  }, [isLoggedIn, handleLogout, toast]);
+
   const handleSearchChange = (val: string) => {
     setGlobalSearch(val);
     const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
@@ -134,13 +178,6 @@ function IndustrialERPInternal() {
     localStorage.setItem('bharat_axis_user', user);
     setCurrentUser(user);
     setIsLoggedIn(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('bharat_axis_user');
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setCurrentView('overview');
   };
 
   // Data Persistence Handlers

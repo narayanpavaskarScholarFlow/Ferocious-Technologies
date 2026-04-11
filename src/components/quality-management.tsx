@@ -39,7 +39,8 @@ import {
   MousePointer2,
   AlertCircle,
   FileWarning,
-  ArchiveX
+  ArchiveX,
+  ExternalLink
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -106,15 +107,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
   
-  // Track all created URLs for cleanup on unmount
+  // Persistent tracking of URLs to avoid Chrome blob blockage
   const createdUrlsRef = useRef<string[]>([]);
 
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Cleanup all Blob URLs on component destruction
   useEffect(() => {
+    // Final cleanup on module exit
     return () => {
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
@@ -161,12 +162,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   }, [qcEntries]);
 
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
+    // Only reset session if switching to a NEW different task
     if (selectedOrder?.id !== order.id || selectedOp?.id !== op.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
-      // Clean up previous drawing session URLs
+      
+      // Memory cleanup for old session
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       createdUrlsRef.current = [];
+      
       setUploadedFiles([]);
       setActiveDrawingId(null);
       setDimensions(INITIAL_DIMENSIONS);
@@ -262,20 +266,21 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       
       setUploadedFiles(prev => [...prev, ...newFiles]);
       
+      // Auto-focus the first uploaded file in the batch
       if (newFiles.length > 0) {
         setActiveDrawingId(newFiles[0].id);
       }
       
       e.target.value = '';
-      toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files onboarded to sequence.` });
+      toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files onboarded to session.` });
     }
   };
 
   const removeFile = (id: string) => {
-    const file = uploadedFiles.find(f => f.id === id);
-    if (file) {
-      URL.revokeObjectURL(file.url);
-      createdUrlsRef.current = createdUrlsRef.current.filter(u => u !== file.url);
+    const fileToRemove = uploadedFiles.find(f => f.id === id);
+    if (fileToRemove) {
+      URL.revokeObjectURL(fileToRemove.url);
+      createdUrlsRef.current = createdUrlsRef.current.filter(u => u !== fileToRemove.url);
     }
     
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
@@ -294,7 +299,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
     }
-    toast({ title: "Quality Release Authorized", description: `Report for ${activeDrawing?.name} released.` });
+    toast({ title: "Quality Release Authorized", description: `Compliance audit for ${activeDrawing?.name} released.` });
   };
 
   const hasFailures = useMemo(() => dimensions.some(d => d.status === 'Fail'), [dimensions]);
@@ -527,20 +532,39 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
               <div className="lg:col-span-8 bg-slate-100/50 rounded-3xl border border-slate-200 overflow-hidden relative group h-[600px] lg:h-auto">
                 {activeDrawing ? (
-                  <iframe 
+                  <object
                     key={`${activeDrawing.id}-${activeDrawing.url}`}
-                    src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
-                    title={`Drawing Preview: ${activeDrawing.name}`}
-                    className="w-full h-full border-none bg-white" 
-                  />
+                    data={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`}
+                    type="application/pdf"
+                    className="w-full h-full border-none bg-white rounded-2xl"
+                  >
+                    <div className="h-full flex flex-col items-center justify-center p-10 text-center gap-6 bg-white">
+                      <div className="p-6 bg-amber-50 rounded-full">
+                        <FileWarning className="h-16 w-16 text-amber-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-bold text-slate-900 uppercase tracking-tight">Preview Blocked by System</p>
+                        <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed font-medium">
+                          Your browser security protocol is preventing inline rendering of the technical blob. Access the document via the secure external node.
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => window.open(activeDrawing.url, '_blank')}
+                        className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 hover:bg-slate-50 shadow-sm flex gap-2"
+                      >
+                        <ExternalLink className="h-4 w-4" /> Open Drawing in New Tab
+                      </Button>
+                    </div>
+                  </object>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center opacity-30 gap-4">
                     <ImageIcon className="h-16 w-16 text-slate-300" />
                     <p className="text-[10px] font-bold uppercase tracking-[0.3em]">Drawing Selection Required</p>
                   </div>
                 )}
-                <div className="absolute top-4 left-4">
-                   <Badge className="bg-black/60 text-white border-none backdrop-blur-md font-code text-[10px] px-3">PREVIEW_MODE</Badge>
+                <div className="absolute top-4 left-4 pointer-events-none">
+                   <Badge className="bg-black/60 text-white border-none backdrop-blur-md font-code text-[10px] px-3">SECURE_VIEWER_v2.4</Badge>
                 </div>
               </div>
             </div>
@@ -548,7 +572,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <div className="pt-8 border-t border-slate-100 flex justify-between items-center relative z-10 mt-auto">
               <div className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select an onboarded blueprint to initialize dimensional matrix entry.</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Blueprint validation active. Procedural hand-off ready.</span>
               </div>
               <Button 
                 disabled={!activeDrawingId}
@@ -564,17 +588,31 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start animate-in fade-in duration-700 px-2">
-          <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-[#001F3D] shadow-2xl relative border-none">
+          <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-white shadow-2xl relative border-none">
             <div className="absolute top-4 left-4 z-20 flex gap-2">
                <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center">Technical Reference</Badge>
                <Badge className="bg-black/40 text-white/80 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase">{activeDrawing.name}</Badge>
             </div>
-            <iframe 
+            
+            <object
               key={`${activeDrawing.id}-${activeDrawing.url}-audit`}
-              src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
-              title={`Audit Reference: ${activeDrawing.name}`}
-              className="w-full h-full border-none bg-white" 
-            />
+              data={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`}
+              type="application/pdf"
+              className="w-full h-full border-none bg-white"
+            >
+              <div className="h-full flex flex-col items-center justify-center p-10 text-center gap-4">
+                <FileWarning className="h-10 w-10 text-amber-500" />
+                <p className="text-xs font-bold text-slate-700 uppercase">Audit Preview Blocked</p>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => window.open(activeDrawing.url, '_blank')}
+                  className="rounded-xl text-[9px] font-bold uppercase"
+                >
+                  View Ref in New Tab
+                </Button>
+              </div>
+            </object>
           </Card>
 
           <div className="xl:col-span-7 flex flex-col h-[800px]">

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -10,13 +9,12 @@ import {
   ChevronRight, 
   LayoutGrid,
   CheckCircle2,
-  Clock,
-  ListFilter,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
   Calendar as CalendarIcon,
   X,
-  AlertCircle
+  Layers,
+  CircleDot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
@@ -34,8 +32,6 @@ import {
   endOfWeek,
   addWeeks,
   subWeeks,
-  isWithinInterval,
-  isAfter
 } from 'date-fns';
 import {
   Select,
@@ -68,12 +64,11 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [expandedOps, setExpandedOps] = useState<Record<string, boolean>>({});
   
-  // Date Range Selection State
   const [highlightRange, setHighlightRange] = useState<DateRange | undefined>();
 
   const filteredOrders = useMemo(() => {
-    if (selectedOrderId === 'all') return orders;
-    return orders.filter(o => o.id === selectedOrderId);
+    const base = selectedOrderId === 'all' ? orders : orders.filter(o => o.id === selectedOrderId);
+    return base;
   }, [orders, selectedOrderId]);
 
   const timelineInterval = useMemo(() => {
@@ -92,12 +87,10 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
 
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
-    // Format: DD.MM.YYYY
     if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateStr)) {
       const [d, m, y] = dateStr.split('.').map(Number);
       return startOfDay(new Date(y, m - 1, d));
     }
-    // Format: YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       const [y, m, d] = dateStr.split('-').map(Number);
       return startOfDay(new Date(y, m - 1, d));
@@ -175,34 +168,30 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     setCurrentDate(prev => viewMode === 'month' ? addMonths(prev, 1) : addWeeks(prev, 1));
   };
 
-  const getStatusConfig = (status?: string, endDateStr?: string) => {
-    const isCompleted = status === 'Completed';
-    const isDelayed = !isCompleted && endDateStr && isAfter(new Date(), parseDate(endDateStr) || new Date());
-    
-    if (isCompleted) return { bg: 'bg-[#4caf50]', label: 'Done', color: '#fff' };
-    if (isDelayed) return { bg: 'bg-[#f44336]', label: 'Overdue', color: '#fff' };
-    if (status === 'Hold') return { bg: 'bg-[#ff9800]', label: 'Hold', color: '#fff' };
-    if (status?.startsWith('Vendor')) return { bg: 'bg-[#9c27b0]', label: 'External', color: '#fff' };
-    return { bg: 'bg-[#2196f3]', label: 'Active', color: '#fff' };
+  const getStatusColor = (status?: string) => {
+    if (status === 'Completed') return 'bg-emerald-500';
+    if (status === 'Hold' || status === 'Delayed') return 'bg-rose-500';
+    if (status?.startsWith('Vendor')) return 'bg-purple-500';
+    return 'bg-primary';
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#f8f9fa] animate-in fade-in duration-700 overflow-hidden font-body">
-      {/* Precision Controls Header */}
-      <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-40 shrink-0 shadow-sm">
-        <div className="flex items-center gap-4">
-          <h2 className="text-base font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <LayoutGrid className="h-4 w-4 text-primary" />
-            Production Timeline
-          </h2>
+    <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-hidden font-body">
+      {/* Simplified Header */}
+      <header className="h-16 border-b border-slate-100 flex items-center justify-between px-6 shrink-0 z-40">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Timeline Matrix</h2>
+          </div>
 
-          <div className="h-8 w-px bg-slate-200 mx-2" />
+          <div className="h-6 w-px bg-slate-100" />
 
           <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
-            <SelectTrigger className="w-[200px] h-9 bg-slate-50 border-slate-200 rounded-md text-xs font-bold uppercase">
-              <SelectValue placeholder="Work Order..." />
+            <SelectTrigger className="w-[220px] h-9 border-slate-200 text-xs font-bold uppercase rounded-lg">
+              <SelectValue placeholder="All Projects" />
             </SelectTrigger>
-            <SelectContent className="rounded-md">
+            <SelectContent>
               <SelectItem value="all" className="text-xs font-bold">ALL PROJECTS</SelectItem>
               {orders.map(order => (
                 <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase">
@@ -218,27 +207,26 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 variant="outline" 
                 size="sm"
                 className={cn(
-                  "h-9 rounded-md border-slate-200 text-xs font-bold uppercase gap-2 px-3",
+                  "h-9 rounded-lg border-slate-200 text-xs font-bold uppercase gap-2 px-3",
                   highlightRange && "border-primary bg-primary/5 text-primary"
                 )}
               >
                 <CalendarIcon className="h-3.5 w-3.5" />
                 {highlightRange?.from ? (
                   highlightRange.to ? (
-                    <>{format(highlightRange.from, "MMM dd")} - {format(highlightRange.to, "MMM dd")}</>
-                  ) : format(highlightRange.from, "MMM dd")
-                ) : "Highlight"}
+                    <>{format(highlightRange.from, "MMM d")} - {format(highlightRange.to, "MMM d")}</>
+                  ) : format(highlightRange.from, "MMM d")
+                ) : "Focus Period"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-lg shadow-xl border-slate-200" align="start">
+            <PopoverContent className="w-auto p-0 rounded-xl shadow-2xl border-none" align="start">
               <Calendar
                 initialFocus
                 mode="range"
-                defaultMonth={highlightRange?.from}
                 selected={highlightRange}
                 onSelect={setHighlightRange}
                 numberOfMonths={2}
-                className="bg-white"
+                className="bg-[#0a0f18] text-white"
               />
             </PopoverContent>
           </Popover>
@@ -249,8 +237,8 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 p-0.5 rounded-md border border-slate-200">
+        <div className="flex items-center gap-4">
+          <div className="flex bg-slate-100 p-1 rounded-lg">
             <button 
               onClick={() => setViewMode('month')}
               className={cn(
@@ -275,7 +263,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-[11px] font-bold text-slate-700 uppercase min-w-[140px] text-center">
+            <span className="text-[11px] font-bold text-slate-700 uppercase min-w-[120px] text-center">
               {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : `Week ${format(currentDate, 'w')}, ${format(currentDate, 'yyyy')}`}
             </span>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNext}>
@@ -283,53 +271,53 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             </Button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Synchronized Vertical Viewport */}
+      {/* Main Viewport */}
       <ScrollArea className="flex-1">
         <div className="flex min-w-max min-h-full">
-          {/* Tree-View Sidebar */}
-          <div className="w-[300px] bg-white border-r border-slate-200 flex flex-col shrink-0 sticky left-0 z-30 shadow-[2px_0_8px_rgba(0,0,0,0.05)]">
-            <div className="h-10 border-b border-slate-200 flex items-center px-4 bg-slate-50 sticky top-0 z-40">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Directory</span>
+          {/* Simplified Directory Sidebar */}
+          <div className="w-[280px] bg-white border-r border-slate-100 flex flex-col shrink-0 sticky left-0 z-30 shadow-sm">
+            <div className="h-10 border-b border-slate-100 flex items-center px-4 bg-slate-50/50 sticky top-0 z-40">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Resource Directory</span>
             </div>
-            <div className="flex-1 py-1">
+            <div className="flex-1 py-2">
               {filteredOrders.map(order => (
                 <div key={order.id} className="select-none">
                   <div 
                     className={cn(
-                      "h-10 flex items-center px-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 group",
+                      "h-10 flex items-center px-4 hover:bg-slate-50 cursor-pointer transition-colors",
                       expandedOrders[order.id] && "bg-slate-50/50"
                     )}
                     onClick={() => toggleOrder(order.id)}
                   >
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      {expandedOrders[order.id] ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRightIcon className="h-3 w-3 text-slate-400" />}
+                    <div className="w-5 h-5 flex items-center justify-center mr-2">
+                      {expandedOrders[order.id] ? <ChevronDown className="h-3 w-3 text-primary" /> : <ChevronRightIcon className="h-3 w-3 text-slate-300" />}
                     </div>
-                    <span className="text-[11px] font-bold text-slate-700 truncate flex-1 uppercase">{order.customer}</span>
-                    <Badge variant="outline" className="text-[8px] h-4 px-1.5 border-slate-200 text-slate-400 font-bold">{order.progress || 0}%</Badge>
+                    <span className="text-[11px] font-bold text-slate-800 truncate flex-1 uppercase">#{order.id} {order.customer}</span>
+                    <span className="text-[9px] font-bold text-slate-400 ml-2">{order.progress || 0}%</span>
                   </div>
 
-                  {expandedOrders[order.id] && order.routing?.map((op) => (
+                  {expandedOrders[order.id] && order.routing?.map((op, idx) => (
                     <div key={op.id}>
                       <div 
                         className={cn(
-                          "h-9 flex items-center pl-8 pr-3 hover:bg-slate-50/80 cursor-pointer border-b border-slate-50",
-                          expandedOps[op.id] && "bg-slate-100/30"
+                          "h-9 flex items-center pl-10 pr-4 hover:bg-slate-50/80 cursor-pointer border-l-2 border-transparent transition-colors",
+                          expandedOps[op.id] ? "border-primary bg-slate-50/30" : "hover:border-slate-200"
                         )}
                         onClick={() => toggleOp(op.id)}
                       >
-                        <div className="w-5 h-5 flex items-center justify-center mr-1">
+                        <div className="w-4 h-4 flex items-center justify-center mr-2">
                           {op.subTasks?.length > 0 && (
-                            expandedOps[op.id] ? <ChevronDown className="h-3 w-3 text-primary" /> : <ChevronRightIcon className="h-3 w-3 text-slate-300" />
+                            expandedOps[op.id] ? <ChevronDown className="h-2.5 w-2.5 text-primary" /> : <ChevronRightIcon className="h-2.5 w-2.5 text-slate-300" />
                           )}
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-500 truncate flex-1 uppercase">{op.name}</span>
+                        <span className="text-[10px] font-semibold text-slate-600 truncate flex-1 uppercase">{op.name}</span>
                       </div>
 
                       {expandedOps[op.id] && op.subTasks?.map((sub) => (
-                        <div key={sub.id} className="h-8 flex items-center pl-14 pr-3 border-b border-slate-50/50">
-                          <div className="w-3 h-px bg-slate-200 mr-2" />
+                        <div key={sub.id} className="h-8 flex items-center pl-16 pr-4 hover:bg-slate-50/50 transition-colors">
+                          <CircleDot className="h-2 w-2 text-slate-200 mr-2" />
                           <span className="text-[9px] font-medium text-slate-400 truncate flex-1 uppercase">{sub.name}</span>
                         </div>
                       ))}
@@ -340,21 +328,21 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             </div>
           </div>
 
-          {/* Timeline Grid */}
+          {/* Minimalist Timeline Grid */}
           <div className="flex-1 flex flex-col relative bg-white">
-            {/* Horizontal Header (Dates) */}
-            <div className="h-10 border-b border-slate-200 flex items-stretch bg-[#f1f3f4] sticky top-0 z-30">
+            {/* Simple Date Header */}
+            <div className="h-10 border-b border-slate-100 flex items-stretch bg-slate-50/50 sticky top-0 z-30">
               {timelineInterval.map((day, idx) => (
                 <div 
                   key={idx} 
                   className={cn(
-                    "flex-1 border-r border-slate-200 flex flex-col items-center justify-center min-w-[40px]",
-                    isToday(day) && "bg-white z-10"
+                    "flex-1 border-r border-slate-100/50 flex flex-col items-center justify-center min-w-[45px]",
+                    isToday(day) && "bg-primary/5 border-primary/20 z-10"
                   )}
                 >
-                  <span className="text-[8px] font-bold uppercase text-slate-400 leading-none">{format(day, 'EEE')}</span>
+                  <span className="text-[8px] font-bold uppercase text-slate-400">{format(day, 'EEE')}</span>
                   <span className={cn(
-                    "text-[10px] font-bold mt-0.5",
+                    "text-[10px] font-bold",
                     isToday(day) ? "text-primary" : "text-slate-600"
                   )}>{format(day, 'd')}</span>
                 </div>
@@ -362,77 +350,61 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             </div>
 
             <div className="relative flex-1">
-              {/* Vertical Grid Lines */}
+              {/* Subtle Grid Lines */}
               <div className="absolute inset-0 flex pointer-events-none">
                 {timelineInterval.map((_, idx) => (
-                  <div key={idx} className="flex-1 border-r border-slate-100 min-w-[40px]" />
+                  <div key={idx} className="flex-1 border-r border-slate-50 min-w-[45px]" />
                 ))}
               </div>
 
-              {/* Selection Highlight */}
+              {/* Range Highlight */}
               {highlightStyles && (
-                <div className="absolute top-0 bottom-0 bg-primary/5 border-x border-primary/10 z-0 pointer-events-none" style={highlightStyles} />
+                <div className="absolute top-0 bottom-0 bg-primary/5 z-0 pointer-events-none" style={highlightStyles} />
               )}
 
-              {/* Today Vertical Line */}
-              <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-primary z-20 pointer-events-none" style={todayMarkerStyle}>
-                <div className="absolute top-0 -left-[5px] w-[12px] h-[12px] bg-primary rounded-full border-2 border-white shadow-md" />
+              {/* Minimal Today Line */}
+              <div className="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none" style={todayMarkerStyle}>
+                <div className="absolute top-0 -left-1 w-2 h-2 bg-primary rounded-full" />
               </div>
 
-              {/* Rows Container */}
-              <div className="py-1">
+              {/* Bars Layer */}
+              <div className="py-2">
                 {filteredOrders.map(order => {
                   const orderBar = getBarStyles(order.startDate, order.endDate);
-                  const orderConfig = getStatusConfig(order.status, order.endDate);
                   
                   return (
                     <div key={order.id}>
-                      {/* Master Order Row */}
-                      <div className="h-10 flex items-center relative group border-b border-slate-50">
+                      {/* Project Bar */}
+                      <div className="h-10 flex items-center relative group border-b border-transparent">
                         {orderBar && (
                           <div className="absolute flex items-center z-10" style={orderBar}>
-                            <div 
-                              className={cn("h-6 rounded-md shadow-sm border border-black/10 flex items-center px-3 min-w-[40px] relative", orderConfig.bg)}
-                              onClick={() => onNavigateToOperations?.(order.id)}
-                            >
+                            <div className="h-6 w-full rounded-md bg-slate-900 shadow-sm flex items-center px-3 cursor-pointer overflow-hidden" onClick={() => onNavigateToOperations?.(order.id)}>
                               <span className="text-[9px] font-bold text-white uppercase whitespace-nowrap truncate">{order.customer}</span>
                             </div>
-                            <div className="ml-3 flex items-center gap-2">
-                              <Badge className="h-4 px-1.5 bg-white/80 text-[8px] font-bold border-slate-200 text-slate-600">
-                                {order.progress || 0}%
-                              </Badge>
-                              {orderConfig.label === 'Overdue' && (
-                                <Badge className="h-4 px-1.5 bg-red-500 text-white text-[8px] font-bold border-none uppercase">
-                                  Overdue
-                                </Badge>
-                              )}
-                            </div>
+                            <span className="ml-3 text-[9px] font-bold text-slate-400 whitespace-nowrap">{order.progress || 0}% Complete</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Operations Rows */}
+                      {/* Operation Bars */}
                       {expandedOrders[order.id] && order.routing?.map((op) => {
                         const opBar = getBarStyles(op.startDate, op.endDate);
-                        const opConfig = getStatusConfig(op.status, op.endDate);
+                        const isDone = op.status === 'Completed';
                         
                         return (
                           <div key={op.id}>
-                            <div className="h-9 flex items-center relative group border-b border-slate-50">
+                            <div className="h-9 flex items-center relative group border-b border-transparent">
                               {opBar && (
                                 <div className="absolute flex items-center z-10" style={opBar}>
-                                  <div 
-                                    className={cn("h-5 rounded-md shadow-sm border border-black/5 flex items-center px-2 min-w-[30px] opacity-90", opConfig.bg)}
-                                  >
+                                  <div className={cn(
+                                    "h-5 w-full rounded-md shadow-sm flex items-center px-2 transition-all group-hover:scale-[1.02]",
+                                    getStatusColor(op.status)
+                                  )}>
                                     <span className="text-[8px] font-bold text-white uppercase truncate">{op.name}</span>
                                   </div>
-                                  <div className="ml-2 flex items-center gap-1.5">
-                                    {op.status === 'Completed' ? (
-                                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                                    ) : (
-                                      <span className="text-[8px] font-bold text-slate-400 uppercase">{op.status}</span>
-                                    )}
-                                    <span className="text-[8px] font-code text-slate-300 font-bold bg-slate-50 px-1 rounded">
+                                  <div className="ml-3 flex items-center gap-2">
+                                    {isDone ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <span className="text-[8px] font-bold text-slate-400 uppercase">{op.status}</span>}
+                                    <span className="text-[8px] font-code text-slate-300 font-bold bg-slate-50 px-1 rounded border border-slate-100">
                                       {op.startDate} - {op.endDate}
                                     </span>
                                   </div>
@@ -440,18 +412,16 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                               )}
                             </div>
 
-                            {/* Sub-tasks Rows */}
+                            {/* Sub-task Bars */}
                             {expandedOps[op.id] && op.subTasks?.map((sub) => {
                               const subBar = getBarStyles(sub.startDate, sub.endDate);
                               return (
-                                <div key={sub.id} className="h-8 flex items-center relative group border-b border-slate-50/50">
+                                <div key={sub.id} className="h-8 flex items-center relative group border-b border-transparent">
                                   {subBar && (
                                     <div className="absolute flex items-center z-10" style={subBar}>
-                                      <div className="h-4 rounded bg-[#e3f2fd] border border-[#bbdefb] flex items-center px-2 min-w-[20px]">
-                                        <span className="text-[7px] font-bold text-[#1976d2] uppercase truncate">{sub.name}</span>
-                                      </div>
-                                      <span className="ml-2 text-[7px] font-bold text-slate-300 uppercase">
-                                        {sub.status === 'Completed' ? 'DONE' : 'WIP'}
+                                      <div className="h-3 w-full rounded bg-slate-100 border border-slate-200" />
+                                      <span className="ml-2 text-[7px] font-bold text-slate-400 uppercase truncate">
+                                        {sub.name} • {sub.status === 'Completed' ? 'DONE' : 'WIP'}
                                       </span>
                                     </div>
                                   )}

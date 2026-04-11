@@ -65,6 +65,7 @@ interface UploadedFile {
   id: string;
   name: string;
   url: string;
+  status: 'Pending' | 'Completed';
 }
 
 const MACHINING_OPS = [
@@ -157,6 +158,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder?.id !== order.id || selectedOp?.id !== op.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
+      // Clean up previous URLs before resetting if it's a new task context
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       createdUrlsRef.current = [];
       setUploadedFiles([]);
@@ -249,7 +251,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         return {
           id: `FILE-${Math.random().toString(36).substr(2, 9)}`,
           name: file.name,
-          url: url
+          url: url,
+          status: 'Pending'
         };
       });
       setUploadedFiles(prev => [...prev, ...newFiles]);
@@ -315,6 +318,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       releasedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
+
+    // Update drawing status to Completed in the session list
+    if (activeDrawingId) {
+      setUploadedFiles(prev => prev.map(f => 
+        f.id === activeDrawingId ? { ...f, status: 'Completed' } : f
+      ));
+    }
 
     setCurrentStep('approval');
     if (selectedOrder && onUpdateStatus) {
@@ -521,11 +531,16 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           onClick={() => setActiveDrawingId(file.id)}
                           className={cn(
                             "p-4 rounded-xl border flex items-center justify-between group transition-all cursor-pointer relative",
-                            activeDrawingId === file.id ? "bg-[#001F3D] border-[#001F3D] text-white shadow-lg" : "bg-white border-slate-100 hover:border-primary/20"
+                            activeDrawingId === file.id ? "bg-[#001F3D] border-[#001F3D] text-white shadow-lg" : "bg-white border-slate-100 hover:border-primary/20",
+                            file.status === 'Completed' && "border-emerald-200"
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <FileIcon className={cn("h-4 w-4", activeDrawingId === file.id ? "text-accent" : "text-primary")} />
+                            {file.status === 'Completed' ? (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            ) : (
+                              <FileIcon className={cn("h-4 w-4", activeDrawingId === file.id ? "text-accent" : "text-primary")} />
+                            )}
                             <span className="text-[11px] font-bold truncate max-w-[150px]">{file.name}</span>
                           </div>
                           <Button 
@@ -596,11 +611,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Blueprint validation active. Procedural hand-off ready.</span>
               </div>
               <Button 
-                disabled={!activeDrawingId}
+                disabled={!activeDrawingId || activeDrawing?.status === 'Completed'}
                 className="h-14 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-2xl shadow-primary/20 flex gap-3 transition-all"
                 onClick={() => setCurrentStep('checklist')}
               >
-                Start Measurement Audit <ChevronRight className="h-4 w-4" />
+                {activeDrawing?.status === 'Completed' ? 'Inspection Finalized' : 'Start Measurement Audit'} <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </Card>

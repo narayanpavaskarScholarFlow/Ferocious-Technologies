@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -11,17 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ClipboardList, Plus, History, Clock, User, Cpu, Save, Hash, ArchiveX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { WorkLogEntry as WorkLogEntryType } from '@/lib/types';
-
-// Cleared resources for clean run
-const mockResources: any[] = [];
+import { WorkLogEntry as WorkLogEntryType, Machine, SystemUser } from '@/lib/types';
 
 interface WorkLogEntryProps {
   logs: WorkLogEntryType[];
   onAddLog: (log: WorkLogEntryType) => void;
+  machines: Machine[];
+  users: SystemUser[];
 }
 
-export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
+export function WorkLogEntry({ logs, onAddLog, machines, users }: WorkLogEntryProps) {
   const { toast } = useToast();
   const [selectedResource, setSelectedResource] = useState('');
   const [activityType, setActivityType] = useState('Production');
@@ -40,12 +40,12 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
       return;
     }
 
-    const resource = mockResources.find(r => r.id === selectedResource);
+    const resource = machines.find(m => m.id === selectedResource) || users.find(u => u.id === selectedResource);
     
     const newLog: WorkLogEntryType = {
       id: `LOG-${Math.floor(100 + Math.random() * 900)}`,
       resourceId: selectedResource,
-      resourceName: resource ? `${resource.name} (${selectedResource})` : `Resource ${selectedResource}`,
+      resourceName: resource ? resource.name : `Resource ${selectedResource}`,
       operator: operator || 'System User',
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       shift: 'Morning',
@@ -117,11 +117,20 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Select Machine / Resource</Label>
                 <Select onValueChange={setSelectedResource} value={selectedResource}>
                   <SelectTrigger className={darkSelectClasses}>
-                    <SelectValue placeholder={mockResources.length > 0 ? "Select resource..." : "No resources defined"} />
+                    <SelectValue placeholder={(machines.length > 0 || users.length > 0) ? "Select resource..." : "No resources defined"} />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0f18] text-white border-none">
-                    {mockResources.map(res => (
-                      <SelectItem key={res.id} value={res.id}>{res.name} ({res.id})</SelectItem>
+                    {machines.length > 0 && (
+                      <div className="px-2 py-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5 mb-1">Machines</div>
+                    )}
+                    {machines.map(res => (
+                      <SelectItem key={res.id} value={res.id}>{res.name} ({res.mcNumber})</SelectItem>
+                    ))}
+                    {users.length > 0 && (
+                      <div className="px-2 py-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5 my-1">Personnel</div>
+                    )}
+                    {users.map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.name} ({u.role})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -274,19 +283,27 @@ export function WorkLogEntry({ logs, onAddLog }: WorkLogEntryProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-primary/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Total Logged (24h)</p>
-          <p className="text-3xl font-display font-bold text-slate-900">0.0h</p>
+          <p className="text-3xl font-display font-bold text-slate-900">
+            {logs.reduce((acc, l) => acc + parseFloat(l.duration), 0).toFixed(1)}h
+          </p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-green-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Production Time</p>
-          <p className="text-3xl font-display font-bold text-green-600">0.0h</p>
+          <p className="text-3xl font-display font-bold text-green-600">
+            {logs.filter(l => l.type === 'Production').reduce((acc, l) => acc + parseFloat(l.duration), 0).toFixed(1)}h
+          </p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-amber-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Maintenance Logged</p>
-          <p className="text-3xl font-display font-bold text-amber-600">0.0h</p>
+          <p className="text-3xl font-display font-bold text-amber-600">
+            {logs.filter(l => l.type === 'Maintenance').reduce((acc, l) => acc + parseFloat(l.duration), 0).toFixed(1)}h
+          </p>
         </Card>
         <Card className="p-8 border-slate-200 shadow-sm bg-white group hover:border-red-500/50 transition-colors">
           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Setup / Idle Time</p>
-          <p className="text-3xl font-display font-bold text-red-600">0.0h</p>
+          <p className="text-3xl font-display font-bold text-red-600">
+            {logs.filter(l => l.type === 'Setup' || l.type === 'Idle').reduce((acc, l) => acc + parseFloat(l.duration), 0).toFixed(1)}h
+          </p>
         </Card>
       </div>
     </div>

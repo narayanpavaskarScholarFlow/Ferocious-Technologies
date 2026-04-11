@@ -198,24 +198,34 @@ export function OperationsStatus({
       return;
     }
 
-    const totalOpProgress = activeOps.reduce((acc, op) => {
-      if (op.subTasks && op.subTasks.length > 0) {
-        const completedSubs = op.subTasks.filter(s => s.isCompleted).length;
-        return acc + (completedSubs / op.subTasks.length) * 100;
-      } else {
-        if (op.status === 'Completed') return acc + 100;
-        if (op.status === 'WIP') return acc + 50;
-        return acc;
-      }
-    }, 0);
+    // New literal progress calculation logic:
+    // Progress = (Completed applicable tasks) / (Total applicable tasks)
+    let totalApplicableTasks = 0;
+    let completedTasks = 0;
 
-    const progress = Math.round(totalOpProgress / activeOps.length);
+    activeOps.forEach(op => {
+      if (op.subTasks && op.subTasks.length > 0) {
+        totalApplicableTasks += op.subTasks.length;
+        completedTasks += op.subTasks.filter(s => s.isCompleted).length;
+      } else {
+        totalApplicableTasks += 1;
+        if (op.status === 'Completed') {
+          completedTasks += 1;
+        } else if (op.status === 'WIP') {
+          completedTasks += 0.5; // Partial credit for work in progress
+        }
+      }
+    });
+
+    const progress = totalApplicableTasks > 0 ? Math.round((completedTasks / totalApplicableTasks) * 100) : 0;
 
     let orderStatus: any = orderData?.status || 'Yet to start';
     if (progress === 100) {
       orderStatus = 'Completed';
     } else if (progress > 0) {
       orderStatus = 'Active';
+    } else {
+      orderStatus = 'Yet to start';
     }
 
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {

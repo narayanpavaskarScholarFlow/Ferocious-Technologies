@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Customer, StaffMember, Order } from '@/lib/types';
+import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 interface OrderDetailsProps {

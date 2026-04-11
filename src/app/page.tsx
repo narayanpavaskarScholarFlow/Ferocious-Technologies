@@ -55,7 +55,7 @@ function IndustrialERPInternal() {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   
-  // Firestore Collections
+  // Firestore Collections with safety guards
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
   const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
   const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
@@ -323,6 +323,8 @@ function IndustrialERPInternal() {
             {currentView === 'work-log' && (
               <WorkLogEntry 
                 logs={logs} 
+                machines={machines}
+                users={usersData}
                 onAddLog={(l) => setDocumentNonBlocking(doc(db, 'work_logs', l.id), l, { merge: true })} 
               />
             )}

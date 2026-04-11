@@ -42,7 +42,9 @@ import {
   ArchiveX,
   ExternalLink,
   ClipboardCheck,
-  History
+  History,
+  Eye,
+  FileBadge
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -108,7 +110,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch all reports for the selected order to show in the Onboarding Hub
+  // Fetch all reports for the selected order
   const reportsQuery = useMemoFirebase(() => {
     if (!selectedOrder) return null;
     return query(collection(db, 'quality_reports'), where('workOrderId', '==', selectedOrder.id));
@@ -540,7 +542,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Matrix</h4>
                       </div>
                       
-                      <ScrollArea className="max-h-[250px] pr-2">
+                      <ScrollArea className="max-h-[450px] pr-2">
                         <div className="space-y-2">
                           {uploadedFiles.map((file) => (
                             <div 
@@ -573,49 +575,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                               </Button>
                             </div>
                           ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 px-1">
-                        <History className="h-3.5 w-3.5 text-accent" />
-                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Review & Release Registry</h4>
-                      </div>
-                      
-                      <ScrollArea className="max-h-[350px] pr-2">
-                        <div className="space-y-3">
-                          {reportsList.length > 0 ? reportsList.map((report) => (
-                            <div key={report.id} className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
-                              <div className="flex justify-between items-start">
-                                <Badge className={cn(
-                                  "text-[8px] font-bold uppercase px-2",
-                                  report.status === 'Released' ? "bg-emerald-500" : "bg-blue-500"
-                                )}>
-                                  {report.status}
-                                </Badge>
-                                <span className="text-[8px] font-code text-slate-400">{report.updatedAt.split('T')[0]}</span>
-                              </div>
-                              <p className="text-[10px] font-bold text-slate-700 uppercase truncate">{report.drawingName}</p>
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-7 rounded-lg text-[8px] font-bold uppercase flex-1 border-slate-200 bg-white"
-                                  onClick={() => {
-                                    setActiveReportId(report.id);
-                                    setDimensions(report.dimensions);
-                                    setChecks(report.checks as any);
-                                    setCurrentStep(report.status === 'Review Pending' ? 'review' : 'approval');
-                                  }}
-                                >
-                                  <FileSearch className="h-3 w-3 mr-1" /> View Report
-                                </Button>
-                              </div>
-                            </div>
-                          )) : (
-                            <div className="py-8 text-center border border-dashed border-slate-100 rounded-xl opacity-20">
-                              <p className="text-[9px] font-bold uppercase tracking-widest">No active reports</p>
+                          {uploadedFiles.length === 0 && (
+                            <div className="py-10 text-center border border-dashed border-slate-100 rounded-2xl opacity-30">
+                              <p className="text-[9px] font-bold uppercase tracking-widest">No blueprints onboarded</p>
                             </div>
                           )}
                         </div>
@@ -625,37 +587,91 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </div>
               </div>
 
-              <div className="lg:col-span-8 bg-slate-100/50 rounded-3xl border border-slate-200 overflow-hidden relative group h-[600px] lg:h-auto">
-                {activeDrawing ? (
-                  <object
-                    key={`${activeDrawing.id}-${activeDrawing.url}`}
-                    data={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`}
-                    type="application/pdf"
-                    className="w-full h-full border-none bg-white rounded-2xl"
-                  >
-                    <div className="h-full flex flex-col items-center justify-center p-10 text-center gap-6 bg-white">
-                      <div className="p-6 bg-amber-50 rounded-full">
-                        <FileWarning className="h-16 w-16 text-amber-500" />
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-lg font-bold text-slate-900 uppercase tracking-tight">Security Protocol Block</p>
-                        <p className="text-xs text-slate-500 font-medium">Access technical artifacts via secure external node.</p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => window.open(activeDrawing.url, '_blank')}
-                        className="rounded-2xl h-14 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 flex gap-2"
-                      >
-                        <ExternalLink className="h-4 w-4" /> Open Technical Blob
-                      </Button>
+              {/* Final Inspection Reports Ledger with Preview List */}
+              <div className="lg:col-span-8 flex flex-col min-h-0">
+                <Card className="flex-1 bg-slate-50/50 border border-slate-200 rounded-3xl overflow-hidden flex flex-col shadow-inner">
+                  <div className="p-6 border-b border-slate-200 bg-white flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileBadge className="h-5 w-5 text-[#001F3D]" />
+                      <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-[0.1em]">Final Inspection Reports Ledger</h3>
                     </div>
-                  </object>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center opacity-30 gap-4">
-                    <ImageIcon className="h-16 w-16 text-slate-300" />
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em]">Drawing Selection Required</p>
+                    <Badge variant="outline" className="bg-slate-50 text-slate-400 font-bold border-slate-200 text-[10px] uppercase h-8 px-4">Count: {reportsList.length}</Badge>
                   </div>
-                )}
+                  
+                  <ScrollArea className="flex-1 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {reportsList.map((report) => (
+                        <Card key={report.id} className="bg-white border-slate-200 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Badge className={cn(
+                              "text-[8px] font-bold uppercase",
+                              report.status === 'Released' ? "bg-emerald-500" : "bg-blue-500"
+                            )}>
+                              {report.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className={cn(
+                                "h-12 w-12 rounded-xl flex items-center justify-center",
+                                report.status === 'Released' ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                              )}>
+                                <FileText className="h-6 w-6" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[11px] font-bold text-[#001F3D] uppercase truncate leading-tight">{report.drawingName}</p>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">ID: {report.id}</p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-50">
+                              <div className="space-y-1">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Inspector</p>
+                                <p className="text-[10px] font-bold text-slate-700 uppercase line-clamp-1">{report.inspector}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Verdict</p>
+                                <Badge className={cn(
+                                  "text-[8px] font-bold uppercase px-2 py-0",
+                                  report.verdict === 'Pass' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"
+                                )}>
+                                  {report.verdict === 'Pass' ? 'OK' : 'NOT OK'}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase">
+                                <Calendar className="h-3 w-3" />
+                                {report.updatedAt.split('T')[0]}
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="h-9 rounded-xl text-[9px] font-bold uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white border-none shadow-lg"
+                                onClick={() => {
+                                  setActiveReportId(report.id);
+                                  setDimensions(report.dimensions);
+                                  setChecks(report.checks as any);
+                                  setCurrentStep(report.status === 'Review Pending' ? 'review' : 'approval');
+                                }}
+                              >
+                                <Eye className="h-3.5 w-3.5" /> Preview Report
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      {reportsList.length === 0 && (
+                        <div className="col-span-2 py-32 flex flex-col items-center justify-center opacity-20 gap-4">
+                          <ArchiveX className="h-16 w-16 text-slate-300" />
+                          <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No Inspection Reports Indexed</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </Card>
               </div>
             </div>
 

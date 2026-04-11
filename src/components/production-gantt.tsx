@@ -14,10 +14,9 @@ import {
   ListFilter,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
-  Search,
-  Lock,
   Calendar as CalendarIcon,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
@@ -35,7 +34,8 @@ import {
   endOfWeek,
   addWeeks,
   subWeeks,
-  isWithinInterval
+  isWithinInterval,
+  isAfter
 } from 'date-fns';
 import {
   Select,
@@ -92,12 +92,14 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
 
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      const [y, m, d] = dateStr.split('-').map(Number);
-      return startOfDay(new Date(y, m - 1, d));
-    }
+    // Format: DD.MM.YYYY
     if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateStr)) {
       const [d, m, y] = dateStr.split('.').map(Number);
+      return startOfDay(new Date(y, m - 1, d));
+    }
+    // Format: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split('-').map(Number);
       return startOfDay(new Date(y, m - 1, d));
     }
     const d = new Date(dateStr);
@@ -112,7 +114,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     const timelineStart = startOfDay(timelineInterval[0]);
     const timelineEnd = startOfDay(timelineInterval[timelineInterval.length - 1]);
 
-    if (end < timelineStart || start > timelineEnd) return { display: 'none' };
+    if (end < timelineStart || start > timelineEnd) return null;
 
     const visibleStart = start < timelineStart ? timelineStart : start;
     const visibleEnd = end > timelineEnd ? timelineEnd : end;
@@ -173,116 +175,87 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     setCurrentDate(prev => viewMode === 'month' ? addMonths(prev, 1) : addWeeks(prev, 1));
   };
 
-  const getStatusColor = (status?: string) => {
-    if (!status) return 'linear-gradient(to right, #6366f1, #818cf8)';
-    if (status === 'Completed') return 'linear-gradient(to right, #10b981, #34d399)';
-    if (status === 'Hold') return 'linear-gradient(to right, #ef4444, #f87171)';
-    if (status === 'Review Pending') return 'linear-gradient(to right, #f59e0b, #fbbf24)';
-    if (status === 'Yet to start') return 'linear-gradient(to right, #a855f7, #c084fc)';
-    if (status.startsWith('Vendor')) return 'linear-gradient(to right, #ec4899, #f472b6)';
-    return 'linear-gradient(to right, #6366f1, #818cf8)';
-  };
-
-  const getBorderColor = (status?: string) => {
-    if (status === 'Completed') return '#059669';
-    if (status === 'Hold') return '#dc2626';
-    if (status === 'Review Pending') return '#d97706';
-    return '#4f46e5';
-  };
-
-  const isDayInHighlight = (day: Date) => {
-    if (!highlightRange?.from || !highlightRange?.to) return false;
-    return isWithinInterval(startOfDay(day), {
-      start: startOfDay(highlightRange.from),
-      end: startOfDay(highlightRange.to)
-    });
+  const getStatusConfig = (status?: string, endDateStr?: string) => {
+    const isCompleted = status === 'Completed';
+    const isDelayed = !isCompleted && endDateStr && isAfter(new Date(), parseDate(endDateStr) || new Date());
+    
+    if (isCompleted) return { bg: 'bg-[#4caf50]', label: 'Done', color: '#fff' };
+    if (isDelayed) return { bg: 'bg-[#f44336]', label: 'Overdue', color: '#fff' };
+    if (status === 'Hold') return { bg: 'bg-[#ff9800]', label: 'Hold', color: '#fff' };
+    if (status?.startsWith('Vendor')) return { bg: 'bg-[#9c27b0]', label: 'External', color: '#fff' };
+    return { bg: 'bg-[#2196f3]', label: 'Active', color: '#fff' };
   };
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in fade-in duration-700 overflow-hidden">
+    <div className="flex flex-col h-full bg-[#f8f9fa] animate-in fade-in duration-700 overflow-hidden font-body">
       {/* Precision Controls Header */}
-      <div className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-40 shrink-0 shadow-sm">
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col">
-            <h2 className="text-lg font-display font-bold text-slate-900 uppercase tracking-tight flex items-center gap-3">
-              <LayoutGrid className="h-5 w-5 text-primary" />
-              Production Timeline
-            </h2>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">Operational Chronology Matrix v2.4</p>
-          </div>
+      <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-40 shrink-0 shadow-sm">
+        <div className="flex items-center gap-4">
+          <h2 className="text-base font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            Production Timeline
+          </h2>
 
-          <div className="h-10 w-[1px] bg-slate-100 hidden lg:block" />
+          <div className="h-8 w-px bg-slate-200 mx-2" />
 
-          <div className="flex items-center gap-3">
-            <ListFilter className="h-4 w-4 text-slate-400 hidden sm:block" />
-            <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
-              <SelectTrigger className="w-[220px] h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider shadow-inner">
-                <SelectValue placeholder="Work Order..." />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                <SelectItem value="all" className="text-xs font-bold uppercase">All Threads</SelectItem>
-                {orders.map(order => (
-                  <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase">
-                    WO #{order.id} - {order.customer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
+            <SelectTrigger className="w-[200px] h-9 bg-slate-50 border-slate-200 rounded-md text-xs font-bold uppercase">
+              <SelectValue placeholder="Work Order..." />
+            </SelectTrigger>
+            <SelectContent className="rounded-md">
+              <SelectItem value="all" className="text-xs font-bold">ALL PROJECTS</SelectItem>
+              {orders.map(order => (
+                <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase">
+                  #{order.id} - {order.customer}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <div className="h-10 w-[1px] bg-slate-100 hidden lg:block" />
-
-          {/* Highlight Range Selector */}
-          <div className="flex items-center gap-3">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={cn(
-                    "h-11 rounded-xl border-slate-200 text-xs font-bold uppercase gap-2 px-4 shadow-sm",
-                    highlightRange && "border-amber-400 bg-amber-50 text-amber-700"
-                  )}
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                  {highlightRange?.from ? (
-                    highlightRange.to ? (
-                      <>{format(highlightRange.from, "LLL dd")} - {format(highlightRange.to, "LLL dd")}</>
-                    ) : format(highlightRange.from, "LLL dd")
-                  ) : "Highlight Range"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-slate-100" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={highlightRange?.from}
-                  selected={highlightRange}
-                  onSelect={setHighlightRange}
-                  numberOfMonths={2}
-                  className="bg-white"
-                />
-              </PopoverContent>
-            </Popover>
-            {highlightRange && (
+          <Popover>
+            <PopoverTrigger asChild>
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 rounded-full text-slate-400 hover:text-red-500"
-                onClick={() => setHighlightRange(undefined)}
+                variant="outline" 
+                size="sm"
+                className={cn(
+                  "h-9 rounded-md border-slate-200 text-xs font-bold uppercase gap-2 px-3",
+                  highlightRange && "border-primary bg-primary/5 text-primary"
+                )}
               >
-                <X className="h-4 w-4" />
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {highlightRange?.from ? (
+                  highlightRange.to ? (
+                    <>{format(highlightRange.from, "MMM dd")} - {format(highlightRange.to, "MMM dd")}</>
+                  ) : format(highlightRange.from, "MMM dd")
+                ) : "Highlight"}
               </Button>
-            )}
-          </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-lg shadow-xl border-slate-200" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={highlightRange?.from}
+                selected={highlightRange}
+                onSelect={setHighlightRange}
+                numberOfMonths={2}
+                className="bg-white"
+              />
+            </PopoverContent>
+          </Popover>
+          {highlightRange && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setHighlightRange(undefined)}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+        <div className="flex items-center gap-3">
+          <div className="flex bg-slate-100 p-0.5 rounded-md border border-slate-200">
             <button 
               onClick={() => setViewMode('month')}
               className={cn(
-                "h-9 px-6 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
-                viewMode === 'month' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
+                "h-7 px-4 text-[10px] font-bold uppercase transition-all rounded-md",
+                viewMode === 'month' ? "bg-white text-primary shadow-sm" : "text-slate-500"
               )}
             >
               Month
@@ -290,86 +263,74 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             <button 
               onClick={() => setViewMode('week')}
               className={cn(
-                "h-9 px-6 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
-                viewMode === 'week' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
+                "h-7 px-4 text-[10px] font-bold uppercase transition-all rounded-md",
+                viewMode === 'week' ? "bg-white text-primary shadow-sm" : "text-slate-500"
               )}
             >
               Week
             </button>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white hover:text-primary rounded-lg" onClick={handlePrev}>
-              <ChevronLeft className="h-5 w-5" />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrev}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="px-4 min-w-[160px] text-center">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">
-                {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : `Week ${format(currentDate, 'w')}, ${format(currentDate, 'yyyy')}`}
-              </span>
-            </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white hover:text-primary rounded-lg" onClick={handleNext}>
-              <ChevronRight className="h-5 w-5" />
+            <span className="text-[11px] font-bold text-slate-700 uppercase min-w-[140px] text-center">
+              {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : `Week ${format(currentDate, 'w')}, ${format(currentDate, 'yyyy')}`}
+            </span>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNext}>
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Synchronized Vertical Viewport */}
-      <ScrollArea className="flex-1 bg-[#fcfcfc]">
+      <ScrollArea className="flex-1">
         <div className="flex min-w-max min-h-full">
           {/* Tree-View Sidebar */}
-          <div className="w-[340px] bg-white border-r border-slate-100 flex flex-col shrink-0 sticky left-0 z-30 shadow-[4px_0_12px_rgba(0,0,0,0.02)]">
-            <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50 sticky top-0 z-40">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em]">Operational Hierarchy</span>
+          <div className="w-[300px] bg-white border-r border-slate-200 flex flex-col shrink-0 sticky left-0 z-30 shadow-[2px_0_8px_rgba(0,0,0,0.05)]">
+            <div className="h-10 border-b border-slate-200 flex items-center px-4 bg-slate-50 sticky top-0 z-40">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Directory</span>
             </div>
-            <div className="py-2 space-y-px">
+            <div className="flex-1 py-1">
               {filteredOrders.map(order => (
                 <div key={order.id} className="select-none">
                   <div 
                     className={cn(
-                      "h-12 flex items-center px-4 hover:bg-slate-50 transition-all group cursor-pointer border-l-4",
-                      order.status === 'Completed' ? "border-emerald-500" : "border-primary"
+                      "h-10 flex items-center px-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 group",
+                      expandedOrders[order.id] && "bg-slate-50/50"
                     )}
                     onClick={() => toggleOrder(order.id)}
                   >
-                    <div className="w-8 h-8 flex items-center justify-center">
-                      {expandedOrders[order.id] ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRightIcon className="h-4 w-4 text-slate-400" />}
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      {expandedOrders[order.id] ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRightIcon className="h-3 w-3 text-slate-400" />}
                     </div>
-                    <div className="flex flex-col flex-1 min-w-0 pr-2">
-                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-tight truncate">{order.customer}</span>
-                      <span className="text-[8px] text-slate-400 font-code font-bold">WO_ID: {order.id}</span>
-                    </div>
-                    <Badge variant="outline" className="text-[8px] border-slate-100 font-bold bg-slate-50">{order.progress || 0}%</Badge>
+                    <span className="text-[11px] font-bold text-slate-700 truncate flex-1 uppercase">{order.customer}</span>
+                    <Badge variant="outline" className="text-[8px] h-4 px-1.5 border-slate-200 text-slate-400 font-bold">{order.progress || 0}%</Badge>
                   </div>
 
-                  {expandedOrders[order.id] && order.routing?.map((op, opIdx) => (
+                  {expandedOrders[order.id] && order.routing?.map((op) => (
                     <div key={op.id}>
                       <div 
-                        className="h-10 flex items-center pl-8 pr-4 hover:bg-slate-50/80 transition-all group cursor-pointer border-b border-slate-50/50"
+                        className={cn(
+                          "h-9 flex items-center pl-8 pr-3 hover:bg-slate-50/80 cursor-pointer border-b border-slate-50",
+                          expandedOps[op.id] && "bg-slate-100/30"
+                        )}
                         onClick={() => toggleOp(op.id)}
                       >
-                        <div className="w-6 h-6 flex items-center justify-center mr-2">
-                          {op.subTasks?.length > 0 ? (
+                        <div className="w-5 h-5 flex items-center justify-center mr-1">
+                          {op.subTasks?.length > 0 && (
                             expandedOps[op.id] ? <ChevronDown className="h-3 w-3 text-primary" /> : <ChevronRightIcon className="h-3 w-3 text-slate-300" />
-                          ) : null}
+                          )}
                         </div>
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full mr-3 shrink-0",
-                          op.status === 'Completed' ? "bg-emerald-500" : "bg-primary/20"
-                        )} />
-                        <span className="text-[10px] font-bold text-slate-600 truncate flex-1 uppercase tracking-wider">{op.name}</span>
-                        {op.status === 'Completed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                        <span className="text-[10px] font-semibold text-slate-500 truncate flex-1 uppercase">{op.name}</span>
                       </div>
 
                       {expandedOps[op.id] && op.subTasks?.map((sub) => (
-                        <div key={sub.id} className="h-9 flex items-center pl-16 pr-4 hover:bg-slate-50/50 transition-all group border-b border-slate-50/20">
-                          <div className="w-4 h-px bg-slate-200 mr-3" />
-                          <span className="text-[9px] font-medium text-slate-400 truncate flex-1 uppercase tracking-widest">{sub.name}</span>
-                          {sub.status === 'Completed' ? (
-                            <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                          ) : (
-                            <Clock className="h-3 w-3 text-slate-200" />
-                          )}
+                        <div key={sub.id} className="h-8 flex items-center pl-14 pr-3 border-b border-slate-50/50">
+                          <div className="w-3 h-px bg-slate-200 mr-2" />
+                          <span className="text-[9px] font-medium text-slate-400 truncate flex-1 uppercase">{sub.name}</span>
                         </div>
                       ))}
                     </div>
@@ -380,135 +341,117 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
           </div>
 
           {/* Timeline Grid */}
-          <div className="flex-1 flex flex-col relative">
-            <div className="h-12 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-30 shadow-sm">
-              {timelineInterval.map((day, idx) => {
-                const inHighlight = isDayInHighlight(day);
-                return (
-                  <div 
-                    key={idx} 
-                    className={cn(
-                      "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[60px] transition-colors",
-                      isToday(day) && "bg-primary/[0.03]",
-                      inHighlight && "bg-amber-400/[0.05]"
-                    )}
-                  >
-                    <span className={cn(
-                      "text-[8px] font-bold uppercase tracking-tighter mb-0.5",
-                      inHighlight ? "text-amber-600" : "text-slate-300"
-                    )}>{format(day, 'EEE')}</span>
-                    <span className={cn(
-                      "text-[10px] font-bold tracking-tight w-6 h-6 flex items-center justify-center rounded-lg transition-all",
-                      isToday(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : 
-                      inHighlight ? "bg-amber-400 text-white" : "text-slate-400"
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                  </div>
-                );
-              })}
+          <div className="flex-1 flex flex-col relative bg-white">
+            {/* Horizontal Header (Dates) */}
+            <div className="h-10 border-b border-slate-200 flex items-stretch bg-[#f1f3f4] sticky top-0 z-30">
+              {timelineInterval.map((day, idx) => (
+                <div 
+                  key={idx} 
+                  className={cn(
+                    "flex-1 border-r border-slate-200 flex flex-col items-center justify-center min-w-[40px]",
+                    isToday(day) && "bg-white z-10"
+                  )}
+                >
+                  <span className="text-[8px] font-bold uppercase text-slate-400 leading-none">{format(day, 'EEE')}</span>
+                  <span className={cn(
+                    "text-[10px] font-bold mt-0.5",
+                    isToday(day) ? "text-primary" : "text-slate-600"
+                  )}>{format(day, 'd')}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="relative flex-1 min-h-[calc(100vh-140px)]">
-              {/* Grid Guides */}
+            <div className="relative flex-1">
+              {/* Vertical Grid Lines */}
               <div className="absolute inset-0 flex pointer-events-none">
-                {timelineInterval.map((day, idx) => (
-                  <div key={idx} className={cn("flex-1 border-r border-slate-50 min-w-[60px]", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
+                {timelineInterval.map((_, idx) => (
+                  <div key={idx} className="flex-1 border-r border-slate-100 min-w-[40px]" />
                 ))}
               </div>
 
-              {/* Selection Highlight Range */}
+              {/* Selection Highlight */}
               {highlightStyles && (
-                <div 
-                  className="absolute top-0 bottom-0 bg-amber-400/10 border-x border-amber-400/20 z-0 pointer-events-none transition-all duration-500" 
-                  style={highlightStyles}
-                />
+                <div className="absolute top-0 bottom-0 bg-primary/5 border-x border-primary/10 z-0 pointer-events-none" style={highlightStyles} />
               )}
 
-              {/* Today Marker */}
-              <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-accent/40 z-10 pointer-events-none" style={todayMarkerStyle}>
-                <div className="h-3 w-3 rounded-full bg-accent absolute top-[-6px] left-[-6px] shadow-lg animate-pulse" />
+              {/* Today Vertical Line */}
+              <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-primary z-20 pointer-events-none" style={todayMarkerStyle}>
+                <div className="absolute top-0 -left-[5px] w-[12px] h-[12px] bg-primary rounded-full border-2 border-white shadow-md" />
               </div>
 
-              {/* Visual Task Bars */}
-              <div className="py-2 relative z-10">
+              {/* Rows Container */}
+              <div className="py-1">
                 {filteredOrders.map(order => {
-                  const orderStyles = getBarStyles(order.startDate, order.endDate);
+                  const orderBar = getBarStyles(order.startDate, order.endDate);
+                  const orderConfig = getStatusConfig(order.status, order.endDate);
                   
                   return (
-                    <div key={order.id} className="mb-[1px]">
-                      <div className="h-12 flex items-center relative group">
-                        {orderStyles && (
-                          <div 
-                            className="absolute h-8 rounded-xl flex items-center px-4 shadow-xl border-b-4 transition-all hover:scale-[1.01] cursor-pointer"
-                            style={{ 
-                              ...orderStyles,
-                              background: order.status === 'Completed' 
-                                ? 'linear-gradient(to right, #10b981, #34d399)' 
-                                : 'linear-gradient(to right, #6366f1, #818cf8)',
-                              borderColor: order.status === 'Completed' ? '#059669' : '#4f46e5'
-                            }}
-                            onClick={() => onNavigateToOperations?.(order.id)}
-                          >
-                            <span className="text-[9px] font-bold text-white uppercase tracking-wider truncate mr-3">{order.customer}</span>
-                            <Badge className="ml-auto bg-white/20 text-white border-none text-[8px] font-bold h-4">
-                              {order.progress || 0}%
-                            </Badge>
+                    <div key={order.id}>
+                      {/* Master Order Row */}
+                      <div className="h-10 flex items-center relative group border-b border-slate-50">
+                        {orderBar && (
+                          <div className="absolute flex items-center z-10" style={orderBar}>
+                            <div 
+                              className={cn("h-6 rounded-md shadow-sm border border-black/10 flex items-center px-3 min-w-[40px] relative", orderConfig.bg)}
+                              onClick={() => onNavigateToOperations?.(order.id)}
+                            >
+                              <span className="text-[9px] font-bold text-white uppercase whitespace-nowrap truncate">{order.customer}</span>
+                            </div>
+                            <div className="ml-3 flex items-center gap-2">
+                              <Badge className="h-4 px-1.5 bg-white/80 text-[8px] font-bold border-slate-200 text-slate-600">
+                                {order.progress || 0}%
+                              </Badge>
+                              {orderConfig.label === 'Overdue' && (
+                                <Badge className="h-4 px-1.5 bg-red-500 text-white text-[8px] font-bold border-none uppercase">
+                                  Overdue
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
 
+                      {/* Operations Rows */}
                       {expandedOrders[order.id] && order.routing?.map((op) => {
-                        const opStyles = getBarStyles(op.startDate, op.endDate);
-                        const isCompleted = op.status === 'Completed';
-                        const opColor = getStatusColor(op.status);
-                        const borderColor = getBorderColor(op.status);
+                        const opBar = getBarStyles(op.startDate, op.endDate);
+                        const opConfig = getStatusConfig(op.status, op.endDate);
                         
                         return (
                           <div key={op.id}>
-                            <div className="h-10 flex items-center relative group">
-                              {opStyles && (
-                                <div 
-                                  className="absolute h-7 rounded-lg flex items-center px-3 shadow-md border-b-2 overflow-hidden"
-                                  style={{ 
-                                    ...opStyles,
-                                    background: opColor,
-                                    borderColor: borderColor,
-                                    opacity: op.status === 'NA' ? 0.1 : 1
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between w-full min-w-0">
-                                    <span className="text-[8px] font-bold text-white uppercase tracking-tight truncate flex-1">
-                                      {op.name}
+                            <div className="h-9 flex items-center relative group border-b border-slate-50">
+                              {opBar && (
+                                <div className="absolute flex items-center z-10" style={opBar}>
+                                  <div 
+                                    className={cn("h-5 rounded-md shadow-sm border border-black/5 flex items-center px-2 min-w-[30px] opacity-90", opConfig.bg)}
+                                  >
+                                    <span className="text-[8px] font-bold text-white uppercase truncate">{op.name}</span>
+                                  </div>
+                                  <div className="ml-2 flex items-center gap-1.5">
+                                    {op.status === 'Completed' ? (
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                                    ) : (
+                                      <span className="text-[8px] font-bold text-slate-400 uppercase">{op.status}</span>
+                                    )}
+                                    <span className="text-[8px] font-code text-slate-300 font-bold bg-slate-50 px-1 rounded">
+                                      {op.startDate} - {op.endDate}
                                     </span>
-                                    <span className="text-[7px] text-white/90 font-code font-bold ml-2 whitespace-nowrap bg-black/10 px-1.5 py-0.5 rounded">
-                                      {op.startDate} » {op.endDate}
-                                    </span>
-                                    {isCompleted && <CheckCircle2 className="h-3 w-3 text-white ml-2 shrink-0" />}
                                   </div>
                                 </div>
                               )}
                             </div>
 
+                            {/* Sub-tasks Rows */}
                             {expandedOps[op.id] && op.subTasks?.map((sub) => {
-                              const subStyles = getBarStyles(sub.startDate, sub.endDate);
+                              const subBar = getBarStyles(sub.startDate, sub.endDate);
                               return (
-                                <div key={sub.id} className="h-9 flex items-center relative group">
-                                  {subStyles && (
-                                    <div 
-                                      className="absolute h-5 rounded-md flex items-center px-2 shadow-sm border"
-                                      style={{ 
-                                        ...subStyles,
-                                        background: sub.status === 'Completed' ? '#ecfdf5' : '#eff6ff',
-                                        borderColor: sub.status === 'Completed' ? '#10b981' : '#3b82f6',
-                                        opacity: sub.status === 'NA' ? 0.1 : 0.9
-                                      }}
-                                    >
-                                      <span className={cn(
-                                        "text-[7px] font-bold uppercase tracking-tighter truncate",
-                                        sub.status === 'Completed' ? "text-emerald-600" : "text-primary"
-                                      )}>
-                                        {sub.name}
+                                <div key={sub.id} className="h-8 flex items-center relative group border-b border-slate-50/50">
+                                  {subBar && (
+                                    <div className="absolute flex items-center z-10" style={subBar}>
+                                      <div className="h-4 rounded bg-[#e3f2fd] border border-[#bbdefb] flex items-center px-2 min-w-[20px]">
+                                        <span className="text-[7px] font-bold text-[#1976d2] uppercase truncate">{sub.name}</span>
+                                      </div>
+                                      <span className="ml-2 text-[7px] font-bold text-slate-300 uppercase">
+                                        {sub.status === 'Completed' ? 'DONE' : 'WIP'}
                                       </span>
                                     </div>
                                   )}

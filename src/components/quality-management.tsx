@@ -12,37 +12,28 @@ import {
   ShieldCheck, 
   Search, 
   CheckCircle2, 
-  AlertTriangle, 
   Upload, 
   Printer, 
   Download, 
   ChevronRight, 
   ArrowLeft,
-  Image as ImageIcon,
   Check,
   X,
   Box,
   MinusCircle,
   Plus,
-  Save,
   Activity,
   Layers,
   Clock,
   FileText,
   Trash2,
   FileIcon,
-  CheckSquare,
-  Square,
   Calendar,
   User,
-  FileSearch,
   MousePointer2,
-  AlertCircle,
   FileWarning,
-  ArchiveX,
   ExternalLink,
   ClipboardCheck,
-  History,
   Eye,
   FileBadge,
   Unlock,
@@ -62,7 +53,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord } from '@/lib/types';
 import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 
 type QualityStep = 'list' | 'upload' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
@@ -112,7 +103,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Global Reports Query for Final Compliance Review
   const allReportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const { data: allReportsData } = useCollection<QualityReport>(allReportsQuery);
   const allReports = allReportsData || [];
@@ -121,7 +111,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     return allReports.filter(r => r.status === 'Review Pending');
   }, [allReports]);
 
-  // Fetch reports for the selected order (used in Onboarding Hub)
   const orderReports = useMemo(() => {
     if (!selectedOrder) return [];
     return allReports.filter(r => r.workOrderId === selectedOrder.id);
@@ -198,11 +187,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     setActiveReportId(report.id);
     setDimensions(report.dimensions);
     setChecks(report.checks as any);
-    
-    // Attempt to map the drawing back to uploadedFiles if we have URL, 
-    // but since files are session-based blobs, we typically can't reload the blob unless stored.
-    // In a real app, drawingUrl would be a permanent Firebase Storage link.
-    // For this prototype, we'll try to use the placeholder url or inform the user.
     
     const qcOp = order.routing?.find(op => op.name === 'QC');
     if (qcOp) setSelectedOp(qcOp);
@@ -795,31 +779,40 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start animate-in fade-in duration-700 px-2">
-          <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-white shadow-2xl relative border-none">
+          <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-white shadow-2xl relative border-none flex flex-col">
             <div className="absolute top-4 left-4 z-20 flex gap-2">
-               <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center">Technical Reference</Badge>
-               <Badge className="bg-black/40 text-white/80 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase">{activeDrawing.name}</Badge>
+               <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center shadow-lg">Technical Reference</Badge>
+               <Badge className="bg-black/60 text-white/90 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase shadow-lg">{activeDrawing.name}</Badge>
             </div>
             
-            <object
-              key={`${activeDrawing.id}-${activeDrawing.url}-audit`}
-              data={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`}
-              type="application/pdf"
-              className="w-full h-full border-none bg-white"
-            >
-              <div className="h-full flex flex-col items-center justify-center p-10 text-center gap-4">
-                <FileWarning className="h-10 w-10 text-amber-500" />
-                <p className="text-xs font-bold text-slate-700 uppercase">Audit Preview Blocked</p>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => window.open(activeDrawing.url, '_blank')}
-                  className="rounded-xl text-[9px] font-bold uppercase"
-                >
-                  View Ref in New Tab
-                </Button>
+            <div className="flex-1 w-full bg-slate-100 relative">
+              <iframe
+                key={activeDrawing.id}
+                src={activeDrawing.url}
+                className="w-full h-full border-none shadow-inner"
+                title="Drawing Preview"
+                sandbox="allow-scripts allow-same-origin"
+              />
+              
+              {/* Overlay fallback for blocked previews */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-10 text-center opacity-0 group-hover:opacity-100 bg-white/80 transition-opacity">
+                <div className="pointer-events-auto bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6">
+                  <FileWarning className="h-12 w-12 text-amber-500" />
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 uppercase">Security Block Detected</p>
+                    <p className="text-xs text-slate-500 mt-1">Chrome security may restrict inline PDF viewing for local blobs.</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => window.open(activeDrawing.url, '_blank')}
+                    className="rounded-xl text-[9px] font-bold uppercase tracking-widest h-10 px-6 border-slate-200 gap-2 shadow-sm"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> Open Spec in New Tab
+                  </Button>
+                </div>
               </div>
-            </object>
+            </div>
           </Card>
 
           <div className="xl:col-span-7 flex flex-col h-[800px]">
@@ -887,8 +880,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                                 placeholder="0.000" 
                                 className={cn(
                                   "h-10 bg-white border-2 font-code font-bold text-sm text-center rounded-xl transition-all shadow-inner",
-                                  dim.status === 'Pass' ? "border-emerald-200" :
-                                  dim.status === 'Fail' ? "border-red-200" :
+                                  dim.status === 'Pass' ? "border-emerald-200 text-emerald-700" :
+                                  dim.status === 'Fail' ? "border-red-200 text-red-700" :
                                   "border-primary/10"
                                 )}
                                 value={dim.actual}
@@ -898,10 +891,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             <TableCell>
                               <div className="flex justify-center">
                                 <Badge className={cn(
-                                  "text-[8px] font-bold uppercase w-16 justify-center rounded-full",
-                                  dim.status === 'Pass' ? "bg-emerald-500 text-white" : 
-                                  dim.status === 'Fail' ? "bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.3)]" :
-                                  "bg-slate-100 text-slate-400"
+                                  "text-[8px] font-bold uppercase w-16 justify-center rounded-full border shadow-sm",
+                                  dim.status === 'Pass' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
+                                  dim.status === 'Fail' ? "bg-rose-50 text-rose-700 border-rose-100" :
+                                  "bg-slate-50 text-slate-400 border-slate-100"
                                 )}>
                                   {dim.status === 'Pass' ? 'OK' : dim.status === 'Fail' ? 'NOT OK' : 'PENDING'}
                                 </Badge>
@@ -983,7 +976,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] text-slate-400"
                   onClick={() => setCurrentStep('upload')}
                 >
-                  Return to Matrix
+                  Return to Hub
                 </Button>
                 <Button 
                   className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] shadow-2xl flex gap-3"
@@ -1053,7 +1046,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <div className="space-y-1.5">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Blueprint Identification</p>
                 <p className="text-sm font-bold text-slate-900 uppercase truncate">
-                  {orderReports.find(r => r.id === activeReportId)?.drawingName || 'TECHNICAL_SPEC'}
+                  {activeDrawing?.name || 'TECHNICAL_SPEC'}
                 </p>
               </div>
               <div className="space-y-1.5">

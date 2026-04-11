@@ -168,6 +168,26 @@
         "type": { "type": "string" },
         "workOrderId": { "type": "string" }
       }
+    },
+    "QualityReport": {
+      "title": "QualityReport",
+      "type": "object",
+      "description": "Dimensional and process compliance inspection report.",
+      "properties": {
+        "id": { "type": "string" },
+        "workOrderId": { "type": "string" },
+        "drawingId": { "type": "string" },
+        "drawingName": { "type": "string" },
+        "dimensions": { "type": "array" },
+        "checks": { "type": "object" },
+        "status": { "type": "string", "enum": ["Draft", "Review Pending", "Released"] },
+        "verdict": { "type": "string", "enum": ["Pass", "Fail", "Pending"] },
+        "inspector": { "type": "string" },
+        "releasedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "workOrderId", "drawingId", "status"]
     }
   },
   "auth": {
@@ -229,6 +249,13 @@
         "definition": {
           "entityName": "WorkLog",
           "description": "Daily operational activity and throughput logs."
+        }
+      },
+      {
+        "path": "/quality_reports/{reportId}",
+        "definition": {
+          "entityName": "QualityReport",
+          "description": "Dimensional and process compliance inspection reports ledger."
         }
       }
     ]

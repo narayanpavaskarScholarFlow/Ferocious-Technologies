@@ -198,3 +198,30 @@ export interface SystemUser {
   shift?: 'Morning' | 'Evening' | 'Night';
   efficiency?: number;
 }
+
+export interface DimensionRecord {
+  id: string;
+  feature: string;
+  target: string;
+  tolerance: string;
+  upperLimit: string;
+  lowerLimit: string;
+  actual: string;
+  status: 'Pass' | 'Fail' | 'NA' | 'Pending';
+  remark: string;
+}
+
+export interface QualityReport {
+  id: string;
+  workOrderId: string;
+  drawingId: string;
+  drawingName: string;
+  dimensions: DimensionRecord[];
+  checks: Record<string, string>;
+  status: 'Draft' | 'Review Pending' | 'Released';
+  verdict: 'Pass' | 'Fail' | 'Pending';
+  inspector: string;
+  releasedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}

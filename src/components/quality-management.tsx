@@ -54,22 +54,12 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Order, RoutingOperation, SystemUser, Vendor } from '@/lib/types';
+import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord } from '@/lib/types';
+import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
 
 type QualityStep = 'list' | 'upload' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
-
-interface DimensionRecord {
-  id: string;
-  feature: string;
-  target: string;
-  tolerance: string;
-  upperLimit: string;
-  lowerLimit: string;
-  actual: string;
-  status: 'Pass' | 'Fail' | 'NA' | 'Pending';
-  remark: string;
-}
 
 interface UploadedFile {
   id: string;
@@ -99,10 +89,12 @@ interface QualityManagementProps {
 }
 
 export function QualityManagement({ orders, users = [], vendors = [], onUpdateStatus }: QualityManagementProps) {
+  const db = useFirestore();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedOp, setSelectedOp] = useState<RoutingOperation | null>(null);
+  const [activeReportId, setActiveReportId] = useState<string | null>(null);
   
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
@@ -162,18 +154,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   }, [qcEntries]);
 
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
-    // Only reset session if switching to a NEW different task
     if (selectedOrder?.id !== order.id || selectedOp?.id !== op.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
-      
-      // Memory cleanup for old session
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
       createdUrlsRef.current = [];
-      
       setUploadedFiles([]);
       setActiveDrawingId(null);
       setDimensions(INITIAL_DIMENSIONS);
+      setActiveReportId(null);
       const initial: Record<string, CheckStatus> = {};
       MACHINING_OPS.forEach(o => initial[o] = 'Pending');
       setChecks(initial);
@@ -263,14 +252,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           url: url
         };
       });
-      
       setUploadedFiles(prev => [...prev, ...newFiles]);
-      
-      // Auto-focus the first uploaded file in the batch
-      if (newFiles.length > 0) {
-        setActiveDrawingId(newFiles[0].id);
-      }
-      
+      if (newFiles.length > 0) setActiveDrawingId(newFiles[0].id);
       e.target.value = '';
       toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files onboarded to session.` });
     }
@@ -282,12 +265,42 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       URL.revokeObjectURL(fileToRemove.url);
       createdUrlsRef.current = createdUrlsRef.current.filter(u => u !== fileToRemove.url);
     }
-    
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
     if (activeDrawingId === id) setActiveDrawingId(null);
   };
 
+  const saveReportDraft = () => {
+    if (!selectedOrder || !activeDrawing) return;
+
+    const reportId = activeReportId || `QR-${Date.now()}`;
+    const report: QualityReport = {
+      id: reportId,
+      workOrderId: selectedOrder.id,
+      drawingId: activeDrawing.id,
+      drawingName: activeDrawing.name,
+      dimensions: dimensions,
+      checks: checks,
+      status: 'Draft',
+      verdict: dimensions.some(d => d.status === 'Fail') ? 'Fail' : 'Pass',
+      inspector: selectedOp ? getResourceName(selectedOp) : 'Plant Inspector',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setDocumentNonBlocking(doc(db, 'quality_reports', reportId), report, { merge: true });
+    setActiveReportId(reportId);
+    setCurrentStep('report');
+    toast({ title: "Audit Ledger Saved", description: "Dimensional matrix committed as draft." });
+  };
+
   const submitForReview = () => {
+    if (!activeReportId) return;
+    
+    updateDocumentNonBlocking(doc(db, 'quality_reports', activeReportId), {
+      status: 'Review Pending',
+      updatedAt: new Date().toISOString()
+    });
+
     setCurrentStep('review');
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Review Pending');
@@ -295,6 +308,14 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   };
 
   const finalApproval = () => {
+    if (!activeReportId) return;
+
+    updateDocumentNonBlocking(doc(db, 'quality_reports', activeReportId), {
+      status: 'Released',
+      releasedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
     setCurrentStep('approval');
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
@@ -772,7 +793,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </Button>
                 <Button 
                   className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] shadow-2xl flex gap-3"
-                  onClick={() => setCurrentStep('report')}
+                  onClick={saveReportDraft}
                 >
                   Compile Compliance Report <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -985,17 +1006,32 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
               <div className="flex flex-col items-center gap-6">
                 <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium">Procedural cycle complete for blueprint <b>{activeDrawing.name}</b>. Audit trail synchronized with master ledger.</p>
-                <Button 
-                  onClick={() => {
-                    setActiveDrawingId(null);
-                    setCurrentStep('upload');
-                    setDimensions(INITIAL_DIMENSIONS);
-                    toast({ title: "Reset Sequence", description: "Select another blueprint from the onboarding matrix." });
-                  }}
-                  className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex gap-3 transition-all"
-                >
-                  <Plus className="h-4 w-4" /> Start Report for Next Drawing
-                </Button>
+                <div className="flex gap-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setCurrentStep('list');
+                      setSelectedOrder(null);
+                      setSelectedOp(null);
+                      toast({ title: "Task Cycle Closed", description: "Returning to inspection pipeline." });
+                    }}
+                    className="rounded-2xl border-slate-200 h-14 px-10 font-bold uppercase text-[10px] tracking-widest"
+                  >
+                    Close & Return to Pipeline
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setActiveDrawingId(null);
+                      setCurrentStep('upload');
+                      setDimensions(INITIAL_DIMENSIONS);
+                      setActiveReportId(null);
+                      toast({ title: "Reset Sequence", description: "Select another blueprint from the onboarding matrix." });
+                    }}
+                    className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex gap-3 transition-all"
+                  >
+                    <Plus className="h-4 w-4" /> Start Report for Next Drawing
+                  </Button>
+                </div>
               </div>
             </div>
           )}

@@ -138,7 +138,6 @@ export function OperationsStatus({
   const propagateSequentialDates = (ops: RoutingOperation[], startIndex: number) => {
     if (startIndex < 0 || startIndex >= ops.length) return ops;
     
-    // Deep clone to avoid mutating state directly
     const updated = ops.map(op => ({
       ...op, 
       subTasks: op.subTasks ? op.subTasks.map(st => ({...st})) : []
@@ -148,12 +147,10 @@ export function OperationsStatus({
       const current = updated[i];
       if (!current) continue;
       
-      // Ensure start date doesn't fall on holiday
       if (isHoliday(current.startDate)) {
         current.startDate = getNextAvailableDay(new Date(new Date(current.startDate).getTime() - 86400000).toISOString().split('T')[0]);
       }
 
-      // Calculate duration to preserve it
       const start = new Date(current.startDate);
       const end = new Date(current.endDate || current.startDate);
       const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
@@ -164,7 +161,6 @@ export function OperationsStatus({
         current.endDate = getNextAvailableDay(current.startDate, durationDays);
       }
       
-      // Ripple to next operation
       if (i + 1 < updated.length) {
         updated[i + 1].startDate = current.endDate;
       }
@@ -181,7 +177,6 @@ export function OperationsStatus({
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
-    // Automation: Force WIP status if subtasks are incomplete
     const enforcedRouting = newRouting.map(op => {
       if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
         const allCompleted = op.subTasks.every(s => s.status === 'Completed');
@@ -192,13 +187,12 @@ export function OperationsStatus({
       return op;
     });
 
-    // Automation: Calculate Order Progress
     const activeOps = enforcedRouting.filter(op => op.status !== 'NA');
     if (activeOps.length === 0) {
       setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { 
         routing: enforcedRouting, 
         progress: 0, 
-        status: 'Yet to start' 
+        status: 'Pending' 
       }, { merge: true });
       return;
     }
@@ -224,16 +218,14 @@ export function OperationsStatus({
 
     const progress = totalApplicableTasks > 0 ? Math.round((completedTasks / totalApplicableTasks) * 100) : 0;
 
-    let orderStatus: any = orderData?.status || 'Yet to start';
-    if (progress === 100) {
+    // RULE: If progress is 100% (all operations completed), set status to Completed. Otherwise Pending.
+    let orderStatus: Order['status'] = 'Pending';
+    if (totalApplicableTasks > 0 && progress === 100) {
       orderStatus = 'Completed';
-    } else if (progress > 0) {
-      orderStatus = 'Active';
     } else {
-      orderStatus = 'Yet to start';
+      orderStatus = 'Pending';
     }
 
-    // PARTIAL UPDATE using merge: true to avoid overwriting billing/details data
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
       routing: enforcedRouting,
       progress: progress,
@@ -346,7 +338,6 @@ export function OperationsStatus({
       let nextStart = updates.startDate !== undefined ? updates.startDate : (currentSub.startDate || parentStart);
       let nextEnd = updates.endDate !== undefined ? updates.endDate : (currentSub.endDate || nextStart);
 
-      // Boundary Clamping
       if (nextStart < parentStart) nextStart = parentStart;
       if (nextStart > parentEnd) nextStart = parentEnd;
 
@@ -360,7 +351,6 @@ export function OperationsStatus({
 
       subTasks[subIdx] = { ...currentSub, ...updates, startDate: nextStart, endDate: nextEnd };
       
-      // Ripple within operation
       for (let j = subIdx + 1; j < subTasks.length; j++) {
         const prevEnd = subTasks[j-1].endDate!;
         subTasks[j].startDate = prevEnd;
@@ -473,7 +463,7 @@ export function OperationsStatus({
                       const hasSubs = op.subTasks && op.subTasks.length > 0;
                       const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed').length : 0;
                       const allSubsCompleted = hasSubs ? completedSubs === op.subTasks.length : true;
-                      const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
+                      const opProgress = hasSubs ? Math.round((completedTasks / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       
                       return (
                         <React.Fragment key={op.id}>

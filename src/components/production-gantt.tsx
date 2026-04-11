@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -101,7 +102,7 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
       {/* Top Toolbar */}
       <div className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-30">
         <div className="flex items-center gap-4">
-          <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Industrial Kanban Board</h2>
+          <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Production Timeline</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input 
@@ -110,7 +111,6 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
             />
           </div>
         </div>
-        {/* Removed Share button and avatars as per red-highlight removal request */}
       </div>
 
       {/* Date Header Controls */}
@@ -326,8 +326,6 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
           </ScrollArea>
         </div>
       </div>
-
-      {/* Removed Legend Footer as per red-highlight removal request */}
     </div>
   );
 }

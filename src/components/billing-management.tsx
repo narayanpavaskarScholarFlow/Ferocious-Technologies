@@ -23,7 +23,7 @@ import {
   CheckCircle2,
   Clock,
   Banknote,
-  MoreVertical
+  Edit2
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -57,6 +57,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<BillingCategory>('quotation');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -73,8 +74,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     transactionDetails: ''
   });
 
-  const isLogisticsCategory = activeCategory === 'inward' || activeCategory === 'outward';
-
   const selectedEntity = useMemo(() => {
     if (activeCategory === 'inward') return vendors.find(v => v.id === formData.customerId);
     return customers.find(c => c.name === formData.customerId || c.id === formData.customerId);
@@ -82,6 +81,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   const handleCreateNew = () => {
     const prefix = activeCategory === 'quotation' ? 'QT' : activeCategory === 'invoice' ? 'INV' : activeCategory === 'inward' ? 'INW' : 'DOC';
+    setEditingRecordId(null);
     setFormData({
       customerId: '',
       date: new Date().toISOString().split('T')[0],
@@ -98,6 +98,24 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     setIsCreateDialogOpen(true);
   };
 
+  const handleEdit = (record: BillingRecord) => {
+    setEditingRecordId(record.id);
+    setFormData({
+      customerId: record.customerId,
+      date: record.date,
+      number: record.number,
+      note: record.note,
+      amount: record.amount,
+      itemName: record.itemName || '',
+      orderId: record.orderId || '',
+      receiverName: record.receiverName || '',
+      paymentStatus: record.status.toLowerCase() === 'paid' ? 'paid' : 'pending',
+      paymentMethod: record.paymentMethod || 'Bank Transfer',
+      transactionDetails: record.transactionDetails || ''
+    });
+    setIsCreateDialogOpen(true);
+  };
+
   const handleSave = () => {
     if (!formData.customerId || (activeCategory === 'inward' && !formData.itemName)) {
       toast({ variant: "destructive", title: "Protocol Interrupted", description: "Mandatory identity fields required." });
@@ -105,7 +123,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     }
 
     const record: BillingRecord = {
-      id: `BIL-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingRecordId || `BIL-${Math.floor(1000 + Math.random() * 9000)}`,
       type: activeCategory,
       customerName: selectedEntity?.name || 'Unknown',
       customerId: formData.customerId,
@@ -122,7 +140,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     };
 
     // If INWARD and linked to an Order, update Order's Amount Spent
-    if (activeCategory === 'inward' && formData.orderId && formData.amount > 0) {
+    // Logic: Only update if it's a NEW record to prevent double-counting on edits
+    if (!editingRecordId && activeCategory === 'inward' && formData.orderId && formData.amount > 0) {
       const order = orders.find(o => o.id === formData.orderId);
       if (order) {
         const currentSpent = parseFloat((order.amountSpent || "₹ 0.00").replace(/[₹,]/g, '')) || 0;
@@ -135,7 +154,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     }
 
     onSaveRecord(record);
-    toast({ title: "Ledger Entry Committed", description: `${record.number} has been saved.` });
+    toast({ title: editingRecordId ? "Identity Synchronized" : "Ledger Entry Committed", description: `${record.number} has been saved.` });
     setIsCreateDialogOpen(false);
   };
 
@@ -185,11 +204,12 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 {activeCategory === 'inward' && <TableHead className="font-bold text-[10px] uppercase text-slate-400">Item Name</TableHead>}
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRecords.map((record) => (
-                <TableRow key={record.id} className="h-20 border-slate-50 hover:bg-slate-50/50">
+                <TableRow key={record.id} className="h-20 border-slate-50 hover:bg-slate-50/50 group">
                   <TableCell className="px-8">
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-[#001F3D]">{record.number}</span>
@@ -205,8 +225,23 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       record.status === 'Paid' ? "bg-green-50 text-green-700 border-green-100" : "bg-blue-50 text-blue-700 border-blue-100"
                     )}>{record.status}</Badge>
                   </TableCell>
+                  <TableCell className="text-right pr-8">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-slate-300 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                      onClick={() => handleEdit(record)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
+              {filteredRecords.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs font-medium italic">No records found in this category.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </Card>
@@ -215,7 +250,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10 overflow-y-auto max-h-[90vh]">
           <DialogHeader className="mb-8">
-            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Ledger Initialization: {activeCategory.toUpperCase()}</DialogTitle>
+            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
+              {editingRecordId ? 'Synchronize Entry' : 'Ledger Initialization'}: {activeCategory.toUpperCase()}
+            </DialogTitle>
             <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Execute financial synchronization protocol.</DialogDescription>
           </DialogHeader>
           
@@ -366,7 +403,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
             <div className="flex gap-4 pt-6">
               <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400" onClick={() => setIsCreateDialogOpen(false)}>Abort Protocol</Button>
-              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20" onClick={handleSave}>Commit to Ledger</Button>
+              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20" onClick={handleSave}>
+                {editingRecordId ? 'Synchronize Identity' : 'Commit to Ledger'}
+              </Button>
             </div>
           </div>
         </DialogContent>

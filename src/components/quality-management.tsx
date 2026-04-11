@@ -34,7 +34,9 @@ import {
   CheckSquare,
   Square,
   Calendar,
-  User
+  User,
+  FileSearch,
+  MousePointer2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -49,7 +51,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Order, RoutingOperation, SystemUser, Vendor } from '@/lib/types';
 
-type QualityStep = 'list' | 'checklist' | 'report' | 'review' | 'approval';
+type QualityStep = 'list' | 'upload' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
 
 interface DimensionRecord {
@@ -95,10 +97,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedOp, setSelectedOp] = useState<RoutingOperation | null>(null);
+  
+  // Selection logic for per-drawing reports
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
+  
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter orders that have a QC operation in their routing
@@ -128,17 +133,17 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     return 'Station: ' + firstSub.machineId;
   };
 
-  const selectedDrawings = useMemo(() => {
-    return uploadedFiles.filter(f => selectedDrawingIds.includes(f.id));
-  }, [uploadedFiles, selectedDrawingIds]);
+  const activeDrawing = useMemo(() => {
+    return uploadedFiles.find(f => f.id === activeDrawingId);
+  }, [uploadedFiles, activeDrawingId]);
 
   const statsData = useMemo(() => {
     const pendingCount = qcEntries.filter(e => 
-      e.operation.status === 'Yet to start' || e.operation.status === 'WIP' || e.operation.status === 'Ready for QC'
+      ['Yet to start', 'WIP', 'Ready for QC'].includes(e.operation.status || '')
     ).length;
     
     const inReviewCount = qcEntries.filter(e => 
-      e.operation.status === 'Review Pending' || e.operation.status === 'In Review'
+      ['Review Pending', 'In Review'].includes(e.operation.status || '')
     ).length;
 
     return [
@@ -150,23 +155,17 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
     setSelectedOrder(order);
     setSelectedOp(op);
-    setCurrentStep('checklist');
+    setCurrentStep('upload');
+    setUploadedFiles([]);
+    setActiveDrawingId(null);
+    setDimensions(INITIAL_DIMENSIONS);
     const initial: Record<string, CheckStatus> = {};
     MACHINING_OPS.forEach(o => initial[o] = 'Pending');
     setChecks(initial);
-    setDimensions(INITIAL_DIMENSIONS);
-    setUploadedFiles([]);
-    setSelectedDrawingIds([]);
   };
 
   const handleToggleCheck = (op: string, status: CheckStatus) => {
     setChecks(prev => ({ ...prev, [op]: status }));
-  };
-
-  const toggleDrawingSelection = (id: string) => {
-    setSelectedDrawingIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
   };
 
   const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
@@ -211,38 +210,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       const lowerNum = parseFloat(updatedDim.lowerLimit);
 
       if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
-        if (actualNum >= lowerNum && actualNum <= upperNum) {
-          updatedDim.status = 'Pass'; 
-        } else {
-          updatedDim.status = 'Fail'; 
-        }
+        updatedDim.status = (actualNum >= lowerNum && actualNum <= upperNum) ? 'Pass' : 'Fail';
       } else if (updatedDim.actual === '') {
         updatedDim.status = 'Pending';
       }
       
       return updatedDim;
     }));
-  };
-
-  const handleDimensionStatus = (id: string, status: 'Pass' | 'Fail' | 'NA') => {
-    setDimensions(prev => prev.map(dim => 
-      dim.id === id ? { ...dim, status } : dim
-    ));
-  };
-
-  const handleSaveDraft = () => {
-    toast({
-      title: "Draft Saved",
-      description: `Dimension entries for Order #${selectedOrder?.id} have been updated in the ledger.`,
-    });
-  };
-
-  const handlePrint = () => {
-    window.print();
-    toast({
-      title: "Generating Document",
-      description: "Preparing inspection report for print/export...",
-    });
   };
 
   const handleAddDimension = () => {
@@ -268,17 +242,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         name: file.name
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
-      setSelectedDrawingIds(prev => [...prev, ...newFiles.map(f => f.id)]);
-      toast({
-        title: "Drawings Cached",
-        description: `${newFiles.length} technical drawings attached to protocol.`
-      });
+      toast({ title: "Technical Blueprints Loaded", description: `${newFiles.length} files added to operational context.` });
     }
   };
 
   const removeFile = (id: string) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
-    setSelectedDrawingIds(prev => prev.filter(i => i !== id));
+    if (activeDrawingId === id) setActiveDrawingId(null);
   };
 
   const submitForReview = () => {
@@ -293,7 +263,18 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
     }
-    toast({ title: "Release Authorized", description: "Report has been digitally signed and archived." });
+    toast({ title: "Report Release Authorized", description: `Dedicated report for ${activeDrawing?.name} archived.` });
+  };
+
+  const handleCreateAnother = () => {
+    // Reset entry state for next drawing
+    setActiveDrawingId(null);
+    setCurrentStep('upload');
+    setDimensions(INITIAL_DIMENSIONS);
+    const initial: Record<string, CheckStatus> = {};
+    MACHINING_OPS.forEach(o => initial[o] = 'Pending');
+    setChecks(initial);
+    toast({ title: "Procedure Reset", description: "Select another drawing to begin next inspection cycle." });
   };
 
   return (
@@ -302,21 +283,22 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
             <ShieldCheck className="h-4 w-4" />
-            Quality Assurance 2.0
+            Quality Matrix Protocol
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900">
             {currentStep === 'list' && 'Inspection Pipeline'}
-            {currentStep === 'checklist' && 'Quality Check Entry'}
-            {currentStep === 'report' && 'Inspection Report Generation'}
+            {currentStep === 'upload' && 'Drawing Matrix Onboarding'}
+            {currentStep === 'checklist' && 'Dimensional Verification'}
+            {currentStep === 'report' && 'Inspection Report Preview'}
             {currentStep === 'review' && 'Compliance Review'}
             {currentStep === 'approval' && 'Final Quality Release'}
           </h2>
-          <p className="text-muted-foreground font-medium">Standardized industrial inspection workflows & customer dimension reporting.</p>
+          <p className="text-muted-foreground font-medium">Sequential verification lifecycle for industrial parts & blueprints.</p>
         </div>
         
         {currentStep !== 'list' && (
           <Button variant="ghost" onClick={() => setCurrentStep('list')} className="rounded-full gap-2 text-slate-400 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Back to Pipeline
+            <ArrowLeft className="h-4 w-4" /> Abort Procedure
           </Button>
         )}
       </header>
@@ -328,9 +310,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Queue Distribution</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Status of Work Orders with active QC nodes.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Live mapping of Work Orders with active QC gateways.</p>
                 </div>
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">Live Matrix</Badge>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">TELEMETRY_LIVE</Badge>
               </div>
               <div className="h-24 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -355,7 +337,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   </div>
                   <span className="text-2xl font-bold text-amber-600">{statsData[0].count}</span>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ready for Inspection</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Inspection</p>
               </Card>
               <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-blue-500/50 transition-colors">
                 <div className="flex justify-between items-center mb-4">
@@ -364,141 +346,342 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   </div>
                   <span className="text-2xl font-bold text-blue-600">{statsData[1].count}</span>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Review (WIP)</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Compliance Review</p>
               </Card>
             </div>
           </div>
 
-          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-2xl">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div className="relative w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input 
-                  placeholder="Search orders for QC..." 
-                  className="pl-10 h-10 bg-white border-none text-xs" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">QC Pipeline Nodes: {qcEntries.length}</Badge>
-            </div>
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-[2rem]">
             <Table>
-              <TableHeader className="bg-white">
-                <TableRow className="hover:bg-transparent border-slate-100">
+              <TableHeader className="bg-slate-50/50 border-b border-slate-100">
+                <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Order ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Timeline (Start - End)</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Assigned Resource</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Status</TableHead>
-                  <TableHead className="text-right px-8"></TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Start - End Cycle</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Inspector / Resource</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
+                  <TableHead className="text-right px-8 w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {qcEntries.map(({ order, operation }) => {
-                  const status = operation.status || 'Yet to start';
-                  const resource = getResourceName(operation);
-                  return (
-                    <TableRow key={operation.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                      <TableCell className="px-8 font-bold text-sm text-primary">#{order.id}</TableCell>
-                      <TableCell className="text-slate-900 font-semibold uppercase">{order.customer}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-[10px] font-code text-slate-500">
-                          <Calendar className="h-3 w-3 text-slate-300" />
-                          <span>{operation.startDate}</span>
-                          <span className="text-slate-300">→</span>
-                          <span>{operation.endDate}</span>
+                {qcEntries.map(({ order, operation }) => (
+                  <TableRow key={operation.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                    <TableCell className="px-8 font-bold text-sm text-primary">#{order.id}</TableCell>
+                    <TableCell className="text-slate-900 font-bold uppercase">{order.customer}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-[10px] font-code font-bold text-slate-500">
+                        <span>{operation.startDate}</span>
+                        <span className="text-slate-300">→</span>
+                        <span>{operation.endDate}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                          <User className="h-4 w-4" />
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-                            <User className="h-3.5 w-3.5" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-700">{resource}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge className={cn(
-                          "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
-                          status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
-                          (status === 'Review Pending' || status === 'WIP') ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                          'bg-amber-50 text-amber-700 border-amber-100'
-                        )}>
-                          {status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right px-8">
-                        <Button 
-                          size="sm" 
-                          className="rounded-full bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase h-9 px-5 opacity-0 group-hover:opacity-100 transition-all"
-                          onClick={() => handleSelectTask(order, operation)}
-                        >
-                          Execute Protocol <ChevronRight className="ml-2 h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {qcEntries.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No active QC nodes assigned in production matrix.</TableCell>
+                        <span className="text-[11px] font-bold text-slate-700 uppercase">{getResourceName(operation)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge className={cn(
+                        "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
+                        operation.status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
+                        (['Review Pending', 'WIP'].includes(operation.status || '')) ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                        'bg-amber-50 text-amber-700 border-amber-100'
+                      )}>
+                        {operation.status || 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right px-8">
+                      <Button 
+                        size="sm" 
+                        className="rounded-xl bg-[#001F3D] hover:bg-black text-white text-[10px] font-bold uppercase h-10 px-6 opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                        onClick={() => handleSelectTask(order, operation)}
+                      >
+                        Start Audit <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </Card>
         </div>
       )}
 
-      {currentStep === 'checklist' && selectedOrder && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-8 space-y-8">
+      {currentStep === 'upload' && selectedOrder && (
+        <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
+          <Card className="p-12 bg-white border-slate-200 shadow-2xl rounded-[3rem] text-center space-y-8 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+            
+            <div className="space-y-4 max-w-md mx-auto relative z-10">
+              <div className="p-6 bg-primary/5 rounded-[2.5rem] w-fit mx-auto mb-6">
+                <FileSearch className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Onboard Blueprints</h3>
+              <p className="text-sm text-slate-500">Upload multiple technical drawings for Order #{selectedOrder.id}. Each drawing will receive its own dimensional report.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              <div className="space-y-6">
+                <input 
+                  type="file" 
+                  id="multi-cad-upload" 
+                  className="hidden" 
+                  accept=".pdf"
+                  multiple
+                  onChange={handleFileChange}
+                />
+                <label 
+                  htmlFor="multi-cad-upload"
+                  className="h-64 rounded-[2.5rem] border-2 border-dashed border-slate-200 hover:border-primary/50 bg-slate-50/50 hover:bg-primary/5 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all group"
+                >
+                  <Upload className="h-12 w-12 text-slate-300 group-hover:text-primary transition-colors" />
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Drop Technical PDFs</span>
+                    <span className="text-[9px] text-slate-300 font-bold uppercase">Multi-File Protocol v2.4</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="space-y-6 text-left">
+                <div className="flex items-center gap-3 px-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Matrix</h4>
+                </div>
+                
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-2 hide-scrollbar">
+                  {uploadedFiles.map((file) => (
+                    <div 
+                      key={file.id}
+                      onClick={() => setActiveDrawingId(file.id)}
+                      className={cn(
+                        "p-5 rounded-2xl border flex items-center justify-between group transition-all cursor-pointer relative overflow-hidden",
+                        activeDrawingId === file.id ? "bg-[#001F3D] border-[#001F3D] text-white shadow-xl shadow-primary/20 scale-[1.02]" : "bg-white border-slate-100 hover:border-primary/20"
+                      )}
+                    >
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className={cn(
+                          "h-10 w-10 rounded-xl flex items-center justify-center transition-colors",
+                          activeDrawingId === file.id ? "bg-white/10" : "bg-primary/5 text-primary"
+                        )}>
+                          <FileIcon className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-bold block truncate max-w-[180px]">{file.name}</span>
+                          <span className={cn(
+                            "text-[8px] font-bold uppercase tracking-widest",
+                            activeDrawingId === file.id ? "text-white/40" : "text-slate-300"
+                          )}>IDENTIFIED_NODE</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 relative z-10">
+                        {activeDrawingId === file.id && <MousePointer2 className="h-4 w-4 text-accent animate-pulse" />}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={(e) => { e.stopPropagation(); removeFile(file.id); }} 
+                          className={cn(
+                            "h-8 w-8 rounded-lg transition-all",
+                            activeDrawingId === file.id ? "text-white/40 hover:text-white hover:bg-white/10" : "text-slate-300 hover:text-red-500 hover:bg-red-50"
+                          )}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {uploadedFiles.length === 0 && (
+                    <div className="py-12 text-center opacity-20 border-2 border-dashed border-slate-100 rounded-3xl">
+                      <p className="text-[10px] font-bold uppercase tracking-widest">No Drawings Loaded</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-10 border-t border-slate-100 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Ready: Attach blueprints to initialize dimensional verification.</span>
+              </div>
+              <Button 
+                disabled={!activeDrawingId}
+                className="h-14 px-12 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 flex gap-3 transition-all"
+                onClick={() => setCurrentStep('checklist')}
+              >
+                Inspect Selected Drawing <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {currentStep === 'checklist' && selectedOrder && activeDrawing && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start animate-in fade-in duration-700">
+          <div className="lg:col-span-12 space-y-10">
+            {/* Visual Identification Header */}
+            <div className="flex items-center justify-between p-8 bg-[#001F3D] rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute right-0 top-0 p-10 opacity-5">
+                <FileSearch className="h-32 w-32" />
+              </div>
+              <div className="flex items-center gap-8 relative z-10">
+                <div className="h-20 w-20 bg-white/10 rounded-[1.5rem] flex items-center justify-center border border-white/10">
+                  <ImageIcon className="h-10 w-10 text-accent" />
+                </div>
+                <div>
+                  <Badge className="bg-accent text-white border-none text-[8px] font-bold uppercase px-3 mb-2">Active Inspection Node</Badge>
+                  <h3 className="text-3xl font-display font-bold tracking-tight uppercase">{activeDrawing.name}</h3>
+                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] mt-1">Audit Protocol for WO #{selectedOrder.id}</p>
+                </div>
+              </div>
+              <div className="text-right relative z-10 hidden md:block">
+                <p className="text-[9px] text-white/40 font-bold uppercase tracking-widest">Report Sequence</p>
+                <p className="text-xl font-display font-bold text-accent">ID_REP_{activeDrawing.id.toUpperCase()}</p>
+              </div>
+            </div>
+
             <Tabs defaultValue="customer" className="w-full">
-              <TabsList className="bg-slate-100 p-1 rounded-full mb-6 h-12 inline-flex border border-slate-200">
-                <TabsTrigger value="customer" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                  Customer Dimensions
+              <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-inner">
+                <TabsTrigger value="customer" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-lg transition-all">
+                  Customer Dimension Entry
                 </TabsTrigger>
-                <TabsTrigger value="internal" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <TabsTrigger value="internal" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-lg transition-all">
                   Internal Process Checks
                 </TabsTrigger>
               </TabsList>
 
+              <TabsContent value="customer" className="m-0 space-y-10">
+                <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] space-y-10">
+                  <div className="flex justify-between items-center px-2">
+                    <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
+                      <MousePointer2 className="h-5 w-5 text-primary" />
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Measurement Matrix</h3>
+                    </div>
+                    <Button variant="ghost" onClick={handleAddDimension} className="text-[10px] uppercase font-bold gap-2 text-primary hover:bg-primary/5 h-10 px-6 rounded-xl">
+                      <Plus className="h-4 w-4" /> Append Dimension Node
+                    </Button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[1100px]">
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow className="hover:bg-transparent border-b border-slate-100">
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-6 px-6 w-[200px]">Technical Feature</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Target (MM)</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Tolerance</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Limits (U/L)</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center w-[120px]">Actual Entry</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Verdict</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 px-6">Remark / Observation</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {dimensions.map((dim) => (
+                          <TableRow key={dim.id} className="border-b border-slate-50 h-20 hover:bg-slate-50/30 transition-colors">
+                            <TableCell className="px-6">
+                              <Input 
+                                className="h-11 bg-slate-50/50 border-none font-bold text-xs rounded-xl" 
+                                value={dim.feature} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'feature', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                className="h-11 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
+                                value={dim.target} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                className="h-11 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
+                                value={dim.tolerance} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 justify-center">
+                                <Input className="h-11 bg-white border-slate-100 font-code text-[10px] w-16 text-center rounded-xl" value={dim.upperLimit} readOnly />
+                                <Input className="h-11 bg-white border-slate-100 font-code text-[10px] w-16 text-center rounded-xl" value={dim.lowerLimit} readOnly />
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                placeholder="0.000" 
+                                className="h-11 bg-white border-2 border-primary/20 focus-visible:ring-primary/20 font-code font-bold text-sm text-center rounded-xl shadow-inner"
+                                value={dim.actual}
+                                onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-center">
+                                <Badge className={cn(
+                                  "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm",
+                                  dim.status === 'Pass' ? "bg-green-50 text-green-700 border-green-100" :
+                                  dim.status === 'Fail' ? "bg-red-50 text-red-700 border-red-100" :
+                                  "bg-slate-50 text-slate-400 border-slate-100"
+                                )}>
+                                  {dim.status === 'Pending' ? 'UNSET' : dim.status === 'Pass' ? 'NOMINAL' : 'DEVIATION'}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6">
+                              <Input 
+                                placeholder="..." 
+                                className="h-11 bg-slate-50/50 border-none text-xs rounded-xl" 
+                                value={dim.remark}
+                                onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Card>
+              </TabsContent>
+
               <TabsContent value="internal" className="m-0">
-                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-900">Machining Operation Verification</h3>
-                    <Badge className="bg-primary/5 text-primary border-primary/10">Internal Compliance</Badge>
+                <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] space-y-10">
+                  <div className="flex items-center gap-3 border-l-4 border-accent pl-4">
+                    <Activity className="h-5 w-5 text-accent" />
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Process Validation Nodes</h3>
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {MACHINING_OPS.map((op) => (
-                      <div key={op} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-center justify-between transition-all hover:border-primary/20">
-                        <div className="flex items-center gap-4">
+                      <div key={op} className="p-6 rounded-[2rem] border border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all hover:border-primary/20 group">
+                        <div className="flex items-center gap-5">
                           <div className={cn(
-                            "h-8 w-8 rounded-lg flex items-center justify-center border transition-all",
+                            "h-12 w-12 rounded-2xl flex items-center justify-center border-2 transition-all shadow-sm",
                             checks[op] === 'Pass' ? "bg-green-500 border-green-500 text-white" :
                             checks[op] === 'Fail' ? "bg-red-500 border-red-500 text-white" :
                             checks[op] === 'NA' ? "bg-slate-400 border-slate-400 text-white" :
-                            "bg-white border-slate-200 text-slate-300"
+                            "bg-white border-slate-200 text-slate-300 group-hover:border-primary/30"
                           )}>
-                            {checks[op] === 'Pass' ? <Check className="h-4 w-4" /> : 
-                             checks[op] === 'Fail' ? <X className="h-4 w-4" /> : 
-                             checks[op] === 'NA' ? <MinusCircle className="h-4 w-4" /> :
-                             <Box className="h-4 w-4" />}
+                            {checks[op] === 'Pass' ? <Check className="h-6 w-6" /> : 
+                             checks[op] === 'Fail' ? <X className="h-6 w-6" /> : 
+                             checks[op] === 'NA' ? <MinusCircle className="h-6 w-6" /> :
+                             <Box className="h-6 w-6" />}
                           </div>
-                          <span className="text-xs font-bold text-slate-700">{op}</span>
+                          <div className="space-y-0.5">
+                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-tight block">{op}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">INTERNAL_CHECK_NODE</span>
+                          </div>
                         </div>
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-2">
                           {['Pass', 'Fail', 'NA'].map((st) => (
                             <Button 
                               key={st}
                               size="sm" 
                               variant="outline" 
                               className={cn(
-                                "rounded-lg h-8 px-3 font-bold text-[9px] uppercase transition-all",
+                                "rounded-xl h-10 px-5 font-bold text-[10px] uppercase tracking-widest transition-all shadow-sm border-b-4",
                                 checks[op] === st 
                                   ? (st === 'Pass' ? "bg-green-50 border-green-200 text-green-700" : st === 'Fail' ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-100 border-slate-300 text-slate-700")
-                                  : "bg-white text-slate-400"
+                                  : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50"
                               )}
                               onClick={() => handleToggleCheck(op, st as any)}
                             >
@@ -511,347 +694,145 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   </div>
                 </Card>
               </TabsContent>
-
-              <TabsContent value="customer" className="m-0 space-y-8">
-                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-bold text-slate-900">Customer Dimension Entry</h3>
-                      <p className="text-xs text-muted-foreground">Record measurements for Order #{selectedOrder.id}.</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={handleAddDimension} className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2 hover:bg-primary/5 hover:text-primary transition-all">
-                      <Plus className="h-3 w-3" /> Add More Dimensions
-                    </Button>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <Table className="min-w-[1000px]">
-                      <TableHeader className="bg-slate-50/50">
-                        <TableRow className="hover:bg-transparent border-slate-100">
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-4 w-[150px]">Dimension Name</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Target</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Tolerance</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Limits (U/L)</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 w-[100px]">Actual</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Status</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400">Remark</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dimensions.map((dim) => (
-                          <TableRow key={dim.id} className="border-slate-50 h-16">
-                            <TableCell>
-                              <Input 
-                                className="h-8 text-xs bg-slate-50 border-none" 
-                                value={dim.feature} 
-                                onChange={(e) => handleUpdateDimension(dim.id, 'feature', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                className="h-8 text-xs font-code bg-slate-50 border-none" 
-                                value={dim.target} 
-                                onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                className="h-8 text-xs font-code bg-slate-50 border-none" 
-                                value={dim.tolerance} 
-                                onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Input 
-                                  placeholder="U"
-                                  className="h-8 text-[10px] font-code bg-slate-50 border-none w-14" 
-                                  value={dim.upperLimit} 
-                                  onChange={(e) => handleUpdateDimension(dim.id, 'upperLimit', e.target.value)}
-                                />
-                                <Input 
-                                  placeholder="L"
-                                  className="h-8 text-[10px] font-code bg-slate-50 border-none w-14" 
-                                  value={dim.lowerLimit} 
-                                  onChange={(e) => handleUpdateDimension(dim.id, 'lowerLimit', e.target.value)}
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                placeholder="0.00" 
-                                className="h-8 text-xs font-code bg-slate-100 border border-primary/20 focus-visible:ring-primary/20 rounded-md"
-                                value={dim.actual}
-                                onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center gap-1">
-                                {['Pass', 'Fail'].map((st) => (
-                                  <button
-                                    key={st}
-                                    onClick={() => handleDimensionStatus(dim.id, st as any)}
-                                    className={cn(
-                                      "px-2 py-1 rounded text-[8px] font-bold uppercase border transition-all",
-                                      dim.status === st 
-                                        ? (st === 'Pass' ? "bg-green-500 border-green-500 text-white shadow-sm" : "bg-red-500 border-red-500 text-white shadow-sm")
-                                        : "bg-white border-slate-200 text-slate-300 hover:border-slate-400"
-                                    )}
-                                  >
-                                    {st === 'Pass' ? 'OK' : 'NOT OK'}
-                                  </button>
-                                ))}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                placeholder="..." 
-                                className="h-8 text-xs bg-slate-50 border-none" 
-                                value={dim.remark}
-                                onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </Card>
-
-                {uploadedFiles.length > 0 && (
-                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
-                    <div className="flex items-center gap-3">
-                      <CheckSquare className="h-5 w-5 text-primary" />
-                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Identify Drawings for Inspection Sheet</h3>
-                    </div>
-                    <p className="text-xs text-slate-400 font-medium italic mt-[-10px] ml-1">* Select the drawings/parts from the matrix below to include in final report.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {uploadedFiles.map((file) => {
-                        const isSelected = selectedDrawingIds.includes(file.id);
-                        return (
-                          <div 
-                            key={file.id} 
-                            className={cn(
-                              "p-4 bg-slate-50 rounded-2xl border flex items-center justify-between group transition-all cursor-pointer",
-                              isSelected ? "border-emerald-500 bg-emerald-50/30" : "border-slate-100 hover:border-primary/20"
-                            )}
-                            onClick={() => toggleDrawingSelection(file.id)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={cn(
-                                "p-2 rounded-lg transition-colors",
-                                isSelected ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
-                              )}>
-                                {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                              </div>
-                              <span className={cn(
-                                "text-xs font-bold truncate max-w-[200px]",
-                                isSelected ? "text-emerald-700" : "text-slate-700"
-                              )}>{file.name}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={(e) => { e.stopPropagation(); removeFile(file.id); }} 
-                              className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
-                )}
-              </TabsContent>
             </Tabs>
 
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               <Button 
-                variant="outline"
-                className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-xs border-primary/20 text-primary hover:bg-primary/5"
-                onClick={handleSaveDraft}
+                variant="ghost"
+                className="flex-1 h-16 rounded-[1.5rem] font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:text-[#001F3D] hover:bg-slate-50"
+                onClick={() => setCurrentStep('upload')}
               >
-                <Save className="h-4 w-4 mr-2" /> Save Draft
+                Return to Drawing Matrix
               </Button>
               <Button 
-                className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+                className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-[1.5rem] font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-primary/20 flex gap-4 transition-all"
                 onClick={() => {
-                  if (selectedDrawingIds.length === 0) {
-                    toast({ variant: "destructive", title: "Selection Required", description: "Identify which drawings to include in the inspection protocol." });
+                  if (dimensions.every(d => d.actual === '')) {
+                    toast({ variant: "destructive", title: "Protocol Refused", description: "At least one dimensional entry is required to generate a compliance report." });
                     return;
                   }
                   setCurrentStep('report');
                 }}
               >
-                Verify & Preview Inspection Sheet
+                Compile Inspection Report <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && activeDrawing && (
+        <div className="space-y-10 pb-20 max-w-[1100px] mx-auto animate-in zoom-in-95 duration-500">
+          <div className="flex justify-between items-center px-4 print:hidden">
+            <Button variant="ghost" onClick={() => setCurrentStep('checklist')} className="rounded-xl gap-3 h-12 font-bold uppercase text-[10px] tracking-widest text-slate-400 hover:text-slate-900">
+              <ArrowLeft className="h-4 w-4" /> Edit Measurements
+            </Button>
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => window.print()} className="rounded-xl gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 shadow-sm">
+                <Printer className="h-4 w-4" /> Print Matrix
+              </Button>
+              <Button className="rounded-xl bg-slate-900 hover:bg-black text-white gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest shadow-xl">
+                <Download className="h-4 w-4" /> Export Report
               </Button>
             </div>
           </div>
 
-          <Card className="lg:col-span-4 p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Task Identification</h3>
-            <div className="space-y-6">
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order ID</p>
-                <p className="text-lg font-bold text-slate-900">#{selectedOrder.id}</p>
-              </div>
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Assigned Resource</p>
-                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'Unassigned'}</p>
-              </div>
-              
-              <div className="space-y-4 pt-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Technical Drawing Selection (PDF)</p>
-                <input 
-                  type="file" 
-                  id="drawing-reference-upload" 
-                  className="hidden" 
-                  accept=".pdf"
-                  multiple
-                  onChange={handleFileChange}
-                />
-                <label 
-                  htmlFor="drawing-reference-upload"
-                  className={cn(
-                    "h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
-                    uploadedFiles.length > 0 ? "border-primary/50 bg-primary/5" : "border-slate-200 hover:border-primary/50 bg-slate-50/50"
-                  )}
-                >
-                  {uploadedFiles.length > 0 ? (
-                    <>
-                      <FileIcon className="h-10 w-10 text-primary animate-pulse" />
-                      <div className="text-center">
-                        <span className="text-[10px] font-bold text-primary uppercase block">{uploadedFiles.length} Drawings Attached</span>
-                        <span className="text-[8px] text-slate-400 uppercase mt-1">Click to add more</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-10 w-10 text-slate-300" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase text-center px-4">Upload Multi-Part Drawing References</span>
-                    </>
-                  )}
-                </label>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && (
-        <div className="space-y-8 pb-20">
-          <div className="flex justify-end gap-3 print:hidden">
-            <Button variant="outline" onClick={handlePrint} className="rounded-full gap-2 h-11 px-6 font-bold uppercase text-[10px]">
-              <Printer className="h-4 w-4" /> Print Report
-            </Button>
-            <Button className="rounded-full bg-slate-900 hover:bg-black text-white gap-2 h-11 px-6 font-bold uppercase text-[10px]">
-              <Download className="h-4 w-4" /> Download PDF
-            </Button>
-          </div>
-
           <Card className={cn(
-            "bg-white border border-slate-200 shadow-2xl p-12 max-w-[1000px] mx-auto space-y-10 transition-all duration-700",
-            currentStep === 'review' && "border-primary/30 ring-4 ring-primary/5"
+            "bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-16 space-y-12 transition-all duration-700",
+            currentStep === 'review' && "ring-8 ring-primary/5 border-primary/20"
           )}>
-            <div className="flex justify-between items-start border-b border-slate-100 pb-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-primary rounded-xl shadow-lg shadow-primary/20">
-                    <Box className="h-6 w-6 text-white" />
+            <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10">
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-[#001F3D] rounded-2xl shadow-xl shadow-primary/20">
+                    <ShieldCheck className="h-10 w-10 text-white" />
                   </div>
-                  <h1 className="text-2xl font-display font-bold tracking-tight">BHARAT<span className="text-primary">AXIS</span></h1>
+                  <div>
+                    <h1 className="text-3xl font-display font-bold tracking-tighter">BHARAT<span className="text-primary">AXIS</span></h1>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Precision Engineering & QC Hub</p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Precision Quality Control Division</p>
-                  <p className="text-sm font-medium text-slate-600">Final Compliance Report - Secure Ledger</p>
+                <div className="text-[10px] font-bold text-slate-500 space-y-1 uppercase tracking-widest leading-relaxed">
+                  <p>Dimensional Compliance Protocol: ISO_9001_IND</p>
+                  <p>Secure Hash: {activeDrawing.id.toUpperCase()}_{selectedOrder.id}</p>
                 </div>
               </div>
-              <div className="text-right space-y-2">
-                <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tighter uppercase">Inspection Sheet</h2>
-                <p className="text-xs font-bold text-primary uppercase font-code">REP_VAL: QC-{selectedOrder.id}-{new Date().getFullYear()}</p>
+              <div className="text-right space-y-3">
+                <h2 className="text-5xl font-display font-bold text-[#001F3D] tracking-tighter uppercase">Inspection Sheet</h2>
+                <Badge className="bg-primary text-white border-none text-[9px] font-bold px-5 py-1.5 rounded-full">CERTIFIED_LEDGER</Badge>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">DATE: {new Date().toLocaleDateString()}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-              <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order</p>
-                <p className="text-sm font-bold text-slate-900">#{selectedOrder.id}</p>
+            <div className="grid grid-cols-4 gap-12 bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order Identity</p>
+                <p className="text-lg font-bold text-[#001F3D]">#{selectedOrder.id}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Client Name</p>
-                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOrder.customer}</p>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Corporate Client</p>
+                <p className="text-sm font-bold text-slate-900 uppercase truncate">{selectedOrder.customer}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Assigned Inspector</p>
-                <p className="text-sm font-bold text-slate-900">{selectedOp ? getResourceName(selectedOp) : 'Unassigned'}</p>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Audit Terminal</p>
+                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'SYS_NODE_01'}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Issue Date</p>
-                <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString()}</p>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Procedural Status</p>
+                <Badge variant="outline" className="bg-white border-slate-200 text-emerald-600 font-bold text-[9px] px-4 py-1">NOMINAL_STATE</Badge>
               </div>
-            </div>
-
-            {/* Drawing Sections - Rendering only SELECTED drawings */}
-            <div className="space-y-12">
-              {selectedDrawings.map((file, fIdx) => (
-                <div key={file.id} className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">
-                      {fIdx + 1}. Technical Drawing: {file.name}
-                    </h3>
-                    <Badge variant="outline" className="text-[8px] bg-white border-slate-200">RESTRICTED_PROTOCOL</Badge>
-                  </div>
-                  <div className="bg-slate-50 border border-slate-100 rounded-[2rem] h-[450px] flex items-center justify-center relative overflow-hidden shadow-inner">
-                    <div className="flex flex-col items-center gap-6 text-center">
-                      <div className="p-8 bg-white rounded-full shadow-sm border border-slate-100">
-                        <ImageIcon className="h-16 w-16 text-primary/20" />
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-lg font-bold text-slate-900 uppercase">{file.name}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Visual Reference Placeholder</p>
-                      </div>
-                    </div>
-                    <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-                  </div>
-                </div>
-              ))}
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">Dimensional Compliance Ledger</h3>
-              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+              <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Technical Blueprint Identification</h3>
+              <div className="bg-slate-50 border-2 border-slate-100 rounded-[3rem] h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner group">
+                <div className="flex flex-col items-center gap-8 text-center transition-transform group-hover:scale-105 duration-700">
+                  <div className="p-10 bg-white rounded-[2rem] shadow-xl border border-slate-100">
+                    <ImageIcon className="h-20 w-20 text-primary/10" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-display font-bold text-[#001F3D] uppercase">{activeDrawing.name}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">Visual Reference Reference Node Locked</p>
+                  </div>
+                </div>
+                <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-emerald-500 pl-4">Measurement Compliance Table</h3>
+              <div className="border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
                 <Table className="border-collapse">
-                  <TableHeader className="bg-slate-50/80">
-                    <TableRow className="hover:bg-transparent border-b border-slate-200">
-                      <TableHead className="text-[9px] font-bold uppercase py-4 px-4 text-center border-r border-slate-200 w-12">Si No</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200">Dimension Detail</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Tolerance</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Upper Limit</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Lower Limit</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Actual</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-16">OK</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-16">Not OK</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase px-4">Remark</TableHead>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
+                      <TableHead className="text-[9px] font-bold uppercase py-5 px-6 text-center border-r border-slate-200 w-16">SN</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D]">Dimensional Feature</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Target</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Upper</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Lower</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 text-primary">Actual</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center w-24">Compliance</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {dimensions.map((dim, idx) => (
-                      <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/30">
-                        <TableCell className="text-center font-bold text-xs border-r border-slate-100 text-slate-400">{idx + 1}</TableCell>
-                        <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700">{dim.feature} ({dim.target})</TableCell>
-                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.tolerance}</TableCell>
+                      <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/50">
+                        <TableCell className="text-center font-bold text-xs border-r border-slate-100 text-slate-400 py-5">{idx + 1}</TableCell>
+                        <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700 uppercase">{dim.feature}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target}</TableCell>
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.upperLimit}</TableCell>
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.lowerLimit}</TableCell>
-                        <TableCell className="text-center font-code text-xs font-bold border-r border-slate-100 text-primary">{dim.actual || '-'}</TableCell>
-                        <TableCell className="text-center border-r border-slate-100">
-                          {dim.status === 'Pass' ? <div className="mx-auto h-4 w-4 rounded-full bg-green-500 flex items-center justify-center"><Check className="h-2.5 w-2.5 text-white" /></div> : <div className="mx-auto h-4 w-4 rounded-full border border-slate-200" />}
-                        </TableCell>
-                        <TableCell className="text-center border-r border-slate-100">
-                          {dim.status === 'Fail' ? <div className="mx-auto h-4 w-4 rounded-full bg-red-500 flex items-center justify-center"><X className="h-2.5 w-2.5 text-white" /></div> : <div className="mx-auto h-4 w-4 rounded-full border border-slate-200" />}
-                        </TableCell>
-                        <TableCell className="px-4 font-medium text-[10px] text-slate-400 italic">
-                          {dim.remark || '-'}
+                        <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
+                        <TableCell className="text-center">
+                          <div className={cn(
+                            "mx-auto h-6 w-6 rounded-full flex items-center justify-center border-2",
+                            dim.status === 'Pass' ? "bg-green-50 border-green-500 text-green-600" : 
+                            dim.status === 'Fail' ? "bg-red-50 border-red-500 text-red-600" :
+                            "bg-white border-slate-100 text-slate-200"
+                          )}>
+                            {dim.status === 'Pass' ? <Check className="h-3 w-3" /> : 
+                             dim.status === 'Fail' ? <X className="h-3 w-3" /> : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -860,34 +841,24 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-20 pt-16">
-              <div className="space-y-6">
-                <div className="h-[1px] bg-slate-200 w-full" />
-                <div className="flex justify-between items-center px-2">
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Created By (Inspector)</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedOp ? getResourceName(selectedOp) : 'Admin_User_01'}</p>
-                  </div>
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <div className="grid grid-cols-2 gap-40 pt-20">
+              <div className="space-y-10 text-center">
+                <div className="h-[1px] bg-slate-300 w-full" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Audit Officer Signature</p>
+                  <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'Inspector_Node_01'}</p>
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="h-[1px] bg-slate-200 w-full" />
-                <div className="flex justify-between items-center px-2">
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Approved By (Compliance)</p>
-                    <p className={cn(
-                      "text-sm font-bold",
-                      currentStep === 'approval' ? "text-slate-900" : "text-slate-200 italic"
-                    )}>
-                      {currentStep === 'approval' ? 'Director of Quality' : 'Pending Signature'}
-                    </p>
-                  </div>
-                  {currentStep === 'approval' ? (
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                  ) : (
-                    <div className="h-5 w-5 rounded-full border-2 border-slate-100" />
-                  )}
+              <div className="space-y-10 text-center">
+                <div className="h-[1px] bg-slate-300 w-full" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compliance Director</p>
+                  <p className={cn(
+                    "text-sm font-bold",
+                    currentStep === 'approval' ? "text-slate-900 uppercase" : "text-slate-200 italic"
+                  )}>
+                    {currentStep === 'approval' ? 'Authorized Protocol Active' : 'Awaiting Matrix Signature'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -896,52 +867,57 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           {currentStep === 'report' && (
             <div className="flex justify-center pt-10 print:hidden">
               <Button 
-                className="rounded-full bg-primary hover:bg-primary/90 text-white h-14 px-12 font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20"
+                className="rounded-2xl bg-primary hover:bg-[#002d4f] text-white h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20"
                 onClick={submitForReview}
               >
-                Submit for Final Quality Review
+                Transmit for Final Compliance Review
               </Button>
             </div>
           )}
 
           {currentStep === 'review' && (
-            <div className="bg-primary/5 border border-primary/10 rounded-[2.5rem] p-10 max-w-[1000px] mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 print:hidden">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white rounded-2xl shadow-sm">
-                  <ShieldCheck className="h-6 w-6 text-primary" />
+            <div className="bg-[#001F3D] border-none rounded-[3rem] p-12 max-w-[900px] mx-auto space-y-10 animate-in slide-in-from-bottom-4 duration-500 print:hidden shadow-2xl">
+              <div className="flex items-center gap-6">
+                <div className="p-5 bg-white/10 rounded-[1.5rem] border border-white/10">
+                  <ShieldCheck className="h-10 w-10 text-accent" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900">Management Approval Protocol</h4>
-                  <p className="text-sm text-slate-500">Verify dimensional compliance and remark accuracy before releasing component.</p>
+                  <h4 className="text-2xl font-display font-bold text-white uppercase tracking-tight">Security Review Locked</h4>
+                  <p className="text-sm text-white/40 font-medium">Verify dimensional benchmarks for {activeDrawing.name} before authorization.</p>
                 </div>
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-6">
                 <Button 
-                  className="flex-1 h-14 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold uppercase text-xs tracking-widest gap-2 shadow-lg shadow-green-600/20"
+                  className="flex-1 h-16 rounded-2xl bg-accent hover:bg-accent/90 text-white font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl shadow-accent/20"
                   onClick={finalApproval}
                 >
-                  <CheckCircle2 className="h-4 w-4" /> Authorize & Sign
+                  <CheckCircle2 className="h-5 w-5" /> Authorize Final Release
                 </Button>
                 <Button 
-                  variant="outline" 
-                  className="flex-1 h-14 rounded-2xl bg-white border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs tracking-widest gap-2"
-                  onClick={() => {
-                    setCurrentStep('checklist');
-                    toast({ variant: "destructive", title: "Review Rejected", description: "Dimension sheet returned for correction." });
-                  }}
+                  variant="ghost" 
+                  className="flex-1 h-16 rounded-2xl border border-white/10 text-white hover:bg-white/5 font-bold uppercase text-[10px] tracking-widest gap-3"
+                  onClick={() => setCurrentStep('checklist')}
                 >
-                  <AlertTriangle className="h-4 w-4" /> Reject Report
+                  <AlertTriangle className="h-5 w-5 text-red-400" /> Return for Revision
                 </Button>
               </div>
             </div>
           )}
 
           {currentStep === 'approval' && (
-            <div className="text-center space-y-6 pt-10 print:hidden">
-              <div className="inline-flex items-center gap-2 px-6 py-2 bg-green-50 text-green-700 rounded-full border border-green-100 font-bold text-[10px] uppercase tracking-widest">
-                <CheckCircle2 className="h-3 w-3" /> Report Status: FINAL_APPROVED
+            <div className="text-center space-y-10 pt-10 print:hidden">
+              <div className="inline-flex items-center gap-3 px-10 py-4 bg-emerald-50 text-emerald-700 rounded-full border-2 border-emerald-100 font-bold text-xs uppercase tracking-[0.3em] shadow-xl shadow-emerald-500/5">
+                <CheckCircle2 className="h-5 w-5" /> REPORT_STATUS: FINAL_APPROVED
               </div>
-              <p className="text-slate-500 text-sm max-w-sm mx-auto">Compliance verified. Drawing and measurements are locked in the ERP ledger.</p>
+              <div className="flex flex-col items-center gap-6">
+                <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium">Procedural cycle complete for blueprint <b>{activeDrawing.name}</b>. Audit trail synchronized with master ledger.</p>
+                <Button 
+                  onClick={handleCreateAnother}
+                  className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex gap-3"
+                >
+                  <Plus className="h-4 w-4" /> Start Report for Next Drawing
+                </Button>
+              </div>
             </div>
           )}
         </div>

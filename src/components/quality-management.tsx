@@ -37,7 +37,8 @@ import {
   Eye,
   FileBadge,
   Unlock,
-  ShieldAlert
+  ShieldAlert,
+  Maximize2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -118,6 +119,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
   useEffect(() => {
     return () => {
+      // Cleanup all blobs on unmount
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
@@ -164,10 +166,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder?.id !== order.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
-      createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
-      createdUrlsRef.current = [];
-      setUploadedFiles([]);
-      setActiveDrawingId(null);
+      // We don't clear URLs here to allow drawing persistence within session
       setDimensions(INITIAL_DIMENSIONS);
       setActiveReportId(null);
       const initial: Record<string, CheckStatus> = {};
@@ -779,36 +778,48 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start animate-in fade-in duration-700 px-2">
-          <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-white shadow-2xl relative border-none flex flex-col">
+          <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-white shadow-2xl relative border-none flex flex-col group">
             <div className="absolute top-4 left-4 z-20 flex gap-2">
                <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center shadow-lg">Technical Reference</Badge>
                <Badge className="bg-black/60 text-white/90 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase shadow-lg">{activeDrawing.name}</Badge>
+            </div>
+
+            <div className="absolute top-4 right-4 z-20">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="bg-white/90 backdrop-blur-md border-slate-200 h-8 px-4 rounded-xl text-[9px] font-bold uppercase tracking-widest gap-2 shadow-xl hover:bg-white"
+                onClick={() => window.open(activeDrawing.url, '_blank')}
+              >
+                <Maximize2 className="h-3 w-3" /> Full Tab View
+              </Button>
             </div>
             
             <div className="flex-1 w-full bg-slate-100 relative">
               <iframe
                 key={activeDrawing.id}
                 src={activeDrawing.url}
-                className="w-full h-full border-none shadow-inner"
-                title="Drawing Preview"
-                sandbox="allow-scripts allow-same-origin"
+                className="w-full h-full border-none"
+                title="Technical Drawing Viewport"
               />
               
-              {/* Overlay fallback for blocked previews */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-10 text-center opacity-0 group-hover:opacity-100 bg-white/80 transition-opacity">
-                <div className="pointer-events-auto bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6">
-                  <FileWarning className="h-12 w-12 text-amber-500" />
+              {/* Contextual Overlay if PDF is blocked */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-10 text-center opacity-0 group-hover:opacity-100 bg-white/90 transition-opacity">
+                <div className="pointer-events-auto bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6 max-w-sm">
+                  <div className="p-5 bg-amber-50 rounded-3xl">
+                    <FileWarning className="h-12 w-12 text-amber-500" />
+                  </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900 uppercase">Security Block Detected</p>
-                    <p className="text-xs text-slate-500 mt-1">Chrome security may restrict inline PDF viewing for local blobs.</p>
+                    <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">Audit Preview Protocol</p>
+                    <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                      If the drawing is restricted by browser security, use the external gateway for full dimension ballooning.
+                    </p>
                   </div>
                   <Button 
-                    size="sm" 
-                    variant="outline" 
+                    className="w-full bg-[#001F3D] hover:bg-black text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest h-14 gap-3 shadow-xl"
                     onClick={() => window.open(activeDrawing.url, '_blank')}
-                    className="rounded-xl text-[9px] font-bold uppercase tracking-widest h-10 px-6 border-slate-200 gap-2 shadow-sm"
                   >
-                    <ExternalLink className="h-3.5 w-3.5" /> Open Spec in New Tab
+                    <ExternalLink className="h-4 w-4" /> Open Drawing for Ballooning
                   </Button>
                 </div>
               </div>
@@ -829,11 +840,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
                 <TabsContent value="customer" className="m-0 flex-1 overflow-hidden flex flex-col">
                   <div className="flex justify-between items-center px-1 mb-6 shrink-0">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                      <MousePointer2 className="h-4 w-4 text-primary" /> Entry Protocol
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ballooning Entry Ledger</h3>
+                    </div>
                     <Button variant="ghost" onClick={handleAddDimension} className="text-[9px] uppercase font-bold gap-2 text-primary hover:bg-primary/5 h-8 px-4 rounded-xl">
-                      <Plus className="h-3.5 w-3.5" /> Add Node
+                      <Plus className="h-3.5 w-3.5" /> Append Dimension
                     </Button>
                   </div>
 

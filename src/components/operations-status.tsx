@@ -103,6 +103,9 @@ export function OperationsStatus({
     return new Date().toISOString().split('T')[0];
   };
 
+  const orderMinDate = orderData ? formatToInputDate(orderData.startDate) : undefined;
+  const orderMaxDate = orderData ? formatToInputDate(orderData.endDate) : undefined;
+
   const isHoliday = (dateStr: string) => {
     if (!dateStr) return false;
     const target = new Date(dateStr);
@@ -122,7 +125,10 @@ export function OperationsStatus({
     while (isHoliday(date.toISOString().split('T')[0])) {
       date.setDate(date.getDate() + 1);
     }
-    return date.toISOString().split('T')[0];
+    const result = date.toISOString().split('T')[0];
+    // If it crosses order max date, clamp it to max date
+    if (orderMaxDate && result > orderMaxDate) return orderMaxDate;
+    return result;
   };
 
   const propagateSequentialDates = (ops: RoutingOperation[], startIndex: number) => {
@@ -159,6 +165,7 @@ export function OperationsStatus({
   useEffect(() => {
     if (selectedWorkOrder && orderData && (!orderData.routing || orderData.routing.length === 0)) {
       const projectStart = formatToInputDate(orderData.startDate);
+      const projectEnd = formatToInputDate(orderData.endDate);
       let currentStart = projectStart;
       
       const seededOps: RoutingOperation[] = INITIAL_STEPS.map((name, i) => {
@@ -241,6 +248,10 @@ export function OperationsStatus({
   };
 
   const handleStartDateChange = (opId: string, idx: number, newDate: string) => {
+    // Validate against Master Order Boundaries
+    if (orderMinDate && newDate < orderMinDate) return;
+    if (orderMaxDate && newDate > orderMaxDate) return;
+
     const updated = [...operations];
     updated[idx].startDate = newDate;
     const final = propagateSequentialDates(updated, idx);
@@ -248,6 +259,10 @@ export function OperationsStatus({
   };
 
   const handleEndDateChange = (opId: string, idx: number, newDate: string) => {
+    // Validate against Master Order Boundaries
+    if (orderMinDate && newDate < orderMinDate) return;
+    if (orderMaxDate && newDate > orderMaxDate) return;
+
     const updated = [...operations];
     updated[idx].endDate = newDate;
     if (idx + 1 < updated.length) {
@@ -264,6 +279,8 @@ export function OperationsStatus({
       const lastOp = operations[operations.length - 1];
       const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
       
+      if (orderMaxDate && startFrom >= orderMaxDate) return;
+
       const newOp: RoutingOperation = {
         id: `OP-${Math.random().toString(36).substr(2, 9)}`,
         name: newOpName.trim(),
@@ -312,9 +329,14 @@ export function OperationsStatus({
         const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
         const checkEnd = updates.endDate ? new Date(updates.endDate) : (currentSub.endDate ? new Date(currentSub.endDate) : new Date(currentSub.startDate!));
 
+        // Validate against parent task boundaries
         if (checkStart < parentStart || checkEnd > parentEnd) {
           return op;
         }
+        
+        // Also validate against Master Order boundaries as a fallback
+        if (orderMinDate && (updates.startDate || currentSub.startDate!) < orderMinDate) return op;
+        if (orderMaxDate && (updates.endDate || currentSub.endDate!) > orderMaxDate) return op;
       }
 
       subTasks[subIdx] = currentSub;
@@ -473,6 +495,8 @@ export function OperationsStatus({
                             <TableCell className="text-center font-code text-xs text-slate-500">
                               <Input 
                                 type="date"
+                                min={orderMinDate}
+                                max={orderMaxDate}
                                 value={op.startDate}
                                 className={cn(
                                   "bg-transparent border-none text-center text-xs h-8 p-0",
@@ -484,6 +508,8 @@ export function OperationsStatus({
                             <TableCell className="text-center font-code text-xs text-slate-500">
                               <Input 
                                 type="date"
+                                min={orderMinDate}
+                                max={orderMaxDate}
                                 value={op.endDate}
                                 className={cn(
                                   "bg-transparent border-none text-center text-xs h-8 p-0",
@@ -597,6 +623,8 @@ export function OperationsStatus({
                                             <div className="relative">
                                               <Input 
                                                 type="date"
+                                                min={op.startDate}
+                                                max={op.endDate}
                                                 value={task.startDate}
                                                 onChange={(e) => handleUpdateSubTask(idx, sIdx, { startDate: e.target.value })}
                                                 className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
@@ -609,6 +637,8 @@ export function OperationsStatus({
                                             <div className="relative">
                                               <Input 
                                                 type="date"
+                                                min={op.startDate}
+                                                max={op.endDate}
                                                 value={task.endDate}
                                                 className="h-9 bg-slate-100 border-none rounded-lg text-[10px] pr-8 cursor-not-allowed opacity-60" 
                                                 readOnly

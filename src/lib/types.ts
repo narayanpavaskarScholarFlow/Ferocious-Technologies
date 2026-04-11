@@ -102,6 +102,11 @@ export interface BillingRecord {
   amount: number;
   status: string;
   note: string;
+  itemName?: string;
+  orderId?: string;
+  receiverName?: string;
+  paymentMethod?: 'Cash' | 'Bank Transfer';
+  transactionDetails?: string;
 }
 
 export interface SQCDPData {

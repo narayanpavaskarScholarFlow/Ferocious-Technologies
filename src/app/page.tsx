@@ -348,6 +348,8 @@ function IndustrialERPInternal() {
                 customers={customers} 
                 vendors={vendors} 
                 records={billing}
+                orders={orders}
+                users={usersData}
                 onSaveRecord={handleSaveBillingRecord}
               />
             )}

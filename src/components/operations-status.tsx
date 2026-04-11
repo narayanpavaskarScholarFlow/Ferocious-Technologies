@@ -42,6 +42,7 @@ import { Order, RoutingOperation, SubTask, SystemUser, Vendor } from '@/lib/type
 import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { AnnualLeaveEntry } from './manpower-utilization';
+import { useToast } from '@/hooks/use-toast';
 
 const INITIAL_STEPS = [
   "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
@@ -77,6 +78,7 @@ export function OperationsStatus({
   vendors = []
 }: OperationsStatusProps) {
   const db = useFirestore();
+  const { toast } = useToast();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
   const [newOpName, setNewOpName] = useState('');
   const [expandedOps, setExpandedOps] = useState<Record<number, boolean>>({});
@@ -165,7 +167,6 @@ export function OperationsStatus({
   useEffect(() => {
     if (selectedWorkOrder && orderData && (!orderData.routing || orderData.routing.length === 0)) {
       const projectStart = formatToInputDate(orderData.startDate);
-      const projectEnd = formatToInputDate(orderData.endDate);
       let currentStart = projectStart;
       
       const seededOps: RoutingOperation[] = INITIAL_STEPS.map((name, i) => {
@@ -301,11 +302,23 @@ export function OperationsStatus({
     const lastSub = op.subTasks[op.subTasks.length - 1];
     const startFrom = lastSub ? lastSub.endDate || op.startDate : op.startDate;
 
+    if (startFrom >= op.endDate) {
+      toast({
+        variant: "destructive",
+        title: "Boundary Rejection",
+        description: "Operation end date reached. Cannot add sequential sub-tasks."
+      });
+      return;
+    }
+
+    const calcEnd = getNextAvailableDay(startFrom);
+    const finalEnd = calcEnd > op.endDate ? op.endDate : calcEnd;
+
     const newSubTask: SubTask = {
       id: Math.random().toString(36).substr(2, 9),
       name: taskName.trim(),
       startDate: startFrom,
-      endDate: getNextAvailableDay(startFrom),
+      endDate: finalEnd,
       status: 'Yet to start',
       isCompleted: false
     };
@@ -318,42 +331,48 @@ export function OperationsStatus({
 
   const handleUpdateSubTask = (opIdx: number, subIdx: number, updates: Partial<SubTask>) => {
     const parent = operations[opIdx];
+    const parentStart = parent.startDate;
+    const parentEnd = parent.endDate;
+
     const updatedRouting = operations.map((op, i) => {
       if (i !== opIdx) return op;
+      
       const subTasks = [...op.subTasks];
-      const currentSub = { ...subTasks[subIdx], ...updates };
+      const currentSub = { ...subTasks[subIdx] };
 
-      if (updates.startDate || updates.endDate) {
-        const parentStart = new Date(parent.startDate);
-        const parentEnd = new Date(parent.endDate);
-        const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
-        const checkEnd = updates.endDate ? new Date(updates.endDate) : (currentSub.endDate ? new Date(currentSub.endDate) : new Date(currentSub.startDate!));
+      // Candidate values
+      let nextStart = updates.startDate !== undefined ? updates.startDate : (currentSub.startDate || parentStart);
+      let nextEnd = updates.endDate !== undefined ? updates.endDate : (currentSub.endDate || nextStart);
 
-        // Validate against parent task boundaries
-        if (checkStart < parentStart || checkEnd > parentEnd) {
-          return op;
-        }
+      // Boundary Lock: Cannot precede parent start or exceed parent end
+      if (nextStart < parentStart) nextStart = parentStart;
+      if (nextStart > parentEnd) nextStart = parentEnd;
+
+      if (updates.startDate !== undefined) {
+        // Auto-calculate end date +1 day, strictly clamped to parentEnd
+        nextEnd = getNextAvailableDay(nextStart);
+        if (nextEnd > parentEnd) nextEnd = parentEnd;
+      } else if (updates.endDate !== undefined) {
+        // Manual end date: strictly clamped to parentEnd and cannot precede its own start
+        if (nextEnd > parentEnd) nextEnd = parentEnd;
+        if (nextEnd < nextStart) nextEnd = nextStart;
+      }
+
+      subTasks[subIdx] = { ...currentSub, ...updates, startDate: nextStart, endDate: nextEnd };
+      
+      // Sequential Ripple within this parent operation
+      for (let j = subIdx + 1; j < subTasks.length; j++) {
+        const prevEnd = subTasks[j-1].endDate!;
+        subTasks[j].startDate = prevEnd;
         
-        // Also validate against Master Order boundaries as a fallback
-        if (orderMinDate && (updates.startDate || currentSub.startDate!) < orderMinDate) return op;
-        if (orderMaxDate && (updates.endDate || currentSub.endDate!) > orderMaxDate) return op;
-      }
-
-      subTasks[subIdx] = currentSub;
-      
-      if (updates.startDate) {
-        subTasks[subIdx].endDate = getNextAvailableDay(updates.startDate);
-      }
-      
-      if (updates.startDate || updates.endDate) {
-        for (let j = subIdx + 1; j < subTasks.length; j++) {
-          subTasks[j].startDate = subTasks[j-1].endDate!;
-          subTasks[j].endDate = getNextAvailableDay(subTasks[j].startDate!);
-        }
+        let calcEnd = getNextAvailableDay(prevEnd);
+        if (calcEnd > parentEnd) calcEnd = parentEnd;
+        subTasks[j].endDate = calcEnd;
       }
 
       return { ...op, subTasks };
     });
+    
     saveRouting(updatedRouting);
   };
 

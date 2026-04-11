@@ -95,7 +95,7 @@ export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizati
             Asset Telemetry
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight">
-            {selectedMachineId ? selectedMachine?.name : 'Resource Catalog'}
+            {selectedMachineId ? selectedMachine?.name : 'Assets'}
           </h2>
           <p className="text-muted-foreground font-medium">Real-time load balancing across {machines.length} active nodes.</p>
         </div>

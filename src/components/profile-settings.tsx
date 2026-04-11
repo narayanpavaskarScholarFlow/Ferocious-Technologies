@@ -39,7 +39,12 @@ import {
   Cpu,
   FileCheck,
   Zap,
-  Activity
+  Activity,
+  Plus,
+  FileText,
+  ArrowDownLeft,
+  ArrowUpRight,
+  CalendarDays
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -57,6 +62,7 @@ const ACCESS_NODES = [
   
   // Category: Production Control
   { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },
+  { id: 'order-create', label: 'Production: New Order Protocol', category: 'Production Control', icon: Plus },
   { id: 'gantt', label: 'Visual Timeline (Gantt)', category: 'Production Control', icon: LayoutGrid },
   { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
   { id: 'weekly-plan', label: 'Master Production Schedule', category: 'Production Control', icon: Calendar },
@@ -68,15 +74,24 @@ const ACCESS_NODES = [
   
   // Category: Commercial Operations
   { id: 'customer-orders', label: 'CRM / Account Pipeline', category: 'Commercial Operations', icon: Package },
-  { id: 'billing', label: 'Financial Hub (Quoting/Billing)', category: 'Commercial Operations', icon: CreditCard },
-  { id: 'billing-purge', label: 'Financial Deletion protocol', category: 'Commercial Operations', icon: Trash2 },
+  { id: 'inventory-add', label: 'Inventory: Add Item to Ledger', category: 'Commercial Operations', icon: Plus },
+  { id: 'billing', label: 'Financial Hub (Master Ledger)', category: 'Commercial Operations', icon: CreditCard },
+  { id: 'billing-quotation', label: 'Finance: Quotation Protocol', category: 'Commercial Operations', icon: FileText },
+  { id: 'billing-invoice', label: 'Finance: Invoice Protocol', category: 'Commercial Operations', icon: FileText },
+  { id: 'billing-proforma', label: 'Finance: Proforma Protocol', category: 'Commercial Operations', icon: FileText },
+  { id: 'billing-inward', label: 'Logistics: Inward Protocol', category: 'Commercial Operations', icon: ArrowDownLeft },
+  { id: 'billing-outward', label: 'Logistics: Outward Protocol', category: 'Commercial Operations', icon: ArrowUpRight },
+  { id: 'billing-create', label: 'Finance: Create New Record', category: 'Commercial Operations', icon: Plus },
+  { id: 'billing-delete', label: 'Finance: Record Deletion Protocol', category: 'Commercial Operations', icon: Trash2 },
   { id: 'vendor', label: 'Supply Chain & Vendor Directory', category: 'Commercial Operations', icon: Truck },
+  { id: 'vendor-onboard', label: 'Supply: Onboard New Partner', category: 'Commercial Operations', icon: UserPlus },
   
   // Category: Resources & Assets
   { id: 'machine-utilization', label: 'Industrial Asset Telemetry', category: 'Resources & Assets', icon: Cpu },
   { id: 'maintenance', label: 'Asset Maintenance Ledger', category: 'Resources & Assets', icon: Activity },
   { id: 'manpower', label: 'Personnel & Skill Matrix', category: 'Resources & Assets', icon: Users },
-  { id: 'hr-planning', label: 'Leave & Holiday Matrix', category: 'Resources & Assets', icon: Calendar },
+  { id: 'hr-planning', label: 'Leave Allocation Matrix', category: 'Resources & Assets', icon: Calendar },
+  { id: 'holiday-matrix', label: 'HR: Annual Holiday Matrix', category: 'Resources & Assets', icon: CalendarDays },
   
   // Category: System Governance
   { id: 'users', label: 'System Identity Management', category: 'System Governance', icon: UserPlus },

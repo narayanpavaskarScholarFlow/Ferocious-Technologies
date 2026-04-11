@@ -40,7 +40,6 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
 
   const menuItems = [
     { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
-    { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: 'Smart Quote' },
     { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Orders' },
     { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Timeline' },
     { id: 'operations' as ViewType, icon: Layers, label: 'Routing' },
@@ -54,6 +53,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
     { id: 'customer-orders' as ViewType, icon: Package, label: 'CRM' },
     { id: 'vendor' as ViewType, icon: Truck, label: 'Supply' },
     { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Schedule' },
+    { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: 'Smart Quote' },
   ];
 
   if (!mounted) {

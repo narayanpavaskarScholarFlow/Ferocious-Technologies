@@ -220,14 +220,14 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 ) : "Focus Period"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-xl shadow-2xl border-none" align="start">
+            <PopoverContent className="w-auto p-0 rounded-xl shadow-2xl border border-slate-100" align="start">
               <Calendar
                 initialFocus
                 mode="range"
                 selected={highlightRange}
                 onSelect={setHighlightRange}
-                numberOfMonths={2}
-                className="bg-[#0a0f18] text-white"
+                numberOfMonths={1}
+                className="bg-white"
               />
             </PopoverContent>
           </Popover>

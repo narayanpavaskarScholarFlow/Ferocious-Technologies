@@ -77,13 +77,15 @@ interface OperationsStatusProps {
   onOrderIdChange?: (orderId: string | null) => void;
   onNavigateToVendor?: () => void;
   onStatusChange?: (orderId: string, operation: string, status: string) => void;
+  orders?: Order[];
 }
 
 export function OperationsStatus({ 
   initialOrderId, 
   onOrderIdChange, 
   onNavigateToVendor,
-  onStatusChange
+  onStatusChange,
+  orders = []
 }: OperationsStatusProps) {
   const db = useFirestore();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
@@ -135,9 +137,12 @@ export function OperationsStatus({
   };
 
   const propagateSequentialDates = (ops: RoutingOperation[], startIndex: number) => {
+    if (startIndex < 0 || startIndex >= ops.length) return ops;
+    
     const updated = [...ops];
     for (let i = startIndex; i < updated.length; i++) {
       const current = updated[i];
+      if (!current) continue;
       
       if (isHoliday(current.startDate)) {
         current.startDate = getNextAvailableDay(new Date(new Date(current.startDate).getTime() - 86400000).toISOString().split('T')[0]);
@@ -187,11 +192,6 @@ export function OperationsStatus({
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
-    // Calculate Dynamic Progress %
-    // Logic: Each Top-Level Op contributes equally.
-    // Progress of an Op = if subtasks exist, percentage of completed subtasks.
-    // If no subtasks, 100% if status is Completed, 50% if WIP, else 0%.
-    
     const activeOps = newRouting.filter(op => op.status !== 'NA');
     if (activeOps.length === 0) {
       setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: newRouting, progress: 0 }, { merge: true });
@@ -211,7 +211,6 @@ export function OperationsStatus({
 
     const progress = Math.round(totalOpProgress / activeOps.length);
 
-    // Update master order status based on progress
     let orderStatus: any = orderData?.status || 'Yet to start';
     if (progress === 100) {
       orderStatus = 'Completed';
@@ -338,6 +337,8 @@ export function OperationsStatus({
       finalStatus = `Vendor: ${vendorName}`;
     }
     const idx = operations.findIndex(o => o.id === opId);
+    if (idx === -1) return;
+
     const updatedRouting = operations.map(op => op.id === opId ? { ...op, status: finalStatus } : op);
     const final = propagateSequentialDates(updatedRouting, idx);
     saveRouting(final);
@@ -376,17 +377,17 @@ export function OperationsStatus({
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden xs:block">Active Order:</span>
             <Select 
               value={selectedWorkOrder || undefined} 
-              onValueChange={handleLocalStatusChange}
+              onValueChange={handleSelectChange}
             >
               <SelectTrigger className="flex-1 sm:w-[200px] h-11 bg-white text-sm font-bold border-slate-200 rounded-full shadow-sm">
                 <SelectValue placeholder="Select ID..." />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
-                <SelectItem value="103645">103645</SelectItem>
-                <SelectItem value="102778">102778</SelectItem>
-                <SelectItem value="100685">100685</SelectItem>
-                <SelectItem value="105542">105542</SelectItem>
-                <SelectItem value="101230">101230</SelectItem>
+                {orders.length > 0 ? orders.map(order => (
+                  <SelectItem key={order.id} value={order.id}>{order.id} - {order.customer}</SelectItem>
+                )) : (
+                  <SelectItem value="none" disabled>No Orders Found</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -703,7 +704,7 @@ export function OperationsStatus({
                         </div>
                         <h3 className="text-lg md:text-xl font-display font-bold text-slate-900 tracking-tight">Select Order to Open Spreadsheet</h3>
                         <p className="text-sm text-slate-500 max-w-xs mt-2 font-medium">
-                          Search or select an active Work Order from the Gantt chart to load its operational routing ledger.
+                          Search or select an active Work Order from the selector to load its operational routing ledger.
                         </p>
                       </div>
                     </TableCell>

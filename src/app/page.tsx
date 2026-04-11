@@ -393,6 +393,7 @@ function IndustrialERPInternal() {
                 onOrderIdChange={setActiveWorkOrderId} 
                 onNavigateToVendor={() => setCurrentView('vendor')}
                 onStatusChange={(o, op, s) => {}}
+                orders={orders}
               />
             )}
           </div>

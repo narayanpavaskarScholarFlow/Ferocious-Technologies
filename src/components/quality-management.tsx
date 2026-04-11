@@ -30,15 +30,14 @@ import {
   FileIcon,
   Calendar,
   User,
-  MousePointer2,
-  FileWarning,
   ExternalLink,
   ClipboardCheck,
   Eye,
   FileBadge,
   Unlock,
   ShieldAlert,
-  Maximize2
+  Maximize2,
+  AlertCircle
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -119,7 +118,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
   useEffect(() => {
     return () => {
-      // Cleanup all blobs on unmount
       createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, []);
@@ -166,7 +164,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder?.id !== order.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
-      // We don't clear URLs here to allow drawing persistence within session
       setDimensions(INITIAL_DIMENSIONS);
       setActiveReportId(null);
       const initial: Record<string, CheckStatus> = {};
@@ -796,23 +793,23 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </div>
             
             <div className="flex-1 w-full bg-slate-100 relative">
-              <iframe
+              <embed
                 key={activeDrawing.id}
-                src={activeDrawing.url}
+                src={`${activeDrawing.url}#toolbar=1&navpanes=0&scrollbar=1`}
+                type="application/pdf"
                 className="w-full h-full border-none"
-                title="Technical Drawing Viewport"
               />
               
-              {/* Contextual Overlay if PDF is blocked */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-10 text-center opacity-0 group-hover:opacity-100 bg-white/90 transition-opacity">
+              {/* Force Recovery UI - Visible if the browser blocks the embed */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-10 text-center opacity-0 group-hover:opacity-100 bg-white/95 transition-opacity duration-300">
                 <div className="pointer-events-auto bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6 max-w-sm">
                   <div className="p-5 bg-amber-50 rounded-3xl">
-                    <FileWarning className="h-12 w-12 text-amber-500" />
+                    <AlertCircle className="h-12 w-12 text-amber-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">Audit Preview Protocol</p>
+                    <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">Access Recovery Matrix</p>
                     <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      If the drawing is restricted by browser security, use the external gateway for full dimension ballooning.
+                      If Chrome's security protocol is restricting the inline view, execute the external gateway for dimension ballooning.
                     </p>
                   </div>
                   <Button 

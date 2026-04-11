@@ -14,7 +14,9 @@ import {
   ListFilter,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
-  Plus
+  Search,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
@@ -51,7 +53,8 @@ interface ProductionGanttProps {
 type ViewMode = 'month' | 'week';
 
 export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGanttProps) {
-  const [currentDate, setCurrentDate] = useState(() => startOfDay(new Date(2025, 2, 1))); 
+  // Initialize to current month for relevance
+  const [currentDate, setCurrentDate] = useState(() => startOfMonth(new Date())); 
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
@@ -76,22 +79,26 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     setExpandedOps(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  /**
+   * Robust date parser for Bharat Axis ERP formats:
+   * 1. DD.MM.YYYY (Administrative)
+   * 2. YYYY-MM-DD (Operational/HTML5)
+   */
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
-    // Handle dd.MM.yyyy
-    if (dateStr.includes('.')) {
-      const parts = dateStr.split('.');
-      if (parts.length === 3) {
-        return startOfDay(new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
-      }
+    
+    // Handle YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return startOfDay(new Date(y, m - 1, d));
     }
-    // Handle yyyy-MM-dd
-    if (dateStr.includes('-')) {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        return startOfDay(new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
-      }
+    
+    // Handle DD.MM.YYYY
+    if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateStr)) {
+      const [d, m, y] = dateStr.split('.').map(Number);
+      return startOfDay(new Date(y, m - 1, d));
     }
+
     const d = new Date(dateStr);
     return isNaN(d.getTime()) ? null : startOfDay(d);
   };
@@ -104,10 +111,10 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     const timelineStart = startOfDay(timelineInterval[0]);
     const timelineEnd = startOfDay(timelineInterval[timelineInterval.length - 1]);
 
-    // Check if the range is completely outside visible timeline
-    if (end < timelineStart || start > timelineEnd) return null;
+    // Visibility Check
+    if (end < timelineStart || start > timelineEnd) return { display: 'none' };
 
-    // Clamp dates to timeline visible range
+    // Clamping for grid rendering
     const visibleStart = start < timelineStart ? timelineStart : start;
     const visibleEnd = end > timelineEnd ? timelineEnd : end;
 
@@ -144,9 +151,26 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     setCurrentDate(prev => viewMode === 'month' ? addMonths(prev, 1) : addWeeks(prev, 1));
   };
 
+  const getStatusColor = (status?: string) => {
+    if (!status) return 'linear-gradient(to right, #6366f1, #818cf8)'; // Default Indigo
+    if (status === 'Completed') return 'linear-gradient(to right, #10b981, #34d399)'; // Emerald
+    if (status === 'Hold') return 'linear-gradient(to right, #ef4444, #f87171)'; // Red
+    if (status === 'Review Pending') return 'linear-gradient(to right, #f59e0b, #fbbf24)'; // Amber
+    if (status === 'Yet to start') return 'linear-gradient(to right, #a855f7, #c084fc)'; // Purple
+    if (status.startsWith('Vendor')) return 'linear-gradient(to right, #ec4899, #f472b6)'; // Pink
+    return 'linear-gradient(to right, #6366f1, #818cf8)';
+  };
+
+  const getBorderColor = (status?: string) => {
+    if (status === 'Completed') return '#059669';
+    if (status === 'Hold') return '#dc2626';
+    if (status === 'Review Pending') return '#d97706';
+    return '#4f46e5';
+  };
+
   return (
     <div className="flex flex-col h-full bg-white animate-in fade-in duration-700 overflow-hidden">
-      {/* Header Controls - Sticky */}
+      {/* Precision Controls Header */}
       <div className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-40 shrink-0 shadow-sm">
         <div className="flex items-center gap-8">
           <div className="flex flex-col">
@@ -162,7 +186,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
           <div className="flex items-center gap-3">
             <ListFilter className="h-4 w-4 text-slate-400 hidden sm:block" />
             <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
-              <SelectTrigger className="w-[240px] h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider shadow-inner">
+              <SelectTrigger className="w-[260px] h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider shadow-inner">
                 <SelectValue placeholder="Select Work Order..." />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
@@ -186,7 +210,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 viewMode === 'month' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Month
+              Month View
             </button>
             <button 
               onClick={() => setViewMode('week')}
@@ -195,7 +219,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 viewMode === 'week' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Week
+              Week View
             </button>
           </div>
 
@@ -203,7 +227,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white hover:text-primary rounded-lg" onClick={handlePrev}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div className="px-4 min-w-[140px] text-center">
+            <div className="px-4 min-w-[160px] text-center">
               <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">
                 {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : `Week ${format(currentDate, 'w')}, ${format(currentDate, 'yyyy')}`}
               </span>
@@ -215,17 +239,18 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
         </div>
       </div>
 
-      {/* Main Gantt Body - Synchronized Vertical Scroll */}
+      {/* Synchronized Vertical Viewport */}
       <ScrollArea className="flex-1 bg-[#fcfcfc]">
         <div className="flex min-w-max min-h-full">
-          {/* Sidebar Section - Sticky vertically within this ScrollArea */}
-          <div className="w-[320px] bg-white border-r border-slate-100 flex flex-col shrink-0 sticky left-0 z-30 shadow-[4px_0_12px_rgba(0,0,0,0.02)]">
+          {/* Tree-View Sidebar: Fixed horizontally */}
+          <div className="w-[340px] bg-white border-r border-slate-100 flex flex-col shrink-0 sticky left-0 z-30 shadow-[4px_0_12px_rgba(0,0,0,0.02)]">
             <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50 sticky top-0 z-40">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em]">Operational Hierarchy</span>
             </div>
-            <div className="py-4 space-y-1">
+            <div className="py-2 space-y-px">
               {filteredOrders.map(order => (
                 <div key={order.id} className="select-none">
+                  {/* Level 1: Master Order */}
                   <div 
                     className={cn(
                       "h-12 flex items-center px-4 hover:bg-slate-50 transition-all group cursor-pointer border-l-4",
@@ -243,6 +268,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                     <Badge variant="outline" className="text-[8px] border-slate-100 font-bold bg-slate-50">{order.progress || 0}%</Badge>
                   </div>
 
+                  {/* Level 2: Machining Operations */}
                   {expandedOrders[order.id] && order.routing?.map((op, opIdx) => (
                     <div key={op.id}>
                       <div 
@@ -254,11 +280,15 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                             expandedOps[op.id] ? <ChevronDown className="h-3 w-3 text-primary" /> : <ChevronRightIcon className="h-3 w-3 text-slate-300" />
                           ) : null}
                         </div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/20 mr-3 shrink-0" />
+                        <div className={cn(
+                          "w-1.5 h-1.5 rounded-full mr-3 shrink-0",
+                          op.status === 'Completed' ? "bg-emerald-500" : "bg-primary/20"
+                        )} />
                         <span className="text-[10px] font-bold text-slate-600 truncate flex-1 uppercase tracking-wider">{op.name}</span>
                         {op.status === 'Completed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                       </div>
 
+                      {/* Level 3: Sub-Tasks */}
                       {expandedOps[op.id] && op.subTasks?.map((sub) => (
                         <div key={sub.id} className="h-9 flex items-center pl-16 pr-4 hover:bg-slate-50/50 transition-all group border-b border-slate-50/20">
                           <div className="w-4 h-px bg-slate-200 mr-3" />
@@ -277,15 +307,15 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             </div>
           </div>
 
-          {/* Timeline Grid Section */}
+          {/* Timeline Grid: Synchronized Bars */}
           <div className="flex-1 flex flex-col relative">
-            {/* Horizontal Timeline Header - Sticky top */}
+            {/* Day Headers: Sticky top */}
             <div className="h-12 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-30 shadow-sm">
               {timelineInterval.map((day, idx) => (
                 <div 
                   key={idx} 
                   className={cn(
-                    "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[50px] transition-colors",
+                    "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[60px] transition-colors",
                     isToday(day) && "bg-primary/[0.03]"
                   )}
                 >
@@ -302,30 +332,30 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
 
             {/* Bars Canvas Area */}
             <div className="relative flex-1 min-h-[calc(100vh-140px)]">
-              {/* Grid Background Guides */}
+              {/* Grid Layout Guides */}
               <div className="absolute inset-0 flex pointer-events-none">
                 {timelineInterval.map((day, idx) => (
-                  <div key={idx} className={cn("flex-1 border-r border-slate-50 min-w-[50px]", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
+                  <div key={idx} className={cn("flex-1 border-r border-slate-50 min-w-[60px]", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
                 ))}
               </div>
 
-              {/* Today Marker */}
-              <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-accent/40 z-10 pointer-events-none group" style={todayMarkerStyle}>
+              {/* Today Precision Marker */}
+              <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-accent/40 z-10 pointer-events-none" style={todayMarkerStyle}>
                 <div className="h-3 w-3 rounded-full bg-accent absolute top-[-6px] left-[-6px] shadow-lg animate-pulse" />
               </div>
 
-              {/* Data Bars */}
-              <div className="py-4 relative z-0">
+              {/* Visual Task Bars */}
+              <div className="py-2 relative z-0">
                 {filteredOrders.map(order => {
                   const orderStyles = getBarStyles(order.startDate, order.endDate);
                   
                   return (
-                    <div key={order.id} className="mb-1">
-                      {/* Master Order Bar */}
+                    <div key={order.id} className="mb-[1px]">
+                      {/* LEVEL 1: Master Project Bar */}
                       <div className="h-12 flex items-center relative group">
                         {orderStyles && (
                           <div 
-                            className="absolute h-7 rounded-xl flex items-center px-4 shadow-xl border-b-4 transition-all hover:scale-[1.01] cursor-pointer"
+                            className="absolute h-8 rounded-xl flex items-center px-4 shadow-xl border-b-4 transition-all hover:scale-[1.01] cursor-pointer"
                             style={{ 
                               ...orderStyles,
                               background: order.status === 'Completed' 
@@ -343,23 +373,23 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                         )}
                       </div>
 
-                      {/* Operations Bars */}
+                      {/* LEVEL 2: Sequential Operations */}
                       {expandedOrders[order.id] && order.routing?.map((op) => {
                         const opStyles = getBarStyles(op.startDate, op.endDate);
                         const isCompleted = op.status === 'Completed';
+                        const opColor = getStatusColor(op.status);
+                        const borderColor = getBorderColor(op.status);
                         
                         return (
                           <div key={op.id}>
                             <div className="h-10 flex items-center relative group">
                               {opStyles && (
                                 <div 
-                                  className="absolute h-6 rounded-lg flex items-center px-3 shadow-md border-b-2"
+                                  className="absolute h-7 rounded-lg flex items-center px-3 shadow-md border-b-2 overflow-hidden"
                                   style={{ 
                                     ...opStyles,
-                                    background: isCompleted 
-                                      ? 'linear-gradient(to right, #22c55e, #4ade80)' 
-                                      : 'linear-gradient(to right, #3b82f6, #60a5fa)',
-                                    borderColor: isCompleted ? '#16a34a' : '#2563eb',
+                                    background: opColor,
+                                    borderColor: borderColor,
                                     opacity: op.status === 'NA' ? 0.1 : 1
                                   }}
                                 >
@@ -367,8 +397,9 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                                     <span className="text-[8px] font-bold text-white uppercase tracking-tight truncate flex-1">
                                       {op.name}
                                     </span>
-                                    <span className="text-[7px] text-white/80 font-code font-bold ml-2 whitespace-nowrap hidden md:block">
-                                      {op.startDate} - {op.endDate}
+                                    {/* PRECISION DATES ON BAR */}
+                                    <span className="text-[7px] text-white/90 font-code font-bold ml-2 whitespace-nowrap bg-black/10 px-1.5 py-0.5 rounded">
+                                      {op.startDate} » {op.endDate}
                                     </span>
                                     {isCompleted && <CheckCircle2 className="h-3 w-3 text-white ml-2 shrink-0" />}
                                   </div>
@@ -376,14 +407,14 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                               )}
                             </div>
 
-                            {/* Sub-tasks Bars */}
+                            {/* LEVEL 3: Operational Sub-tasks */}
                             {expandedOps[op.id] && op.subTasks?.map((sub) => {
                               const subStyles = getBarStyles(sub.startDate, sub.endDate);
                               return (
                                 <div key={sub.id} className="h-9 flex items-center relative group">
                                   {subStyles && (
                                     <div 
-                                      className="absolute h-4 rounded-md flex items-center px-2 shadow-sm border"
+                                      className="absolute h-5 rounded-md flex items-center px-2 shadow-sm border"
                                       style={{ 
                                         ...subStyles,
                                         background: sub.status === 'Completed' ? '#ecfdf5' : '#eff6ff',

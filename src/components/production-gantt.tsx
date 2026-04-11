@@ -221,7 +221,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 ) : "Focus Period"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-[1.5rem] shadow-2xl border-none animate-in zoom-in-95 duration-300" align="start">
+            <PopoverContent className="w-auto p-0 rounded-[1.5rem] shadow-2xl border-none animate-in zoom-in-95 duration-300 bg-white" align="start">
               <Calendar
                 initialFocus
                 mode="range"

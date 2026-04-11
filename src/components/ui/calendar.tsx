@@ -32,10 +32,9 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell:
-          "text-slate-500 rounded-md w-9 font-medium text-[11px] uppercase",
-        row: "flex w-full mt-2",
+        head_row: "grid grid-cols-7 mb-2",
+        head_cell: "text-slate-500 rounded-md w-9 font-medium text-[11px] uppercase text-center",
+        row: "grid grid-cols-7 w-full mt-2",
         cell: cn(
           "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-slate-100 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
           props.mode === "range"
@@ -46,16 +45,13 @@ function Calendar({
           buttonVariants({ variant: "ghost" }),
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-slate-100"
         ),
-        day_range_start: "day-range-start",
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+        day_range_start: "day-range-start bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-l-md",
+        day_range_end: "day-range-end bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-r-md",
+        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
         day_today: "bg-slate-100 text-slate-900 font-bold",
-        day_outside:
-          "day-outside text-slate-400 opacity-50 aria-selected:bg-slate-100/50 aria-selected:text-slate-500 aria-selected:opacity-30",
+        day_outside: "day-outside text-slate-400 opacity-50 aria-selected:bg-slate-100/50 aria-selected:text-slate-500 aria-selected:opacity-30",
         day_disabled: "text-slate-400 opacity-50",
-        day_range_middle:
-          "aria-selected:bg-slate-100 aria-selected:text-slate-900",
+        day_range_middle: "aria-selected:bg-slate-100 aria-selected:text-slate-900",
         day_hidden: "invisible",
         ...classNames,
       }}

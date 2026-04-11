@@ -29,7 +29,9 @@ import {
   Clock,
   FileText,
   Trash2,
-  FileIcon
+  FileIcon,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -90,6 +92,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter orders that have a QC operation in their routing
@@ -99,6 +102,10 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
       (o.id.includes(searchTerm) || o.customer.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [orders, searchTerm]);
+
+  const selectedDrawings = useMemo(() => {
+    return uploadedFiles.filter(f => selectedDrawingIds.includes(f.id));
+  }, [uploadedFiles, selectedDrawingIds]);
 
   // Statistics for Graph based on actual orders
   const statsData = useMemo(() => {
@@ -126,10 +133,17 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
     setChecks(initial);
     setDimensions(INITIAL_DIMENSIONS);
     setUploadedFiles([]);
+    setSelectedDrawingIds([]);
   };
 
   const handleToggleCheck = (op: string, status: CheckStatus) => {
     setChecks(prev => ({ ...prev, [op]: status }));
+  };
+
+  const toggleDrawingSelection = (id: string) => {
+    setSelectedDrawingIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
   const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
@@ -231,6 +245,8 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
         name: file.name
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
+      // Auto-select newly uploaded files
+      setSelectedDrawingIds(prev => [...prev, ...newFiles.map(f => f.id)]);
       toast({
         title: "Drawings Cached",
         description: `${newFiles.length} technical drawings attached to protocol.`
@@ -240,6 +256,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
 
   const removeFile = (id: string) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
+    setSelectedDrawingIds(prev => prev.filter(i => i !== id));
   };
 
   const submitForReview = () => {
@@ -570,23 +587,45 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                 {uploadedFiles.length > 0 && (
                   <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
                     <div className="flex items-center gap-3">
-                      <FileIcon className="h-5 w-5 text-primary" />
-                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Attached Drawing Matrix</h3>
+                      <CheckSquare className="h-5 w-5 text-primary" />
+                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Identify Drawings for Inspection Sheet</h3>
                     </div>
+                    <p className="text-xs text-slate-400 font-medium italic mt-[-10px] ml-1">* Select the drawings/parts from the matrix below to include in final report.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {uploadedFiles.map((file) => (
-                        <div key={file.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white rounded-lg">
-                              <FileText className="h-4 w-4 text-primary" />
+                      {uploadedFiles.map((file) => {
+                        const isSelected = selectedDrawingIds.includes(file.id);
+                        return (
+                          <div 
+                            key={file.id} 
+                            className={cn(
+                              "p-4 bg-slate-50 rounded-2xl border flex items-center justify-between group transition-all cursor-pointer",
+                              isSelected ? "border-emerald-500 bg-emerald-50/30" : "border-slate-100 hover:border-primary/20"
+                            )}
+                            onClick={() => toggleDrawingSelection(file.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "p-2 rounded-lg transition-colors",
+                                isSelected ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
+                              )}>
+                                {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                              </div>
+                              <span className={cn(
+                                "text-xs font-bold truncate max-w-[200px]",
+                                isSelected ? "text-emerald-700" : "text-slate-700"
+                              )}>{file.name}</span>
                             </div>
-                            <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{file.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={(e) => { e.stopPropagation(); removeFile(file.id); }} 
+                              className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </Card>
                 )}
@@ -604,8 +643,8 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
               <Button 
                 className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
                 onClick={() => {
-                  if (uploadedFiles.length === 0) {
-                    toast({ variant: "destructive", title: "Missing Technical Data", description: "Attach at least one drawing to proceed." });
+                  if (selectedDrawingIds.length === 0) {
+                    toast({ variant: "destructive", title: "Selection Required", description: "Identify which drawings to include in the inspection protocol." });
                     return;
                   }
                   setCurrentStep('report');
@@ -719,9 +758,9 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
               </div>
             </div>
 
-            {/* Drawing Sections - One for each uploaded part/drawing */}
+            {/* Drawing Sections - Rendering only SELECTED drawings */}
             <div className="space-y-12">
-              {uploadedFiles.map((file, fIdx) => (
+              {selectedDrawings.map((file, fIdx) => (
                 <div key={file.id} className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">

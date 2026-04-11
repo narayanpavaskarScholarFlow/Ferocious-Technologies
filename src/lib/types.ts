@@ -92,6 +92,17 @@ export interface Order {
   routing?: RoutingOperation[];
 }
 
+export interface BillingLineItem {
+  id: string;
+  description: string;
+  hsn: string;
+  qty: number;
+  unit: string;
+  price: number;
+  discount: number;
+  gstRate: number;
+}
+
 export interface BillingRecord {
   id: string;
   type: string;
@@ -107,6 +118,10 @@ export interface BillingRecord {
   receiverName?: string;
   paymentMethod?: 'Cash' | 'Bank Transfer';
   transactionDetails?: string;
+  items?: BillingLineItem[];
+  subTotal?: number;
+  taxTotal?: number;
+  discountTotal?: number;
 }
 
 export interface SQCDPData {

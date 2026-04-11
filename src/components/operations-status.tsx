@@ -46,7 +46,8 @@ import { useToast } from '@/hooks/use-toast';
 
 const INITIAL_STEPS = [
   "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
-  "1st Grinding", "Heat Treatment", "2nd Grinding", "Hard Part Milling", "EDM / WEDM", "QC", "Assembly"
+  "CNC Turning", "VMC Milling", "1st Grinding", "Heat Treatment", 
+  "2nd Grinding", "Hard Part Milling", "EDM / WEDM", "QC", "Assembly"
 ];
 
 const STATUS_OPTIONS = [
@@ -128,7 +129,6 @@ export function OperationsStatus({
       date.setDate(date.getDate() + 1);
     }
     const result = date.toISOString().split('T')[0];
-    // If it crosses order max date, clamp it to max date
     if (orderMaxDate && result > orderMaxDate) return orderMaxDate;
     return result;
   };
@@ -189,7 +189,6 @@ export function OperationsStatus({
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
-    // Apply rule: if any subtask is not completed, force status to "WIP"
     const enforcedRouting = newRouting.map(op => {
       if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
         const allCompleted = op.subTasks.every(s => s.status === 'Completed');
@@ -249,7 +248,6 @@ export function OperationsStatus({
   };
 
   const handleStartDateChange = (opId: string, idx: number, newDate: string) => {
-    // Validate against Master Order Boundaries
     if (orderMinDate && newDate < orderMinDate) return;
     if (orderMaxDate && newDate > orderMaxDate) return;
 
@@ -260,7 +258,6 @@ export function OperationsStatus({
   };
 
   const handleEndDateChange = (opId: string, idx: number, newDate: string) => {
-    // Validate against Master Order Boundaries
     if (orderMinDate && newDate < orderMinDate) return;
     if (orderMaxDate && newDate > orderMaxDate) return;
 
@@ -276,7 +273,7 @@ export function OperationsStatus({
   };
 
   const handleAddOperation = () => {
-    if (newOpName.trim()) {
+    if (newOpName) {
       const lastOp = operations[operations.length - 1];
       const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
       
@@ -284,7 +281,7 @@ export function OperationsStatus({
 
       const newOp: RoutingOperation = {
         id: `OP-${Math.random().toString(36).substr(2, 9)}`,
-        name: newOpName.trim(),
+        name: newOpName,
         startDate: startFrom,
         endDate: getNextAvailableDay(startFrom),
         status: "Yet to start",
@@ -340,27 +337,22 @@ export function OperationsStatus({
       const subTasks = [...op.subTasks];
       const currentSub = { ...subTasks[subIdx] };
 
-      // Candidate values
       let nextStart = updates.startDate !== undefined ? updates.startDate : (currentSub.startDate || parentStart);
       let nextEnd = updates.endDate !== undefined ? updates.endDate : (currentSub.endDate || nextStart);
 
-      // Boundary Lock: Cannot precede parent start or exceed parent end
       if (nextStart < parentStart) nextStart = parentStart;
       if (nextStart > parentEnd) nextStart = parentEnd;
 
       if (updates.startDate !== undefined) {
-        // Auto-calculate end date +1 day, strictly clamped to parentEnd
         nextEnd = getNextAvailableDay(nextStart);
         if (nextEnd > parentEnd) nextEnd = parentEnd;
       } else if (updates.endDate !== undefined) {
-        // Manual end date: strictly clamped to parentEnd and cannot precede its own start
         if (nextEnd > parentEnd) nextEnd = parentEnd;
         if (nextEnd < nextStart) nextEnd = nextStart;
       }
 
       subTasks[subIdx] = { ...currentSub, ...updates, startDate: nextStart, endDate: nextEnd };
       
-      // Sequential Ripple within this parent operation
       for (let j = subIdx + 1; j < subTasks.length; j++) {
         const prevEnd = subTasks[j-1].endDate!;
         subTasks[j].startDate = prevEnd;
@@ -497,10 +489,25 @@ export function OperationsStatus({
                             <TableCell>
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
-                                  <span className={cn(
-                                    "text-sm font-bold uppercase tracking-tight",
-                                    isNA ? "text-slate-400 line-through" : "text-slate-700"
-                                  )}>{op.name}</span>
+                                  <Select 
+                                    value={op.name} 
+                                    onValueChange={(newName) => {
+                                      const updated = operations.map(o => o.id === op.id ? { ...o, name: newName } : o);
+                                      saveRouting(updated);
+                                    }}
+                                  >
+                                    <SelectTrigger className={cn(
+                                      "h-8 border-none bg-transparent hover:bg-slate-100 text-sm font-bold uppercase tracking-tight p-0 focus:ring-0 w-fit gap-2",
+                                      isNA ? "text-slate-400 line-through" : "text-slate-700"
+                                    )}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl">
+                                      {INITIAL_STEPS.map(step => (
+                                        <SelectItem key={step} value={step} className="text-xs font-bold uppercase">{step}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                   {startIsHoliday && <Badge variant="outline" className="text-[8px] border-amber-200 text-amber-600 bg-amber-50 h-4">Holiday Shifted</Badge>}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
@@ -768,14 +775,17 @@ export function OperationsStatus({
                       <TableCell colSpan={6} className="p-6">
                         <div className="flex flex-col sm:flex-row gap-3">
                           <div className="relative flex-1">
-                            <Input 
-                              placeholder="Insert new routing operation..." 
-                              className="h-12 bg-white border-slate-200 rounded-2xl pl-10 text-xs font-bold uppercase tracking-widest focus-visible:ring-primary/20"
-                              value={newOpName}
-                              onChange={(e) => setNewOpName(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleAddOperation()}
-                            />
-                            <Plus className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Select value={newOpName} onValueChange={setNewOpName}>
+                              <SelectTrigger className="h-12 bg-white border-slate-200 rounded-2xl pl-10 text-xs font-bold uppercase tracking-widest focus:ring-primary/20">
+                                <Plus className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <SelectValue placeholder="Select routing operation..." />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-2xl border-slate-100">
+                                {INITIAL_STEPS.map(step => (
+                                  <SelectItem key={step} value={step} className="text-xs font-bold uppercase">{step}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <Button 
                             onClick={handleAddOperation}

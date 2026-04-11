@@ -207,7 +207,7 @@ export interface DimensionRecord {
   upperLimit: string;
   lowerLimit: string;
   actual: string;
-  status: 'Pass' | 'Fail' | 'NA' | 'Pending';
+  status: 'OK' | 'NOT OK' | 'NA' | 'Pending';
   remark: string;
 }
 

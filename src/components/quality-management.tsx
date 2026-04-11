@@ -19,16 +19,12 @@ import {
   ArrowLeft,
   Check,
   X,
-  Box,
-  MinusCircle,
   Plus,
   Activity,
-  Layers,
   Clock,
   FileText,
   Trash2,
   FileIcon,
-  Calendar,
   User,
   ExternalLink,
   ClipboardCheck,
@@ -46,7 +42,6 @@ import {
   YAxis, 
   ResponsiveContainer, 
   Cell, 
-  Tooltip as ChartTooltip 
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -227,9 +222,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       if (updatedDim.actual === '') {
         updatedDim.status = 'Pending';
       } else if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
-        updatedDim.status = (actualNum >= lowerNum && actualNum <= upperNum) ? 'Pass' : 'Fail';
+        updatedDim.status = (actualNum >= lowerNum && actualNum <= upperNum) ? 'OK' : 'NOT OK';
       } else {
-        updatedDim.status = 'Fail';
+        updatedDim.status = 'NOT OK';
       }
       
       return updatedDim;
@@ -282,7 +277,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       dimensions: dimensions,
       checks: checks,
       status: 'Draft',
-      verdict: dimensions.some(d => d.status === 'Fail') ? 'Fail' : 'Pass',
+      verdict: dimensions.some(d => d.status === 'NOT OK') ? 'Fail' : 'Pass',
       inspector: selectedOp ? getResourceName(selectedOp) : 'Plant Inspector',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -309,7 +304,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder && onUpdateStatus) onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
   };
 
-  const hasFailures = useMemo(() => dimensions.some(d => d.status === 'Fail'), [dimensions]);
+  const hasFailures = useMemo(() => dimensions.some(d => d.status === 'NOT OK'), [dimensions]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -514,7 +509,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           {file.status === 'Completed' ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <FileIcon className="h-4 w-4" />}
                           <span className="text-[11px] font-bold truncate max-w-[150px]">{file.name}</span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeFile(file.id); }} className={cn("h-7 w-7 rounded-lg", activeDrawingId === file.id ? "text-white/40 hover:text-white" : "text-slate-300 hover:text-red-500")}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setUploadedFiles(uploadedFiles.filter(f => f.id !== file.id)); }} className={cn("h-7 w-7 rounded-lg", activeDrawingId === file.id ? "text-white/40 hover:text-white" : "text-slate-300 hover:text-red-500")}>
                           <X className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -572,7 +567,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start animate-in fade-in duration-700 px-2">
-          {/* TECHNICAL WORKSPACE CONTROLLER - RESOLVED VIEWER */}
           <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-[#0f172a] shadow-2xl relative border-none flex flex-col group">
             <div className="p-6 border-b border-white/10 bg-slate-900/50 backdrop-blur-md flex items-center justify-between z-20">
               <div className="flex items-center gap-3">
@@ -582,33 +576,37 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <p className="text-[9px] text-white/40 font-code font-bold uppercase">{activeDrawing.name}</p>
                 </div>
               </div>
-              <Button 
-                size="sm" 
-                className="bg-white hover:bg-white/90 text-[#0f172a] h-10 px-6 rounded-xl text-[10px] font-bold uppercase tracking-widest gap-2 shadow-xl"
-                onClick={() => window.open(activeDrawing.url, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4" /> Open Drawing for Ballooning
-              </Button>
             </div>
             
             <div className="flex-1 w-full bg-[#1e293b] relative flex flex-col items-center justify-center p-10 text-center">
-              {/* PRIMARY VIEWER GATEWAY */}
               <div className="p-10 rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 flex flex-col items-center gap-6 max-w-sm">
                 <div className="p-5 bg-amber-50 rounded-3xl"><AlertCircle className="h-12 w-12 text-amber-500" /></div>
                 <div>
-                  <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">Audit Preview Protocol</p>
+                  <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">Security Handshake Required</p>
                   <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                    If the drawing is restricted by browser security, use the external gateway for full dimension ballooning.
+                    Browser security policies may block the inline viewer for local session files. Use the protocols below to open the technical reference.
                   </p>
                 </div>
-                <Button 
-                  className="w-full bg-[#001F3D] hover:bg-black text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest h-14 gap-3 shadow-xl"
-                  onClick={() => window.open(activeDrawing.url, '_blank')}
-                >
-                  <Maximize2 className="h-4 w-4" /> Launch Drawing in New Tab
-                </Button>
+                <div className="flex flex-col w-full gap-3">
+                  <Button 
+                    className="w-full bg-[#001F3D] hover:bg-black text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest h-14 gap-3 shadow-xl"
+                    onClick={() => window.open(activeDrawing.url, '_blank')}
+                  >
+                    <Maximize2 className="h-4 w-4" /> Open Drawing in New Tab
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl text-[10px] font-bold uppercase tracking-widest h-14 gap-3 shadow-sm"
+                    onClick={() => {
+                      // Attempt to force Microsoft Edge using protocol handler
+                      window.location.href = `microsoft-edge:${activeDrawing.url}`;
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4" /> Open in Microsoft Edge
+                  </Button>
+                </div>
               </div>
-              <p className="text-[9px] text-white/20 mt-8 uppercase font-bold tracking-[0.4em]">Chromium Security Handshake v2.4</p>
+              <p className="text-[9px] text-white/20 mt-8 uppercase font-bold tracking-[0.4em]">Chromium Security Protocol v2.4</p>
             </div>
           </Card>
 
@@ -647,11 +645,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             <TableCell className="px-4"><Input className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl" value={dim.feature} onChange={(e) => handleUpdateDimension(dim.id, 'feature', e.target.value)} /></TableCell>
                             <TableCell><Input className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" value={dim.target} onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)} /></TableCell>
                             <TableCell><Input className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" value={dim.tolerance} onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)} /></TableCell>
-                            <TableCell><Input className={cn("h-10 bg-white border-2 font-code font-bold text-sm text-center rounded-xl shadow-inner", dim.status === 'Pass' ? "border-emerald-200 text-emerald-700" : dim.status === 'Fail' ? "border-red-200 text-red-700" : "border-primary/10")} value={dim.actual} onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)} /></TableCell>
+                            <TableCell><Input className={cn("h-10 bg-white border-2 font-code font-bold text-sm text-center rounded-xl shadow-inner", dim.status === 'OK' ? "border-emerald-200 text-emerald-700" : dim.status === 'NOT OK' ? "border-red-200 text-red-700" : "border-primary/10")} value={dim.actual} onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)} /></TableCell>
                             <TableCell>
                               <div className="flex justify-center">
-                                <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full border shadow-sm", dim.status === 'Pass' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : dim.status === 'Fail' ? "bg-rose-50 text-rose-700 border-rose-100" : "bg-slate-50 text-slate-400 border-slate-100")}>
-                                  {dim.status === 'Pass' ? 'OK' : dim.status === 'Fail' ? 'NOT OK' : 'PENDING'}
+                                <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full border shadow-sm", dim.status === 'OK' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : dim.status === 'NOT OK' ? "bg-rose-50 text-rose-700 border-rose-100" : "bg-slate-50 text-slate-400 border-slate-100")}>
+                                  {dim.status}
                                 </Badge>
                               </div>
                             </TableCell>
@@ -754,8 +752,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target} ({dim.upperLimit}/{dim.lowerLimit})</TableCell>
                         <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
                         <TableCell className="text-center border-r border-slate-100">
-                          <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full", dim.status === 'Pass' ? "bg-emerald-500 text-white" : dim.status === 'Fail' ? "bg-rose-500 text-white" : "bg-slate-100 text-slate-400")}>
-                            {dim.status === 'Pass' ? 'OK' : dim.status === 'Fail' ? 'NOT OK' : '---'}
+                          <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full", dim.status === 'OK' ? "bg-emerald-500 text-white" : dim.status === 'NOT OK' ? "bg-rose-500 text-white" : "bg-slate-100 text-slate-400")}>
+                            {dim.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="pl-6 text-[10px] font-medium text-slate-500 uppercase italic">{dim.remark || '---'}</TableCell>

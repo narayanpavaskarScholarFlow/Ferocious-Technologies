@@ -164,28 +164,6 @@ export function OperationsStatus({
     }
   }, [initialOrderId]);
 
-  useEffect(() => {
-    if (selectedWorkOrder && orderData && (!orderData.routing || orderData.routing.length === 0)) {
-      const projectStart = formatToInputDate(orderData.startDate);
-      let currentStart = projectStart;
-      
-      const seededOps: RoutingOperation[] = INITIAL_STEPS.map((name, i) => {
-        const op = {
-          id: `OP-${i}-${Date.now()}`,
-          name,
-          startDate: currentStart,
-          endDate: getNextAvailableDay(currentStart),
-          status: "Yet to start",
-          subTasks: []
-        };
-        currentStart = op.endDate;
-        return op;
-      });
-      
-      saveRouting(seededOps);
-    }
-  }, [selectedWorkOrder, orderData, holidays]);
-
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
@@ -201,7 +179,7 @@ export function OperationsStatus({
 
     const activeOps = enforcedRouting.filter(op => op.status !== 'NA');
     if (activeOps.length === 0) {
-      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: enforcedRouting, progress: 0 }, { merge: true });
+      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: enforcedRouting, progress: 0, status: 'Yet to start' }, { merge: true });
       return;
     }
 
@@ -277,7 +255,14 @@ export function OperationsStatus({
       const lastOp = operations[operations.length - 1];
       const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
       
-      if (orderMaxDate && startFrom >= orderMaxDate) return;
+      if (orderMaxDate && startFrom >= orderMaxDate) {
+        toast({
+          variant: "destructive",
+          title: "Timeline Violation",
+          description: "Cannot append operations beyond the master order end date."
+        });
+        return;
+      }
 
       const newOp: RoutingOperation = {
         id: `OP-${Math.random().toString(36).substr(2, 9)}`,
@@ -427,7 +412,7 @@ export function OperationsStatus({
                 <SelectValue placeholder="Select ID..." />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
-                {orders.length > 0 ? orders.map(order => (
+                {orders && orders.length > 0 ? orders.map(order => (
                   <SelectItem key={order.id} value={order.id}>{order.id} - {order.customer}</SelectItem>
                 )) : (
                   <SelectItem value="none" disabled>No Orders Found</SelectItem>
@@ -818,7 +803,7 @@ export function OperationsStatus({
         </Card>
       </div>
 
-      {holidays.length > 0 && (
+      {holidays && holidays.length > 0 && (
         <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex items-start gap-4">
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="space-y-1">

@@ -416,6 +416,11 @@ export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizati
 
       <Dialog open={isAddMachineOpen} onOpenChange={setIsAddMachineOpen}>
         <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+          <DialogHeader className="p-0">
+            <DialogTitle className="sr-only">{editingMachine ? 'Modify Asset Identity' : 'Register New Industrial Asset'}</DialogTitle>
+            <DialogDescription className="sr-only">Update technical specifications, spatial dimensions, and hourly cost centers for asset fleet management.</DialogDescription>
+          </DialogHeader>
+          
           <div className="flex flex-col md:flex-row min-h-[500px]">
             {/* Sidebar Visual Preview */}
             <div className="w-full md:w-72 bg-slate-900 p-10 flex flex-col justify-between text-white relative overflow-hidden">

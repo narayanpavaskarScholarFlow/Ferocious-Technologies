@@ -158,15 +158,18 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   }, [qcEntries]);
 
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
-    setSelectedOrder(order);
-    setSelectedOp(op);
+    // Only reset if changing to a completely different task session
+    if (selectedOrder?.id !== order.id || selectedOp?.id !== op.id) {
+      setSelectedOrder(order);
+      setSelectedOp(op);
+      setUploadedFiles([]);
+      setActiveDrawingId(null);
+      setDimensions(INITIAL_DIMENSIONS);
+      const initial: Record<string, CheckStatus> = {};
+      MACHINING_OPS.forEach(o => initial[o] = 'Pending');
+      setChecks(initial);
+    }
     setCurrentStep('upload');
-    setUploadedFiles([]);
-    setActiveDrawingId(null);
-    setDimensions(INITIAL_DIMENSIONS);
-    const initial: Record<string, CheckStatus> = {};
-    MACHINING_OPS.forEach(o => initial[o] = 'Pending');
-    setChecks(initial);
   };
 
   const handleToggleCheck = (op: string, status: CheckStatus) => {
@@ -243,17 +246,22 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     const files = e.target.files;
     if (files && files.length > 0) {
       const newFiles: UploadedFile[] = Array.from(files).map(file => ({
-        id: Math.random().toString(36).substr(2, 9),
+        id: `FILE-${Math.random().toString(36).substr(2, 9)}`,
         name: file.name,
         url: URL.createObjectURL(file)
       }));
+      
       setUploadedFiles(prev => [...prev, ...newFiles]);
       
-      if (!activeDrawingId && newFiles.length > 0) {
+      // Auto-focus on the first newly uploaded file
+      if (newFiles.length > 0) {
         setActiveDrawingId(newFiles[0].id);
       }
       
-      toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files attached to sequence.` });
+      // Clear input value so same file can be re-selected if deleted/re-added
+      e.target.value = '';
+      
+      toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files onboarded to sequence.` });
     }
   };
 
@@ -447,7 +455,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow mb-8 relative z-10 overflow-hidden">
-              {/* Controls Column */}
               <div className="lg:col-span-4 space-y-6 flex flex-col min-h-0">
                 <input 
                   type="file" 
@@ -509,11 +516,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </div>
               </div>
 
-              {/* Preview Column - FIXED: Replaced iframe with embed for robust PDF rendering */}
               <div className="lg:col-span-8 bg-slate-100/50 rounded-3xl border border-slate-200 overflow-hidden relative group h-[600px] lg:h-auto">
                 {activeDrawing ? (
                   <embed 
-                    key={activeDrawing.id}
+                    key={`${activeDrawing.id}-${activeDrawing.url}`}
                     src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
                     type="application/pdf"
                     className="w-full h-full border-none bg-white" 
@@ -533,7 +539,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <div className="pt-8 border-t border-slate-100 flex justify-between items-center relative z-10 mt-auto">
               <div className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select an attached drawing to initialize dimensional matrix entry.</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select an onboarded blueprint to initialize dimensional matrix entry.</span>
               </div>
               <Button 
                 disabled={!activeDrawingId}
@@ -549,21 +555,19 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start animate-in fade-in duration-700 px-2">
-          {/* Left Side: Drawing Reference - FIXED: Replaced iframe with embed */}
           <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-[#001F3D] shadow-2xl relative border-none">
             <div className="absolute top-4 left-4 z-20 flex gap-2">
                <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center">Technical Reference</Badge>
                <Badge className="bg-black/40 text-white/80 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase">{activeDrawing.name}</Badge>
             </div>
             <embed 
-              key={activeDrawing.id}
+              key={`${activeDrawing.id}-${activeDrawing.url}-audit`}
               src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
               type="application/pdf"
               className="w-full h-full border-none bg-white" 
             />
           </Card>
 
-          {/* Right Side: Data Entry */}
           <div className="xl:col-span-7 flex flex-col h-[800px]">
             <Card className="flex-1 p-8 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] flex flex-col overflow-hidden">
               <Tabs defaultValue="customer" className="w-full flex flex-col flex-1 overflow-hidden">
@@ -790,7 +794,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
               <div className="space-y-1.5">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Audit Terminal</p>
-                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'SYS_NODE_01'}</p>
+                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'Inspector_Node_01'}</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Compliance Summary</p>

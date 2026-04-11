@@ -16,7 +16,8 @@ import {
   ChevronRight as ChevronRightIcon,
   Search,
   Lock,
-  AlertCircle
+  Calendar as CalendarIcon,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
@@ -33,7 +34,8 @@ import {
   startOfWeek,
   endOfWeek,
   addWeeks,
-  subWeeks
+  subWeeks,
+  isWithinInterval
 } from 'date-fns';
 import {
   Select,
@@ -42,6 +44,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
 
 interface ProductionGanttProps {
   orders: Order[];
@@ -53,12 +62,14 @@ interface ProductionGanttProps {
 type ViewMode = 'month' | 'week';
 
 export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGanttProps) {
-  // Initialize to current month for relevance
   const [currentDate, setCurrentDate] = useState(() => startOfMonth(new Date())); 
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [expandedOps, setExpandedOps] = useState<Record<string, boolean>>({});
+  
+  // Date Range Selection State
+  const [highlightRange, setHighlightRange] = useState<DateRange | undefined>();
 
   const filteredOrders = useMemo(() => {
     if (selectedOrderId === 'all') return orders;
@@ -79,26 +90,16 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     setExpandedOps(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  /**
-   * Robust date parser for Bharat Axis ERP formats:
-   * 1. DD.MM.YYYY (Administrative)
-   * 2. YYYY-MM-DD (Operational/HTML5)
-   */
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
-    
-    // Handle YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       const [y, m, d] = dateStr.split('-').map(Number);
       return startOfDay(new Date(y, m - 1, d));
     }
-    
-    // Handle DD.MM.YYYY
     if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateStr)) {
       const [d, m, y] = dateStr.split('.').map(Number);
       return startOfDay(new Date(y, m - 1, d));
     }
-
     const d = new Date(dateStr);
     return isNaN(d.getTime()) ? null : startOfDay(d);
   };
@@ -111,10 +112,8 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     const timelineStart = startOfDay(timelineInterval[0]);
     const timelineEnd = startOfDay(timelineInterval[timelineInterval.length - 1]);
 
-    // Visibility Check
     if (end < timelineStart || start > timelineEnd) return { display: 'none' };
 
-    // Clamping for grid rendering
     const visibleStart = start < timelineStart ? timelineStart : start;
     const visibleEnd = end > timelineEnd ? timelineEnd : end;
 
@@ -128,6 +127,29 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
       width: `${(durationDays / totalDays) * 100}%`,
     };
   };
+
+  const highlightStyles = useMemo(() => {
+    if (!highlightRange?.from || !highlightRange?.to) return null;
+    
+    const start = startOfDay(highlightRange.from);
+    const end = startOfDay(highlightRange.to);
+    
+    const timelineStart = startOfDay(timelineInterval[0]);
+    const timelineEnd = startOfDay(timelineInterval[timelineInterval.length - 1]);
+
+    if (end < timelineStart || start > timelineEnd) return null;
+
+    const visibleStart = start < timelineStart ? timelineStart : start;
+    const visibleEnd = end > timelineEnd ? timelineEnd : end;
+
+    const offsetDays = differenceInDays(visibleStart, timelineStart);
+    const durationDays = differenceInDays(visibleEnd, visibleStart) + 1;
+
+    return {
+      left: `${(offsetDays / timelineInterval.length) * 100}%`,
+      width: `${(durationDays / timelineInterval.length) * 100}%`,
+    };
+  }, [highlightRange, timelineInterval]);
 
   const todayMarkerStyle = useMemo(() => {
     const today = startOfDay(new Date());
@@ -152,12 +174,12 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
   };
 
   const getStatusColor = (status?: string) => {
-    if (!status) return 'linear-gradient(to right, #6366f1, #818cf8)'; // Default Indigo
-    if (status === 'Completed') return 'linear-gradient(to right, #10b981, #34d399)'; // Emerald
-    if (status === 'Hold') return 'linear-gradient(to right, #ef4444, #f87171)'; // Red
-    if (status === 'Review Pending') return 'linear-gradient(to right, #f59e0b, #fbbf24)'; // Amber
-    if (status === 'Yet to start') return 'linear-gradient(to right, #a855f7, #c084fc)'; // Purple
-    if (status.startsWith('Vendor')) return 'linear-gradient(to right, #ec4899, #f472b6)'; // Pink
+    if (!status) return 'linear-gradient(to right, #6366f1, #818cf8)';
+    if (status === 'Completed') return 'linear-gradient(to right, #10b981, #34d399)';
+    if (status === 'Hold') return 'linear-gradient(to right, #ef4444, #f87171)';
+    if (status === 'Review Pending') return 'linear-gradient(to right, #f59e0b, #fbbf24)';
+    if (status === 'Yet to start') return 'linear-gradient(to right, #a855f7, #c084fc)';
+    if (status.startsWith('Vendor')) return 'linear-gradient(to right, #ec4899, #f472b6)';
     return 'linear-gradient(to right, #6366f1, #818cf8)';
   };
 
@@ -168,11 +190,19 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     return '#4f46e5';
   };
 
+  const isDayInHighlight = (day: Date) => {
+    if (!highlightRange?.from || !highlightRange?.to) return false;
+    return isWithinInterval(startOfDay(day), {
+      start: startOfDay(highlightRange.from),
+      end: startOfDay(highlightRange.to)
+    });
+  };
+
   return (
     <div className="flex flex-col h-full bg-white animate-in fade-in duration-700 overflow-hidden">
       {/* Precision Controls Header */}
       <div className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-40 shrink-0 shadow-sm">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
           <div className="flex flex-col">
             <h2 className="text-lg font-display font-bold text-slate-900 uppercase tracking-tight flex items-center gap-3">
               <LayoutGrid className="h-5 w-5 text-primary" />
@@ -181,16 +211,16 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">Operational Chronology Matrix v2.4</p>
           </div>
 
-          <div className="h-10 w-[1px] bg-slate-100 hidden md:block" />
+          <div className="h-10 w-[1px] bg-slate-100 hidden lg:block" />
 
           <div className="flex items-center gap-3">
             <ListFilter className="h-4 w-4 text-slate-400 hidden sm:block" />
             <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
-              <SelectTrigger className="w-[260px] h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider shadow-inner">
-                <SelectValue placeholder="Select Work Order..." />
+              <SelectTrigger className="w-[220px] h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider shadow-inner">
+                <SelectValue placeholder="Work Order..." />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                <SelectItem value="all" className="text-xs font-bold uppercase">All Active Threads</SelectItem>
+                <SelectItem value="all" className="text-xs font-bold uppercase">All Threads</SelectItem>
                 {orders.map(order => (
                   <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase">
                     WO #{order.id} - {order.customer}
@@ -198,6 +228,51 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="h-10 w-[1px] bg-slate-100 hidden lg:block" />
+
+          {/* Highlight Range Selector */}
+          <div className="flex items-center gap-3">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className={cn(
+                    "h-11 rounded-xl border-slate-200 text-xs font-bold uppercase gap-2 px-4 shadow-sm",
+                    highlightRange && "border-amber-400 bg-amber-50 text-amber-700"
+                  )}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  {highlightRange?.from ? (
+                    highlightRange.to ? (
+                      <>{format(highlightRange.from, "LLL dd")} - {format(highlightRange.to, "LLL dd")}</>
+                    ) : format(highlightRange.from, "LLL dd")
+                  ) : "Highlight Range"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-slate-100" align="start">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={highlightRange?.from}
+                  selected={highlightRange}
+                  onSelect={setHighlightRange}
+                  numberOfMonths={2}
+                  className="bg-white"
+                />
+              </PopoverContent>
+            </Popover>
+            {highlightRange && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-full text-slate-400 hover:text-red-500"
+                onClick={() => setHighlightRange(undefined)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -210,7 +285,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 viewMode === 'month' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Month View
+              Month
             </button>
             <button 
               onClick={() => setViewMode('week')}
@@ -219,7 +294,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 viewMode === 'week' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Week View
+              Week
             </button>
           </div>
 
@@ -242,7 +317,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
       {/* Synchronized Vertical Viewport */}
       <ScrollArea className="flex-1 bg-[#fcfcfc]">
         <div className="flex min-w-max min-h-full">
-          {/* Tree-View Sidebar: Fixed horizontally */}
+          {/* Tree-View Sidebar */}
           <div className="w-[340px] bg-white border-r border-slate-100 flex flex-col shrink-0 sticky left-0 z-30 shadow-[4px_0_12px_rgba(0,0,0,0.02)]">
             <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50 sticky top-0 z-40">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em]">Operational Hierarchy</span>
@@ -250,7 +325,6 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             <div className="py-2 space-y-px">
               {filteredOrders.map(order => (
                 <div key={order.id} className="select-none">
-                  {/* Level 1: Master Order */}
                   <div 
                     className={cn(
                       "h-12 flex items-center px-4 hover:bg-slate-50 transition-all group cursor-pointer border-l-4",
@@ -268,7 +342,6 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                     <Badge variant="outline" className="text-[8px] border-slate-100 font-bold bg-slate-50">{order.progress || 0}%</Badge>
                   </div>
 
-                  {/* Level 2: Machining Operations */}
                   {expandedOrders[order.id] && order.routing?.map((op, opIdx) => (
                     <div key={op.id}>
                       <div 
@@ -288,7 +361,6 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                         {op.status === 'Completed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                       </div>
 
-                      {/* Level 3: Sub-Tasks */}
                       {expandedOps[op.id] && op.subTasks?.map((sub) => (
                         <div key={sub.id} className="h-9 flex items-center pl-16 pr-4 hover:bg-slate-50/50 transition-all group border-b border-slate-50/20">
                           <div className="w-4 h-px bg-slate-200 mr-3" />
@@ -307,51 +379,64 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
             </div>
           </div>
 
-          {/* Timeline Grid: Synchronized Bars */}
+          {/* Timeline Grid */}
           <div className="flex-1 flex flex-col relative">
-            {/* Day Headers: Sticky top */}
             <div className="h-12 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-30 shadow-sm">
-              {timelineInterval.map((day, idx) => (
-                <div 
-                  key={idx} 
-                  className={cn(
-                    "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[60px] transition-colors",
-                    isToday(day) && "bg-primary/[0.03]"
-                  )}
-                >
-                  <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter mb-0.5">{format(day, 'EEE')}</span>
-                  <span className={cn(
-                    "text-[10px] font-bold tracking-tight w-6 h-6 flex items-center justify-center rounded-lg transition-all",
-                    isToday(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-slate-400"
-                  )}>
-                    {format(day, 'd')}
-                  </span>
-                </div>
-              ))}
+              {timelineInterval.map((day, idx) => {
+                const inHighlight = isDayInHighlight(day);
+                return (
+                  <div 
+                    key={idx} 
+                    className={cn(
+                      "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[60px] transition-colors",
+                      isToday(day) && "bg-primary/[0.03]",
+                      inHighlight && "bg-amber-400/[0.05]"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-[8px] font-bold uppercase tracking-tighter mb-0.5",
+                      inHighlight ? "text-amber-600" : "text-slate-300"
+                    )}>{format(day, 'EEE')}</span>
+                    <span className={cn(
+                      "text-[10px] font-bold tracking-tight w-6 h-6 flex items-center justify-center rounded-lg transition-all",
+                      isToday(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : 
+                      inHighlight ? "bg-amber-400 text-white" : "text-slate-400"
+                    )}>
+                      {format(day, 'd')}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Bars Canvas Area */}
             <div className="relative flex-1 min-h-[calc(100vh-140px)]">
-              {/* Grid Layout Guides */}
+              {/* Grid Guides */}
               <div className="absolute inset-0 flex pointer-events-none">
                 {timelineInterval.map((day, idx) => (
                   <div key={idx} className={cn("flex-1 border-r border-slate-50 min-w-[60px]", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
                 ))}
               </div>
 
-              {/* Today Precision Marker */}
+              {/* Selection Highlight Range */}
+              {highlightStyles && (
+                <div 
+                  className="absolute top-0 bottom-0 bg-amber-400/10 border-x border-amber-400/20 z-0 pointer-events-none transition-all duration-500" 
+                  style={highlightStyles}
+                />
+              )}
+
+              {/* Today Marker */}
               <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-accent/40 z-10 pointer-events-none" style={todayMarkerStyle}>
                 <div className="h-3 w-3 rounded-full bg-accent absolute top-[-6px] left-[-6px] shadow-lg animate-pulse" />
               </div>
 
               {/* Visual Task Bars */}
-              <div className="py-2 relative z-0">
+              <div className="py-2 relative z-10">
                 {filteredOrders.map(order => {
                   const orderStyles = getBarStyles(order.startDate, order.endDate);
                   
                   return (
                     <div key={order.id} className="mb-[1px]">
-                      {/* LEVEL 1: Master Project Bar */}
                       <div className="h-12 flex items-center relative group">
                         {orderStyles && (
                           <div 
@@ -373,7 +458,6 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                         )}
                       </div>
 
-                      {/* LEVEL 2: Sequential Operations */}
                       {expandedOrders[order.id] && order.routing?.map((op) => {
                         const opStyles = getBarStyles(op.startDate, op.endDate);
                         const isCompleted = op.status === 'Completed';
@@ -397,7 +481,6 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                                     <span className="text-[8px] font-bold text-white uppercase tracking-tight truncate flex-1">
                                       {op.name}
                                     </span>
-                                    {/* PRECISION DATES ON BAR */}
                                     <span className="text-[7px] text-white/90 font-code font-bold ml-2 whitespace-nowrap bg-black/10 px-1.5 py-0.5 rounded">
                                       {op.startDate} » {op.endDate}
                                     </span>
@@ -407,7 +490,6 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                               )}
                             </div>
 
-                            {/* LEVEL 3: Operational Sub-tasks */}
                             {expandedOps[op.id] && op.subTasks?.map((sub) => {
                               const subStyles = getBarStyles(sub.startDate, sub.endDate);
                               return (

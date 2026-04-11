@@ -219,6 +219,33 @@ function IndustrialERPInternal() {
     deleteDocumentNonBlocking(doc(db, 'users', userId));
   };
 
+  const handleUpdateStatusFromQC = (orderId: string, operation: string, status: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order || !order.routing) return;
+
+    const updatedRouting = order.routing.map(op => 
+      op.name === operation ? { ...op, status } : op
+    );
+
+    // Calculate progress (simplified version of OperationsStatus logic)
+    const activeOps = updatedRouting.filter(op => op.status !== 'NA');
+    const completedTasksCount = updatedRouting.reduce((acc, op) => {
+      if (op.status === 'NA') return acc;
+      if (op.subTasks && op.subTasks.length > 0) {
+        return acc + (op.subTasks.filter(s => s.status === 'Completed').length / op.subTasks.length);
+      }
+      return acc + (op.status === 'Completed' ? 1 : op.status === 'WIP' ? 0.5 : 0);
+    }, 0);
+
+    const progress = activeOps.length > 0 ? Math.round((completedTasksCount / activeOps.length) * 100) : 0;
+
+    setDocumentNonBlocking(doc(db, 'orders', orderId), {
+      routing: updatedRouting,
+      progress: progress,
+      status: progress === 100 ? 'Completed' : 'Pending'
+    }, { merge: true });
+  };
+
   if (!mounted) {
     return <div className="min-h-screen bg-slate-50" />;
   }
@@ -429,7 +456,12 @@ function IndustrialERPInternal() {
                 onNavigateToOperations={handleNavigateToOperations}
               />
             )}
-            {currentView === 'quality' && <QualityManagement onUpdateStatus={(o, op, s) => {}} />}
+            {currentView === 'quality' && (
+              <QualityManagement 
+                orders={orders}
+                onUpdateStatus={handleUpdateStatusFromQC} 
+              />
+            )}
             {currentView === 'order-details' && (
               <OrderDetails 
                 orderId={activeWorkOrderId} 

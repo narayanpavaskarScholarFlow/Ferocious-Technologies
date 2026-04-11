@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Order } from '@/lib/types';
 
 type QualityStep = 'list' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
@@ -55,8 +57,6 @@ interface DimensionRecord {
   remark: string;
 }
 
-const mockOrders = [];
-
 const MACHINING_OPS = [
   "VMC Milling - Dimensions Verification",
   "CNC Turning - Surface Finish Ra < 0.8",
@@ -72,26 +72,46 @@ const INITIAL_DIMENSIONS: DimensionRecord[] = [
 ];
 
 interface QualityManagementProps {
+  orders: Order[];
   onUpdateStatus?: (orderId: string, operation: string, status: string) => void;
 }
 
-export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
+export function QualityManagement({ orders, onUpdateStatus }: QualityManagementProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [drawingUploaded, setDrawingUploaded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Statistics for Graph
-  const pendingCount = mockOrders.filter(o => o.status === 'Ready for QC').length;
-  const wipCount = mockOrders.filter(o => o.status === 'In Review').length;
-  const statsData = [
-    { name: 'Pending', count: pendingCount, color: '#f59e0b' },
-    { name: 'Work in Progress', count: wipCount, color: '#3b82f6' },
-  ];
+  // Filter orders that have a QC operation in their routing
+  const qcOrders = useMemo(() => {
+    return orders.filter(o => 
+      o.routing?.some(op => op.name === 'QC') && 
+      (o.id.includes(searchTerm) || o.customer.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [orders, searchTerm]);
 
-  const handleSelectOrder = (order: any) => {
+  // Statistics for Graph based on actual orders
+  const statsData = useMemo(() => {
+    const pendingCount = qcOrders.filter(o => {
+      const qcOp = o.routing?.find(op => op.name === 'QC');
+      return qcOp?.status === 'Yet to start' || qcOp?.status === 'WIP' || qcOp?.status === 'Ready for QC';
+    }).length;
+    
+    const inReviewCount = qcOrders.filter(o => {
+      const qcOp = o.routing?.find(op => op.name === 'QC');
+      return qcOp?.status === 'Review Pending' || qcOp?.status === 'In Review';
+    }).length;
+
+    return [
+      { name: 'Pending', count: pendingCount, color: '#f59e0b' },
+      { name: 'Work in Progress', count: inReviewCount, color: '#3b82f6' },
+    ];
+  }, [qcOrders]);
+
+  const handleSelectOrder = (order: Order) => {
     setSelectedOrder(order);
     setCurrentStep('checklist');
     const initial: Record<string, CheckStatus> = {};
@@ -100,17 +120,12 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
     setDimensions(INITIAL_DIMENSIONS);
   };
 
-  const handleToggleCheck = (op: string, status: 'Pass' | 'Fail' | 'NA') => {
-    setChecks(prev => ({ ...prev, [op]: status }));
-  };
-
   const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
     setDimensions(prev => prev.map(dim => {
       if (dim.id !== id) return dim;
       
       let updatedDim = { ...dim, [field]: value };
       
-      // AUTO-CALCULATE LIMITS if Target or Tolerance changed
       if (field === 'target' || field === 'tolerance') {
         const targetNum = parseFloat(updatedDim.target);
         if (!isNaN(targetNum)) {
@@ -142,7 +157,6 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
         }
       }
 
-      // AUTO-CALCULATE STATUS
       const actualNum = parseFloat(updatedDim.actual);
       const upperNum = parseFloat(updatedDim.upperLimit);
       const lowerNum = parseFloat(updatedDim.lowerLimit);
@@ -212,6 +226,11 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
     toast({ title: "Release Authorized", description: "Report has been digitally signed and archived." });
   };
 
+  const getQCStatus = (order: Order) => {
+    const qcOp = order.routing?.find(op => op.name === 'QC');
+    return qcOp?.status || 'Yet to start';
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden">
@@ -244,9 +263,9 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Queue Distribution</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Status of all active Work Orders in the inspection lifecycle.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Status of Work Orders with active QC nodes.</p>
                 </div>
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">Real-time Analytics</Badge>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">Live Matrix</Badge>
               </div>
               <div className="h-24 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -269,7 +288,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
                   <div className="p-3 bg-amber-50 rounded-xl">
                     <Clock className="h-5 w-5 text-amber-600" />
                   </div>
-                  <span className="text-2xl font-bold text-amber-600">{pendingCount}</span>
+                  <span className="text-2xl font-bold text-amber-600">{statsData[0].count}</span>
                 </div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ready for Inspection</p>
               </Card>
@@ -278,7 +297,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
                   <div className="p-3 bg-blue-50 rounded-xl">
                     <Layers className="h-5 w-5 text-blue-600" />
                   </div>
-                  <span className="text-2xl font-bold text-blue-600">{wipCount}</span>
+                  <span className="text-2xl font-bold text-blue-600">{statsData[1].count}</span>
                 </div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Review (WIP)</p>
               </Card>
@@ -289,48 +308,58 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="relative w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Search Work Orders for QC..." className="pl-10 h-10 bg-white border-none text-xs" />
+                <Input 
+                  placeholder="Search orders for QC..." 
+                  className="pl-10 h-10 bg-white border-none text-xs" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">Active Ledger: {mockOrders.length}</Badge>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">QC Ledger: {qcOrders.length}</Badge>
             </div>
             <Table>
               <TableHeader className="bg-white">
                 <TableRow className="hover:bg-transparent border-slate-100">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Order ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Component</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Project Lead</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">QC Status</TableHead>
                   <TableHead className="text-right px-8"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockOrders.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                    <TableCell className="px-8 font-bold text-sm text-primary">{order.id}</TableCell>
-                    <TableCell className="text-slate-900 font-semibold">{order.customer}</TableCell>
-                    <TableCell className="text-slate-600 font-medium">{order.part}</TableCell>
-                    <TableCell>
-                      <Badge className={cn(
-                        "text-[9px] uppercase font-bold px-3 py-1",
-                        order.status === 'Ready for QC' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                      )}>
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right px-8">
-                      <Button 
-                        size="sm" 
-                        className="rounded-full bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase h-9 px-5 opacity-0 group-hover:opacity-100 transition-all"
-                        onClick={() => handleSelectOrder(order)}
-                      >
-                        Start Inspection <ChevronRight className="ml-2 h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {mockOrders.length === 0 && (
+                {qcOrders.map((order) => {
+                  const status = getQCStatus(order);
+                  return (
+                    <TableRow key={order.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                      <TableCell className="px-8 font-bold text-sm text-primary">#{order.id}</TableCell>
+                      <TableCell className="text-slate-900 font-semibold uppercase">{order.customer}</TableCell>
+                      <TableCell className="text-slate-600 font-medium">{order.owner || 'Unassigned'}</TableCell>
+                      <TableCell>
+                        <Badge className={cn(
+                          "text-[9px] uppercase font-bold px-3 py-1",
+                          status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
+                          (status === 'Review Pending' || status === 'WIP') ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                          'bg-amber-50 text-amber-700 border border-amber-100'
+                        )}>
+                          {status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right px-8">
+                        <Button 
+                          size="sm" 
+                          className="rounded-full bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase h-9 px-5 opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={() => handleSelectOrder(order)}
+                        >
+                          Inspection Details <ChevronRight className="ml-2 h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {qcOrders.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">Pipeline_Ledger_Empty</TableCell>
+                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No orders with 'QC' operation node detected.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -339,7 +368,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
         </div>
       )}
 
-      {currentStep === 'checklist' && (
+      {currentStep === 'checklist' && selectedOrder && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-8">
             <Tabs defaultValue="customer" className="w-full">
@@ -406,7 +435,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <h3 className="text-lg font-bold text-slate-900">Customer Dimension Entry</h3>
-                      <p className="text-xs text-muted-foreground">Record critical measurements for product release. Status updates automatically based on limits.</p>
+                      <p className="text-xs text-muted-foreground">Record measurements for Order #{selectedOrder.id}.</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleAddDimension} className="rounded-full border-slate-200 text-[10px] uppercase font-bold gap-2 hover:bg-primary/5 hover:text-primary transition-all">
                       <Plus className="h-3 w-3" /> Add More Dimensions
@@ -531,7 +560,11 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
             <div className="space-y-6">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order ID</p>
-                <p className="text-lg font-bold text-slate-900">#{selectedOrder?.id || '----'}</p>
+                <p className="text-lg font-bold text-slate-900">#{selectedOrder.id}</p>
+              </div>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Customer Node</p>
+                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOrder.customer}</p>
               </div>
               
               <div className="space-y-4 pt-4">
@@ -561,7 +594,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
         </div>
       )}
 
-      {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && (
+      {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && (
         <div className="space-y-8 pb-20">
           <div className="flex justify-end gap-3 print:hidden">
             <Button variant="outline" onClick={handlePrint} className="rounded-full gap-2 h-11 px-6 font-bold uppercase text-[10px]">
@@ -591,22 +624,22 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
               </div>
               <div className="text-right space-y-2">
                 <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tighter uppercase">Inspection Sheet</h2>
-                <p className="text-xs font-bold text-primary uppercase font-code">REP_VAL: QC-{selectedOrder?.id}-{new Date().getFullYear()}</p>
+                <p className="text-xs font-bold text-primary uppercase font-code">REP_VAL: QC-{selectedOrder.id}-{new Date().getFullYear()}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-4 gap-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
               <div className="space-y-1">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order</p>
-                <p className="text-sm font-bold text-slate-900">#{selectedOrder?.id}</p>
+                <p className="text-sm font-bold text-slate-900">#{selectedOrder.id}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Client Name</p>
-                <p className="text-sm font-bold text-slate-900">{selectedOrder?.customer}</p>
+                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOrder.customer}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Component Name</p>
-                <p className="text-sm font-bold text-slate-900">{selectedOrder?.part}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Project Lead</p>
+                <p className="text-sm font-bold text-slate-900">{selectedOrder.owner || 'Unassigned'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Issue Date</p>
@@ -626,7 +659,7 @@ export function QualityManagement({ onUpdateStatus }: QualityManagementProps) {
                       <ImageIcon className="h-16 w-16 text-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <p className="text-lg font-bold text-slate-900">DRAWING_REF_#{selectedOrder?.id}.PDF</p>
+                      <p className="text-lg font-bold text-slate-900">DRAWING_REF_#{selectedOrder.id}.PDF</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Scaled for A4 Sheet Verification</p>
                     </div>
                   </div>

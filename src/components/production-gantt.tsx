@@ -1,28 +1,26 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
-  Calendar, 
   ChevronLeft, 
   ChevronRight, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle,
   Search,
-  MoreHorizontal,
   Plus,
-  Share2,
   ChevronDown,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  CalendarDays,
+  LayoutGrid,
+  CheckCircle2,
+  Clock,
+  ListFilter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Order, RoutingOperation, SubTask } from '@/lib/types';
+import { Order } from '@/lib/types';
 import { 
   format, 
   addMonths, 
@@ -30,11 +28,21 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval, 
-  isSameDay, 
   isToday, 
   differenceInDays,
-  startOfDay
+  startOfDay,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks
 } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProductionGanttProps {
   orders: Order[];
@@ -43,16 +51,27 @@ interface ProductionGanttProps {
   onNavigateToOperations?: (orderId: string) => void;
 }
 
-export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateToOperations }: ProductionGanttProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)); // Set to March 2025 as per current context
+type ViewMode = 'month' | 'week';
+
+export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGanttProps) {
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)); // Default to March 2025 context
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [expandedOps, setExpandedOps] = useState<Record<string, boolean>>({});
 
+  // Filter orders based on dropdown selection
+  const filteredOrders = useMemo(() => {
+    if (selectedOrderId === 'all') return orders;
+    return orders.filter(o => o.id === selectedOrderId);
+  }, [orders, selectedOrderId]);
+
+  // Calculate the horizontal timeline axis
   const timelineInterval = useMemo(() => {
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
+    const start = viewMode === 'month' ? startOfMonth(currentDate) : startOfWeek(currentDate, { weekStartsOn: 1 });
+    const end = viewMode === 'month' ? endOfMonth(currentDate) : endOfWeek(currentDate, { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
-  }, [currentDate]);
+  }, [currentDate, viewMode]);
 
   const toggleOrder = (id: string) => {
     setExpandedOrders(prev => ({ ...prev, [id]: !prev[id] }));
@@ -64,8 +83,17 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
 
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
-    const [d, m, y] = dateStr.split('.').map(Number);
-    return new Date(y, m - 1, d);
+    // Handles dd.MM.yyyy format
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    }
+    // Handles yyyy-MM-dd format
+    const isoParts = dateStr.split('-');
+    if (isoParts.length === 3) {
+      return new Date(parseInt(isoParts[0]), parseInt(isoParts[1]) - 1, parseInt(isoParts[2]));
+    }
+    return null;
   };
 
   const getBarStyles = (startStr?: string, endStr?: string) => {
@@ -76,6 +104,7 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
     const timelineStart = timelineInterval[0];
     const timelineEnd = timelineInterval[timelineInterval.length - 1];
 
+    // Check if task is outside current visible range
     if (end < timelineStart || start > timelineEnd) return null;
 
     const visibleStart = start < timelineStart ? timelineStart : start;
@@ -91,123 +120,178 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
     };
   };
 
-  const isOverdue = (endStr?: string, status?: string) => {
-    const end = parseDate(endStr);
-    if (!end || status === 'Completed') return false;
-    return end < new Date();
+  const handlePrev = () => {
+    setCurrentDate(prev => viewMode === 'month' ? subMonths(prev, 1) : subWeeks(prev, 1));
+  };
+
+  const handleNext = () => {
+    setCurrentDate(prev => viewMode === 'month' ? addMonths(prev, 1) : addWeeks(prev, 1));
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] bg-[#fdfdfd] border border-slate-200 rounded-xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
-      {/* Top Toolbar */}
-      <div className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-30">
+    <div className="flex flex-col h-[calc(100vh-140px)] bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-2xl animate-in fade-in duration-700">
+      {/* Dynamic Header & Search Matrix */}
+      <div className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-30 shrink-0">
+        <div className="flex items-center gap-8">
+          <div className="flex flex-col">
+            <h2 className="text-lg font-display font-bold text-slate-900 uppercase tracking-tight flex items-center gap-3">
+              <LayoutGrid className="h-5 w-5 text-primary" />
+              Production Timeline
+            </h2>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">Operational Chronology Matrix v2.4</p>
+          </div>
+
+          <div className="h-10 w-[1px] bg-slate-100 hidden md:block" />
+
+          <div className="flex items-center gap-3">
+            <ListFilter className="h-4 w-4 text-slate-400 hidden sm:block" />
+            <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
+              <SelectTrigger className="w-[240px] h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider shadow-inner">
+                <SelectValue placeholder="Select Work Order..." />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                <SelectItem value="all" className="text-xs font-bold uppercase">All Active Threads</SelectItem>
+                {orders.map(order => (
+                  <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase">
+                    WO #{order.id} - {order.customer}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="flex items-center gap-4">
-          <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Production Timeline</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input 
-              placeholder="Search & Filter" 
-              className="h-8 pl-9 pr-4 rounded-md border border-slate-200 bg-slate-50 text-[11px] font-medium w-48 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+            <button 
+              onClick={() => setViewMode('month')}
+              className={cn(
+                "h-9 px-6 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                viewMode === 'month' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Month
+            </button>
+            <button 
+              onClick={() => setViewMode('week')}
+              className={cn(
+                "h-9 px-6 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                viewMode === 'week' ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Week
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white hover:text-primary rounded-lg" onClick={handlePrev}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div className="px-4 min-w-[140px] text-center">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">
+                {viewMode === 'month' ? format(currentDate, 'MMMM yyyy') : `Week ${format(currentDate, 'w')}, ${format(currentDate, 'yyyy')}`}
+              </span>
+            </div>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white hover:text-primary rounded-lg" onClick={handleNext}>
+              <ChevronRight className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Date Header Controls */}
-      <div className="h-12 bg-white border-b border-slate-100 flex items-center px-4 gap-4">
-        <div className="flex bg-slate-100 p-0.5 rounded-md border border-slate-200">
-          <Button variant="ghost" size="sm" className="h-7 px-4 text-[10px] font-bold uppercase tracking-wider bg-white shadow-sm rounded">By Date</Button>
-          <Button variant="ghost" size="sm" className="h-7 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Manual</Button>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-[11px] font-bold text-[#001F3D] uppercase tracking-[0.1em] min-w-[120px] text-center">
-            {format(currentDate, 'MMMM yyyy')}
-          </span>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Gantt Content */}
+      {/* Main Gantt Canvas */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Side: Hierarchy List */}
-        <div className="w-[320px] border-r border-slate-200 bg-white flex flex-col z-20 shadow-[4px_0_15px_rgba(0,0,0,0.02)]">
-          <div className="h-10 border-b border-slate-100 flex items-center px-4 bg-slate-50/50">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Project Task Directory</span>
+        {/* Left Side: Hierarchical Task Tree */}
+        <div className="w-[380px] border-r border-slate-100 bg-white flex flex-col z-20 shadow-[8px_0_24px_rgba(0,0,0,0.02)] shrink-0">
+          <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em]">Operational Hierarchy</span>
           </div>
           <ScrollArea className="flex-1">
-            <div className="py-2">
-              {orders.map(order => (
-                <div key={order.id} className="mb-1">
-                  {/* Order Row */}
+            <div className="py-4 space-y-1">
+              {filteredOrders.map(order => (
+                <div key={order.id} className="select-none">
+                  {/* Level 1: Work Order */}
                   <div 
-                    className="h-10 flex items-center px-2 hover:bg-slate-50 transition-colors group cursor-pointer"
+                    className={cn(
+                      "h-12 flex items-center px-4 hover:bg-slate-50 transition-all group cursor-pointer border-l-4",
+                      order.status === 'Completed' ? "border-emerald-500" : "border-primary"
+                    )}
                     onClick={() => toggleOrder(order.id)}
                   >
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      {expandedOrders[order.id] ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRightIcon className="h-3 w-3 text-slate-400" />}
+                    <div className="w-8 h-8 flex items-center justify-center">
+                      {expandedOrders[order.id] ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRightIcon className="h-4 w-4 text-slate-400" />}
                     </div>
-                    <div className={cn("w-1.5 h-6 rounded-full mr-2", order.status === 'Completed' ? 'bg-emerald-500' : 'bg-primary')} />
-                    <span className="text-[11px] font-bold text-slate-700 truncate flex-1 uppercase tracking-tight">{order.customer}</span>
-                    <Avatar className="h-5 w-5 ml-2 border border-white shadow-sm opacity-0 group-hover:opacity-100">
-                      <AvatarImage src={`https://picsum.photos/seed/${order.owner}/20/20`} />
-                    </Avatar>
+                    <div className="flex flex-col flex-1 min-w-0 pr-2">
+                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-tight truncate">{order.customer}</span>
+                      <span className="text-[8px] text-slate-400 font-code font-bold">WO_ID: {order.id}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[8px] border-slate-100 font-bold bg-slate-50">{order.progress || 0}%</Badge>
                   </div>
 
-                  {/* Operations (Nested) */}
+                  {/* Level 2: Operations */}
                   {expandedOrders[order.id] && order.routing?.map((op, opIdx) => (
                     <div key={op.id}>
                       <div 
-                        className="h-9 flex items-center pl-8 pr-2 hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                        className="h-10 flex items-center pl-10 pr-4 hover:bg-slate-50/80 transition-all group cursor-pointer border-b border-slate-50/50"
                         onClick={() => toggleOp(op.id)}
                       >
-                        <div className="w-4 h-4 flex items-center justify-center mr-1">
-                          {op.subTasks?.length > 0 && (expandedOps[op.id] ? <ChevronDown className="h-2.5 w-2.5 text-slate-300" /> : <ChevronRightIcon className="h-2.5 w-2.5 text-slate-300" />)}
+                        <div className="w-6 h-6 flex items-center justify-center mr-2">
+                          {op.subTasks?.length > 0 ? (
+                            expandedOps[op.id] ? <ChevronDown className="h-3 w-3 text-primary" /> : <ChevronRightIcon className="h-3 w-3 text-slate-300" />
+                          ) : null}
                         </div>
-                        <div className="w-1 h-4 rounded-full bg-slate-200 mr-2" />
-                        <span className="text-[10px] font-medium text-slate-500 truncate flex-1">{op.name}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary/20 mr-3 shrink-0" />
+                        <span className="text-[10px] font-bold text-slate-600 truncate flex-1 uppercase tracking-wider">{op.name}</span>
+                        {op.status === 'Completed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                       </div>
 
-                      {/* Subtasks (Deeply Nested) */}
+                      {/* Level 3: Sub-tasks */}
                       {expandedOps[op.id] && op.subTasks?.map((sub) => (
-                        <div key={sub.id} className="h-8 flex items-center pl-14 pr-2 hover:bg-slate-50/50 transition-colors group">
-                          <div className="w-3 h-px bg-slate-200 mr-2" />
-                          <span className="text-[9px] font-medium text-slate-400 truncate flex-1">{sub.name}</span>
+                        <div key={sub.id} className="h-9 flex items-center pl-20 pr-4 hover:bg-slate-50/50 transition-all group border-b border-slate-50/20">
+                          <div className="w-4 h-px bg-slate-200 mr-3" />
+                          <span className="text-[9px] font-medium text-slate-400 truncate flex-1 uppercase tracking-widest">{sub.name}</span>
+                          {sub.status === 'Completed' ? (
+                            <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                          ) : (
+                            <Clock className="h-3 w-3 text-slate-200" />
+                          )}
                         </div>
                       ))}
                     </div>
                   ))}
                 </div>
               ))}
+              {filteredOrders.length === 0 && (
+                <div className="p-10 text-center opacity-30 flex flex-col items-center gap-4">
+                  <LayoutGrid className="h-12 w-12 text-slate-300" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">No active production threads</p>
+                </div>
+              )}
             </div>
           </ScrollArea>
-          <div className="h-10 border-t border-slate-100 flex items-center px-4 bg-slate-50/50">
-            <button className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest hover:text-primary transition-colors">
-              <Plus className="h-3 w-3" /> Add Project
+          <div className="h-14 border-t border-slate-100 flex items-center px-6 bg-slate-50/50">
+            <button className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest hover:text-primary transition-all">
+              <Plus className="h-3 w-3" /> Register Operational node
             </button>
           </div>
         </div>
 
-        {/* Right Side: Timeline Visualization */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* Calendar Day Header */}
-          <div className="h-10 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-10">
+        {/* Right Side: Interactive Timeline Visualization */}
+        <div className="flex-1 flex flex-col overflow-hidden relative bg-[#fcfcfc]">
+          {/* Calendar Header Row */}
+          <div className="h-12 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-10 shadow-sm">
             {timelineInterval.map((day, idx) => (
               <div 
                 key={idx} 
                 className={cn(
-                  "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[40px]",
-                  isToday(day) && "bg-blue-50/30"
+                  "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[45px] transition-colors",
+                  isToday(day) && "bg-primary/[0.03]"
                 )}
               >
-                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter mb-0.5">{format(day, 'EEE').charAt(0)}</span>
+                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter mb-0.5">{format(day, 'EEE')}</span>
                 <span className={cn(
-                  "text-[10px] font-bold tracking-tight",
-                  isToday(day) ? "text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center" : "text-slate-400"
+                  "text-[10px] font-bold tracking-tight w-6 h-6 flex items-center justify-center rounded-lg transition-all",
+                  isToday(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-slate-400"
                 )}>
                   {format(day, 'd')}
                 </span>
@@ -215,34 +299,36 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
             ))}
           </div>
 
-          {/* Timeline Grid Content */}
+          {/* Scrolling Timeline Grid */}
           <ScrollArea className="flex-1">
             <div className="relative min-h-full">
-              {/* Vertical Grid Lines */}
+              {/* Vertical Time Guides */}
               <div className="absolute inset-0 flex pointer-events-none">
                 {timelineInterval.map((day, idx) => (
-                  <div key={idx} className={cn("flex-1 border-r border-slate-50", isToday(day) && "bg-blue-50/10 border-blue-100/30")} />
+                  <div key={idx} className={cn("flex-1 border-r border-slate-50", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
                 ))}
               </div>
 
-              {/* Current Time Line */}
-              <div className="absolute top-0 bottom-0 w-px border-l-2 border-dashed border-purple-400/50 left-[50%] z-10 pointer-events-none">
-                <div className="h-2 w-2 rounded-full bg-purple-400 absolute top-0 -left-1 shadow-lg" />
+              {/* Current Time Indicator Protocol */}
+              <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-accent/40 left-[50%] z-10 pointer-events-none group">
+                <div className="h-3 w-3 rounded-full bg-accent absolute top-[-6px] left-[-6px] shadow-lg animate-pulse" />
+                <div className="absolute top-4 left-3 bg-accent text-white text-[8px] font-bold px-2 py-0.5 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  LIVE_PROTOCOL_MARKER
+                </div>
               </div>
 
-              {/* Bars Overlay */}
-              <div className="py-2 relative z-0">
-                {orders.map(order => {
+              {/* Graphical Bars Layer */}
+              <div className="py-4 relative z-0">
+                {filteredOrders.map(order => {
                   const orderStyles = getBarStyles(order.startDate, order.endDate);
-                  const orderOverdue = isOverdue(order.endDate, order.status);
-
+                  
                   return (
                     <div key={order.id} className="mb-1">
-                      {/* Order Row Bar */}
-                      <div className="h-10 flex items-center relative group">
+                      {/* Master Project Bar */}
+                      <div className="h-12 flex items-center relative group">
                         {orderStyles && (
                           <div 
-                            className="absolute h-6 rounded-md flex items-center px-3 shadow-md border-b-4 transition-transform hover:scale-[1.01] cursor-pointer"
+                            className="absolute h-7 rounded-xl flex items-center px-4 shadow-xl border-b-4 transition-all hover:scale-[1.01] cursor-pointer"
                             style={{ 
                               left: orderStyles.left, 
                               width: orderStyles.width,
@@ -253,28 +339,26 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
                             }}
                             onClick={() => onNavigateToOperations?.(order.id)}
                           >
-                            <span className="text-[9px] font-bold text-white uppercase tracking-tight truncate mr-2">{order.customer}</span>
+                            <span className="text-[9px] font-bold text-white uppercase tracking-wider truncate mr-3">{order.customer}</span>
                             <div className="ml-auto flex items-center gap-2">
                               <Badge className="bg-white/20 text-white border-none text-[8px] font-bold h-4">
-                                {order.progress}%
+                                {order.progress || 0}%
                               </Badge>
-                              {orderOverdue && <Badge className="bg-red-500 text-white border-none text-[8px] font-bold h-4 animate-pulse">Overdue</Badge>}
                             </div>
                           </div>
                         )}
                       </div>
 
-                      {/* Operations Bars */}
+                      {/* Machining Operation Bars */}
                       {expandedOrders[order.id] && order.routing?.map((op) => {
                         const opStyles = getBarStyles(op.startDate, op.endDate);
-                        const opOverdue = isOverdue(op.endDate, op.status);
 
                         return (
                           <div key={op.id}>
-                            <div className="h-9 flex items-center relative group">
+                            <div className="h-10 flex items-center relative group">
                               {opStyles && (
                                 <div 
-                                  className="absolute h-5 rounded flex items-center px-3 shadow-sm border-b-2"
+                                  className="absolute h-6 rounded-lg flex items-center px-3 shadow-md border-b-2"
                                   style={{ 
                                     left: opStyles.left, 
                                     width: opStyles.width,
@@ -282,33 +366,37 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
                                       ? 'linear-gradient(to right, #22c55e, #4ade80)' 
                                       : 'linear-gradient(to right, #3b82f6, #60a5fa)',
                                     borderColor: op.status === 'Completed' ? '#16a34a' : '#2563eb',
-                                    opacity: op.status === 'NA' ? 0.3 : 1
+                                    opacity: op.status === 'NA' ? 0.2 : 1
                                   }}
                                 >
-                                  {op.status === 'Completed' && <CheckCircle2 className="h-3 w-3 text-white mr-2" />}
                                   <span className="text-[8px] font-bold text-white uppercase tracking-tight truncate">{op.name}</span>
-                                  {opOverdue && <AlertCircle className="h-3 w-3 text-white ml-auto" />}
+                                  {op.status === 'Completed' && <CheckCircle2 className="h-3 w-3 text-white ml-2 shrink-0" />}
                                 </div>
                               )}
                             </div>
 
-                            {/* Subtask Bars */}
+                            {/* Sequential Sub-task Bars */}
                             {expandedOps[op.id] && op.subTasks?.map((sub) => {
                               const subStyles = getBarStyles(sub.startDate, sub.endDate);
                               return (
-                                <div key={sub.id} className="h-8 flex items-center relative group">
+                                <div key={sub.id} className="h-9 flex items-center relative group">
                                   {subStyles && (
                                     <div 
-                                      className="absolute h-4 rounded-sm flex items-center px-2 shadow-sm opacity-80"
+                                      className="absolute h-4 rounded-md flex items-center px-2 shadow-sm border"
                                       style={{ 
                                         left: subStyles.left, 
                                         width: subStyles.width,
-                                        background: sub.status === 'Completed' ? '#86efac' : '#93c5fd',
-                                        border: `1px solid ${sub.status === 'Completed' ? '#22c55e' : '#3b82f6'}`,
-                                        opacity: sub.status === 'NA' ? 0.2 : 0.8
+                                        background: sub.status === 'Completed' ? '#ecfdf5' : '#eff6ff',
+                                        borderColor: sub.status === 'Completed' ? '#10b981' : '#3b82f6',
+                                        opacity: sub.status === 'NA' ? 0.1 : 0.9
                                       }}
                                     >
-                                      <span className="text-[7px] font-bold text-slate-700 uppercase tracking-tighter truncate">{sub.name}</span>
+                                      <span className={cn(
+                                        "text-[7px] font-bold uppercase tracking-tighter truncate",
+                                        sub.status === 'Completed' ? "text-emerald-600" : "text-primary"
+                                      )}>
+                                        {sub.name}
+                                      </span>
                                     </div>
                                   )}
                                 </div>

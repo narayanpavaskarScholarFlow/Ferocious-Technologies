@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -27,7 +26,10 @@ import {
   Save,
   Activity,
   Layers,
-  Clock
+  Clock,
+  FileText,
+  Trash2,
+  FileIcon
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -57,6 +59,11 @@ interface DimensionRecord {
   remark: string;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+}
+
 const MACHINING_OPS = [
   "VMC Milling - Dimensions Verification",
   "CNC Turning - Surface Finish Ra < 0.8",
@@ -82,8 +89,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
-  const [drawingUploaded, setDrawingUploaded] = useState(false);
-  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter orders that have a QC operation in their routing
@@ -119,8 +125,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
     MACHINING_OPS.forEach(op => initial[op] = 'Pending');
     setChecks(initial);
     setDimensions(INITIAL_DIMENSIONS);
-    setDrawingUploaded(false);
-    setUploadedFileName('');
+    setUploadedFiles([]);
   };
 
   const handleToggleCheck = (op: string, status: CheckStatus) => {
@@ -219,15 +224,22 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFileName(file.name);
-      setDrawingUploaded(true);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newFiles: UploadedFile[] = Array.from(files).map(file => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name
+      }));
+      setUploadedFiles(prev => [...prev, ...newFiles]);
       toast({
-        title: "Drawing Matrix Loaded",
-        description: `${file.name} successfully attached to inspection protocol.`
+        title: "Drawings Cached",
+        description: `${newFiles.length} technical drawings attached to protocol.`
       });
     }
+  };
+
+  const removeFile = (id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
 
   const submitForReview = () => {
@@ -359,7 +371,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                           "text-[9px] uppercase font-bold px-3 py-1",
                           status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
                           (status === 'Review Pending' || status === 'WIP') ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                          'bg-amber-50 text-amber-700 border border-amber-100'
+                          'bg-amber-50 text-amber-700 border-amber-100'
                         )}>
                           {status}
                         </Badge>
@@ -449,7 +461,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                 </Card>
               </TabsContent>
 
-              <TabsContent value="customer" className="m-0">
+              <TabsContent value="customer" className="m-0 space-y-8">
                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -554,6 +566,30 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                     </Table>
                   </div>
                 </Card>
+
+                {uploadedFiles.length > 0 && (
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-6">
+                    <div className="flex items-center gap-3">
+                      <FileIcon className="h-5 w-5 text-primary" />
+                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Attached Drawing Matrix</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {uploadedFiles.map((file) => (
+                        <div key={file.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white rounded-lg">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{file.name}</span>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
 
@@ -567,7 +603,13 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
               </Button>
               <Button 
                 className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
-                onClick={() => setCurrentStep('report')}
+                onClick={() => {
+                  if (uploadedFiles.length === 0) {
+                    toast({ variant: "destructive", title: "Missing Technical Data", description: "Attach at least one drawing to proceed." });
+                    return;
+                  }
+                  setCurrentStep('report');
+                }}
               >
                 Verify & Preview Inspection Sheet
               </Button>
@@ -587,30 +629,34 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
               </div>
               
               <div className="space-y-4 pt-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload Drawing Reference (PDF)</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attach Technical Drawings (PDF)</p>
                 <input 
                   type="file" 
                   id="drawing-reference-upload" 
                   className="hidden" 
                   accept=".pdf"
+                  multiple
                   onChange={handleFileChange}
                 />
                 <label 
                   htmlFor="drawing-reference-upload"
                   className={cn(
                     "h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
-                    drawingUploaded ? "border-green-500/50 bg-green-50/20" : "border-slate-200 hover:border-primary/50 bg-slate-50/50"
+                    uploadedFiles.length > 0 ? "border-primary/50 bg-primary/5" : "border-slate-200 hover:border-primary/50 bg-slate-50/50"
                   )}
                 >
-                  {drawingUploaded ? (
+                  {uploadedFiles.length > 0 ? (
                     <>
-                      <ImageIcon className="h-10 w-10 text-green-500" />
-                      <span className="text-[10px] font-bold text-green-600 uppercase truncate max-w-[200px]">{uploadedFileName || 'DRAWING_LOADED.PDF'}</span>
+                      <FileIcon className="h-10 w-10 text-primary animate-pulse" />
+                      <div className="text-center">
+                        <span className="text-[10px] font-bold text-primary uppercase block">{uploadedFiles.length} Drawings Attached</span>
+                        <span className="text-[8px] text-slate-400 uppercase mt-1">Click to add more</span>
+                      </div>
                     </>
                   ) : (
                     <>
                       <Upload className="h-10 w-10 text-slate-300" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Click to attach PDF Drawing</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Attach PDF Metadata</span>
                     </>
                   )}
                 </label>
@@ -673,34 +719,34 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">I. Technical Drawing Sheet</h3>
-                <Badge variant="outline" className="text-[8px] bg-white border-slate-200">RESTRICTED</Badge>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 rounded-[2rem] h-[450px] flex items-center justify-center relative overflow-hidden shadow-inner">
-                {drawingUploaded ? (
-                  <div className="flex flex-col items-center gap-6 text-center">
-                    <div className="p-8 bg-white rounded-full shadow-sm border border-slate-100">
-                      <ImageIcon className="h-16 w-16 text-primary/20" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-lg font-bold text-slate-900 uppercase">{uploadedFileName || `DRAWING_REF_#${selectedOrder.id}.PDF`}</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Scaled for A4 Sheet Verification</p>
-                    </div>
+            {/* Drawing Sections - One for each uploaded part/drawing */}
+            <div className="space-y-12">
+              {uploadedFiles.map((file, fIdx) => (
+                <div key={file.id} className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-primary pl-3">
+                      {fIdx + 1}. Technical Drawing: {file.name}
+                    </h3>
+                    <Badge variant="outline" className="text-[8px] bg-white border-slate-200">RESTRICTED_PROTOCOL</Badge>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 opacity-20">
-                    <ImageIcon className="h-12 w-12" />
-                    <span className="text-[9px] font-bold uppercase tracking-[0.3em]">No Document Attached</span>
+                  <div className="bg-slate-50 border border-slate-100 rounded-[2rem] h-[450px] flex items-center justify-center relative overflow-hidden shadow-inner">
+                    <div className="flex flex-col items-center gap-6 text-center">
+                      <div className="p-8 bg-white rounded-full shadow-sm border border-slate-100">
+                        <ImageIcon className="h-16 w-16 text-primary/20" />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-bold text-slate-900 uppercase">{file.name}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Visual Reference Placeholder</p>
+                      </div>
+                    </div>
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '30px 30px' }} />
                   </div>
-                )}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-              </div>
+                </div>
+              ))}
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">II. Dimensional Compliance Report</h3>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] border-l-2 border-green-500 pl-3">Dimensional Compliance Ledger</h3>
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                 <Table className="border-collapse">
                   <TableHeader className="bg-slate-50/80">

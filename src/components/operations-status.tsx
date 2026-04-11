@@ -34,12 +34,14 @@ import {
   ArrowRight,
   Clock,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  User,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import React from 'react';
-import { Order, RoutingOperation, SubTask } from '@/lib/types';
+import { Order, RoutingOperation, SubTask, Machine, SystemUser, Vendor } from '@/lib/types';
 import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { AnnualLeaveEntry } from './manpower-utilization';
@@ -58,26 +60,14 @@ const STATUS_OPTIONS = [
   { label: "NA", color: "text-slate-400 bg-slate-100 border-slate-200" },
 ];
 
-const RESOURCE_LIST = [
-  { id: '01', name: 'VMC milling-BFW (01)', type: 'internal' },
-  { id: '02', name: 'VMC milling-BFW (02)', type: 'internal' },
-  { id: '03', name: 'VMC milling-HASS (03)', type: 'internal' },
-  { id: '04', name: 'VMC milling (04)', type: 'internal' },
-  { id: '05', name: 'CNC Turning (05)', type: 'internal' },
-  { id: '06', name: 'EDM ZNC (06)', type: 'internal' },
-  { id: 'V1', name: 'Precision HT', type: 'vendor' },
-  { id: 'V2', name: 'Global Logistics', type: 'vendor' },
-  { id: 'V3', name: 'Electro-Chem', type: 'vendor' },
-  { id: 'V4', name: 'Alpha Machining', type: 'vendor' },
-  { id: 'V5', name: 'Apex Finishing', type: 'vendor' },
-];
-
 interface OperationsStatusProps {
   initialOrderId?: string | null;
   onOrderIdChange?: (orderId: string | null) => void;
   onNavigateToVendor?: () => void;
   onStatusChange?: (orderId: string, operation: string, status: string) => void;
   orders?: Order[];
+  users?: SystemUser[];
+  vendors?: Vendor[];
 }
 
 export function OperationsStatus({ 
@@ -85,7 +75,9 @@ export function OperationsStatus({
   onOrderIdChange, 
   onNavigateToVendor,
   onStatusChange,
-  orders = []
+  orders = [],
+  users = [],
+  vendors = []
 }: OperationsStatusProps) {
   const db = useFirestore();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
@@ -198,21 +190,19 @@ export function OperationsStatus({
       return;
     }
 
-    // New literal progress calculation logic:
-    // Progress = (Completed applicable tasks) / (Total applicable tasks)
     let totalApplicableTasks = 0;
     let completedTasks = 0;
 
     activeOps.forEach(op => {
       if (op.subTasks && op.subTasks.length > 0) {
         totalApplicableTasks += op.subTasks.length;
-        completedTasks += op.subTasks.filter(s => s.isCompleted).length;
+        completedTasks += op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length;
       } else {
         totalApplicableTasks += 1;
         if (op.status === 'Completed') {
           completedTasks += 1;
         } else if (op.status === 'WIP') {
-          completedTasks += 0.5; // Partial credit for work in progress
+          completedTasks += 0.5;
         }
       }
     });
@@ -289,6 +279,7 @@ export function OperationsStatus({
       name: taskName.trim(),
       startDate: startFrom,
       endDate: getNextAvailableDay(startFrom),
+      status: 'Yet to start',
       isCompleted: false
     };
     
@@ -314,6 +305,12 @@ export function OperationsStatus({
         if (checkStart < parentStart || checkEnd > parentEnd) {
           return op;
         }
+      }
+
+      if (updates.status === 'Completed') {
+        currentSub.isCompleted = true;
+      } else if (updates.status) {
+        currentSub.isCompleted = false;
       }
 
       subTasks[subIdx] = currentSub;
@@ -429,7 +426,7 @@ export function OperationsStatus({
                       const isNA = currentStatus === 'NA';
                       const startIsHoliday = isHoliday(op.startDate);
                       const hasSubs = op.subTasks && op.subTasks.length > 0;
-                      const completedSubs = hasSubs ? op.subTasks.filter(s => s.isCompleted).length : 0;
+                      const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length : 0;
                       const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       
                       return (
@@ -526,7 +523,7 @@ export function OperationsStatus({
                                       </DropdownMenuSubTrigger>
                                       <DropdownMenuPortal>
                                         <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
-                                          {RESOURCE_LIST.filter(r => r.type === 'vendor').map((vendor) => (
+                                          {vendors.map((vendor) => (
                                             <DropdownMenuItem 
                                               key={vendor.id}
                                               onClick={() => handleLocalStatusChange(op.id, 'Vendor', vendor.name)}
@@ -567,26 +564,19 @@ export function OperationsStatus({
                                   
                                   <div className="space-y-4">
                                     {op.subTasks.map((task, sIdx) => (
-                                      <div key={task.id} className="flex flex-col md:grid md:grid-cols-12 gap-4 items-stretch md:items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
-                                        <div className="md:col-span-1 flex items-center justify-center">
-                                          <Checkbox 
-                                            checked={task.isCompleted} 
-                                            onCheckedChange={(checked) => handleUpdateSubTask(idx, sIdx, { isCompleted: !!checked })}
-                                            className="h-5 w-5 rounded-lg border-slate-200 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                                          />
-                                        </div>
-                                        <div className="md:col-span-3 space-y-2">
+                                      <div key={task.id} className="flex flex-col lg:grid lg:grid-cols-12 gap-4 items-stretch lg:items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
+                                        <div className="lg:col-span-3 space-y-2">
                                           <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Identity</Label>
                                           <Input 
                                             value={task.name}
                                             onChange={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
                                             className={cn(
                                               "h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold",
-                                              task.isCompleted && "text-slate-400 line-through"
+                                              task.status === 'Completed' && "text-slate-400 line-through"
                                             )} 
                                           />
                                         </div>
-                                        <div className="grid grid-cols-2 md:col-span-4 gap-4">
+                                        <div className="grid grid-cols-2 lg:col-span-3 gap-4">
                                           <div className="space-y-2">
                                             <Label className="text-[9px] font-bold uppercase text-slate-500">Start</Label>
                                             <div className="relative">
@@ -612,28 +602,56 @@ export function OperationsStatus({
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="md:col-span-3 space-y-2">
+                                        <div className="lg:col-span-3 space-y-2">
                                           <Label className="text-[9px] font-bold uppercase text-slate-400">Resource Node</Label>
                                           <Select 
                                             value={task.machineId} 
                                             onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}
                                           >
                                             <SelectTrigger className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]">
-                                              <SelectValue placeholder="Internal/Vendor" />
+                                              <SelectValue placeholder="Resource Allocation" />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-xl">
-                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1">Internal</SelectItem>
-                                              {RESOURCE_LIST.filter(r => r.type === 'internal').map(res => (
-                                                <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
+                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1 flex items-center gap-2">
+                                                <User className="h-3 w-3" /> Internal (Resources)
+                                              </SelectItem>
+                                              {users.map(u => (
+                                                <SelectItem key={u.id} value={u.id} className="text-[10px] font-medium">{u.name} ({u.role})</SelectItem>
                                               ))}
-                                              <SelectItem value="vendors" disabled className="text-[9px] font-bold uppercase text-purple-500/50 bg-purple-50 px-2 py-1">External</SelectItem>
-                                              {RESOURCE_LIST.filter(r => r.type === 'vendor').map(res => (
-                                                <SelectItem key={res.id} value={res.id} className="text-[10px] font-medium">{res.name}</SelectItem>
+                                              <SelectItem value="external" disabled className="text-[9px] font-bold uppercase text-purple-500/50 bg-purple-50 px-2 py-1 flex items-center gap-2">
+                                                <Truck className="h-3 w-3" /> External (Partners)
+                                              </SelectItem>
+                                              {vendors.map(v => (
+                                                <SelectItem key={v.id} value={v.id} className="text-[10px] font-medium">{v.name}</SelectItem>
                                               ))}
                                             </SelectContent>
                                           </Select>
                                         </div>
-                                        <div className="md:col-span-1 flex justify-end">
+                                        <div className="lg:col-span-2 space-y-2">
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Status</Label>
+                                          <Select 
+                                            value={task.status || 'Yet to start'} 
+                                            onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { status: val })}
+                                          >
+                                            <SelectTrigger className={cn(
+                                              "h-9 border-none rounded-lg text-[10px] font-bold uppercase",
+                                              getStatusStyles(task.status || 'Yet to start')
+                                            )}>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                              {STATUS_OPTIONS.map(opt => (
+                                                <SelectItem key={opt.label} value={opt.label} className="text-[10px] font-bold uppercase">
+                                                  <div className="flex items-center gap-2">
+                                                    <div className={cn("h-1.5 w-1.5 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
+                                                    {opt.label}
+                                                  </div>
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="lg:col-span-1 flex justify-end">
                                           <Button 
                                             variant="ghost" 
                                             size="icon" 

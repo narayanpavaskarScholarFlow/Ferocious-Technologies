@@ -63,6 +63,7 @@ export interface SubTask {
   endDate?: string;
   machineId?: string;
   isCompleted?: boolean;
+  status?: string;
 }
 
 export interface RoutingOperation {

@@ -396,6 +396,8 @@ function IndustrialERPInternal() {
                 onNavigateToVendor={() => setCurrentView('vendor')}
                 onStatusChange={(o, op, s) => {}}
                 orders={orders}
+                users={usersData}
+                vendors={vendors}
               />
             )}
           </div>

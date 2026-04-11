@@ -198,27 +198,26 @@ export function OperationsStatus({
     }
 
     let totalApplicableTasks = 0;
-    let completedTasks = 0;
+    let completedTasksCount = 0;
 
     enforcedRouting.forEach(op => {
       if (op.status === 'NA') return;
 
       if (op.subTasks && op.subTasks.length > 0) {
         totalApplicableTasks += op.subTasks.length;
-        completedTasks += op.subTasks.filter(s => s.status === 'Completed').length;
+        completedTasksCount += op.subTasks.filter(s => s.status === 'Completed').length;
       } else {
         totalApplicableTasks += 1;
         if (op.status === 'Completed') {
-          completedTasks += 1;
+          completedTasksCount += 1;
         } else if (op.status === 'WIP') {
-          completedTasks += 0.5;
+          completedTasksCount += 0.5;
         }
       }
     });
 
-    const progress = totalApplicableTasks > 0 ? Math.round((completedTasks / totalApplicableTasks) * 100) : 0;
+    const progress = totalApplicableTasks > 0 ? Math.round((completedTasksCount / totalApplicableTasks) * 100) : 0;
 
-    // RULE: If progress is 100% (all operations completed), set status to Completed. Otherwise Pending.
     let orderStatus: Order['status'] = 'Pending';
     if (totalApplicableTasks > 0 && progress === 100) {
       orderStatus = 'Completed';
@@ -463,7 +462,7 @@ export function OperationsStatus({
                       const hasSubs = op.subTasks && op.subTasks.length > 0;
                       const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed').length : 0;
                       const allSubsCompleted = hasSubs ? completedSubs === op.subTasks.length : true;
-                      const opProgress = hasSubs ? Math.round((completedTasks / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
+                      const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       
                       return (
                         <React.Fragment key={op.id}>

@@ -23,7 +23,10 @@ import {
   CheckCircle2,
   Clock,
   Banknote,
-  Edit2
+  Edit2,
+  FileText,
+  TrendingUp,
+  DollarSign
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -73,6 +76,16 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     paymentMethod: 'Bank Transfer' as 'Cash' | 'Bank Transfer',
     transactionDetails: ''
   });
+
+  // Quotation Specific Metrics (The "Simple UI")
+  const quoteMetrics = useMemo(() => {
+    const qts = records.filter(r => r.type === 'quotation');
+    return {
+      totalValue: qts.reduce((acc, curr) => acc + (curr.amount || 0), 0),
+      pendingCount: qts.filter(r => r.status === 'Pending').length,
+      totalCount: qts.length
+    };
+  }, [records]);
 
   const selectedEntity = useMemo(() => {
     if (activeCategory === 'inward') return vendors.find(v => v.id === formData.customerId);
@@ -139,19 +152,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       transactionDetails: formData.transactionDetails
     };
 
-    // Automation: If INWARD and linked to an Order, update Order's Amount Spent
-    // Logic: Only update if it's a NEW record to prevent double-counting on edits.
-    // In production, a more complex ledger reconciliation would be needed for edits.
     if (!editingRecordId && activeCategory === 'inward' && formData.orderId && formData.amount > 0) {
       const order = orders.find(o => o.id === formData.orderId);
       if (order) {
         const currentSpent = parseFloat((order.amountSpent || "₹ 0.00").replace(/[₹,]/g, '')) || 0;
         const newSpent = currentSpent + formData.amount;
         const formattedSpent = `₹ ${newSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-        
-        // Update order using MERGE to avoid affecting progress/routing
         setDocumentNonBlocking(doc(db, 'orders', order.id), { amountSpent: formattedSpent }, { merge: true });
-        toast({ title: "Order Ledger Updated", description: `Expenditure for Order #${order.id} increased by ₹ ${formData.amount.toLocaleString()}.` });
       }
     }
 
@@ -196,6 +203,39 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           ))}
         </TabsList>
 
+        {/* Quotation Simple Metrics UI - Restored */}
+        {activeCategory === 'quotation' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-in slide-in-from-top-2 duration-500">
+            <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-primary/30 transition-all">
+              <div className="h-14 w-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                <DollarSign className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Quoted Value</p>
+                <p className="text-2xl font-display font-bold text-[#001F3D]">₹ {quoteMetrics.totalValue.toLocaleString('en-IN')}</p>
+              </div>
+            </Card>
+            <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-amber-500/30 transition-all">
+              <div className="h-14 w-14 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                <Clock className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Protocols</p>
+                <p className="text-2xl font-display font-bold text-[#001F3D]">{quoteMetrics.pendingCount}</p>
+              </div>
+            </Card>
+            <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-emerald-500/30 transition-all">
+              <div className="h-14 w-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                <FileText className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Master QTs Count</p>
+                <p className="text-2xl font-display font-bold text-[#001F3D]">{quoteMetrics.totalCount}</p>
+              </div>
+            </Card>
+          </div>
+        )}
+
         <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-2xl">
           <div className="p-8 border-b border-slate-100 flex items-center bg-slate-50/50">
             <div className="relative w-96">
@@ -225,7 +265,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </TableCell>
                   <TableCell className="text-xs font-bold text-slate-700 uppercase">{record.customerName}</TableCell>
                   {activeCategory === 'inward' && <TableCell className="text-xs font-medium text-slate-500 uppercase">{record.itemName}</TableCell>}
-                  <TableCell className="text-right font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString('en-IN')}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className={cn(
                       "text-[9px] font-bold uppercase",

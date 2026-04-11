@@ -201,7 +201,7 @@ export interface SystemUser {
 
 export interface DimensionRecord {
   id: string;
-  feature: string;
+  balloonNo: string;
   target: string;
   tolerance: string;
   upperLimit: string;

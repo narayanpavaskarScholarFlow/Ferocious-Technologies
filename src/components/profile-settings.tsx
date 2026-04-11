@@ -32,7 +32,14 @@ import {
   Monitor,
   Edit3,
   Unlock,
-  UserCircle
+  UserCircle,
+  Trash2,
+  UserPlus,
+  BrainCircuit,
+  Cpu,
+  FileCheck,
+  Zap,
+  Activity
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -41,20 +48,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-const ACCESS_PAGES = [
-  { id: 'overview', label: 'Command Overview', icon: LayoutGrid },
-  { id: 'orders', label: 'Production Orders', icon: ShoppingCart },
-  { id: 'routing', label: 'Operational Routing', icon: Layers },
-  { id: 'quality', label: 'Quality Assurance', icon: ShieldCheck },
-  { id: 'inventory', label: 'Material Ledger', icon: Boxes },
-  { id: 'billing', label: 'Financial Hub', icon: CreditCard },
-  { id: 'work-log', label: 'Operator Work Log', icon: ClipboardList },
-  { id: 'telemetry', label: 'Asset Telemetry', icon: Monitor },
-  { id: 'resources', label: 'Resource Management', icon: Users },
-  { id: 'sqcdp', label: 'SQCDP Board', icon: LineChart },
-  { id: 'pipeline', label: 'CRM / Pipeline', icon: Package },
-  { id: 'vendors', label: 'Supply Chain', icon: Truck },
-  { id: 'schedule', label: 'Master Schedule', icon: Calendar },
+// High-fidelity permission nodes categorized by industrial function
+const ACCESS_NODES = [
+  // Category: Strategic Hub
+  { id: 'overview', label: 'Command Matrix (Dashboard)', category: 'Strategic Hub', icon: LayoutGrid },
+  { id: 'smart-quote', label: 'AI Smart Quoting (Gemini)', category: 'Strategic Hub', icon: BrainCircuit },
+  { id: 'sqcdp', label: 'SQCDP Performance Metrics', category: 'Strategic Hub', icon: LineChart },
+  
+  // Category: Production Control
+  { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },
+  { id: 'gantt', label: 'Visual Timeline (Gantt)', category: 'Production Control', icon: LayoutGrid },
+  { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
+  { id: 'weekly-plan', label: 'Master Production Schedule', category: 'Production Control', icon: Calendar },
+  { id: 'work-log', label: 'Daily Operator Work Logs', category: 'Production Control', icon: ClipboardList },
+  
+  // Category: Quality & Compliance
+  { id: 'quality', label: 'Quality Inspection Pipeline', category: 'Quality & Compliance', icon: ShieldCheck },
+  { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
+  
+  // Category: Commercial Operations
+  { id: 'customer-orders', label: 'CRM / Account Pipeline', category: 'Commercial Operations', icon: Package },
+  { id: 'billing', label: 'Financial Hub (Quoting/Billing)', category: 'Commercial Operations', icon: CreditCard },
+  { id: 'billing-purge', label: 'Financial Deletion protocol', category: 'Commercial Operations', icon: Trash2 },
+  { id: 'vendor', label: 'Supply Chain & Vendor Directory', category: 'Commercial Operations', icon: Truck },
+  
+  // Category: Resources & Assets
+  { id: 'machine-utilization', label: 'Industrial Asset Telemetry', category: 'Resources & Assets', icon: Cpu },
+  { id: 'maintenance', label: 'Asset Maintenance Ledger', category: 'Resources & Assets', icon: Activity },
+  { id: 'manpower', label: 'Personnel & Skill Matrix', category: 'Resources & Assets', icon: Users },
+  { id: 'hr-planning', label: 'Leave & Holiday Matrix', category: 'Resources & Assets', icon: Calendar },
+  
+  // Category: System Governance
+  { id: 'users', label: 'System Identity Management', category: 'System Governance', icon: UserPlus },
+  { id: 'matrix', label: 'Access Control Matrix', category: 'System Governance', icon: Unlock },
+  { id: 'settings', label: 'Global System Configuration', category: 'System Governance', icon: Settings },
 ];
 
 interface ProfileSettingsProps {
@@ -80,7 +107,16 @@ export function ProfileSettings({
   const [isSaving, setIsSaving] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
 
-  // Admin Profile State
+  // Group permissions for hierarchical UI
+  const groupedPermissions = useMemo(() => {
+    const groups: Record<string, typeof ACCESS_NODES> = {};
+    ACCESS_NODES.forEach(node => {
+      if (!groups[node.category]) groups[node.category] = [];
+      groups[node.category].push(node);
+    });
+    return groups;
+  }, []);
+
   const activeAdmin = useMemo(() => {
     return users.find(u => u.name === currentUser || u.email?.includes(String(currentUser).toLowerCase())) || null;
   }, [users, currentUser]);
@@ -270,10 +306,10 @@ export function ProfileSettings({
             <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
                 <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Granular Security Assignment Ledger</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Hierarchical Security Assignment Ledger</p>
               </div>
               <div className="flex items-center gap-4 w-full md:w-auto">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Select Identity:</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Identity:</span>
                 <Select value={currentUserMatrix?.id || ''} onValueChange={setSelectedUserForMatrix}>
                   <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
                     <SelectValue placeholder="Select User..." />
@@ -289,8 +325,8 @@ export function ProfileSettings({
             
             <div className="p-10">
               {currentUserMatrix ? (
-                <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between mb-6 px-4">
+                <div className="space-y-12">
+                  <div className="flex items-center justify-between px-4 py-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">
                         {currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'}
@@ -300,63 +336,75 @@ export function ProfileSettings({
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{currentUserMatrix.role} • {currentUserMatrix.dept}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase tracking-widest px-4 py-1.5 h-8">SECURE_ACTIVE</Badge>
+                    <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px]">PROTOCOL_ACTIVE</Badge>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {ACCESS_PAGES.map(page => {
-                      const currentLevel = (currentUserMatrix.permissions && currentUserMatrix.permissions[page.id]) || 'none';
-                      const Icon = page.icon;
-                      
-                      return (
-                        <div key={page.id} className="group p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col gap-5 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-primary/5 transition-colors">
-                                <Icon className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
-                              </div>
-                              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{page.label}</span>
-                            </div>
-                            <div className={cn(
-                              "h-1.5 w-1.5 rounded-full",
-                              currentLevel === 'full' ? "bg-accent animate-pulse" : 
-                              currentLevel === 'edit' ? "bg-primary" : 
-                              currentLevel === 'read' ? "bg-emerald-500" : "bg-slate-200"
-                            )} />
-                          </div>
-
-                          <Select 
-                            value={currentLevel} 
-                            onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, page.id, val as PermissionLevel)}
-                          >
-                            <SelectTrigger className={cn(
-                              "h-10 border-none text-[10px] font-bold uppercase rounded-xl transition-all shadow-sm",
-                              currentLevel === 'full' ? "bg-accent/10 text-accent" :
-                              currentLevel === 'edit' ? "bg-primary/10 text-primary" :
-                              currentLevel === 'read' ? "bg-emerald-50 text-emerald-600" :
-                              "bg-slate-50 text-slate-400"
-                            )}>
-                              <SelectValue placeholder="Access Level" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                              <SelectItem value="none" className="text-[10px] font-bold uppercase">No Access</SelectItem>
-                              <SelectItem value="read" className="text-[10px] font-bold uppercase">View</SelectItem>
-                              <SelectItem value="edit" className="text-[10px] font-bold uppercase">Edit</SelectItem>
-                              <SelectItem value="full" className="text-[10px] font-bold uppercase">Full control</SelectItem>
-                            </SelectContent>
-                          </Select>
+                  <div className="space-y-16">
+                    {Object.entries(groupedPermissions).map(([category, nodes]) => (
+                      <div key={category} className="space-y-8">
+                        <div className="flex items-center gap-4">
+                          <div className="h-px bg-slate-100 flex-1" />
+                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] px-4 whitespace-nowrap">{category}</h4>
+                          <div className="h-px bg-slate-100 flex-1" />
                         </div>
-                      );
-                    })}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                          {nodes.map(node => {
+                            const currentLevel = (currentUserMatrix.permissions && currentUserMatrix.permissions[node.id]) || 'none';
+                            const Icon = node.icon;
+                            
+                            return (
+                              <div key={node.id} className="group p-6 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-6 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-primary/5 transition-colors">
+                                      <Icon className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
+                                    </div>
+                                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-tight">{node.label}</span>
+                                  </div>
+                                  <div className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    currentLevel === 'full' ? "bg-accent animate-pulse" : 
+                                    currentLevel === 'edit' ? "bg-primary" : 
+                                    currentLevel === 'read' ? "bg-emerald-500" : "bg-slate-200"
+                                  )} />
+                                </div>
+
+                                <Select 
+                                  value={currentLevel} 
+                                  onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, node.id, val as PermissionLevel)}
+                                >
+                                  <SelectTrigger className={cn(
+                                    "h-11 border-none text-[10px] font-bold uppercase rounded-xl transition-all shadow-inner",
+                                    currentLevel === 'full' ? "bg-accent/10 text-accent" :
+                                    currentLevel === 'edit' ? "bg-primary/10 text-primary" :
+                                    currentLevel === 'read' ? "bg-emerald-50 text-emerald-600" :
+                                    "bg-slate-50 text-slate-400"
+                                  )}>
+                                    <SelectValue placeholder="Access Level" />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                    <SelectItem value="none" className="text-[10px] font-bold uppercase">No Access</SelectItem>
+                                    <SelectItem value="read" className="text-[10px] font-bold uppercase">View Only</SelectItem>
+                                    <SelectItem value="edit" className="text-[10px] font-bold uppercase">Modify/Edit</SelectItem>
+                                    <SelectItem value="full" className="text-[10px] font-bold uppercase">Full command</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-32 opacity-30 text-center">
-                  <div className="p-8 bg-slate-50 rounded-full mb-6">
-                    <Shield className="h-16 w-16 text-slate-300" />
+                  <div className="p-10 bg-slate-50 rounded-full mb-8">
+                    <Shield className="h-20 w-20 text-slate-300" />
                   </div>
-                  <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Required</h4>
-                  <p className="text-xs text-slate-400 mt-2 font-medium">Select a user from the directory to initialize the access matrix.</p>
+                  <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Synchronization Required</h4>
+                  <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
                 </div>
               )}
             </div>

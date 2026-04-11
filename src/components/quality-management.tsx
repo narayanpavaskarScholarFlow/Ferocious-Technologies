@@ -36,7 +36,9 @@ import {
   Calendar,
   User,
   FileSearch,
-  MousePointer2
+  MousePointer2,
+  AlertCircle,
+  FileWarning
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -82,7 +84,7 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', feature: 'Overall Length', target: '0.00', tolerance: '±0.00', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
+  { id: '1', feature: 'Overall Length', target: '100.00', tolerance: '±0.05', upperLimit: '100.050', lowerLimit: '99.950', actual: '', status: 'Pending', remark: '' },
 ];
 
 interface QualityManagementProps {
@@ -98,7 +100,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedOp, setSelectedOp] = useState<RoutingOperation | null>(null);
   
-  // Selection logic for per-drawing reports
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
   
@@ -106,7 +107,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter orders that have a QC operation in their routing
   const qcEntries = useMemo(() => {
     const results: { order: Order; operation: RoutingOperation }[] = [];
     orders.forEach(o => {
@@ -123,13 +123,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const getResourceName = (op: RoutingOperation) => {
     const firstSub = op.subTasks?.[0];
     if (!firstSub || !firstSub.machineId) return 'Unassigned';
-    
     const user = users.find(u => u.id === firstSub.machineId);
     if (user) return user.name;
-    
     const vendor = vendors.find(v => v.id === firstSub.machineId);
     if (vendor) return vendor.name;
-    
     return 'Station: ' + firstSub.machineId;
   };
 
@@ -141,11 +138,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     const pendingCount = qcEntries.filter(e => 
       ['Yet to start', 'WIP', 'Ready for QC'].includes(e.operation.status || '')
     ).length;
-    
     const inReviewCount = qcEntries.filter(e => 
       ['Review Pending', 'In Review'].includes(e.operation.status || '')
     ).length;
-
     return [
       { name: 'Pending', count: pendingCount, color: '#f59e0b' },
       { name: 'Work in Progress', count: inReviewCount, color: '#3b82f6' },
@@ -174,6 +169,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       
       let updatedDim = { ...dim, [field]: value };
       
+      // AUTOMATED DIMENSION MAPPING LOGIC
       if (field === 'target' || field === 'tolerance') {
         const targetNum = parseFloat(updatedDim.target);
         if (!isNaN(targetNum)) {
@@ -181,23 +177,23 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           let lowerOffset = 0;
           const tol = updatedDim.tolerance.trim();
 
-          const pmMatch = tol.match(/±([\d.]+)/);
-          const plusMatch = tol.match(/\+([\d.]+)/);
-          const minusMatch = tol.match(/-([\d.]+)/);
+          // Regex matching for industrial tolerance formats
+          const pmMatch = tol.match(/[±](\d+\.?\d*)/);
+          const plusMatch = tol.match(/\+(\d+\.?\d*)/);
+          const minusMatch = tol.match(/-(\d+\.?\d*)/);
 
           if (pmMatch) {
             const val = parseFloat(pmMatch[1]);
             upperOffset = val;
             lowerOffset = -val;
-          } else {
+          } else if (plusMatch || minusMatch) {
             if (plusMatch) upperOffset = parseFloat(plusMatch[1]);
             if (minusMatch) lowerOffset = -parseFloat(minusMatch[1]);
-            
-            if (!plusMatch && !minusMatch && !isNaN(parseFloat(tol))) {
-               const val = parseFloat(tol);
-               upperOffset = val;
-               lowerOffset = -val;
-            }
+          } else if (!isNaN(parseFloat(tol))) {
+            // Default to symmetric ± if only number is provided
+            const val = parseFloat(tol);
+            upperOffset = val;
+            lowerOffset = -val;
           }
           
           updatedDim.upperLimit = (targetNum + upperOffset).toFixed(3);
@@ -205,14 +201,17 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         }
       }
 
+      // CONDITIONAL APPROVAL LOGIC
       const actualNum = parseFloat(updatedDim.actual);
       const upperNum = parseFloat(updatedDim.upperLimit);
       const lowerNum = parseFloat(updatedDim.lowerLimit);
 
-      if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
-        updatedDim.status = (actualNum >= lowerNum && actualNum <= upperNum) ? 'Pass' : 'Fail';
-      } else if (updatedDim.actual === '') {
+      if (updatedDim.actual === '') {
         updatedDim.status = 'Pending';
+      } else if (!isNaN(actualNum) && !isNaN(upperNum) && !isNaN(lowerNum)) {
+        updatedDim.status = (actualNum >= lowerNum && actualNum <= upperNum) ? 'Pass' : 'Fail';
+      } else {
+        updatedDim.status = 'Fail'; // Invalid entry treated as failure
       }
       
       return updatedDim;
@@ -242,7 +241,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         name: file.name
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
-      toast({ title: "Technical Blueprints Loaded", description: `${newFiles.length} files added to operational context.` });
+      toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files attached to sequence.` });
     }
   };
 
@@ -263,42 +262,35 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (selectedOrder && onUpdateStatus) {
       onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
     }
-    toast({ title: "Report Release Authorized", description: `Dedicated report for ${activeDrawing?.name} archived.` });
+    toast({ title: "Quality Release Authorized", description: `Report for ${activeDrawing?.name} released.` });
   };
 
-  const handleCreateAnother = () => {
-    // Reset entry state for next drawing
-    setActiveDrawingId(null);
-    setCurrentStep('upload');
-    setDimensions(INITIAL_DIMENSIONS);
-    const initial: Record<string, CheckStatus> = {};
-    MACHINING_OPS.forEach(o => initial[o] = 'Pending');
-    setChecks(initial);
-    toast({ title: "Procedure Reset", description: "Select another drawing to begin next inspection cycle." });
-  };
+  const hasFailures = useMemo(() => dimensions.some(d => d.status === 'Fail'), [dimensions]);
+  const passCount = dimensions.filter(d => d.status === 'Pass').length;
+  const failCount = dimensions.filter(d => d.status === 'Fail').length;
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden px-2">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
             <ShieldCheck className="h-4 w-4" />
-            Quality Matrix Protocol
+            Quality Control Center
           </div>
-          <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900">
-            {currentStep === 'list' && 'Inspection Pipeline'}
-            {currentStep === 'upload' && 'Drawing Matrix Onboarding'}
-            {currentStep === 'checklist' && 'Dimensional Verification'}
-            {currentStep === 'report' && 'Inspection Report Preview'}
-            {currentStep === 'review' && 'Compliance Review'}
+          <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D]">
+            {currentStep === 'list' && 'Master Inspection Pipeline'}
+            {currentStep === 'upload' && 'Drawing Onboarding'}
+            {currentStep === 'checklist' && 'Dimensional Matrix Entry'}
+            {currentStep === 'report' && 'Compliance Report Preview'}
+            {currentStep === 'review' && 'Final Review & Approval'}
             {currentStep === 'approval' && 'Final Quality Release'}
           </h2>
-          <p className="text-muted-foreground font-medium">Sequential verification lifecycle for industrial parts & blueprints.</p>
+          <p className="text-muted-foreground font-medium">Automated dimension mapping and industrial verdict synchronization.</p>
         </div>
         
         {currentStep !== 'list' && (
           <Button variant="ghost" onClick={() => setCurrentStep('list')} className="rounded-full gap-2 text-slate-400 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Abort Procedure
+            <ArrowLeft className="h-4 w-4" /> Abort Inspection
           </Button>
         )}
       </header>
@@ -306,13 +298,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       {currentStep === 'list' && (
         <div className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-8 p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col justify-between">
+            <Card className="lg:col-span-8 p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col justify-between">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Queue Distribution</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Live mapping of Work Orders with active QC gateways.</p>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Procedural Distribution</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Live visualization of inspection threads in the production pipeline.</p>
                 </div>
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">TELEMETRY_LIVE</Badge>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">REAL_TIME_SYNC</Badge>
               </div>
               <div className="h-24 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -330,44 +322,44 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </Card>
 
             <div className="lg:col-span-4 grid grid-cols-1 gap-6">
-              <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-amber-500/50 transition-colors">
+              <Card className="p-6 bg-white border-slate-200 shadow-xl rounded-2xl group hover:border-amber-500/50 transition-colors">
                 <div className="flex justify-between items-center mb-4">
                   <div className="p-3 bg-amber-50 rounded-xl">
                     <Clock className="h-5 w-5 text-amber-600" />
                   </div>
                   <span className="text-2xl font-bold text-amber-600">{statsData[0].count}</span>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Inspection</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Verification</p>
               </Card>
-              <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-blue-500/50 transition-colors">
+              <Card className="p-6 bg-white border-slate-200 shadow-xl rounded-2xl group hover:border-blue-500/50 transition-colors">
                 <div className="flex justify-between items-center mb-4">
                   <div className="p-3 bg-blue-50 rounded-xl">
                     <Layers className="h-5 w-5 text-blue-600" />
                   </div>
                   <span className="text-2xl font-bold text-blue-600">{statsData[1].count}</span>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Compliance Review</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Under Compliance Review</p>
               </Card>
             </div>
           </div>
 
-          <Card className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-[2rem]">
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
             <Table>
               <TableHeader className="bg-slate-50/50 border-b border-slate-100">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Order ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Start - End Cycle</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Inspector / Resource</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Timeline Window</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Assigned Resource</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
                   <TableHead className="text-right px-8 w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {qcEntries.map(({ order, operation }) => (
-                  <TableRow key={operation.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                  <TableRow key={operation.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group transition-colors">
                     <TableCell className="px-8 font-bold text-sm text-primary">#{order.id}</TableCell>
-                    <TableCell className="text-slate-900 font-bold uppercase">{order.customer}</TableCell>
+                    <TableCell className="text-[#001F3D] font-bold uppercase">{order.customer}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-[10px] font-code font-bold text-slate-500">
                         <span>{operation.startDate}</span>
@@ -377,7 +369,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                        <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary">
                           <User className="h-4 w-4" />
                         </div>
                         <span className="text-[11px] font-bold text-slate-700 uppercase">{getResourceName(operation)}</span>
@@ -385,9 +377,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge className={cn(
-                        "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
-                        operation.status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
-                        (['Review Pending', 'WIP'].includes(operation.status || '')) ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                        "text-[9px] font-bold uppercase px-3 py-1 rounded-full border shadow-sm",
+                        operation.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-100' :
+                        (['Review Pending', 'WIP'].includes(operation.status || '')) ? 'bg-blue-50 text-blue-700 border-blue-100' :
                         'bg-amber-50 text-amber-700 border-amber-100'
                       )}>
                         {operation.status || 'Pending'}
@@ -396,14 +388,25 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     <TableCell className="text-right px-8">
                       <Button 
                         size="sm" 
-                        className="rounded-xl bg-[#001F3D] hover:bg-black text-white text-[10px] font-bold uppercase h-10 px-6 opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                        className="rounded-xl bg-[#001F3D] hover:bg-black text-white text-[10px] font-bold uppercase h-10 px-6 opacity-0 group-hover:opacity-100 transition-all shadow-xl"
                         onClick={() => handleSelectTask(order, operation)}
                       >
-                        Start Audit <ChevronRight className="ml-2 h-4 w-4" />
+                        Initialize Audit <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
+                {qcEntries.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                        <ArchiveX className="h-12 w-12 text-slate-300 mb-4" />
+                        <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Pipeline Clear</p>
+                        <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active QC nodes detected in the shop floor routing.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -423,7 +426,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <p className="text-sm text-slate-500">Upload multiple technical drawings for Order #{selectedOrder.id}. Each drawing will receive its own dimensional report.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
               <div className="space-y-6">
                 <input 
                   type="file" 
@@ -494,7 +497,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   ))}
                   {uploadedFiles.length === 0 && (
                     <div className="py-12 text-center opacity-20 border-2 border-dashed border-slate-100 rounded-3xl">
-                      <p className="text-[10px] font-bold uppercase tracking-widest">No Drawings Loaded</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest">No Drawings Attached</p>
                     </div>
                   )}
                 </div>
@@ -504,11 +507,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <div className="pt-10 border-t border-slate-100 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Ready: Attach blueprints to initialize dimensional verification.</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select an attached blueprint to begin dimensional matrix entry.</span>
               </div>
               <Button 
                 disabled={!activeDrawingId}
-                className="h-14 px-12 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 flex gap-3 transition-all"
+                className="h-14 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-2xl shadow-primary/20 flex gap-3 transition-all"
                 onClick={() => setCurrentStep('checklist')}
               >
                 Inspect Selected Drawing <ChevronRight className="h-4 w-4" />
@@ -519,25 +522,24 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       )}
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start animate-in fade-in duration-700">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start animate-in fade-in duration-700 px-2">
           <div className="lg:col-span-12 space-y-10">
-            {/* Visual Identification Header */}
             <div className="flex items-center justify-between p-8 bg-[#001F3D] rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
               <div className="absolute right-0 top-0 p-10 opacity-5">
                 <FileSearch className="h-32 w-32" />
               </div>
               <div className="flex items-center gap-8 relative z-10">
-                <div className="h-20 w-20 bg-white/10 rounded-[1.5rem] flex items-center justify-center border border-white/10">
+                <div className="h-20 w-20 bg-white/10 rounded-[1.5rem] flex items-center justify-center border border-white/10 shadow-inner">
                   <ImageIcon className="h-10 w-10 text-accent" />
                 </div>
                 <div>
-                  <Badge className="bg-accent text-white border-none text-[8px] font-bold uppercase px-3 mb-2">Active Inspection Node</Badge>
+                  <Badge className="bg-accent text-white border-none text-[8px] font-bold uppercase px-3 mb-2">Active Inspection node</Badge>
                   <h3 className="text-3xl font-display font-bold tracking-tight uppercase">{activeDrawing.name}</h3>
                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] mt-1">Audit Protocol for WO #{selectedOrder.id}</p>
                 </div>
               </div>
               <div className="text-right relative z-10 hidden md:block">
-                <p className="text-[9px] text-white/40 font-bold uppercase tracking-widest">Report Sequence</p>
+                <p className="text-[9px] text-white/40 font-bold uppercase tracking-widest">Automatic Mapping Active</p>
                 <p className="text-xl font-display font-bold text-accent">ID_REP_{activeDrawing.id.toUpperCase()}</p>
               </div>
             </div>
@@ -545,10 +547,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <Tabs defaultValue="customer" className="w-full">
               <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-inner">
                 <TabsTrigger value="customer" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-lg transition-all">
-                  Customer Dimension Entry
+                  Dimension Matrix Entry
                 </TabsTrigger>
                 <TabsTrigger value="internal" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-lg transition-all">
-                  Internal Process Checks
+                  Process Validation
                 </TabsTrigger>
               </TabsList>
 
@@ -557,10 +559,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <div className="flex justify-between items-center px-2">
                     <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                       <MousePointer2 className="h-5 w-5 text-primary" />
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Measurement Matrix</h3>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Automated Mapping Logic</h3>
                     </div>
                     <Button variant="ghost" onClick={handleAddDimension} className="text-[10px] uppercase font-bold gap-2 text-primary hover:bg-primary/5 h-10 px-6 rounded-xl">
-                      <Plus className="h-4 w-4" /> Append Dimension Node
+                      <Plus className="h-4 w-4" /> Append Measurement Node
                     </Button>
                   </div>
 
@@ -570,11 +572,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableRow className="hover:bg-transparent border-b border-slate-100">
                           <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-6 px-6 w-[200px]">Technical Feature</TableHead>
                           <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Target (MM)</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Tolerance</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Limits (U/L)</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center w-[120px]">Actual Entry</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Tolerance Matrix</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Calculated Limits</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center w-[120px]">Actual (MM)</TableHead>
                           <TableHead className="text-[10px] font-bold uppercase text-slate-400 text-center">Verdict</TableHead>
-                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 px-6">Remark / Observation</TableHead>
+                          <TableHead className="text-[10px] font-bold uppercase text-slate-400 px-6">Observation Remark</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -596,6 +598,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             </TableCell>
                             <TableCell>
                               <Input 
+                                placeholder="±0.05 or +0.02/-0.01"
                                 className="h-11 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
                                 value={dim.tolerance} 
                                 onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)}
@@ -603,14 +606,25 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2 justify-center">
-                                <Input className="h-11 bg-white border-slate-100 font-code text-[10px] w-16 text-center rounded-xl" value={dim.upperLimit} readOnly />
-                                <Input className="h-11 bg-white border-slate-100 font-code text-[10px] w-16 text-center rounded-xl" value={dim.lowerLimit} readOnly />
+                                <div className="space-y-1">
+                                  <p className="text-[8px] font-bold text-slate-400 uppercase text-center">Upper</p>
+                                  <Input className="h-9 bg-white border-slate-100 font-code text-[10px] w-16 text-center rounded-lg shadow-sm" value={dim.upperLimit} readOnly />
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[8px] font-bold text-slate-400 uppercase text-center">Lower</p>
+                                  <Input className="h-9 bg-white border-slate-100 font-code text-[10px] w-16 text-center rounded-lg shadow-sm" value={dim.lowerLimit} readOnly />
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <Input 
                                 placeholder="0.000" 
-                                className="h-11 bg-white border-2 border-primary/20 focus-visible:ring-primary/20 font-code font-bold text-sm text-center rounded-xl shadow-inner"
+                                className={cn(
+                                  "h-11 bg-white border-2 font-code font-bold text-sm text-center rounded-xl shadow-inner transition-all",
+                                  dim.status === 'Pass' ? "border-emerald-200 focus-visible:ring-emerald-200" :
+                                  dim.status === 'Fail' ? "border-red-200 focus-visible:ring-red-200" :
+                                  "border-primary/20 focus-visible:ring-primary/20"
+                                )}
                                 value={dim.actual}
                                 onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
                               />
@@ -618,9 +632,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             <TableCell>
                               <div className="flex justify-center">
                                 <Badge className={cn(
-                                  "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm",
+                                  "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm transition-all duration-500",
                                   dim.status === 'Pass' ? "bg-green-50 text-green-700 border-green-100" :
-                                  dim.status === 'Fail' ? "bg-red-50 text-red-700 border-red-100" :
+                                  dim.status === 'Fail' ? "bg-red-50 text-red-700 border-red-100 animate-pulse" :
                                   "bg-slate-50 text-slate-400 border-slate-100"
                                 )}>
                                   {dim.status === 'Pending' ? 'UNSET' : dim.status === 'Pass' ? 'NOMINAL' : 'DEVIATION'}
@@ -708,7 +722,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-[1.5rem] font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-primary/20 flex gap-4 transition-all"
                 onClick={() => {
                   if (dimensions.every(d => d.actual === '')) {
-                    toast({ variant: "destructive", title: "Protocol Refused", description: "At least one dimensional entry is required to generate a compliance report." });
+                    toast({ variant: "destructive", title: "Protocol Refused", description: "At least one measurement entry is required to generate a compliance report." });
                     return;
                   }
                   setCurrentStep('report');
@@ -722,24 +736,24 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       )}
 
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && activeDrawing && (
-        <div className="space-y-10 pb-20 max-w-[1100px] mx-auto animate-in zoom-in-95 duration-500">
+        <div className="space-y-10 pb-20 max-w-[1100px] mx-auto animate-in zoom-in-95 duration-500 px-2">
           <div className="flex justify-between items-center px-4 print:hidden">
             <Button variant="ghost" onClick={() => setCurrentStep('checklist')} className="rounded-xl gap-3 h-12 font-bold uppercase text-[10px] tracking-widest text-slate-400 hover:text-slate-900">
-              <ArrowLeft className="h-4 w-4" /> Edit Measurements
+              <ArrowLeft className="h-4 w-4" /> Edit Matrix
             </Button>
             <div className="flex gap-4">
               <Button variant="outline" onClick={() => window.print()} className="rounded-xl gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 shadow-sm">
                 <Printer className="h-4 w-4" /> Print Matrix
               </Button>
               <Button className="rounded-xl bg-slate-900 hover:bg-black text-white gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest shadow-xl">
-                <Download className="h-4 w-4" /> Export Report
+                <Download className="h-4 w-4" /> Export Protocol
               </Button>
             </div>
           </div>
 
           <Card className={cn(
             "bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-16 space-y-12 transition-all duration-700",
-            currentStep === 'review' && "ring-8 ring-primary/5 border-primary/20"
+            currentStep === 'review' && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : currentStep === 'review' ? "ring-8 ring-primary/5 border-primary/20" : ""
           )}>
             <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10">
               <div className="space-y-6">
@@ -754,53 +768,45 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </div>
                 <div className="text-[10px] font-bold text-slate-500 space-y-1 uppercase tracking-widest leading-relaxed">
                   <p>Dimensional Compliance Protocol: ISO_9001_IND</p>
-                  <p>Secure Hash: {activeDrawing.id.toUpperCase()}_{selectedOrder.id}</p>
+                  <p>Conditional Logic v2.4 Active</p>
                 </div>
               </div>
               <div className="text-right space-y-3">
                 <h2 className="text-5xl font-display font-bold text-[#001F3D] tracking-tighter uppercase">Inspection Sheet</h2>
-                <Badge className="bg-primary text-white border-none text-[9px] font-bold px-5 py-1.5 rounded-full">CERTIFIED_LEDGER</Badge>
+                <Badge className={cn(
+                  "border-none text-[9px] font-bold px-5 py-1.5 rounded-full",
+                  hasFailures ? "bg-red-600 text-white" : "bg-primary text-white"
+                )}>
+                  {hasFailures ? 'DEVIATION_ALERT' : 'CERTIFIED_LEDGER'}
+                </Badge>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-2">DATE: {new Date().toLocaleDateString()}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-12 bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100">
+            <div className="grid grid-cols-4 gap-12 bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 shadow-inner">
               <div className="space-y-1.5">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order Identity</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Work Order ID</p>
                 <p className="text-lg font-bold text-[#001F3D]">#{selectedOrder.id}</p>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Corporate Client</p>
-                <p className="text-sm font-bold text-slate-900 uppercase truncate">{selectedOrder.customer}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Blueprint Identification</p>
+                <p className="text-sm font-bold text-slate-900 uppercase truncate">{activeDrawing.name}</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Audit Terminal</p>
                 <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'SYS_NODE_01'}</p>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Procedural Status</p>
-                <Badge variant="outline" className="bg-white border-slate-200 text-emerald-600 font-bold text-[9px] px-4 py-1">NOMINAL_STATE</Badge>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Technical Blueprint Identification</h3>
-              <div className="bg-slate-50 border-2 border-slate-100 rounded-[3rem] h-[500px] flex items-center justify-center relative overflow-hidden shadow-inner group">
-                <div className="flex flex-col items-center gap-8 text-center transition-transform group-hover:scale-105 duration-700">
-                  <div className="p-10 bg-white rounded-[2rem] shadow-xl border border-slate-100">
-                    <ImageIcon className="h-20 w-20 text-primary/10" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-2xl font-display font-bold text-[#001F3D] uppercase">{activeDrawing.name}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">Visual Reference Reference Node Locked</p>
-                  </div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Compliance Summary</p>
+                <div className="flex gap-2">
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[8px] font-bold">{passCount} PASS</Badge>
+                  {failCount > 0 && <Badge className="bg-red-50 text-red-700 border-red-100 text-[8px] font-bold">{failCount} FAIL</Badge>}
                 </div>
-                <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
               </div>
             </div>
 
             <div className="space-y-8">
-              <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-emerald-500 pl-4">Measurement Compliance Table</h3>
+              <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Measurement Compliance Matrix</h3>
               <div className="border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
                 <Table className="border-collapse">
                   <TableHeader className="bg-slate-50">
@@ -808,10 +814,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       <TableHead className="text-[9px] font-bold uppercase py-5 px-6 text-center border-r border-slate-200 w-16">SN</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D]">Dimensional Feature</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Target</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Upper</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Lower</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 text-primary">Actual</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center w-24">Compliance</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Limits (U/L)</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 text-primary">Actual Entry</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center w-24">Verdict</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -819,15 +824,14 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/50">
                         <TableCell className="text-center font-bold text-xs border-r border-slate-100 text-slate-400 py-5">{idx + 1}</TableCell>
                         <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700 uppercase">{dim.feature}</TableCell>
-                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target}</TableCell>
-                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.upperLimit}</TableCell>
-                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.lowerLimit}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target} <span className="opacity-50">{dim.tolerance}</span></TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.upperLimit} / {dim.lowerLimit}</TableCell>
                         <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
                         <TableCell className="text-center">
                           <div className={cn(
                             "mx-auto h-6 w-6 rounded-full flex items-center justify-center border-2",
                             dim.status === 'Pass' ? "bg-green-50 border-green-500 text-green-600" : 
-                            dim.status === 'Fail' ? "bg-red-50 border-red-500 text-red-600" :
+                            dim.status === 'Fail' ? "bg-red-50 border-red-500 text-red-600 shadow-[0_0_8px_rgba(239,68,68,0.3)]" :
                             "bg-white border-slate-100 text-slate-200"
                           )}>
                             {dim.status === 'Pass' ? <Check className="h-3 w-3" /> : 
@@ -867,7 +871,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           {currentStep === 'report' && (
             <div className="flex justify-center pt-10 print:hidden">
               <Button 
-                className="rounded-2xl bg-primary hover:bg-[#002d4f] text-white h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20"
+                className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all"
                 onClick={submitForReview}
               >
                 Transmit for Final Compliance Review
@@ -876,29 +880,48 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           )}
 
           {currentStep === 'review' && (
-            <div className="bg-[#001F3D] border-none rounded-[3rem] p-12 max-w-[900px] mx-auto space-y-10 animate-in slide-in-from-bottom-4 duration-500 print:hidden shadow-2xl">
+            <div className={cn(
+              "border-none rounded-[3rem] p-12 max-w-[900px] mx-auto space-y-10 animate-in slide-in-from-bottom-4 duration-500 print:hidden shadow-2xl transition-all",
+              hasFailures ? "bg-red-950 border-red-900" : "bg-[#001F3D]"
+            )}>
               <div className="flex items-center gap-6">
-                <div className="p-5 bg-white/10 rounded-[1.5rem] border border-white/10">
-                  <ShieldCheck className="h-10 w-10 text-accent" />
+                <div className={cn(
+                  "p-5 rounded-[1.5rem] border",
+                  hasFailures ? "bg-red-500/20 border-red-500/30" : "bg-white/10 border-white/10"
+                )}>
+                  {hasFailures ? <FileWarning className="h-10 w-10 text-red-400 animate-pulse" /> : <ShieldCheck className="h-10 w-10 text-accent" />}
                 </div>
                 <div>
-                  <h4 className="text-2xl font-display font-bold text-white uppercase tracking-tight">Security Review Locked</h4>
-                  <p className="text-sm text-white/40 font-medium">Verify dimensional benchmarks for {activeDrawing.name} before authorization.</p>
+                  <h4 className="text-2xl font-display font-bold text-white uppercase tracking-tight">
+                    {hasFailures ? 'Deviation Protocol Locked' : 'Security Review Locked'}
+                  </h4>
+                  <p className={cn(
+                    "text-sm font-medium",
+                    hasFailures ? "text-red-300" : "text-white/40"
+                  )}>
+                    {hasFailures 
+                      ? "Dimensional deviations detected. Verify internal rework requirements before force release."
+                      : `Verify dimensional benchmarks for ${activeDrawing.name} before authorization.`}
+                  </p>
                 </div>
               </div>
               <div className="flex gap-6">
                 <Button 
-                  className="flex-1 h-16 rounded-2xl bg-accent hover:bg-accent/90 text-white font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl shadow-accent/20"
+                  className={cn(
+                    "flex-1 h-16 rounded-2xl font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl transition-all",
+                    hasFailures ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20" : "bg-accent hover:bg-accent/90 text-white shadow-accent/20"
+                  )}
                   onClick={finalApproval}
                 >
-                  <CheckCircle2 className="h-5 w-5" /> Authorize Final Release
+                  <CheckCircle2 className="h-5 w-5" /> 
+                  {hasFailures ? 'Force Release with Deviations' : 'Authorize Final Release'}
                 </Button>
                 <Button 
                   variant="ghost" 
                   className="flex-1 h-16 rounded-2xl border border-white/10 text-white hover:bg-white/5 font-bold uppercase text-[10px] tracking-widest gap-3"
                   onClick={() => setCurrentStep('checklist')}
                 >
-                  <AlertTriangle className="h-5 w-5 text-red-400" /> Return for Revision
+                  <AlertTriangle className="h-5 w-5 text-amber-400" /> Return for Rectification
                 </Button>
               </div>
             </div>
@@ -906,14 +929,23 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
           {currentStep === 'approval' && (
             <div className="text-center space-y-10 pt-10 print:hidden">
-              <div className="inline-flex items-center gap-3 px-10 py-4 bg-emerald-50 text-emerald-700 rounded-full border-2 border-emerald-100 font-bold text-xs uppercase tracking-[0.3em] shadow-xl shadow-emerald-500/5">
-                <CheckCircle2 className="h-5 w-5" /> REPORT_STATUS: FINAL_APPROVED
+              <div className={cn(
+                "inline-flex items-center gap-3 px-10 py-4 rounded-full border-2 font-bold text-xs uppercase tracking-[0.3em] shadow-xl",
+                hasFailures ? "bg-red-50 text-red-700 border-red-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
+              )}>
+                <CheckCircle2 className="h-5 w-5" /> 
+                PROTOCOL_STATUS: {hasFailures ? 'FORCE_RELEASED' : 'FINAL_APPROVED'}
               </div>
               <div className="flex flex-col items-center gap-6">
                 <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium">Procedural cycle complete for blueprint <b>{activeDrawing.name}</b>. Audit trail synchronized with master ledger.</p>
                 <Button 
-                  onClick={handleCreateAnother}
-                  className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex gap-3"
+                  onClick={() => {
+                    setActiveDrawingId(null);
+                    setCurrentStep('upload');
+                    setDimensions(INITIAL_DIMENSIONS);
+                    toast({ title: "Reset Sequence", description: "Select another blueprint from the onboarding matrix." });
+                  }}
+                  className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-14 px-12 font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex gap-3 transition-all"
                 >
                   <Plus className="h-4 w-4" /> Start Report for Next Drawing
                 </Button>

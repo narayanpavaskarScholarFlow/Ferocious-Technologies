@@ -139,15 +139,17 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       transactionDetails: formData.transactionDetails
     };
 
-    // If INWARD and linked to an Order, update Order's Amount Spent
-    // Logic: Only update if it's a NEW record to prevent double-counting on edits
+    // Automation: If INWARD and linked to an Order, update Order's Amount Spent
+    // Logic: Only update if it's a NEW record to prevent double-counting on edits.
+    // In production, a more complex ledger reconciliation would be needed for edits.
     if (!editingRecordId && activeCategory === 'inward' && formData.orderId && formData.amount > 0) {
       const order = orders.find(o => o.id === formData.orderId);
       if (order) {
         const currentSpent = parseFloat((order.amountSpent || "₹ 0.00").replace(/[₹,]/g, '')) || 0;
         const newSpent = currentSpent + formData.amount;
-        const formattedSpent = `₹ ${newSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        const formattedSpent = `₹ ${newSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
         
+        // Update order using MERGE to avoid affecting progress/routing
         setDocumentNonBlocking(doc(db, 'orders', order.id), { amountSpent: formattedSpent }, { merge: true });
         toast({ title: "Order Ledger Updated", description: `Expenditure for Order #${order.id} increased by ₹ ${formData.amount.toLocaleString()}.` });
       }
@@ -158,7 +160,12 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     setIsCreateDialogOpen(false);
   };
 
-  const filteredRecords = records.filter(r => r.type === activeCategory && (r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || r.number.toLowerCase().includes(searchTerm.toLowerCase())));
+  const filteredRecords = records.filter(r => 
+    r.type === activeCategory && (
+      r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      r.number.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">

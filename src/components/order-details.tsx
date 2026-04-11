@@ -101,7 +101,9 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       return;
     }
 
-    const newOrder: Order = {
+    // IMPORTANT: Only include progress and amountSpent for NEW orders.
+    // For updates, we omit them to prevent overwriting automated/machining values.
+    const orderToSave: any = {
       id: displayId,
       customer: customer,
       startDate: format(startDate, 'dd.MM.yyyy'),
@@ -109,11 +111,15 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       priority: priority,
       status: status,
       owner: lead || 'Unassigned',
-      progress: isNew ? 0 : (orders.find(o => o.id === displayId)?.progress || 0),
-      amountSpent: isNew ? '₹ 0.00' : (orders.find(o => o.id === displayId)?.amountSpent || '₹ 0.00')
     };
 
-    onSave(newOrder);
+    if (isNew) {
+      orderToSave.progress = 0;
+      orderToSave.amountSpent = '₹ 0.00';
+      orderToSave.routing = [];
+    }
+
+    onSave(orderToSave as Order);
     toast({
       title: isNew ? "Thread Synchronized" : "Identity Updated",
       description: `Work Order #${displayId} has been committed to the master ledger.`
@@ -122,6 +128,8 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
   const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-bold placeholder:text-white/20 rounded-xl transition-all";
   const darkSelectClasses = "bg-[#0a0f18] border-none text-white h-12 focus:ring-primary/50 text-xs font-bold uppercase tracking-widest rounded-xl";
+
+  const currentOrderFromLedger = orders.find(o => o.id === displayId);
 
   return (
     <div className="space-y-8 max-w-[1300px] mx-auto pb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -262,7 +270,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Amount Spent (Live Ledger)</Label>
                   <div className="relative group">
-                    <Input value={!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "₹ 0.00") : "₹ 0.00"} readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
+                    <Input value={currentOrderFromLedger?.amountSpent || "₹ 0.00"} readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-slate-200" />
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synced with Financial Hub v2.4</p>
@@ -335,13 +343,13 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Velocity Progress</span>
                   <Badge className="bg-slate-100 text-slate-400 text-[10px] font-bold px-4 py-1.5 rounded-full">
-                    {!isNew ? (orders.find(o => o.id === displayId)?.progress || 0) : 0}%
+                    {currentOrderFromLedger?.progress || 0}%
                   </Badge>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50 p-[1px]">
                   <div 
                     className="h-full bg-primary rounded-full transition-all duration-1000" 
-                    style={{ width: `${!isNew ? (orders.find(o => o.id === displayId)?.progress || 0) : 0}%` }}
+                    style={{ width: `${currentOrderFromLedger?.progress || 0}%` }}
                   />
                 </div>
 
@@ -353,22 +361,13 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                     <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Total Spent</span>
                       <span className="text-xl font-display font-bold text-[#001F3D]">
-                        {!isNew ? (orders.find(o => o.id === displayId)?.amountSpent || "₹ 0.00") : "₹ 0.00"}
+                        {currentOrderFromLedger?.amountSpent || "₹ 0.00"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center px-4">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Ledger State</span>
-                      <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-400 border-slate-200 uppercase font-bold px-4 py-1">UNINVOICED</Badge>
+                      <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-400 border-slate-200 uppercase font-bold px-4 py-1">SYNCHRONIZED</Badge>
                     </div>
-                  </div>
-                </div>
-
-                <div className="pt-10 space-y-6">
-                  <p className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.3em] flex items-center gap-2">
-                    <Trash2 className="h-3 w-3" /> Material Resource Status
-                  </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    <p className="text-[10px] text-slate-400 italic font-medium px-4">No materials allocated yet.</p>
                   </div>
                 </div>
               </div>
@@ -392,66 +391,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
           </div>
         </div>
       </div>
-
-      <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem]">
-        <div className="flex items-center justify-between mb-12">
-          <div className="space-y-1">
-            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Component Breakdown & Quantities</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Master Routing Ledger</p>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleAddPart}
-            className="h-12 text-slate-400 hover:text-primary hover:bg-primary/5 gap-3 text-[10px] font-bold uppercase tracking-widest px-6 rounded-xl transition-all"
-          >
-            <Plus className="h-4 w-4" /> Add Row to Spreadsheet
-          </Button>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-12 gap-6 items-center border-b border-slate-50 pb-6 px-4">
-            <div className="col-span-1 text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">Seq.</div>
-            <div className="col-span-5 text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">Component / SKU Identity</div>
-            <div className="col-span-3 text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em] text-center">Batch Quantity</div>
-            <div className="col-span-2 text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em] text-center">Est. Duration</div>
-            <div className="col-span-1"></div>
-          </div>
-          
-          {parts.map((part, idx) => (
-            <div key={part.id} className="group grid grid-cols-12 gap-6 items-center py-6 px-4 hover:bg-slate-50/50 rounded-2xl transition-all border border-transparent hover:border-slate-100">
-              <div className="col-span-1 font-display font-bold text-lg text-slate-200 group-hover:text-primary transition-colors">{part.id}</div>
-              <div className="col-span-5 flex flex-col gap-2">
-                <Input placeholder="Component Name..." className="h-9 bg-slate-50 border-none text-xs font-bold uppercase" />
-                <Input placeholder="SKU-XXXX-X" className="h-7 bg-slate-100 border-none text-[9px] font-bold font-mono w-fit px-2" />
-              </div>
-              <div className="col-span-3 text-center">
-                <Input placeholder="0 UNITS" className="h-10 text-center font-mono text-sm font-bold bg-slate-100/80 rounded-xl border-none" />
-              </div>
-              <div className="col-span-2 text-center">
-                <Input placeholder="0.0 HOURS" className="h-10 text-center font-mono text-sm font-bold bg-white border-slate-200 rounded-xl" />
-              </div>
-              <div className="col-span-1 flex justify-end">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                  onClick={() => setParts(parts.filter(p => p.id !== part.id))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-
-          {parts.length === 0 && (
-            <div className="py-20 text-center opacity-30 flex flex-col items-center">
-              <Plus className="h-12 w-12 text-slate-300 mb-4" />
-              <p className="text-[10px] font-bold uppercase tracking-widest">Append row to initialize breakdown</p>
-            </div>
-          )}
-        </div>
-      </Card>
     </div>
   );
 }

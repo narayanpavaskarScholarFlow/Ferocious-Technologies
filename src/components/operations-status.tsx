@@ -122,11 +122,13 @@ export function OperationsStatus({
     });
   };
 
-  const getNextAvailableDay = (dateStr: string) => {
+  const getNextAvailableDay = (dateStr: string, days = 1) => {
     let date = new Date(dateStr);
-    date.setDate(date.getDate() + 1);
-    while (isHoliday(date.toISOString().split('T')[0])) {
+    for(let i = 0; i < days; i++) {
       date.setDate(date.getDate() + 1);
+      while (isHoliday(date.toISOString().split('T')[0])) {
+        date.setDate(date.getDate() + 1);
+      }
     }
     const result = date.toISOString().split('T')[0];
     if (orderMaxDate && result > orderMaxDate) return orderMaxDate;
@@ -136,21 +138,33 @@ export function OperationsStatus({
   const propagateSequentialDates = (ops: RoutingOperation[], startIndex: number) => {
     if (startIndex < 0 || startIndex >= ops.length) return ops;
     
-    const updated = [...ops];
+    // Deep clone to avoid mutating state directly
+    const updated = ops.map(op => ({
+      ...op, 
+      subTasks: op.subTasks ? op.subTasks.map(st => ({...st})) : []
+    }));
+
     for (let i = startIndex; i < updated.length; i++) {
       const current = updated[i];
       if (!current) continue;
       
+      // Ensure start date doesn't fall on holiday
       if (isHoliday(current.startDate)) {
         current.startDate = getNextAvailableDay(new Date(new Date(current.startDate).getTime() - 86400000).toISOString().split('T')[0]);
       }
 
+      // Calculate duration to preserve it
+      const start = new Date(current.startDate);
+      const end = new Date(current.endDate || current.startDate);
+      const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
       if (current.status === 'NA') {
         current.endDate = current.startDate;
       } else {
-        current.endDate = getNextAvailableDay(current.startDate);
+        current.endDate = getNextAvailableDay(current.startDate, durationDays);
       }
       
+      // Ripple to next operation
       if (i + 1 < updated.length) {
         updated[i + 1].startDate = current.endDate;
       }
@@ -167,6 +181,7 @@ export function OperationsStatus({
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
+    // Automation: Force WIP status if subtasks are incomplete
     const enforcedRouting = newRouting.map(op => {
       if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
         const allCompleted = op.subTasks.every(s => s.status === 'Completed');
@@ -177,9 +192,14 @@ export function OperationsStatus({
       return op;
     });
 
+    // Automation: Calculate Order Progress
     const activeOps = enforcedRouting.filter(op => op.status !== 'NA');
     if (activeOps.length === 0) {
-      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: enforcedRouting, progress: 0, status: 'Yet to start' }, { merge: true });
+      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { 
+        routing: enforcedRouting, 
+        progress: 0, 
+        status: 'Yet to start' 
+      }, { merge: true });
       return;
     }
 
@@ -213,6 +233,7 @@ export function OperationsStatus({
       orderStatus = 'Yet to start';
     }
 
+    // PARTIAL UPDATE using merge: true to avoid overwriting billing/details data
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
       routing: enforcedRouting,
       progress: progress,
@@ -230,7 +251,7 @@ export function OperationsStatus({
     if (orderMaxDate && newDate > orderMaxDate) return;
 
     const updated = [...operations];
-    updated[idx].startDate = newDate;
+    updated[idx] = { ...updated[idx], startDate: newDate };
     const final = propagateSequentialDates(updated, idx);
     saveRouting(final);
   };
@@ -240,7 +261,7 @@ export function OperationsStatus({
     if (orderMaxDate && newDate > orderMaxDate) return;
 
     const updated = [...operations];
-    updated[idx].endDate = newDate;
+    updated[idx] = { ...updated[idx], endDate: newDate };
     if (idx + 1 < updated.length) {
       updated[idx + 1].startDate = newDate;
       const final = propagateSequentialDates(updated, idx + 1);
@@ -319,12 +340,13 @@ export function OperationsStatus({
     const updatedRouting = operations.map((op, i) => {
       if (i !== opIdx) return op;
       
-      const subTasks = [...op.subTasks];
+      const subTasks = op.subTasks.map(st => ({...st}));
       const currentSub = { ...subTasks[subIdx] };
 
       let nextStart = updates.startDate !== undefined ? updates.startDate : (currentSub.startDate || parentStart);
       let nextEnd = updates.endDate !== undefined ? updates.endDate : (currentSub.endDate || nextStart);
 
+      // Boundary Clamping
       if (nextStart < parentStart) nextStart = parentStart;
       if (nextStart > parentEnd) nextStart = parentEnd;
 
@@ -338,6 +360,7 @@ export function OperationsStatus({
 
       subTasks[subIdx] = { ...currentSub, ...updates, startDate: nextStart, endDate: nextEnd };
       
+      // Ripple within operation
       for (let j = subIdx + 1; j < subTasks.length; j++) {
         const prevEnd = subTasks[j-1].endDate!;
         subTasks[j].startDate = prevEnd;
@@ -620,8 +643,8 @@ export function OperationsStatus({
                                         <div className="lg:col-span-3 space-y-2">
                                           <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Identity</Label>
                                           <Input 
-                                            value={task.name}
-                                            onChange={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
+                                            defaultValue={task.name}
+                                            onBlur={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
                                             className={cn(
                                               "h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold",
                                               task.status === 'Completed' && "text-slate-400 line-through"

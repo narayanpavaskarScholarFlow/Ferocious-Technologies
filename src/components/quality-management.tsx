@@ -83,6 +83,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [drawingUploaded, setDrawingUploaded] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter orders that have a QC operation in their routing
@@ -118,6 +119,12 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
     MACHINING_OPS.forEach(op => initial[op] = 'Pending');
     setChecks(initial);
     setDimensions(INITIAL_DIMENSIONS);
+    setDrawingUploaded(false);
+    setUploadedFileName('');
+  };
+
+  const handleToggleCheck = (op: string, status: CheckStatus) => {
+    setChecks(prev => ({ ...prev, [op]: status }));
   };
 
   const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
@@ -133,9 +140,9 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
           let lowerOffset = 0;
           const tol = updatedDim.tolerance.trim();
 
+          const pmMatch = tol.match(/±([\d.]+)/);
           const plusMatch = tol.match(/\+([\d.]+)/);
           const minusMatch = tol.match(/-([\d.]+)/);
-          const pmMatch = tol.match(/±([\d.]+)/);
 
           if (pmMatch) {
             const val = parseFloat(pmMatch[1]);
@@ -209,6 +216,18 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
       remark: ''
     };
     setDimensions([...dimensions, newDim]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFileName(file.name);
+      setDrawingUploaded(true);
+      toast({
+        title: "Drawing Matrix Loaded",
+        description: `${file.name} successfully attached to inspection protocol.`
+      });
+    }
   };
 
   const submitForReview = () => {
@@ -568,26 +587,33 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
               </div>
               
               <div className="space-y-4 pt-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload Drawing Reference</p>
-                <div 
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload Drawing Reference (PDF)</p>
+                <input 
+                  type="file" 
+                  id="drawing-reference-upload" 
+                  className="hidden" 
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                />
+                <label 
+                  htmlFor="drawing-reference-upload"
                   className={cn(
                     "h-48 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                     drawingUploaded ? "border-green-500/50 bg-green-50/20" : "border-slate-200 hover:border-primary/50 bg-slate-50/50"
                   )}
-                  onClick={() => setDrawingUploaded(true)}
                 >
                   {drawingUploaded ? (
                     <>
                       <ImageIcon className="h-10 w-10 text-green-500" />
-                      <span className="text-[10px] font-bold text-green-600 uppercase">DRAWING_LOADED.PDF</span>
+                      <span className="text-[10px] font-bold text-green-600 uppercase truncate max-w-[200px]">{uploadedFileName || 'DRAWING_LOADED.PDF'}</span>
                     </>
                   ) : (
                     <>
                       <Upload className="h-10 w-10 text-slate-300" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Click to attach CAD/PDF</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Click to attach PDF Drawing</span>
                     </>
                   )}
-                </div>
+                </label>
               </div>
             </div>
           </Card>
@@ -659,7 +685,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                       <ImageIcon className="h-16 w-16 text-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <p className="text-lg font-bold text-slate-900">DRAWING_REF_#{selectedOrder.id}.PDF</p>
+                      <p className="text-lg font-bold text-slate-900 uppercase">{uploadedFileName || `DRAWING_REF_#${selectedOrder.id}.PDF`}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Blueprint Scaled for A4 Sheet Verification</p>
                     </div>
                   </div>

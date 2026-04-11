@@ -115,7 +115,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     return () => {
       uploadedFiles.forEach(file => URL.revokeObjectURL(file.url));
     };
-  }, []);
+  }, [uploadedFiles]);
 
   const qcEntries = useMemo(() => {
     const results: { order: Order; operation: RoutingOperation }[] = [];
@@ -509,13 +509,14 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </div>
               </div>
 
-              {/* Preview Column */}
+              {/* Preview Column - FIXED: Replaced iframe with embed for robust PDF rendering */}
               <div className="lg:col-span-8 bg-slate-100/50 rounded-3xl border border-slate-200 overflow-hidden relative group h-[600px] lg:h-auto">
                 {activeDrawing ? (
-                  <iframe 
-                    src={`${activeDrawing.url}#toolbar=0&navpanes=0`} 
+                  <embed 
+                    key={activeDrawing.id}
+                    src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
+                    type="application/pdf"
                     className="w-full h-full border-none bg-white" 
-                    title="Drawing Preview"
                   />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center opacity-30 gap-4">
@@ -548,16 +549,17 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
       {currentStep === 'checklist' && selectedOrder && activeDrawing && (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start animate-in fade-in duration-700 px-2">
-          {/* Left Side: Drawing Reference */}
+          {/* Left Side: Drawing Reference - FIXED: Replaced iframe with embed */}
           <Card className="xl:col-span-5 h-[800px] overflow-hidden rounded-[2.5rem] bg-[#001F3D] shadow-2xl relative border-none">
             <div className="absolute top-4 left-4 z-20 flex gap-2">
                <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center">Technical Reference</Badge>
                <Badge className="bg-black/40 text-white/80 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase">{activeDrawing.name}</Badge>
             </div>
-            <iframe 
-              src={`${activeDrawing.url}#toolbar=0&navpanes=0`} 
+            <embed 
+              key={activeDrawing.id}
+              src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
+              type="application/pdf"
               className="w-full h-full border-none bg-white" 
-              title="Reference Drawing"
             />
           </Card>
 

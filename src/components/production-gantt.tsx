@@ -78,12 +78,14 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
 
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
+    // Handle dd.MM.yyyy
     if (dateStr.includes('.')) {
       const parts = dateStr.split('.');
       if (parts.length === 3) {
         return startOfDay(new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
       }
     }
+    // Handle yyyy-MM-dd
     if (dateStr.includes('-')) {
       const parts = dateStr.split('-');
       if (parts.length === 3) {
@@ -102,8 +104,10 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     const timelineStart = startOfDay(timelineInterval[0]);
     const timelineEnd = startOfDay(timelineInterval[timelineInterval.length - 1]);
 
+    // Check if the range is completely outside visible timeline
     if (end < timelineStart || start > timelineEnd) return null;
 
+    // Clamp dates to timeline visible range
     const visibleStart = start < timelineStart ? timelineStart : start;
     const visibleEnd = end > timelineEnd ? timelineEnd : end;
 
@@ -317,6 +321,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                   
                   return (
                     <div key={order.id} className="mb-1">
+                      {/* Master Order Bar */}
                       <div className="h-12 flex items-center relative group">
                         {orderStyles && (
                           <div 
@@ -338,8 +343,11 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                         )}
                       </div>
 
+                      {/* Operations Bars */}
                       {expandedOrders[order.id] && order.routing?.map((op) => {
                         const opStyles = getBarStyles(op.startDate, op.endDate);
+                        const isCompleted = op.status === 'Completed';
+                        
                         return (
                           <div key={op.id}>
                             <div className="h-10 flex items-center relative group">
@@ -348,19 +356,27 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                                   className="absolute h-6 rounded-lg flex items-center px-3 shadow-md border-b-2"
                                   style={{ 
                                     ...opStyles,
-                                    background: op.status === 'Completed' 
+                                    background: isCompleted 
                                       ? 'linear-gradient(to right, #22c55e, #4ade80)' 
                                       : 'linear-gradient(to right, #3b82f6, #60a5fa)',
-                                    borderColor: op.status === 'Completed' ? '#16a34a' : '#2563eb',
-                                    opacity: op.status === 'NA' ? 0.2 : 1
+                                    borderColor: isCompleted ? '#16a34a' : '#2563eb',
+                                    opacity: op.status === 'NA' ? 0.1 : 1
                                   }}
                                 >
-                                  <span className="text-[8px] font-bold text-white uppercase tracking-tight truncate">{op.name}</span>
-                                  {op.status === 'Completed' && <CheckCircle2 className="h-3 w-3 text-white ml-2 shrink-0" />}
+                                  <div className="flex items-center justify-between w-full min-w-0">
+                                    <span className="text-[8px] font-bold text-white uppercase tracking-tight truncate flex-1">
+                                      {op.name}
+                                    </span>
+                                    <span className="text-[7px] text-white/80 font-code font-bold ml-2 whitespace-nowrap hidden md:block">
+                                      {op.startDate} - {op.endDate}
+                                    </span>
+                                    {isCompleted && <CheckCircle2 className="h-3 w-3 text-white ml-2 shrink-0" />}
+                                  </div>
                                 </div>
                               )}
                             </div>
 
+                            {/* Sub-tasks Bars */}
                             {expandedOps[op.id] && op.subTasks?.map((sub) => {
                               const subStyles = getBarStyles(sub.startDate, sub.endDate);
                               return (

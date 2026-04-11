@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -31,18 +30,15 @@ import {
   Trash2,
   Calendar,
   FileSpreadsheet,
-  ArrowRight,
   Clock,
   AlertTriangle,
-  CheckCircle2,
   User,
-  Activity,
   Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import React from 'react';
-import { Order, RoutingOperation, SubTask, Machine, SystemUser, Vendor } from '@/lib/types';
+import { Order, RoutingOperation, SubTask, SystemUser, Vendor } from '@/lib/types';
 import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { AnnualLeaveEntry } from './manpower-utilization';
@@ -185,21 +181,32 @@ export function OperationsStatus({
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
-    const activeOps = newRouting.filter(op => op.status !== 'NA');
+    // Apply rule: if any subtask is not completed, force status to "WIP"
+    const enforcedRouting = newRouting.map(op => {
+      if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
+        const allCompleted = op.subTasks.every(s => s.status === 'Completed');
+        if (!allCompleted) {
+          return { ...op, status: 'WIP' };
+        }
+      }
+      return op;
+    });
+
+    const activeOps = enforcedRouting.filter(op => op.status !== 'NA');
     if (activeOps.length === 0) {
-      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: newRouting, progress: 0 }, { merge: true });
+      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: enforcedRouting, progress: 0 }, { merge: true });
       return;
     }
 
     let totalApplicableTasks = 0;
     let completedTasks = 0;
 
-    newRouting.forEach(op => {
+    enforcedRouting.forEach(op => {
       if (op.status === 'NA') return;
 
       if (op.subTasks && op.subTasks.length > 0) {
         totalApplicableTasks += op.subTasks.length;
-        completedTasks += op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length;
+        completedTasks += op.subTasks.filter(s => s.status === 'Completed').length;
       } else {
         totalApplicableTasks += 1;
         if (op.status === 'Completed') {
@@ -222,7 +229,7 @@ export function OperationsStatus({
     }
 
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
-      routing: newRouting,
+      routing: enforcedRouting,
       progress: progress,
       status: orderStatus
     }, { merge: true });
@@ -308,12 +315,6 @@ export function OperationsStatus({
         if (checkStart < parentStart || checkEnd > parentEnd) {
           return op;
         }
-      }
-
-      if (updates.status === 'Completed') {
-        currentSub.isCompleted = true;
-      } else if (updates.status) {
-        currentSub.isCompleted = false;
       }
 
       subTasks[subIdx] = currentSub;
@@ -429,7 +430,7 @@ export function OperationsStatus({
                       const isNA = currentStatus === 'NA';
                       const startIsHoliday = isHoliday(op.startDate);
                       const hasSubs = op.subTasks && op.subTasks.length > 0;
-                      const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length : 0;
+                      const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed').length : 0;
                       const allSubsCompleted = hasSubs ? completedSubs === op.subTasks.length : true;
                       const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       

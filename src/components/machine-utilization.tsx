@@ -21,7 +21,8 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -556,7 +557,7 @@ export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizati
                     Abort Protocol
                   </Button>
                   <Button 
-                    className="flex-[2] h-14 bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-2xl shadow-primary/20 flex gap-3 group"
+                    className="flex-[2] h-14 bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 flex gap-3 group"
                     onClick={handleSaveMachine}
                   >
                     {editingMachine ? 'Synchronize Identity' : 'Commit to Matrix'}

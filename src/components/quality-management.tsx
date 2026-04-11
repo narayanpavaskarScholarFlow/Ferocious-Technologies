@@ -312,7 +312,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       updatedAt: new Date().toISOString()
     });
 
-    setCurrentStep('upload'); // Return to hub as requested
+    setCurrentStep('upload'); 
     setActiveReportId(null);
     setDimensions(INITIAL_DIMENSIONS);
     if (selectedOrder && onUpdateStatus) {
@@ -336,7 +336,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       ));
     }
 
-    setCurrentStep('upload'); // Return to Hub
+    setCurrentStep('upload'); 
     setActiveReportId(null);
     setDimensions(INITIAL_DIMENSIONS);
     
@@ -350,8 +350,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const passCount = dimensions.filter(d => d.status === 'Pass').length;
   const failCount = dimensions.filter(d => d.status === 'Fail').length;
 
-  const pendingReviews = reports.filter(r => r.status === 'Review Pending');
-  const releasedReports = reports.filter(r => r.status === 'Released');
+  const reportsList = reports || [];
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -535,7 +534,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   </label>
 
                   <div className="flex flex-col min-h-0 space-y-6">
-                    {/* Drawing Matrix */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 px-1">
                         <Layers className="h-3.5 w-3.5 text-primary" />
@@ -579,7 +577,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       </ScrollArea>
                     </div>
 
-                    {/* Review & Release Registry */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 px-1">
                         <History className="h-3.5 w-3.5 text-accent" />
@@ -588,7 +585,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       
                       <ScrollArea className="max-h-[350px] pr-2">
                         <div className="space-y-3">
-                          {reports.length > 0 ? reports.map((report) => (
+                          {reportsList.length > 0 ? reportsList.map((report) => (
                             <div key={report.id} className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
                               <div className="flex justify-between items-start">
                                 <Badge className={cn(
@@ -607,7 +604,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                                   className="h-7 rounded-lg text-[8px] font-bold uppercase flex-1 border-slate-200 bg-white"
                                   onClick={() => {
                                     setActiveReportId(report.id);
-                                    // Manually set dimensions and checks from report to preview
                                     setDimensions(report.dimensions);
                                     setChecks(report.checks as any);
                                     setCurrentStep(report.status === 'Review Pending' ? 'review' : 'approval');
@@ -732,14 +728,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   </div>
 
                   <ScrollArea className="flex-1">
-                    <Table className="min-w-[800px]">
+                    <Table className="min-w-[900px]">
                       <TableHeader className="bg-slate-50/50">
                         <TableRow className="hover:bg-transparent border-b border-slate-100">
                           <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[150px]">Feature</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center">Target</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center">Tolerance</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center">Actual</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center">Verdict</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Target</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Tolerance</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Actual</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Verdict</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-left">Remark</TableHead>
                           <TableHead className="w-10"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -783,16 +780,23 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             </TableCell>
                             <TableCell>
                               <div className="flex justify-center">
-                                <div className={cn(
-                                  "h-6 w-6 rounded-full flex items-center justify-center border-2",
-                                  dim.status === 'Pass' ? "bg-green-50 border-green-500 text-green-600" : 
-                                  dim.status === 'Fail' ? "bg-red-50 border-red-500 text-red-600" :
-                                  "bg-slate-50 border-slate-200 text-slate-300"
+                                <Badge className={cn(
+                                  "text-[8px] font-bold uppercase w-16 justify-center rounded-full",
+                                  dim.status === 'Pass' ? "bg-emerald-500 text-white" : 
+                                  dim.status === 'Fail' ? "bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.3)]" :
+                                  "bg-slate-100 text-slate-400"
                                 )}>
-                                  {dim.status === 'Pass' ? <Check className="h-3 w-3" /> : 
-                                   dim.status === 'Fail' ? <X className="h-3 w-3" /> : null}
-                                </div>
+                                  {dim.status === 'Pass' ? 'OK' : dim.status === 'Fail' ? 'NOT OK' : 'PENDING'}
+                                </Badge>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                placeholder="Observations..." 
+                                className="h-10 bg-slate-50/50 border-none text-[10px] rounded-xl font-medium" 
+                                value={dim.remark} 
+                                onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)}
+                              />
                             </TableCell>
                             <TableCell className="px-2">
                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500 rounded-lg" onClick={() => setDimensions(dimensions.filter(d => d.id !== dim.id))}>
@@ -940,8 +944,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <div className="space-y-1.5">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Compliance Summary</p>
                 <div className="flex gap-2">
-                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[8px] font-bold">{passCount} PASS</Badge>
-                  {failCount > 0 && <Badge className="bg-red-50 text-red-700 border-red-100 text-[8px] font-bold">{failCount} FAIL</Badge>}
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[8px] font-bold">{passCount} OK</Badge>
+                  {failCount > 0 && <Badge className="bg-red-50 text-red-700 border-red-100 text-[8px] font-bold">{failCount} NOT OK</Badge>}
                 </div>
               </div>
             </div>
@@ -957,7 +961,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Target</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Limits (U/L)</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 text-primary">Actual Entry</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center w-24">Verdict</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-24">Verdict</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase text-left pl-6">Remark</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -968,16 +973,18 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target} <span className="opacity-50">{dim.tolerance}</span></TableCell>
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.upperLimit} / {dim.lowerLimit}</TableCell>
                         <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
-                        <TableCell className="text-center">
-                          <div className={cn(
-                            "mx-auto h-6 w-6 rounded-full flex items-center justify-center border-2",
-                            dim.status === 'Pass' ? "bg-green-50 border-green-500 text-green-600" : 
-                            dim.status === 'Fail' ? "bg-red-50 border-red-500 text-red-600 shadow-[0_0_8px_rgba(239,68,68,0.3)]" :
-                            "bg-white border-slate-100 text-slate-200"
+                        <TableCell className="text-center border-r border-slate-100">
+                          <Badge className={cn(
+                            "text-[8px] font-bold uppercase w-16 justify-center rounded-full",
+                            dim.status === 'Pass' ? "bg-emerald-500 text-white" : 
+                            dim.status === 'Fail' ? "bg-rose-500 text-white" :
+                            "bg-slate-100 text-slate-400"
                           )}>
-                            {dim.status === 'Pass' ? <Check className="h-3 w-3" /> : 
-                             dim.status === 'Fail' ? <X className="h-3 w-3" /> : null}
-                          </div>
+                            {dim.status === 'Pass' ? 'OK' : dim.status === 'Fail' ? 'NOT OK' : '---'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="pl-6 text-[10px] font-medium text-slate-500 uppercase italic">
+                          {dim.remark || '---'}
                         </TableCell>
                       </TableRow>
                     ))}

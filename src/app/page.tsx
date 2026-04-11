@@ -459,6 +459,8 @@ function IndustrialERPInternal() {
             {currentView === 'quality' && (
               <QualityManagement 
                 orders={orders}
+                users={usersData}
+                vendors={vendors}
                 onUpdateStatus={handleUpdateStatusFromQC} 
               />
             )}

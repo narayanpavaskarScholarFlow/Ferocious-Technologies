@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -31,7 +32,9 @@ import {
   Trash2,
   FileIcon,
   CheckSquare,
-  Square
+  Square,
+  Calendar,
+  User
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -44,7 +47,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Order } from '@/lib/types';
+import { Order, RoutingOperation, SystemUser, Vendor } from '@/lib/types';
 
 type QualityStep = 'list' | 'checklist' | 'report' | 'review' | 'approval';
 type CheckStatus = 'Pass' | 'Fail' | 'NA' | 'Pending';
@@ -82,13 +85,16 @@ const INITIAL_DIMENSIONS: DimensionRecord[] = [
 
 interface QualityManagementProps {
   orders: Order[];
+  users?: SystemUser[];
+  vendors?: Vendor[];
   onUpdateStatus?: (orderId: string, operation: string, status: string) => void;
 }
 
-export function QualityManagement({ orders, onUpdateStatus }: QualityManagementProps) {
+export function QualityManagement({ orders, users = [], vendors = [], onUpdateStatus }: QualityManagementProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOp, setSelectedOp] = useState<RoutingOperation | null>(null);
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -96,40 +102,57 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter orders that have a QC operation in their routing
-  const qcOrders = useMemo(() => {
-    return orders.filter(o => 
-      o.routing?.some(op => op.name === 'QC') && 
-      (o.id.includes(searchTerm) || o.customer.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+  const qcEntries = useMemo(() => {
+    const results: { order: Order; operation: RoutingOperation }[] = [];
+    orders.forEach(o => {
+      const qcOps = o.routing?.filter(op => op.name === 'QC') || [];
+      qcOps.forEach(op => {
+        if (o.id.includes(searchTerm) || o.customer.toLowerCase().includes(searchTerm.toLowerCase())) {
+          results.push({ order: o, operation: op });
+        }
+      });
+    });
+    return results;
   }, [orders, searchTerm]);
+
+  const getResourceName = (op: RoutingOperation) => {
+    const firstSub = op.subTasks?.[0];
+    if (!firstSub || !firstSub.machineId) return 'Unassigned';
+    
+    const user = users.find(u => u.id === firstSub.machineId);
+    if (user) return user.name;
+    
+    const vendor = vendors.find(v => v.id === firstSub.machineId);
+    if (vendor) return vendor.name;
+    
+    return 'Station: ' + firstSub.machineId;
+  };
 
   const selectedDrawings = useMemo(() => {
     return uploadedFiles.filter(f => selectedDrawingIds.includes(f.id));
   }, [uploadedFiles, selectedDrawingIds]);
 
-  // Statistics for Graph based on actual orders
   const statsData = useMemo(() => {
-    const pendingCount = qcOrders.filter(o => {
-      const qcOp = o.routing?.find(op => op.name === 'QC');
-      return qcOp?.status === 'Yet to start' || qcOp?.status === 'WIP' || qcOp?.status === 'Ready for QC';
-    }).length;
+    const pendingCount = qcEntries.filter(e => 
+      e.operation.status === 'Yet to start' || e.operation.status === 'WIP' || e.operation.status === 'Ready for QC'
+    ).length;
     
-    const inReviewCount = qcOrders.filter(o => {
-      const qcOp = o.routing?.find(op => op.name === 'QC');
-      return qcOp?.status === 'Review Pending' || qcOp?.status === 'In Review';
-    }).length;
+    const inReviewCount = qcEntries.filter(e => 
+      e.operation.status === 'Review Pending' || e.operation.status === 'In Review'
+    ).length;
 
     return [
       { name: 'Pending', count: pendingCount, color: '#f59e0b' },
       { name: 'Work in Progress', count: inReviewCount, color: '#3b82f6' },
     ];
-  }, [qcOrders]);
+  }, [qcEntries]);
 
-  const handleSelectOrder = (order: Order) => {
+  const handleSelectTask = (order: Order, op: RoutingOperation) => {
     setSelectedOrder(order);
+    setSelectedOp(op);
     setCurrentStep('checklist');
     const initial: Record<string, CheckStatus> = {};
-    MACHINING_OPS.forEach(op => initial[op] = 'Pending');
+    MACHINING_OPS.forEach(o => initial[o] = 'Pending');
     setChecks(initial);
     setDimensions(INITIAL_DIMENSIONS);
     setUploadedFiles([]);
@@ -245,7 +268,6 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
         name: file.name
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
-      // Auto-select newly uploaded files
       setSelectedDrawingIds(prev => [...prev, ...newFiles.map(f => f.id)]);
       toast({
         title: "Drawings Cached",
@@ -272,11 +294,6 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
       onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
     }
     toast({ title: "Release Authorized", description: "Report has been digitally signed and archived." });
-  };
-
-  const getQCStatus = (order: Order) => {
-    const qcOp = order.routing?.find(op => op.name === 'QC');
-    return qcOp?.status || 'Yet to start';
   };
 
   return (
@@ -363,29 +380,46 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">QC Ledger: {qcOrders.length}</Badge>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold uppercase">QC Pipeline Nodes: {qcEntries.length}</Badge>
             </div>
             <Table>
               <TableHeader className="bg-white">
                 <TableRow className="hover:bg-transparent border-slate-100">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Order ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Project Lead</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">QC Status</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Timeline (Start - End)</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Assigned Resource</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Status</TableHead>
                   <TableHead className="text-right px-8"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {qcOrders.map((order) => {
-                  const status = getQCStatus(order);
+                {qcEntries.map(({ order, operation }) => {
+                  const status = operation.status || 'Yet to start';
+                  const resource = getResourceName(operation);
                   return (
-                    <TableRow key={order.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
+                    <TableRow key={operation.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
                       <TableCell className="px-8 font-bold text-sm text-primary">#{order.id}</TableCell>
                       <TableCell className="text-slate-900 font-semibold uppercase">{order.customer}</TableCell>
-                      <TableCell className="text-slate-600 font-medium">{order.owner || 'Unassigned'}</TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2 text-[10px] font-code text-slate-500">
+                          <Calendar className="h-3 w-3 text-slate-300" />
+                          <span>{operation.startDate}</span>
+                          <span className="text-slate-300">→</span>
+                          <span>{operation.endDate}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                            <User className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-700">{resource}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
                         <Badge className={cn(
-                          "text-[9px] uppercase font-bold px-3 py-1",
+                          "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
                           status === 'Completed' ? 'bg-green-50 text-green-700 border border-green-100' :
                           (status === 'Review Pending' || status === 'WIP') ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                           'bg-amber-50 text-amber-700 border-amber-100'
@@ -397,17 +431,17 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                         <Button 
                           size="sm" 
                           className="rounded-full bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase h-9 px-5 opacity-0 group-hover:opacity-100 transition-all"
-                          onClick={() => handleSelectOrder(order)}
+                          onClick={() => handleSelectTask(order, operation)}
                         >
-                          Inspection Details <ChevronRight className="ml-2 h-3.5 w-3.5" />
+                          Execute Protocol <ChevronRight className="ml-2 h-3.5 w-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
                   );
                 })}
-                {qcOrders.length === 0 && (
+                {qcEntries.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No orders with 'QC' operation node detected.</TableCell>
+                    <TableCell colSpan={6} className="h-32 text-center text-slate-400 font-code text-xs italic uppercase">No active QC nodes assigned in production matrix.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -656,19 +690,19 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
           </div>
 
           <Card className="lg:col-span-4 p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Order Details</h3>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Task Identification</h3>
             <div className="space-y-6">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Work Order ID</p>
                 <p className="text-lg font-bold text-slate-900">#{selectedOrder.id}</p>
               </div>
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Customer Node</p>
-                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOrder.customer}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Assigned Resource</p>
+                <p className="text-sm font-bold text-slate-900 uppercase">{selectedOp ? getResourceName(selectedOp) : 'Unassigned'}</p>
               </div>
               
               <div className="space-y-4 pt-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attach Technical Drawings (PDF)</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Technical Drawing Selection (PDF)</p>
                 <input 
                   type="file" 
                   id="drawing-reference-upload" 
@@ -695,7 +729,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                   ) : (
                     <>
                       <Upload className="h-10 w-10 text-slate-300" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Attach PDF Metadata</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase text-center px-4">Upload Multi-Part Drawing References</span>
                     </>
                   )}
                 </label>
@@ -749,8 +783,8 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                 <p className="text-sm font-bold text-slate-900 uppercase">{selectedOrder.customer}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Project Lead</p>
-                <p className="text-sm font-bold text-slate-900">{selectedOrder.owner || 'Unassigned'}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Assigned Inspector</p>
+                <p className="text-sm font-bold text-slate-900">{selectedOp ? getResourceName(selectedOp) : 'Unassigned'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Issue Date</p>
@@ -832,7 +866,7 @@ export function QualityManagement({ orders, onUpdateStatus }: QualityManagementP
                 <div className="flex justify-between items-center px-2">
                   <div className="space-y-1">
                     <p className="text-[9px] font-bold text-slate-400 uppercase">Created By (Inspector)</p>
-                    <p className="text-sm font-bold text-slate-900">Admin_User_01</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedOp ? getResourceName(selectedOp) : 'Admin_User_01'}</p>
                   </div>
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                 </div>

@@ -36,7 +36,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   User,
-  Activity
+  Activity,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -193,7 +194,9 @@ export function OperationsStatus({
     let totalApplicableTasks = 0;
     let completedTasks = 0;
 
-    activeOps.forEach(op => {
+    newRouting.forEach(op => {
+      if (op.status === 'NA') return;
+
       if (op.subTasks && op.subTasks.length > 0) {
         totalApplicableTasks += op.subTasks.length;
         completedTasks += op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length;
@@ -300,7 +303,7 @@ export function OperationsStatus({
         const parentStart = new Date(parent.startDate);
         const parentEnd = new Date(parent.endDate);
         const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
-        const checkEnd = updates.endDate ? new Date(updates.endDate) : new Date(currentSub.endDate!);
+        const checkEnd = updates.endDate ? new Date(updates.endDate) : (currentSub.endDate ? new Date(currentSub.endDate) : new Date(currentSub.startDate!));
 
         if (checkStart < parentStart || checkEnd > parentEnd) {
           return op;
@@ -321,8 +324,8 @@ export function OperationsStatus({
       
       if (updates.startDate || updates.endDate) {
         for (let j = subIdx + 1; j < subTasks.length; j++) {
-          subTasks[j].startDate = subTasks[j-1].endDate;
-          subTasks[j].endDate = getNextAvailableDay(subTasks[j].startDate);
+          subTasks[j].startDate = subTasks[j-1].endDate!;
+          subTasks[j].endDate = getNextAvailableDay(subTasks[j].startDate!);
         }
       }
 
@@ -427,6 +430,7 @@ export function OperationsStatus({
                       const startIsHoliday = isHoliday(op.startDate);
                       const hasSubs = op.subTasks && op.subTasks.length > 0;
                       const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length : 0;
+                      const allSubsCompleted = hasSubs ? completedSubs === op.subTasks.length : true;
                       const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       
                       return (
@@ -492,50 +496,60 @@ export function OperationsStatus({
                               <div className="flex justify-center">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <button className="outline-none focus:ring-4 focus:ring-primary/10 rounded-full transition-all w-full max-w-[160px]">
+                                    <button 
+                                      disabled={hasSubs && !allSubsCompleted}
+                                      className={cn(
+                                        "outline-none focus:ring-4 focus:ring-primary/10 rounded-full transition-all w-full max-w-[160px] relative group/trigger",
+                                        hasSubs && !allSubsCompleted && "opacity-60 cursor-not-allowed"
+                                      )}
+                                    >
                                       <Badge 
                                         variant="outline"
                                         className={cn(
-                                          "text-[9px] font-bold uppercase py-2 px-4 w-full justify-center rounded-full border transition-all hover:scale-105 shadow-sm",
+                                          "text-[9px] font-bold uppercase py-2 px-4 w-full justify-center rounded-full border transition-all shadow-sm",
+                                          !hasSubs || allSubsCompleted ? "hover:scale-105" : "",
                                           getStatusStyles(currentStatus)
                                         )}
                                       >
+                                        {hasSubs && !allSubsCompleted && <Lock className="h-2.5 w-2.5 mr-2 opacity-50" />}
                                         {currentStatus}
                                       </Badge>
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100">
-                                    {STATUS_OPTIONS.map((opt) => (
-                                      <DropdownMenuItem 
-                                        key={opt.label}
-                                        onClick={() => handleLocalStatusChange(op.id, opt.label)}
-                                        className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50"
-                                      >
-                                        <div className={cn("h-2 w-2 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
-                                        <span className="text-xs font-bold uppercase tracking-wider">{opt.label}</span>
-                                      </DropdownMenuItem>
-                                    ))}
-                                    
-                                    <DropdownMenuSub>
-                                      <DropdownMenuSubTrigger className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50">
-                                        <Truck className="h-4 w-4 text-purple-600" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Vendor</span>
-                                      </DropdownMenuSubTrigger>
-                                      <DropdownMenuPortal>
-                                        <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
-                                          {vendors.map((vendor) => (
-                                            <DropdownMenuItem 
-                                              key={vendor.id}
-                                              onClick={() => handleLocalStatusChange(op.id, 'Vendor', vendor.name)}
-                                              className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
-                                            >
-                                              {vendor.name}
-                                            </DropdownMenuItem>
-                                          ))}
-                                        </DropdownMenuSubContent>
-                                      </DropdownMenuPortal>
-                                    </DropdownMenuSub>
-                                  </DropdownMenuContent>
+                                  {(!hasSubs || allSubsCompleted) && (
+                                    <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100">
+                                      {STATUS_OPTIONS.map((opt) => (
+                                        <DropdownMenuItem 
+                                          key={opt.label}
+                                          onClick={() => handleLocalStatusChange(op.id, opt.label)}
+                                          className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50"
+                                        >
+                                          <div className={cn("h-2 w-2 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
+                                          <span className="text-xs font-bold uppercase tracking-wider">{opt.label}</span>
+                                        </DropdownMenuItem>
+                                      ))}
+                                      
+                                      <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50">
+                                          <Truck className="h-4 w-4 text-purple-600" />
+                                          <span className="text-xs font-bold uppercase tracking-wider">Vendor</span>
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuPortal>
+                                          <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
+                                            {vendors.map((vendor) => (
+                                              <DropdownMenuItem 
+                                                key={vendor.id}
+                                                onClick={() => handleLocalStatusChange(op.id, 'Vendor', vendor.name)}
+                                                className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
+                                              >
+                                                {vendor.name}
+                                              </DropdownMenuItem>
+                                            ))}
+                                          </DropdownMenuSubContent>
+                                        </DropdownMenuPortal>
+                                      </DropdownMenuSub>
+                                    </DropdownMenuContent>
+                                  )}
                                 </DropdownMenu>
                               </div>
                             </TableCell>

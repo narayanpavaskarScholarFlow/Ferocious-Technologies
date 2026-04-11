@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -32,7 +33,8 @@ import {
   FileSpreadsheet,
   ArrowRight,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -185,16 +187,32 @@ export function OperationsStatus({
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
 
-    // Calculate Progress % based on top-level task completion
-    const activeOps = newRouting.filter(op => op.status !== 'NA');
-    const completedOps = activeOps.filter(op => op.status === 'Completed');
+    // Calculate Dynamic Progress %
+    // Logic: Each Top-Level Op contributes equally.
+    // Progress of an Op = if subtasks exist, percentage of completed subtasks.
+    // If no subtasks, 100% if status is Completed, 50% if WIP, else 0%.
     
-    const progress = activeOps.length > 0 
-      ? Math.round((completedOps.length / activeOps.length) * 100) 
-      : 0;
+    const activeOps = newRouting.filter(op => op.status !== 'NA');
+    if (activeOps.length === 0) {
+      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { routing: newRouting, progress: 0 }, { merge: true });
+      return;
+    }
+
+    const totalOpProgress = activeOps.reduce((acc, op) => {
+      if (op.subTasks && op.subTasks.length > 0) {
+        const completedSubs = op.subTasks.filter(s => s.isCompleted).length;
+        return acc + (completedSubs / op.subTasks.length) * 100;
+      } else {
+        if (op.status === 'Completed') return acc + 100;
+        if (op.status === 'WIP') return acc + 50;
+        return acc;
+      }
+    }, 0);
+
+    const progress = Math.round(totalOpProgress / activeOps.length);
 
     // Update master order status based on progress
-    let orderStatus = orderData?.status || 'Yet to start';
+    let orderStatus: any = orderData?.status || 'Yet to start';
     if (progress === 100) {
       orderStatus = 'Completed';
     } else if (progress > 0) {
@@ -262,6 +280,7 @@ export function OperationsStatus({
       name: taskName.trim(),
       startDate: startFrom,
       endDate: getNextAvailableDay(startFrom),
+      isCompleted: false
     };
     
     const updatedRouting = operations.map((op, i) => 
@@ -277,13 +296,15 @@ export function OperationsStatus({
       const subTasks = [...op.subTasks];
       const currentSub = { ...subTasks[subIdx], ...updates };
 
-      const parentStart = new Date(parent.startDate);
-      const parentEnd = new Date(parent.endDate);
-      const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
-      const checkEnd = updates.endDate ? new Date(updates.endDate) : new Date(currentSub.endDate!);
+      if (updates.startDate || updates.endDate) {
+        const parentStart = new Date(parent.startDate);
+        const parentEnd = new Date(parent.endDate);
+        const checkStart = updates.startDate ? new Date(updates.startDate) : new Date(currentSub.startDate!);
+        const checkEnd = updates.endDate ? new Date(updates.endDate) : new Date(currentSub.endDate!);
 
-      if (checkStart < parentStart || checkEnd > parentEnd) {
-        return op;
+        if (checkStart < parentStart || checkEnd > parentEnd) {
+          return op;
+        }
       }
 
       subTasks[subIdx] = currentSub;
@@ -292,9 +313,11 @@ export function OperationsStatus({
         subTasks[subIdx].endDate = getNextAvailableDay(updates.startDate);
       }
       
-      for (let j = subIdx + 1; j < subTasks.length; j++) {
-        subTasks[j].startDate = subTasks[j-1].endDate;
-        subTasks[j].endDate = getNextAvailableDay(subTasks[j].startDate);
+      if (updates.startDate || updates.endDate) {
+        for (let j = subIdx + 1; j < subTasks.length; j++) {
+          subTasks[j].startDate = subTasks[j-1].endDate;
+          subTasks[j].endDate = getNextAvailableDay(subTasks[j].startDate);
+        }
       }
 
       return { ...op, subTasks };
@@ -335,7 +358,7 @@ export function OperationsStatus({
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-display font-bold uppercase tracking-tight text-slate-900">Operational Spreadsheet</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Cascading Sequential Date Protocol Active</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Sequential Progress Protocols Active</p>
           </div>
         </div>
         
@@ -353,7 +376,7 @@ export function OperationsStatus({
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden xs:block">Active Order:</span>
             <Select 
               value={selectedWorkOrder || undefined} 
-              onValueChange={handleSelectChange}
+              onValueChange={handleLocalStatusChange}
             >
               <SelectTrigger className="flex-1 sm:w-[200px] h-11 bg-white text-sm font-bold border-slate-200 rounded-full shadow-sm">
                 <SelectValue placeholder="Select ID..." />
@@ -377,7 +400,7 @@ export function OperationsStatus({
               <TableHeader className="bg-slate-50/50 border-b border-slate-100">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-20">Seq.</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[200px]">Operation / Spreadsheet Row</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[200px]">Operation / Task Row</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">Start Date</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">End Date</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-center w-[200px]">Status</TableHead>
@@ -394,6 +417,9 @@ export function OperationsStatus({
                       const isExpanded = !!expandedOps[idx];
                       const isNA = currentStatus === 'NA';
                       const startIsHoliday = isHoliday(op.startDate);
+                      const hasSubs = op.subTasks && op.subTasks.length > 0;
+                      const completedSubs = hasSubs ? op.subTasks.filter(s => s.isCompleted).length : 0;
+                      const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       
                       return (
                         <React.Fragment key={op.id}>
@@ -423,11 +449,12 @@ export function OperationsStatus({
                                   )}>{op.name}</span>
                                   {startIsHoliday && <Badge variant="outline" className="text-[8px] border-amber-200 text-amber-600 bg-amber-50 h-4">Holiday Shifted</Badge>}
                                 </div>
-                                {op.subTasks.length > 0 && !isNA && (
-                                  <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest mt-0.5">
-                                    {op.subTasks.length} nested items
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  <div className="h-1 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary" style={{ width: `${opProgress}%` }} />
+                                  </div>
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase">{opProgress}% complete</span>
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell className="text-center font-code text-xs text-slate-500">
@@ -522,7 +549,7 @@ export function OperationsStatus({
                                 <div className="space-y-6">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                      <CircleDot className="h-3 w-3 text-primary" /> Detailed Sequential Breakdown for {op.name}
+                                      <CircleDot className="h-3 w-3 text-primary" /> Sequential Sub-Tasks for {op.name}
                                     </div>
                                     <Badge variant="outline" className="text-[8px] bg-white text-slate-400">Locked within {op.startDate} to {op.endDate}</Badge>
                                   </div>
@@ -530,12 +557,22 @@ export function OperationsStatus({
                                   <div className="space-y-4">
                                     {op.subTasks.map((task, sIdx) => (
                                       <div key={task.id} className="flex flex-col md:grid md:grid-cols-12 gap-4 items-stretch md:items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
-                                        <div className="md:col-span-4 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Task Detail</Label>
+                                        <div className="md:col-span-1 flex items-center justify-center">
+                                          <Checkbox 
+                                            checked={task.isCompleted} 
+                                            onCheckedChange={(checked) => handleUpdateSubTask(idx, sIdx, { isCompleted: !!checked })}
+                                            className="h-5 w-5 rounded-lg border-slate-200 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                          />
+                                        </div>
+                                        <div className="md:col-span-3 space-y-2">
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Identity</Label>
                                           <Input 
                                             value={task.name}
                                             onChange={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
-                                            className="h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold" 
+                                            className={cn(
+                                              "h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold",
+                                              task.isCompleted && "text-slate-400 line-through"
+                                            )} 
                                           />
                                         </div>
                                         <div className="grid grid-cols-2 md:col-span-4 gap-4">
@@ -552,7 +589,7 @@ export function OperationsStatus({
                                             </div>
                                           </div>
                                           <div className="space-y-2">
-                                            <Label className="text-[9px] font-bold uppercase text-slate-500">End (Auto)</Label>
+                                            <Label className="text-[9px] font-bold uppercase text-slate-500">End</Label>
                                             <div className="relative">
                                               <Input 
                                                 type="date"
@@ -565,13 +602,13 @@ export function OperationsStatus({
                                           </div>
                                         </div>
                                         <div className="md:col-span-3 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Resource</Label>
+                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Resource Node</Label>
                                           <Select 
                                             value={task.machineId} 
                                             onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}
                                           >
                                             <SelectTrigger className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]">
-                                              <SelectValue placeholder="Machine/Vendor" />
+                                              <SelectValue placeholder="Internal/Vendor" />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-xl">
                                               <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1">Internal</SelectItem>

@@ -65,7 +65,8 @@
                     "name": { "type": "string" },
                     "startDate": { "type": "string" },
                     "endDate": { "type": "string" },
-                    "machineId": { "type": "string" }
+                    "machineId": { "type": "string" },
+                    "isCompleted": { "type": "boolean" }
                   }
                 }
               }
@@ -117,7 +118,39 @@
         "activeOrders": { "type": "number" },
         "rating": { "type": "number" },
         "contact": { "type": "string" },
+        "address": { "type": "string" },
+        "email": { "type": "string" },
+        "gstNumber": { "type": "string" },
         "status": { "type": "string" }
+      }
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "BillingRecord": {
+      "title": "BillingRecord",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerId": { "type": "string" },
+        "date": { "type": "string" },
+        "number": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" },
+        "note": { "type": "string" }
       }
     },
     "WorkLog": {
@@ -175,6 +208,20 @@
         "definition": {
           "entityName": "Vendor",
           "description": "Supply chain partner directory."
+        }
+      },
+      {
+        "path": "/inventory/{itemId}",
+        "definition": {
+          "entityName": "InventoryItem",
+          "description": "Raw material and tooling stock ledger."
+        }
+      },
+      {
+        "path": "/billing/{recordId}",
+        "definition": {
+          "entityName": "BillingRecord",
+          "description": "Financial operations and invoicing ledger."
         }
       },
       {

@@ -62,6 +62,7 @@ export interface SubTask {
   startDate?: string;
   endDate?: string;
   machineId?: string;
+  isCompleted?: boolean;
 }
 
 export interface RoutingOperation {
@@ -90,15 +91,16 @@ export interface Order {
   routing?: RoutingOperation[];
 }
 
-export interface Invoice {
+export interface BillingRecord {
   id: string;
-  orderId: string;
-  customer: string;
-  amount: string;
+  type: string;
+  customerName: string;
+  customerId: string;
   date: string;
-  dueDate: string;
-  status: 'Paid' | 'Pending' | 'Overdue';
-  type: 'Service' | 'Material' | 'Full';
+  number: string;
+  amount: number;
+  status: string;
+  note: string;
 }
 
 export interface SQCDPData {
@@ -106,25 +108,6 @@ export interface SQCDPData {
   label: string;
   value: number;
   history: { date: string; value: number }[];
-}
-
-export interface LeaveBalance {
-  id: string;
-  resourceName: string;
-  annual: number;
-  sick: number;
-  casual: number;
-  totalTaken: number;
-}
-
-export interface LeaveRequest {
-  id: string;
-  resourceName: string;
-  startDate: string;
-  endDate: string;
-  type: 'Annual' | 'Sick' | 'Casual' | 'Unpaid';
-  status: 'Approved' | 'Pending' | 'Rejected';
-  reason?: string;
 }
 
 export interface Customer {
@@ -150,6 +133,9 @@ export interface Vendor {
   activeOrders: number;
   rating: number;
   contact: string;
+  address: string;
+  email: string;
+  gstNumber: string;
   status: 'Active' | 'Under Review' | 'Inactive';
 }
 
@@ -170,10 +156,9 @@ export interface InventoryItem {
   id: string;
   name: string;
   sku: string;
-  category: 'Raw Material' | 'Tooling' | 'Finished Goods' | 'Consumable';
+  category: string;
   quantity: number;
   unit: string;
-  minThreshold: number;
   location: string;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }

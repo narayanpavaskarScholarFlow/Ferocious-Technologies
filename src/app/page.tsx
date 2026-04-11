@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -61,6 +61,8 @@ function IndustrialERPInternal() {
   const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
   const machinesQuery = useMemoFirebase(() => collection(db, 'machines'), [db]);
   const vendorsQuery = useMemoFirebase(() => collection(db, 'vendors'), [db]);
+  const inventoryQuery = useMemoFirebase(() => collection(db, 'inventory'), [db]);
+  const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
@@ -68,6 +70,8 @@ function IndustrialERPInternal() {
   const { data: usersDataRaw } = useCollection<SystemUser>(usersQuery);
   const { data: machinesData } = useCollection<Machine>(machinesQuery);
   const { data: vendorsData } = useCollection<Vendor>(vendorsQuery);
+  const { data: inventoryData } = useCollection<InventoryItem>(inventoryQuery);
+  const { data: billingData } = useCollection<BillingRecord>(billingQuery);
   const { data: logsData } = useCollection<WorkLogEntryType>(logsQuery);
 
   const orders = ordersData || [];
@@ -75,6 +79,8 @@ function IndustrialERPInternal() {
   const usersData = usersDataRaw || [];
   const machines = machinesData || [];
   const vendors = vendorsData || [];
+  const inventory = inventoryData || [];
+  const billing = billingData || [];
   const logs = logsData || [];
 
   const [globalSearch, setGlobalSearch] = useState('');
@@ -137,6 +143,7 @@ function IndustrialERPInternal() {
     setCurrentView('overview');
   };
 
+  // Data Persistence Handlers
   const handleSaveOrder = (order: Order) => {
     setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
     setCurrentView('orders');
@@ -152,6 +159,18 @@ function IndustrialERPInternal() {
 
   const handleSaveUser = (user: SystemUser) => {
     setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
+  };
+
+  const handleSaveVendor = (vendor: Vendor) => {
+    setDocumentNonBlocking(doc(db, 'vendors', vendor.id), vendor, { merge: true });
+  };
+
+  const handleSaveInventoryItem = (item: InventoryItem) => {
+    setDocumentNonBlocking(doc(db, 'inventory', item.id), item, { merge: true });
+  };
+
+  const handleSaveBillingRecord = (record: BillingRecord) => {
+    setDocumentNonBlocking(doc(db, 'billing', record.id), record, { merge: true });
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -287,8 +306,20 @@ function IndustrialERPInternal() {
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
             )}
-            {currentView === 'billing' && <BillingManagement customers={customers} vendors={vendors} />}
-            {currentView === 'inventory' && <InventoryManagement />}
+            {currentView === 'billing' && (
+              <BillingManagement 
+                customers={customers} 
+                vendors={vendors} 
+                records={billing}
+                onSaveRecord={handleSaveBillingRecord}
+              />
+            )}
+            {currentView === 'inventory' && (
+              <InventoryManagement 
+                items={inventory}
+                onSaveItem={handleSaveInventoryItem}
+              />
+            )}
             {currentView === 'work-log' && (
               <WorkLogEntry 
                 logs={logs} 
@@ -320,7 +351,12 @@ function IndustrialERPInternal() {
                 onNavigateToGantt={() => setCurrentView('gantt')}
               />
             )}
-            {currentView === 'vendor' && <VendorManagement />}
+            {currentView === 'vendor' && (
+              <VendorManagement 
+                vendors={vendors}
+                onSaveVendor={handleSaveVendor}
+              />
+            )}
             {currentView === 'settings' && (
               <ProfileSettings 
                 activeTab={settingsActiveTab} 

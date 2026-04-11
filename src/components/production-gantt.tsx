@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -111,19 +110,7 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
             />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-8 rounded-md bg-purple-600 text-white hover:bg-purple-700 border-none gap-2 text-[10px] font-bold uppercase tracking-wider px-4 shadow-sm">
-            <Share2 className="h-3.5 w-3.5" /> Share
-          </Button>
-          <div className="flex -space-x-2 mr-4">
-            {[1, 2, 3].map(i => (
-              <Avatar key={i} className="h-7 w-7 border-2 border-white shadow-sm">
-                <AvatarImage src={`https://picsum.photos/seed/${i}/40/40`} />
-                <AvatarFallback>U{i}</AvatarFallback>
-              </Avatar>
-            ))}
-          </div>
-        </div>
+        {/* Removed Share button and avatars as per red-highlight removal request */}
       </div>
 
       {/* Date Header Controls */}
@@ -340,25 +327,7 @@ export function ProductionGantt({ orders, searchTerm: globalSearch, onNavigateTo
         </div>
       </div>
 
-      {/* Legend Footer */}
-      <div className="h-10 bg-slate-50 border-t border-slate-200 flex items-center px-6 gap-8">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Completed Protocol</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-primary" />
-          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Active Thread</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-red-500" />
-          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">SLA Overdue</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-slate-400" />
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Auto-Scale: OFF</span>
-        </div>
-      </div>
+      {/* Removed Legend Footer as per red-highlight removal request */}
     </div>
   );
 }

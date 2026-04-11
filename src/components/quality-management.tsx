@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,16 +106,19 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [activeDrawingId, setActiveDrawingId] = useState<string | null>(null);
   
+  // Track all created URLs for cleanup on unmount
+  const createdUrlsRef = useRef<string[]>([]);
+
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Cleanup Blob URLs on unmount
+  // Cleanup all Blob URLs on component destruction
   useEffect(() => {
     return () => {
-      uploadedFiles.forEach(file => URL.revokeObjectURL(file.url));
+      createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
     };
-  }, [uploadedFiles]);
+  }, []);
 
   const qcEntries = useMemo(() => {
     const results: { order: Order; operation: RoutingOperation }[] = [];
@@ -158,10 +161,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   }, [qcEntries]);
 
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
-    // Only reset if changing to a completely different task session
     if (selectedOrder?.id !== order.id || selectedOp?.id !== op.id) {
       setSelectedOrder(order);
       setSelectedOp(op);
+      // Clean up previous drawing session URLs
+      createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      createdUrlsRef.current = [];
       setUploadedFiles([]);
       setActiveDrawingId(null);
       setDimensions(INITIAL_DIMENSIONS);
@@ -245,29 +250,33 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newFiles: UploadedFile[] = Array.from(files).map(file => ({
-        id: `FILE-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        url: URL.createObjectURL(file)
-      }));
+      const newFiles: UploadedFile[] = Array.from(files).map(file => {
+        const url = URL.createObjectURL(file);
+        createdUrlsRef.current.push(url);
+        return {
+          id: `FILE-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          url: url
+        };
+      });
       
       setUploadedFiles(prev => [...prev, ...newFiles]);
       
-      // Auto-focus on the first newly uploaded file
       if (newFiles.length > 0) {
         setActiveDrawingId(newFiles[0].id);
       }
       
-      // Clear input value so same file can be re-selected if deleted/re-added
       e.target.value = '';
-      
       toast({ title: "Drawing Matrix Initialized", description: `${newFiles.length} files onboarded to sequence.` });
     }
   };
 
   const removeFile = (id: string) => {
     const file = uploadedFiles.find(f => f.id === id);
-    if (file) URL.revokeObjectURL(file.url);
+    if (file) {
+      URL.revokeObjectURL(file.url);
+      createdUrlsRef.current = createdUrlsRef.current.filter(u => u !== file.url);
+    }
     
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
     if (activeDrawingId === id) setActiveDrawingId(null);
@@ -518,10 +527,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
               <div className="lg:col-span-8 bg-slate-100/50 rounded-3xl border border-slate-200 overflow-hidden relative group h-[600px] lg:h-auto">
                 {activeDrawing ? (
-                  <embed 
+                  <iframe 
                     key={`${activeDrawing.id}-${activeDrawing.url}`}
                     src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
-                    type="application/pdf"
+                    title={`Drawing Preview: ${activeDrawing.name}`}
                     className="w-full h-full border-none bg-white" 
                   />
                 ) : (
@@ -560,10 +569,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                <Badge className="bg-accent text-white border-none font-bold uppercase text-[8px] tracking-widest px-3 h-6 flex items-center">Technical Reference</Badge>
                <Badge className="bg-black/40 text-white/80 border-none font-code text-[8px] tracking-widest px-3 h-6 flex items-center backdrop-blur-md uppercase">{activeDrawing.name}</Badge>
             </div>
-            <embed 
+            <iframe 
               key={`${activeDrawing.id}-${activeDrawing.url}-audit`}
               src={`${activeDrawing.url}#view=FitH&toolbar=0&navpanes=0`} 
-              type="application/pdf"
+              title={`Audit Reference: ${activeDrawing.name}`}
               className="w-full h-full border-none bg-white" 
             />
           </Card>

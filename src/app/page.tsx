@@ -211,6 +211,10 @@ function IndustrialERPInternal() {
     setDocumentNonBlocking(doc(db, 'billing', record.id), record, { merge: true });
   };
 
+  const handleDeleteBillingRecord = (id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'billing', id));
+  };
+
   const handleDeleteUser = (userId: string) => {
     deleteDocumentNonBlocking(doc(db, 'users', userId));
   };
@@ -358,6 +362,7 @@ function IndustrialERPInternal() {
                 orders={orders}
                 users={usersData}
                 onSaveRecord={handleSaveBillingRecord}
+                onDeleteRecord={handleDeleteBillingRecord}
               />
             )}
             {currentView === 'inventory' && (

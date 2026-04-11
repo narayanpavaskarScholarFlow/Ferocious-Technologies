@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   CreditCard, 
   Search, 
@@ -58,6 +59,7 @@ interface BillingManagementProps {
   orders: Order[];
   users: SystemUser[];
   onSaveRecord: (record: BillingRecord) => void;
+  onDeleteRecord: (id: string) => void;
 }
 
 const QUOTATION_TERMS = `1. Validity: 30 Days from date of issue.
@@ -72,7 +74,7 @@ const INVOICE_TERMS = `1. Subject to Pune jurisdiction only.
 4. Interest @ 18% p.a. will be charged for delayed payments beyond due date.
 5. Goods once sold will not be taken back.`;
 
-export function BillingManagement({ customers, vendors, records, orders, users, onSaveRecord }: BillingManagementProps) {
+export function BillingManagement({ customers, vendors, records, orders, users, onSaveRecord, onDeleteRecord }: BillingManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +83,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [previewRecord, setPreviewRecord] = useState<BillingRecord | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
   // Advanced Billing State
   const [lineItems, setLineItems] = useState<BillingLineItem[]>([]);
@@ -97,6 +100,15 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     paymentMethod: 'Bank Transfer' as 'Cash' | 'Bank Transfer',
     transactionDetails: ''
   });
+
+  const filteredRecords = useMemo(() => {
+    return records.filter(r => 
+      r.type === activeCategory && (
+        r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        r.number.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [records, activeCategory, searchTerm]);
 
   // Quotation Specific Metrics
   const quoteMetrics = useMemo(() => {
@@ -177,6 +189,40 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     setIsCreateDialogOpen(true);
   };
 
+  const handleDelete = (id: string) => {
+    onDeleteRecord(id);
+    setSelectedRecords(prev => prev.filter(rid => rid !== id));
+    toast({
+      variant: "destructive",
+      title: "Record Purged",
+      description: "Billing document has been removed from the ledger."
+    });
+  };
+
+  const handleBulkDelete = () => {
+    selectedRecords.forEach(id => onDeleteRecord(id));
+    setSelectedRecords([]);
+    toast({
+      variant: "destructive",
+      title: "Batch Purge Complete",
+      description: `Successfully removed ${selectedRecords.length} records from the master ledger.`
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRecords.length === filteredRecords.length) {
+      setSelectedRecords([]);
+    } else {
+      setSelectedRecords(filteredRecords.map(r => r.id));
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    setSelectedRecords(prev => 
+      prev.includes(id) ? prev.filter(rid => rid !== id) : [...prev, id]
+    );
+  };
+
   const handleAddLineItem = () => {
     const newItem: BillingLineItem = {
       id: `ITEM-${Date.now()}`,
@@ -239,13 +285,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     setIsPreviewDialogOpen(true);
   };
 
-  const filteredRecords = records.filter(r => 
-    r.type === activeCategory && (
-      r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      r.number.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
@@ -260,13 +299,18 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           <p className="text-muted-foreground font-medium">Commercial lifecycle management from Quote to Final Settlement.</p>
         </div>
         <div className="flex items-center gap-3">
+           {selectedRecords.length > 0 && (
+             <Button variant="destructive" className="rounded-xl gap-2 h-11 px-6 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-red-500/20" onClick={handleBulkDelete}>
+               <Trash2 className="h-4 w-4" /> Delete Selected ({selectedRecords.length})
+             </Button>
+           )}
            <Button className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleCreateNew}>
              <Plus className="h-4 w-4" /> Create New Record
            </Button>
         </div>
       </header>
 
-      <Tabs value={activeCategory} onValueChange={(val) => setActiveCategory(val as any)}>
+      <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }}>
         <TabsList className="bg-slate-100 p-1.5 rounded-2xl mb-8 h-14 inline-flex border border-slate-200/60 shadow-sm gap-2">
           {['quotation', 'invoice', 'proforma', 'inward', 'outward'].map((cat) => (
             <TabsTrigger key={cat} value={cat} className="rounded-xl px-6 h-11 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
@@ -317,7 +361,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           <Table>
             <TableHeader className="bg-white">
               <TableRow className="hover:bg-transparent border-slate-100">
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Identity / Ref</TableHead>
+                <TableHead className="w-12 py-6 px-6">
+                  <Checkbox 
+                    checked={selectedRecords.length === filteredRecords.length && filteredRecords.length > 0} 
+                    onCheckedChange={toggleSelectAll} 
+                  />
+                </TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6">Identity / Ref</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Entity Name</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
@@ -327,7 +377,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <TableBody>
               {filteredRecords.map((record) => (
                 <TableRow key={record.id} className="h-20 border-slate-50 hover:bg-slate-50/50 group">
-                  <TableCell className="px-8">
+                  <TableCell className="px-6">
+                    <Checkbox 
+                      checked={selectedRecords.includes(record.id)} 
+                      onCheckedChange={() => toggleSelectRow(record.id)} 
+                    />
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-[#001F3D]">{record.number}</span>
                       <span className="text-[9px] text-slate-400 font-code">{record.date}</span>
@@ -348,6 +404,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEdit(record)}>
                         <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(record.id)}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

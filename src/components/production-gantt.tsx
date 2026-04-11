@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -50,7 +51,6 @@ interface ProductionGanttProps {
 type ViewMode = 'month' | 'week';
 
 export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGanttProps) {
-  // Use start of day for stable comparisons
   const [currentDate, setCurrentDate] = useState(() => startOfDay(new Date(2025, 2, 1))); 
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('all');
@@ -76,26 +76,20 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     setExpandedOps(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Robust date parsing for both formats seen in the app
   const parseDate = (dateStr?: string) => {
     if (!dateStr) return null;
-    
-    // Format: dd.MM.yyyy
     if (dateStr.includes('.')) {
       const parts = dateStr.split('.');
       if (parts.length === 3) {
         return startOfDay(new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
       }
     }
-    
-    // Format: yyyy-MM-dd
     if (dateStr.includes('-')) {
       const parts = dateStr.split('-');
       if (parts.length === 3) {
         return startOfDay(new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
       }
     }
-
     const d = new Date(dateStr);
     return isNaN(d.getTime()) ? null : startOfDay(d);
   };
@@ -108,10 +102,8 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
     const timelineStart = startOfDay(timelineInterval[0]);
     const timelineEnd = startOfDay(timelineInterval[timelineInterval.length - 1]);
 
-    // Logic: If completely outside the visible window
     if (end < timelineStart || start > timelineEnd) return null;
 
-    // Calculate relative to the timeline start
     const visibleStart = start < timelineStart ? timelineStart : start;
     const visibleEnd = end > timelineEnd ? timelineEnd : end;
 
@@ -149,9 +141,9 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-2xl animate-in fade-in duration-700">
-      {/* Header Controls */}
-      <div className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-30 shrink-0">
+    <div className="flex flex-col h-full bg-white animate-in fade-in duration-700 overflow-hidden">
+      {/* Header Controls - Sticky */}
+      <div className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 z-40 shrink-0 shadow-sm">
         <div className="flex items-center gap-8">
           <div className="flex flex-col">
             <h2 className="text-lg font-display font-bold text-slate-900 uppercase tracking-tight flex items-center gap-3">
@@ -219,14 +211,14 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
         </div>
       </div>
 
-      {/* Main Canvas */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Tree Directory */}
-        <div className="w-[380px] border-r border-slate-100 bg-white flex flex-col z-20 shadow-[8px_0_24px_rgba(0,0,0,0.02)] shrink-0">
-          <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em]">Operational Hierarchy</span>
-          </div>
-          <ScrollArea className="flex-1">
+      {/* Main Gantt Body - Synchronized Vertical Scroll */}
+      <ScrollArea className="flex-1 bg-[#fcfcfc]">
+        <div className="flex min-w-max min-h-full">
+          {/* Sidebar Section - Sticky vertically within this ScrollArea */}
+          <div className="w-[320px] bg-white border-r border-slate-100 flex flex-col shrink-0 sticky left-0 z-30 shadow-[4px_0_12px_rgba(0,0,0,0.02)]">
+            <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50 sticky top-0 z-40">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em]">Operational Hierarchy</span>
+            </div>
             <div className="py-4 space-y-1">
               {filteredOrders.map(order => (
                 <div key={order.id} className="select-none">
@@ -250,7 +242,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                   {expandedOrders[order.id] && order.routing?.map((op, opIdx) => (
                     <div key={op.id}>
                       <div 
-                        className="h-10 flex items-center pl-10 pr-4 hover:bg-slate-50/80 transition-all group cursor-pointer border-b border-slate-50/50"
+                        className="h-10 flex items-center pl-8 pr-4 hover:bg-slate-50/80 transition-all group cursor-pointer border-b border-slate-50/50"
                         onClick={() => toggleOp(op.id)}
                       >
                         <div className="w-6 h-6 flex items-center justify-center mr-2">
@@ -264,7 +256,7 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                       </div>
 
                       {expandedOps[op.id] && op.subTasks?.map((sub) => (
-                        <div key={sub.id} className="h-9 flex items-center pl-20 pr-4 hover:bg-slate-50/50 transition-all group border-b border-slate-50/20">
+                        <div key={sub.id} className="h-9 flex items-center pl-16 pr-4 hover:bg-slate-50/50 transition-all group border-b border-slate-50/20">
                           <div className="w-4 h-px bg-slate-200 mr-3" />
                           <span className="text-[9px] font-medium text-slate-400 truncate flex-1 uppercase tracking-widest">{sub.name}</span>
                           {sub.status === 'Completed' ? (
@@ -279,54 +271,46 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 </div>
               ))}
             </div>
-          </ScrollArea>
-          <div className="h-14 border-t border-slate-100 flex items-center px-6 bg-slate-50/50">
-            <button className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest hover:text-primary transition-all">
-              <Plus className="h-3 w-3" /> Register Operational node
-            </button>
-          </div>
-        </div>
-
-        {/* Right Timeline Grid */}
-        <div className="flex-1 flex flex-col overflow-hidden relative bg-[#fcfcfc]">
-          <div className="h-12 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-10 shadow-sm">
-            {timelineInterval.map((day, idx) => (
-              <div 
-                key={idx} 
-                className={cn(
-                  "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[45px] transition-colors",
-                  isToday(day) && "bg-primary/[0.03]"
-                )}
-              >
-                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter mb-0.5">{format(day, 'EEE')}</span>
-                <span className={cn(
-                  "text-[10px] font-bold tracking-tight w-6 h-6 flex items-center justify-center rounded-lg transition-all",
-                  isToday(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-slate-400"
-                )}>
-                  {format(day, 'd')}
-                </span>
-              </div>
-            ))}
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="relative min-h-full">
-              {/* Grid Guides */}
+          {/* Timeline Grid Section */}
+          <div className="flex-1 flex flex-col relative">
+            {/* Horizontal Timeline Header - Sticky top */}
+            <div className="h-12 border-b border-slate-100 flex items-stretch bg-white sticky top-0 z-30 shadow-sm">
+              {timelineInterval.map((day, idx) => (
+                <div 
+                  key={idx} 
+                  className={cn(
+                    "flex-1 border-r border-slate-100 flex flex-col items-center justify-center min-w-[50px] transition-colors",
+                    isToday(day) && "bg-primary/[0.03]"
+                  )}
+                >
+                  <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter mb-0.5">{format(day, 'EEE')}</span>
+                  <span className={cn(
+                    "text-[10px] font-bold tracking-tight w-6 h-6 flex items-center justify-center rounded-lg transition-all",
+                    isToday(day) ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-slate-400"
+                  )}>
+                    {format(day, 'd')}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Bars Canvas Area */}
+            <div className="relative flex-1 min-h-[calc(100vh-140px)]">
+              {/* Grid Background Guides */}
               <div className="absolute inset-0 flex pointer-events-none">
                 {timelineInterval.map((day, idx) => (
-                  <div key={idx} className={cn("flex-1 border-r border-slate-50", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
+                  <div key={idx} className={cn("flex-1 border-r border-slate-50 min-w-[50px]", isToday(day) && "bg-primary/[0.01] border-primary/10")} />
                 ))}
               </div>
 
-              {/* Dynamic Today Marker */}
+              {/* Today Marker */}
               <div className="absolute top-0 bottom-0 w-[2px] border-l-2 border-dashed border-accent/40 z-10 pointer-events-none group" style={todayMarkerStyle}>
                 <div className="h-3 w-3 rounded-full bg-accent absolute top-[-6px] left-[-6px] shadow-lg animate-pulse" />
-                <div className="absolute top-4 left-3 bg-accent text-white text-[8px] font-bold px-2 py-0.5 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  LIVE_PROTOCOL_MARKER
-                </div>
               </div>
 
-              {/* Graphical Bars */}
+              {/* Data Bars */}
               <div className="py-4 relative z-0">
                 {filteredOrders.map(order => {
                   const orderStyles = getBarStyles(order.startDate, order.endDate);
@@ -410,10 +394,10 @@ export function ProductionGantt({ orders, onNavigateToOperations }: ProductionGa
                 })}
               </div>
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
         </div>
-      </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </div>
   );
 }

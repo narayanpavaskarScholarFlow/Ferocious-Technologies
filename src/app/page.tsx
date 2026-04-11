@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 import { 
   useFirestore, 
@@ -228,13 +229,13 @@ function IndustrialERPInternal() {
   }
 
   return (
-    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body">
+    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body overflow-hidden">
       <div className="hidden lg:block">
         <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-blue-100/60 sticky top-0 z-40 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-blue-200/20">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-blue-100/60 shrink-0 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-blue-200/20 z-50">
           <div className="flex items-center gap-2 md:gap-8">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -324,8 +325,14 @@ function IndustrialERPInternal() {
           </div>
         </header>
 
-        <main className="flex-1 p-6 md:p-10 max-w-[1800px] mx-auto w-full overflow-x-hidden">
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <main className={cn(
+          "flex-1 overflow-y-auto w-full",
+          currentView === 'gantt' ? "p-0" : "p-6 md:p-10 max-w-[1800px] mx-auto"
+        )}>
+          <div className={cn(
+            "animate-in fade-in slide-in-from-bottom-4 duration-1000",
+            currentView === 'gantt' && "h-full"
+          )}>
             {currentView === 'overview' && (
               <ShopFloorOverview 
                 orders={orders}

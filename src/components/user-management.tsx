@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -34,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel } from '@/lib/types';
+import { sendCredentials } from '@/ai/flows/send-credentials-flow';
 
 const JOB_TITLES = [
   "Manager",
@@ -120,6 +120,21 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       };
 
       onSaveUser(newUser);
+
+      // Call Genkit AI flow to simulate credential dispatch via email
+      sendCredentials({
+        name: formData.name,
+        email: formData.email,
+        role: newUser.role,
+        temporaryPassword: formData.password || 'Secure_Axis_2025'
+      }).then(res => {
+        if (res.success) {
+          toast({
+            title: "Credentials Dispatched",
+            description: `Login protocols transmitted to ${formData.email}.`,
+          });
+        }
+      });
 
       toast({
         title: "User Registered",
@@ -356,7 +371,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
                         <Input 
                           placeholder="e.g. John Operator" 
-                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                         />
@@ -365,7 +380,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Network Email Address</Label>
                         <Input 
                           placeholder="name@toolroom.tech" 
-                          className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                          className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                         />
@@ -387,7 +402,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Job Title</Label>
                         <Select value={formData.jobTitle} onValueChange={(val) => setFormData({...formData, jobTitle: val})}>
-                          <SelectTrigger className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus:ring-primary/20">
+                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
                             <SelectValue placeholder="Select functional title..." />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl shadow-2xl">
@@ -400,7 +415,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
                         <Select value={formData.deptCode} onValueChange={(val) => setFormData({...formData, deptCode: val})}>
-                          <SelectTrigger className="h-12 bg-slate-50/50 border-none text-xs rounded-xl focus:ring-primary/20">
+                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
                             <SelectValue placeholder="Select department..." />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl shadow-2xl">
@@ -430,7 +445,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                           <Input 
                             type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
-                            className="h-12 bg-slate-50/50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20"
+                            className="h-12 bg-slate-50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20"
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
                           />

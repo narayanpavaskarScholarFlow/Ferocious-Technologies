@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
@@ -85,6 +85,13 @@ function IndustrialERPInternal() {
   const inventory = inventoryData || [];
   const billing = billingData || [];
   const logs = logsData || [];
+
+  const currentUserData = useMemo(() => {
+    if (!currentUser || !usersData) return null;
+    return usersData.find(u => u.name === currentUser || u.email === currentUser);
+  }, [currentUser, usersData]);
+
+  const permissions = currentUserData?.permissions || {};
 
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -462,6 +469,7 @@ function IndustrialERPInternal() {
                 users={usersData}
                 vendors={vendors}
                 onUpdateStatus={handleUpdateStatusFromQC} 
+                permissions={permissions}
               />
             )}
             {currentView === 'order-details' && (

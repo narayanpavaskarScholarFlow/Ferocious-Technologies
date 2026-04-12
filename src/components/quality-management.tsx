@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -46,7 +47,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord } from '@/lib/types';
+import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord, PermissionLevel } from '@/lib/types';
 import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 
@@ -59,7 +60,7 @@ const MACHINING_OPS = [
   "1st Grinding - Parallelism Check",
   "Heat Treatment - Hardness Rockwell C",
   "2nd Grinding - Tolerance ±0.005mm",
-  "EDM / WEDM - Wire Cut Profile Check",
+  "Hard Part Milling - Wire Cut Profile Check",
   "Assembly - Fit & Function Test"
 ];
 
@@ -76,9 +77,10 @@ interface QualityManagementProps {
   users?: SystemUser[];
   vendors?: Vendor[];
   onUpdateStatus?: (orderId: string, operation: string, status: string) => void;
+  permissions?: Record<string, PermissionLevel>;
 }
 
-export function QualityManagement({ orders, users = [], vendors = [], onUpdateStatus }: QualityManagementProps) {
+export function QualityManagement({ orders, users = [], vendors = [], onUpdateStatus, permissions }: QualityManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
@@ -377,6 +379,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     return "text-slate-400 bg-slate-100 border-slate-200";
   };
 
+  const canDeleteReport = permissions?.['quality-report-delete'] === 'edit' || permissions?.['quality-report-delete'] === 'full';
+
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden px-2">
@@ -650,9 +654,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEditReport(report)}>
                                 <Edit2 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDeleteReport(report.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canDeleteReport && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDeleteReport(report.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button variant="outline" size="sm" className="h-8 rounded-lg text-[8px] font-bold uppercase tracking-widest bg-[#001F3D] hover:bg-black text-white border-none" onClick={() => { setActiveReportId(report.id); setManualComponentName(report.drawingName); setDimensions(report.dimensions); setChecks(report.checks as any); setCurrentStep(report.status === 'Released' ? 'approval' : 'review'); }}>
                                 Preview
                               </Button>

@@ -71,6 +71,7 @@ const ACCESS_NODES = [
   // Category: Quality & Compliance
   { id: 'quality', label: 'Quality Inspection Pipeline', category: 'Quality & Compliance', icon: ShieldCheck },
   { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
+  { id: 'quality-report-delete', label: 'Quality: Delete Compliance Report Protocol', category: 'Quality & Compliance', icon: Trash2 },
   
   // Category: Commercial Operations
   { id: 'customer-orders', label: 'CRM / Account Pipeline', category: 'Commercial Operations', icon: Package },

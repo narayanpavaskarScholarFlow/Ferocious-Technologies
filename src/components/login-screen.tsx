@@ -51,7 +51,6 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
     setIsLoading(true);
     
     // Simulate verification against the users list
-    // In a real app, this would use Firebase Auth, but here we mirror the Access Matrix logic
     setTimeout(() => {
       setIsLoading(false);
       
@@ -61,9 +60,8 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
       );
 
       // Simple password check (for prototype purposes, matching username/admin)
-      // Any valid user from the matrix can log in with their name/email
       if (foundUser || username.toLowerCase() === 'admin') {
-        const loginIdentity = foundUser ? foundUser.name : 'Sys_Admin_01';
+        const loginIdentity = foundUser ? foundUser.name : 'Master Admin';
         onLogin(loginIdentity);
         toast({
           title: "Access Granted",

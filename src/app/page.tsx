@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -91,15 +91,61 @@ function IndustrialERPInternal() {
     return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
 
-  const permissions = useMemo(() => currentUserData?.permissions || {}, [currentUserData]);
+  const permissions = useMemo(() => {
+    // Superuser: Master Admin gets full clearance on every single protocol
+    if (currentUser === 'Master Admin') {
+      const fullClearance: Record<string, PermissionLevel> = {
+        overview: 'full',
+        orders: 'full',
+        sqcdp: 'full',
+        operations: 'full',
+        'machine-utilization': 'full',
+        manpower: 'full',
+        'customer-orders': 'full',
+        'weekly-plan': 'full',
+        users: 'full',
+        vendor: 'full',
+        'order-details': 'full',
+        billing: 'full',
+        'work-log': 'full',
+        inventory: 'full',
+        quality: 'full',
+        settings: 'full',
+        gantt: 'full',
+        'smart-quote': 'full',
+        matrix: 'full',
+        'quality-review': 'full',
+        'quality-release': 'full',
+        'quality-report-delete': 'full',
+        'order-create': 'full',
+        'billing-quotation': 'full',
+        'billing-invoice': 'full',
+        'billing-proforma': 'full',
+        'billing-inward': 'full',
+        'billing-outward': 'full',
+        'billing-create': 'full',
+        'billing-delete': 'full',
+        'vendor-onboard': 'full',
+        'maintenance': 'full',
+        'hr-planning': 'full',
+        'holiday-matrix': 'full'
+      };
+      return fullClearance;
+    }
+    return currentUserData?.permissions || {};
+  }, [currentUser, currentUserData]);
 
   // Access Control Helper
   const hasAccess = useCallback((view: string): boolean => {
+    // Master Admin always has access
+    if (currentUser === 'Master Admin') return true;
+    
     // Admin always has access to profile settings
     if (view === 'settings') return true;
+    
     const level = permissions[view];
     return level && level !== 'none';
-  }, [permissions]);
+  }, [permissions, currentUser]);
 
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -349,7 +395,7 @@ function IndustrialERPInternal() {
                   <div className="flex items-center gap-4 pl-2 group cursor-pointer">
                     <div className="text-right hidden md:block">
                       <p className="text-xs font-bold leading-none text-[#0f172a]">{currentUser}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1.5 group-hover:text-primary transition-colors">{currentUserData?.role || 'Plant Controller'}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1.5 group-hover:text-primary transition-colors">{currentUserData?.role || (currentUser === 'Master Admin' ? 'Root Controller' : 'Plant Controller')}</p>
                     </div>
                     <div className="relative">
                       <Avatar className="h-11 w-11 border-2 border-white shadow-xl shadow-slate-200 transition-transform group-hover:scale-105">

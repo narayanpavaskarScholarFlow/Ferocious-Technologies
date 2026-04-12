@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -146,7 +145,7 @@ export function ProfileSettings({
       setAdminName(activeAdmin.name);
       setAdminRole(activeAdmin.role);
     } else {
-      setAdminName(currentUser || 'Sys_Admin_01');
+      setAdminName(currentUser || 'Master Admin');
       setAdminRole('Plant Controller');
     }
   }, [activeAdmin, currentUser]);

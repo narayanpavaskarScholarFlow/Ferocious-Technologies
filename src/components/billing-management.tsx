@@ -54,6 +54,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Textarea } from '@/components/ui/textarea';
 
 type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses';
 

@@ -34,7 +34,10 @@ import {
   ArchiveX,
   Box,
   Edit2,
-  Lock
+  Lock,
+  Upload,
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -44,6 +47,14 @@ import {
   ResponsiveContainer, 
   Cell, 
 } from 'recharts';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +100,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   
   const [manualComponentName, setManualComponentName] = useState('');
+  const [isDrawingDialogOpen, setIsDrawingDialogOpen] = useState(false);
+  const [pendingDrawingFile, setPendingDrawingFile] = useState<string | undefined>();
   
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
@@ -108,6 +121,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     if (!selectedOrder) return [];
     return allReports.filter(r => r.workOrderId === selectedOrder.id);
   }, [allReports, selectedOrder?.id]);
+
+  // Current active report being previewed
+  const activePreviewReport = useMemo(() => {
+    if (!activeReportId) return null;
+    return allReports.find(r => r.id === activeReportId) || null;
+  }, [allReports, activeReportId]);
 
   // Derive current QC operation from live orders to ensure sub-tasks sync
   const currentQCOperation = useMemo(() => {
@@ -174,6 +193,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       setDimensions(INITIAL_DIMENSIONS);
       setActiveReportId(null);
       setManualComponentName('');
+      setPendingDrawingFile(undefined);
       const initial: Record<string, CheckStatus> = {};
       MACHINING_OPS.forEach(o => initial[o] = 'Pending');
       setChecks(initial);
@@ -202,6 +222,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     setManualComponentName(report.drawingName);
     setDimensions(report.dimensions);
     setChecks(report.checks as any);
+    setPendingDrawingFile(report.drawingFile);
     const qcOp = order.routing?.find(op => op.name === 'QC');
     if (qcOp) setSelectedOp(qcOp);
     setCurrentStep('checklist');
@@ -320,11 +341,20 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     }
   };
 
-  const saveReportDraft = () => {
-    if (!selectedOrder || !manualComponentName) {
-      toast({ variant: "destructive", title: "Identity Required", description: "Please enter a component name for manual entry." });
-      return;
+  const handleDrawingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPendingDrawingFile(reader.result as string);
+        toast({ title: "Drawing Matrix Cached", description: "Blueprints initialized for protocol embed." });
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const commitReportToLedger = (drawingFile?: string) => {
+    if (!selectedOrder || !manualComponentName) return;
     
     const reportId = activeReportId || `QR-${Date.now()}`;
     const report: QualityReport = {
@@ -332,6 +362,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       workOrderId: selectedOrder.id,
       drawingId: 'manual',
       drawingName: manualComponentName,
+      drawingFile: drawingFile || pendingDrawingFile,
       dimensions: dimensions,
       checks: checks,
       status: 'Draft',
@@ -344,6 +375,16 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     setDocumentNonBlocking(doc(db, 'quality_reports', reportId), report, { merge: true });
     setActiveReportId(reportId);
     setCurrentStep('report');
+    setIsDrawingDialogOpen(false);
+  };
+
+  const saveReportDraft = () => {
+    if (!selectedOrder || !manualComponentName) {
+      toast({ variant: "destructive", title: "Identity Required", description: "Please enter a component name for manual entry." });
+      return;
+    }
+    // Ask for drawing attachment before proceeding
+    setIsDrawingDialogOpen(true);
   };
 
   const submitForReview = () => {
@@ -715,9 +756,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[100px]">Balloon No.</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[140px]">Type of Dim</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[140px]">Instrument</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Target (mm)</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Tolerance</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[140px]">Limits</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-center w-[100px]">Target (mm)</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-center w-[100px]">Tolerance</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-center w-[140px]">Limits</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-center w-[120px]">Actual Measured</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-center w-[80px]">Status</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-left pl-6">Observations</TableHead>
@@ -896,6 +937,21 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </div>
               </div>
             </div>
+
+            {/* Embedded Drawing Preview in Report */}
+            {activePreviewReport?.drawingFile && (
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Technical Blueprint Attachment</h3>
+                <div className="relative w-full border border-slate-100 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 min-h-[200px] max-h-[400px]">
+                  <img 
+                    src={activePreviewReport.drawingFile} 
+                    alt="Technical Blueprint" 
+                    className="max-w-full max-h-[380px] object-contain shadow-sm"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-8">
               <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Manual Compliance Matrix</h3>
               <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm">
@@ -956,6 +1012,67 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           </div>
         </div>
       )}
+
+      {/* Drawing Attachment Protocol Dialog */}
+      <Dialog open={isDrawingDialogOpen} onOpenChange={setIsDrawingDialogOpen}>
+        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Finalization Protocol</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Would you like to attach a drawing blueprint to the compliance report?</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-10">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                <ImageIcon className="h-3.5 w-3.5 text-primary" /> Technical Blueprint (Optional)
+              </Label>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  id="final-drawing-upload" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleDrawingUpload}
+                />
+                <label 
+                  htmlFor="final-drawing-upload"
+                  className={cn(
+                    "h-24 w-full flex flex-col items-center justify-center gap-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all border-2 border-dashed",
+                    pendingDrawingFile ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400 hover:border-primary/50"
+                  )}
+                >
+                  {pendingDrawingFile ? (
+                    <>
+                      <CheckCircle2 className="h-6 w-6" />
+                      Drawing Cached Successfully
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6" />
+                      Attach Drawing Matrix
+                    </>
+                  )}
+                </label>
+              </div>
+              {pendingDrawingFile && (
+                <div className="relative h-24 w-full rounded-xl overflow-hidden border border-slate-100 bg-slate-50">
+                  <img src={pendingDrawingFile} alt="Preview" className="h-full w-full object-contain" />
+                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 bg-white/80 hover:bg-white text-red-500" onClick={() => setPendingDrawingFile(undefined)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400" onClick={() => commitReportToLedger()}>Skip & Finalize</Button>
+              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl flex gap-3" onClick={() => commitReportToLedger()}>
+                Commit & Preview <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

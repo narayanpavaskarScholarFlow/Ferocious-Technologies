@@ -217,6 +217,7 @@ export interface QualityReport {
   workOrderId: string;
   drawingId: string;
   drawingName: string;
+  drawingFile?: string; // Data URI or URL of the attached blueprint
   dimensions: DimensionRecord[];
   checks: Record<string, string>;
   status: 'Draft' | 'Review Pending' | 'Released';

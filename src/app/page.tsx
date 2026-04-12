@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -25,7 +24,7 @@ import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert } from 'lucide-react';
+import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert, KeyRound, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -37,6 +36,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 import { 
@@ -48,6 +49,7 @@ import {
   FirebaseClientProvider
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
+import { differenceInDays, parseISO } from 'date-fns';
 
 function IndustrialERPInternal() {
   const db = useFirestore();
@@ -57,6 +59,9 @@ function IndustrialERPInternal() {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
+  
+  const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   
   // Firestore Collections
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
@@ -91,6 +96,49 @@ function IndustrialERPInternal() {
     if (!currentUser || !usersData) return null;
     return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
+
+  // Password Policy Logic
+  useEffect(() => {
+    if (!currentUserData || !isLoggedIn) return;
+
+    const lastChange = currentUserData.lastPasswordChange ? parseISO(currentUserData.lastPasswordChange) : new Date(0);
+    const daysSinceChange = differenceInDays(new Date(), lastChange);
+
+    if (daysSinceChange >= 45) {
+      setIsPasswordChangeOpen(true);
+    } else if (daysSinceChange >= 40) {
+      toast({
+        title: "Security Warning",
+        description: `Your login key will expire in ${45 - daysSinceChange} days. Please update your security token.`,
+        variant: "destructive",
+      });
+    }
+  }, [currentUserData, isLoggedIn, toast]);
+
+  const handleForcePasswordChange = () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Security Protocol Failure",
+        description: "Password must be at least 6 characters for industrial grade encryption.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentUserData) {
+      setDocumentNonBlocking(doc(db, 'users', currentUserData.id), {
+        ...currentUserData,
+        lastPasswordChange: new Date().toISOString()
+      }, { merge: true });
+      
+      setIsPasswordChangeOpen(false);
+      setNewPassword('');
+      toast({
+        title: "Security Matrix Updated",
+        description: "Your session token has been successfully rotated."
+      });
+    }
+  };
 
   const permissions = useMemo(() => {
     // Superuser: Master Admin or Plant Controller role gets full clearance
@@ -138,12 +186,8 @@ function IndustrialERPInternal() {
 
   // Access Control Helper
   const hasAccess = useCallback((view: string): boolean => {
-    // Superusers always have access
     if (currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller') return true;
-    
-    // Admin always has access to profile settings
     if (view === 'settings') return true;
-    
     const level = permissions[view];
     return level && level !== 'none';
   }, [permissions, currentUser, currentUserData]);
@@ -576,6 +620,37 @@ function IndustrialERPInternal() {
           </div>
         </main>
       </div>
+
+      {/* Mandatory Password Rotation Dialog */}
+      <Dialog open={isPasswordChangeOpen} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-[2rem] p-10">
+          <DialogHeader className="space-y-4">
+            <div className="p-4 bg-red-50 rounded-2xl w-fit">
+              <KeyRound className="h-8 w-8 text-red-600" />
+            </div>
+            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Security Protocol Violation</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Your security token has exceeded the 45-day rotation window. Access is restricted until rotation is complete.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-6">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">New Security Token (Password)</Label>
+              <Input 
+                type="password"
+                placeholder="Enter new master key..." 
+                className="h-14 bg-slate-50 border-none rounded-2xl text-xs font-bold shadow-inner"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-[10px] text-amber-700 font-bold uppercase tracking-widest leading-relaxed">Mandatory rotation required every 45 days as per Bharat Axis security protocols.</p>
+            </div>
+            <Button onClick={handleForcePasswordChange} className="w-full h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-primary/20">Rotate Security Node</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Toaster />
     </div>

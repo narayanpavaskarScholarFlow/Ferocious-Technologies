@@ -51,7 +51,8 @@ import {
   Camera,
   Upload,
   Printer,
-  QrCode
+  QrCode,
+  Eye
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -60,28 +61,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-// High-fidelity permission nodes categorized by industrial function
 const ACCESS_NODES = [
-  // Category: Strategic Hub
   { id: 'overview', label: 'Command Matrix (Dashboard)', category: 'Strategic Hub', icon: LayoutGrid },
   { id: 'smart-quote', label: 'AI Smart Quoting (Gemini)', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'SQCDP Performance Metrics', category: 'Strategic Hub', icon: LineChart },
-  
-  // Category: Production Control
   { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },
   { id: 'order-create', label: 'Production: New Order Protocol', category: 'Production Control', icon: Plus },
   { id: 'gantt', label: 'Visual Timeline (Gantt)', category: 'Production Control', icon: LayoutGrid },
   { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
   { id: 'weekly-plan', label: 'Master Production Schedule', category: 'Production Control', icon: Calendar },
   { id: 'work-log', label: 'Daily Operator Work Logs', category: 'Production Control', icon: ClipboardList },
-  
-  // Category: Quality & Compliance
   { id: 'quality', label: 'Quality Inspection Pipeline', category: 'Quality & Compliance', icon: ShieldCheck },
   { id: 'quality-review', label: 'Final Compliance Review (Tab Access)', category: 'Quality & Compliance', icon: Unlock },
   { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
   { id: 'quality-report-delete', label: 'Quality: Delete Compliance Report Protocol', category: 'Quality & Compliance', icon: Trash2 },
-  
-  // Category: Commercial Operations
   { id: 'customer-orders', label: 'CRM / Account Pipeline', category: 'Commercial Operations', icon: Package },
   { id: 'inventory-add', label: 'Inventory: Add Item to Ledger', category: 'Commercial Operations', icon: Plus },
   { id: 'billing', label: 'Financial Hub (Master Ledger)', category: 'Commercial Operations', icon: CreditCard },
@@ -94,15 +87,11 @@ const ACCESS_NODES = [
   { id: 'billing-delete', label: 'Finance: Record Deletion Protocol', category: 'Commercial Operations', icon: Trash2 },
   { id: 'vendor', label: 'Supply Chain & Vendor Directory', category: 'Commercial Operations', icon: Truck },
   { id: 'vendor-onboard', label: 'Supply: Onboard New Partner', category: 'Commercial Operations', icon: UserPlus },
-  
-  // Category: Resources & Assets
   { id: 'machine-utilization', label: 'Industrial Asset Telemetry', category: 'Resources & Assets', icon: Cpu },
   { id: 'maintenance', label: 'Asset Maintenance Ledger', category: 'Resources & Assets', icon: Activity },
   { id: 'manpower', label: 'Personnel & Skill Matrix', category: 'Resources & Assets', icon: Users },
   { id: 'hr-planning', label: 'Leave Allocation Matrix', category: 'Resources & Assets', icon: Calendar },
   { id: 'holiday-matrix', label: 'HR: Annual Holiday Matrix', category: 'Resources & Assets', icon: CalendarDays },
-  
-  // Category: System Governance
   { id: 'users', label: 'System Identity Management', category: 'System Governance', icon: UserPlus },
   { id: 'matrix', label: 'Access Control Matrix', category: 'System Governance', icon: Unlock },
   { id: 'settings', label: 'Global System Configuration', category: 'System Governance', icon: Settings },
@@ -129,9 +118,9 @@ export function ProfileSettings({
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
 
-  // Group permissions for hierarchical UI
   const groupedPermissions = useMemo(() => {
     const groups: Record<string, typeof ACCESS_NODES> = {};
     ACCESS_NODES.forEach(node => {
@@ -216,6 +205,7 @@ export function ProfileSettings({
       reportingManager: adminReportingManager,
       permissions: { overview: 'full' },
       lastLogin: new Date().toISOString(),
+      lastPasswordChange: new Date().toISOString(),
       status: 'online'
     };
 
@@ -223,6 +213,7 @@ export function ProfileSettings({
 
     setTimeout(() => {
       setIsSaving(false);
+      setIsEditing(false);
       toast({
         title: "Identity Synchronized",
         description: `Master metadata for ${adminName} has been committed to the ledger.`
@@ -248,9 +239,13 @@ export function ProfileSettings({
     });
   };
 
+  const handlePhysicalPrint = () => {
+    window.print();
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-1000">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
+    <div className="space-y-8 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2 print:hidden">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 text-accent font-bold text-[9px] uppercase tracking-[0.3em]">
             <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-red" />
@@ -261,21 +256,10 @@ export function ProfileSettings({
           </h2>
           <p className="text-xs text-muted-foreground font-medium">Manage root identity and system-wide access protocols.</p>
         </div>
-        {activeTab === 'profile' && (
-          <div className="flex items-center gap-3">
-             <Button 
-              className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
-              onClick={handleSaveAdminProfile}
-              disabled={isSaving}
-             >
-               {isSaving ? "Synchronizing..." : <Save className="h-4 w-4" />} {isSaving ? "" : "Save Protocol"}
-             </Button>
-          </div>
-        )}
       </header>
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full print:block">
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm print:hidden">
           <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
             <UserCircle className="h-3.5 w-3.5 mr-2" /> Admin Profile
           </TabsTrigger>
@@ -287,12 +271,12 @@ export function ProfileSettings({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="m-0 space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-4 space-y-6">
+        <TabsContent value="profile" className="m-0 space-y-8 print:m-0 print:space-y-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block">
+            <div className="lg:col-span-4 space-y-6 print:w-full print:flex print:justify-center">
               {/* Digital Industrial ID Card */}
-              <div className="relative group/id">
-                <Card className="p-0 bg-slate-900 border-slate-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] rounded-[2rem] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1">
+              <div id="id-card-printable" className="relative group/id print:w-[350px]">
+                <Card className="p-0 bg-slate-900 border-slate-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] rounded-[2rem] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 print:shadow-none print:rotate-0 print:scale-100 print:rounded-none print:border-2 print:border-slate-200">
                   {/* ID Card Header */}
                   <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent" />
@@ -328,9 +312,9 @@ export function ProfileSettings({
                       />
                       <label 
                         htmlFor="id-photo-upload"
-                        className="absolute -bottom-2 -right-2 h-10 w-10 bg-primary rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform"
+                        className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform print:hidden"
                       >
-                        <Camera className="h-5 w-5" />
+                        <Camera className="h-4 w-4" />
                       </label>
                     </div>
 
@@ -340,29 +324,29 @@ export function ProfileSettings({
                     </div>
 
                     <div className="w-full grid grid-cols-2 gap-4 mt-4 relative z-10">
-                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left">
-                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest">Employee Node</p>
-                        <p className="text-[11px] font-code font-bold text-white">{adminId || 'ID_PR_XXXX'}</p>
+                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
+                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Employee Node</p>
+                        <p className="text-[11px] font-code font-bold text-white print:text-slate-900">{adminId || 'ID_PR_XXXX'}</p>
                       </div>
-                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left">
-                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest">Plant Section</p>
-                        <p className="text-[11px] font-bold text-white uppercase truncate">{adminDept || 'General'}</p>
+                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
+                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Plant Section</p>
+                        <p className="text-[11px] font-bold text-white uppercase truncate print:text-slate-900">{adminDept || 'General'}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* ID Card Footer */}
-                  <div className="bg-slate-950 p-4 border-t border-white/5 text-center flex flex-col items-center">
-                    <div className="h-1 w-12 bg-white/10 rounded-full mb-3" />
-                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Security Clearance Active</p>
+                  <div className="bg-slate-950 p-4 border-t border-white/5 text-center flex flex-col items-center print:bg-slate-100">
+                    <div className="h-1 w-12 bg-white/10 rounded-full mb-3 print:bg-slate-300" />
+                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse print:text-slate-400">Security Clearance Active</p>
                   </div>
                 </Card>
                 
-                <div className="flex gap-2 mt-6">
+                <div className="flex gap-2 mt-6 print:hidden">
                   <Button 
                     variant="outline" 
                     className="flex-1 bg-white border-slate-200 text-slate-400 hover:text-primary rounded-xl h-11 text-[9px] font-bold uppercase tracking-widest gap-2 shadow-sm"
-                    onClick={() => window.print()}
+                    onClick={handlePhysicalPrint}
                   >
                     <Printer className="h-3.5 w-3.5" /> Physical ID Print
                   </Button>
@@ -377,7 +361,7 @@ export function ProfileSettings({
               </div>
             </div>
 
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-8 space-y-6 print:hidden">
               <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[2rem] space-y-10">
                 <div className="space-y-10">
                   <div className="flex items-center justify-between">
@@ -385,13 +369,30 @@ export function ProfileSettings({
                       <User className="h-5 w-5 text-primary" />
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Master Identity Matrix</h3>
                     </div>
-                    <Button 
-                      size="sm"
-                      onClick={handleSaveAdminProfile}
-                      className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 font-bold text-[10px] uppercase tracking-widest h-9"
-                    >
-                      Save Matrix Entry
-                    </Button>
+                    {isEditing ? (
+                      <div className="flex gap-3">
+                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-lg px-4 font-bold text-[10px] uppercase h-9">Cancel</Button>
+                        <Button 
+                          size="sm"
+                          onClick={handleSaveAdminProfile}
+                          disabled={isSaving}
+                          className="bg-[#001F3D] hover:bg-black text-white rounded-lg px-6 font-bold text-[10px] uppercase tracking-widest h-9 flex gap-2"
+                        >
+                          {isSaving ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          Commit Protocol
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsEditing(true)}
+                        className="border-slate-200 text-slate-600 hover:text-primary rounded-lg px-6 font-bold text-[10px] uppercase tracking-widest h-9 flex gap-2"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        Modify Matrix Entry
+                      </Button>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
@@ -399,65 +400,93 @@ export function ProfileSettings({
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                         <Fingerprint className="h-3 w-3 text-primary" /> Employee Identity (ID)
                       </Label>
-                      <Input 
-                        value={adminId} 
-                        onChange={(e) => setAdminId(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminId} 
+                          onChange={(e) => setAdminId(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminId || 'NOT_SET'}</div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Identity User name</Label>
-                      <Input 
-                        value={adminName} 
-                        onChange={(e) => setAdminName(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminName} 
+                          onChange={(e) => setAdminName(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminName || 'NOT_SET'}</div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                         <Phone className="h-3 w-3 text-primary" /> Contact Synchronization Node
                       </Label>
-                      <Input 
-                        value={adminPhone} 
-                        onChange={(e) => setAdminPhone(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminPhone} 
+                          onChange={(e) => setAdminPhone(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminPhone || 'NOT_SET'}</div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Mail ID</Label>
-                      <Input 
-                        value={adminEmail} 
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminEmail} 
+                          onChange={(e) => setAdminEmail(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D]">{adminEmail || 'NOT_SET'}</div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Plant Department</Label>
-                      <Input 
-                        value={adminDept} 
-                        onChange={(e) => setAdminDept(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminDept} 
+                          onChange={(e) => setAdminDept(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminDept || 'NOT_SET'}</div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Briefcase className="h-3 w-3 text-primary" /> Functional Roll (Role)
+                        <Briefcase className="h-3 w-3 text-primary" /> Functional Role
                       </Label>
-                      <Input 
-                        value={adminRole} 
-                        onChange={(e) => setAdminRole(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminRole} 
+                          onChange={(e) => setAdminRole(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminRole || 'NOT_SET'}</div>
+                      )}
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                         <Network className="h-3 w-3 text-primary" /> Command Lead (Reporting Manager)
                       </Label>
-                      <Input 
-                        value={adminReportingManager} 
-                        onChange={(e) => setAdminReportingManager(e.target.value)}
-                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                      />
+                      {isEditing ? (
+                        <Input 
+                          value={adminReportingManager} 
+                          onChange={(e) => setAdminReportingManager(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminReportingManager || 'NOT_SET'}</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -466,11 +495,11 @@ export function ProfileSettings({
           </div>
         </TabsContent>
 
-        <TabsContent value="access" className="m-0">
+        <TabsContent value="access" className="m-0 print:hidden">
           <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
         </TabsContent>
 
-        <TabsContent value="matrix" className="m-0">
+        <TabsContent value="matrix" className="m-0 print:hidden">
           <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
             <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>

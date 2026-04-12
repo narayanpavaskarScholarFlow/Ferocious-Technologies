@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  LayoutDashboard
+  LayoutDashboard,
+  Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -148,7 +149,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                       onClick={() => setView('reset')}
                       className="text-[10px] font-bold uppercase text-primary hover:text-primary/80 transition-colors tracking-widest"
                     >
-                      Reset?
+                      Reset Token?
                     </button>
                   </div>
                   <div className="relative group">
@@ -189,8 +190,8 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
           ) : (
             <form onSubmit={handleResetRequest} className="space-y-8 animate-in slide-in-from-right-4 duration-500">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-accent/10 rounded-lg"><AlertTriangle className="h-4 w-4 text-accent" /></div>
-                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Protocol Recovery</span>
+                <div className="p-2 bg-accent/10 rounded-lg"><Mail className="h-4 w-4 text-accent" /></div>
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Protocol Reset</span>
               </div>
 
               <div className="space-y-5">
@@ -207,7 +208,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   </div>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-relaxed px-1 font-medium">
-                  Submit your registered node email to receive an authorization token. Access will be logged for security audit.
+                  Submit your registered node email to receive a password reset link. Identity verification is required for security audit.
                 </p>
               </div>
 
@@ -225,7 +226,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   disabled={isLoading || !resetEmail}
                   className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-primary/20"
                 >
-                  Issue Token
+                  Issue Reset Link
                 </Button>
               </div>
             </form>

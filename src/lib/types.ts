@@ -196,6 +196,7 @@ export interface SystemUser {
   reportingManager?: string;
   permissions: Record<string, PermissionLevel>;
   lastLogin: string;
+  lastPasswordChange?: string; // ISO date string
   status: 'online' | 'offline' | 'active' | 'break' | 'off';
   shift?: 'Morning' | 'Evening' | 'Night';
   efficiency?: number;

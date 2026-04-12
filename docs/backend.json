@@ -101,6 +101,7 @@
         "phone": { "type": "string" },
         "role": { "type": "string" },
         "dept": { "type": "string" },
+        "image": { "type": "string" },
         "reportingManager": { "type": "string" },
         "status": { "type": "string" },
         "shift": { "type": "string" },

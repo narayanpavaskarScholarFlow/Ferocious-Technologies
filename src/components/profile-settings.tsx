@@ -47,7 +47,11 @@ import {
   Phone,
   Briefcase,
   Network,
-  Fingerprint
+  Fingerprint,
+  Camera,
+  Upload,
+  Printer,
+  QrCode
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -148,6 +152,7 @@ export function ProfileSettings({
   const [adminDept, setAdminDept] = useState('');
   const [adminId, setAdminId] = useState('');
   const [adminReportingManager, setAdminReportingManager] = useState('');
+  const [adminImage, setAdminImage] = useState<string | undefined>();
 
   useEffect(() => {
     if (activeAdmin) {
@@ -158,6 +163,7 @@ export function ProfileSettings({
       setAdminDept(activeAdmin.dept);
       setAdminId(activeAdmin.id);
       setAdminReportingManager(activeAdmin.reportingManager || '');
+      setAdminImage(activeAdmin.image);
     } else {
       setAdminName(currentUser || 'Master Admin');
       setAdminRole('Plant Controller');
@@ -165,6 +171,7 @@ export function ProfileSettings({
       setAdminDept('Admin');
       setAdminId('ID_PR_0001');
       setAdminReportingManager('Self / Board');
+      setAdminImage(undefined);
     }
   }, [activeAdmin, currentUser]);
 
@@ -173,6 +180,18 @@ export function ProfileSettings({
     const found = users.find(u => u.id === selectedUserForMatrix);
     return found || users[0];
   }, [users, selectedUserForMatrix]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAdminImage(reader.result as string);
+        toast({ title: "Visual Identity Matrix Updated", description: "Identity image cached for synchronization." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSaveAdminProfile = () => {
     setIsSaving(true);
@@ -184,6 +203,7 @@ export function ProfileSettings({
       email: adminEmail,
       phone: adminPhone,
       dept: adminDept,
+      image: adminImage,
       reportingManager: adminReportingManager
     } : {
       id: adminId || `ADMIN-${Date.now()}`,
@@ -192,6 +212,7 @@ export function ProfileSettings({
       phone: adminPhone,
       role: adminRole,
       dept: adminDept || 'Admin',
+      image: adminImage,
       reportingManager: adminReportingManager,
       permissions: { overview: 'full' },
       lastLogin: new Date().toISOString(),
@@ -203,8 +224,8 @@ export function ProfileSettings({
     setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "Configuration Synchronized",
-        description: `Administrative profile for ${adminName} has been updated in the master ledger.`
+        title: "Identity Synchronized",
+        description: `Master metadata for ${adminName} has been committed to the ledger.`
       });
     }, 800);
   };
@@ -269,63 +290,114 @@ export function ProfileSettings({
         <TabsContent value="profile" className="m-0 space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 space-y-6">
-              <Card className="p-8 bg-white border-slate-200/60 shadow-xl rounded-2xl flex flex-col items-center text-center">
-                <div className="relative mb-6">
-                  <Avatar className="h-24 w-24 border-4 border-slate-50 shadow-xl">
-                    <AvatarImage src={`https://picsum.photos/seed/${currentUser || 'admin'}/200/200`} />
-                    <AvatarFallback className="bg-primary text-white text-xl font-bold">SA</AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full border-4 border-white shadow-sm flex items-center justify-center">
-                    <CheckCircle2 className="h-3 w-3 text-white" />
+              {/* Digital Industrial ID Card */}
+              <div className="relative group/id">
+                <Card className="p-0 bg-slate-900 border-slate-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] rounded-[2rem] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1">
+                  {/* ID Card Header */}
+                  <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent" />
+                    <div className="relative z-10">
+                      <h1 className="text-xl font-display font-bold tracking-tighter text-white">BHARAT<span className="text-primary">AXIS</span></h1>
+                      <p className="text-[7px] font-bold text-white/40 uppercase tracking-[0.4em]">Integrated Control Network</p>
+                    </div>
+                    <QrCode className="h-8 w-8 text-white/20 relative z-10" />
                   </div>
-                </div>
+
+                  {/* ID Card Body */}
+                  <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
+                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+                    
+                    <div className="relative group/photo">
+                      <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center">
+                        {adminImage ? (
+                          <img src={adminImage} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 opacity-30 text-white">
+                            <UserCircle className="h-12 w-12" />
+                            <span className="text-[8px] font-bold uppercase tracking-widest">No Matrix Data</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <input 
+                        type="file" 
+                        id="id-photo-upload" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
+                      <label 
+                        htmlFor="id-photo-upload"
+                        className="absolute -bottom-2 -right-2 h-10 w-10 bg-primary rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform"
+                      >
+                        <Camera className="h-5 w-5" />
+                      </label>
+                    </div>
+
+                    <div className="space-y-1 relative z-10">
+                      <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminName}</h3>
+                      <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{adminRole}</p>
+                    </div>
+
+                    <div className="w-full grid grid-cols-2 gap-4 mt-4 relative z-10">
+                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left">
+                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest">Employee Node</p>
+                        <p className="text-[11px] font-code font-bold text-white">{adminId || 'ID_PR_XXXX'}</p>
+                      </div>
+                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left">
+                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest">Plant Section</p>
+                        <p className="text-[11px] font-bold text-white uppercase truncate">{adminDept || 'General'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ID Card Footer */}
+                  <div className="bg-slate-950 p-4 border-t border-white/5 text-center flex flex-col items-center">
+                    <div className="h-1 w-12 bg-white/10 rounded-full mb-3" />
+                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Security Clearance Active</p>
+                  </div>
+                </Card>
                 
-                <div className="space-y-1">
-                  <h3 className="text-xl font-display font-bold text-[#001F3D]">{adminName}</h3>
-                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-[0.2em]">{adminRole}</p>
+                <div className="flex gap-2 mt-6">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 bg-white border-slate-200 text-slate-400 hover:text-primary rounded-xl h-11 text-[9px] font-bold uppercase tracking-widest gap-2 shadow-sm"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="h-3.5 w-3.5" /> Physical ID Print
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[9px] uppercase tracking-widest h-11 rounded-xl gap-2 px-4"
+                    onClick={onLogout}
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Log Out
+                  </Button>
                 </div>
-
-                <div className="w-full grid grid-cols-2 gap-3 mt-8 pt-8 border-t border-slate-50">
-                  <div className="p-3 bg-slate-50 rounded-xl text-left">
-                    <p className="text-[8px] text-slate-400 uppercase font-bold mb-1">Employee ID</p>
-                    <p className="text-[11px] font-bold text-[#001F3D]">{adminId || 'ID_PR_XXXX'}</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl text-left">
-                    <p className="text-[8px] text-slate-400 uppercase font-bold mb-1">Access Tier</p>
-                    <Badge className="bg-primary/10 text-primary border-none text-[8px] font-bold px-2 py-0">COMMAND</Badge>
-                  </div>
-                </div>
-
-                <div className="w-full mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center gap-4 text-left">
-                  <div className="p-2 bg-primary rounded-lg text-white"><Network className="h-4 w-4" /></div>
-                  <div className="space-y-0.5">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Reporting Line</p>
-                    <p className="text-[10px] font-bold text-[#001F3D] uppercase">{adminReportingManager || 'None Defined'}</p>
-                  </div>
-                </div>
-
-                <Button 
-                  variant="ghost" 
-                  className="w-full mt-6 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[10px] uppercase tracking-widest gap-2"
-                  onClick={onLogout}
-                >
-                  <LogOut className="h-3.5 w-3.5" /> Terminate Session
-                </Button>
-              </Card>
+              </div>
             </div>
 
             <div className="lg:col-span-8 space-y-6">
               <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[2rem] space-y-10">
                 <div className="space-y-10">
-                  <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
-                    <User className="h-5 w-5 text-primary" />
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Master Identity Matrix</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
+                      <User className="h-5 w-5 text-primary" />
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Master Identity Matrix</h3>
+                    </div>
+                    <Button 
+                      size="sm"
+                      onClick={handleSaveAdminProfile}
+                      className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 font-bold text-[10px] uppercase tracking-widest h-9"
+                    >
+                      Save Matrix Entry
+                    </Button>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Fingerprint className="h-3 w-3" /> Emp ID
+                        <Fingerprint className="h-3 w-3 text-primary" /> Employee Identity (ID)
                       </Label>
                       <Input 
                         value={adminId} 
@@ -334,7 +406,7 @@ export function ProfileSettings({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">User name</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Identity User name</Label>
                       <Input 
                         value={adminName} 
                         onChange={(e) => setAdminName(e.target.value)}
@@ -343,7 +415,7 @@ export function ProfileSettings({
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Phone className="h-3 w-3" /> Contact number
+                        <Phone className="h-3 w-3 text-primary" /> Contact Synchronization Node
                       </Label>
                       <Input 
                         value={adminPhone} 
@@ -352,7 +424,7 @@ export function ProfileSettings({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Mail ID</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Mail ID</Label>
                       <Input 
                         value={adminEmail} 
                         onChange={(e) => setAdminEmail(e.target.value)}
@@ -360,7 +432,7 @@ export function ProfileSettings({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Department</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Plant Department</Label>
                       <Input 
                         value={adminDept} 
                         onChange={(e) => setAdminDept(e.target.value)}
@@ -369,7 +441,7 @@ export function ProfileSettings({
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Briefcase className="h-3 w-3" /> Role (Roll)
+                        <Briefcase className="h-3 w-3 text-primary" /> Functional Roll (Role)
                       </Label>
                       <Input 
                         value={adminRole} 
@@ -379,7 +451,7 @@ export function ProfileSettings({
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Network className="h-3 w-3" /> Reporting manager
+                        <Network className="h-3 w-3 text-primary" /> Command Lead (Reporting Manager)
                       </Label>
                       <Input 
                         value={adminReportingManager} 
@@ -425,8 +497,12 @@ export function ProfileSettings({
                 <div className="space-y-12">
                   <div className="flex items-center justify-between px-4 py-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">
-                        {currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'}
+                      <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg overflow-hidden border border-white/10">
+                        {currentUserMatrix.image ? (
+                          <img src={currentUserMatrix.image} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{currentUserMatrix.name}</p>

@@ -21,7 +21,10 @@ import {
   Eye,
   EyeOff,
   Phone,
-  Network
+  Network,
+  Camera,
+  Upload,
+  UserCircle
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -81,11 +84,24 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     jobTitle: '',
     deptCode: '',
     reportingManager: '',
-    password: ''
+    password: '',
+    image: undefined as string | undefined
   });
 
   const nextStep = () => setStep(s => Math.min(s + 1, 3));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result as string }));
+        toast({ title: "Visual Matrix Cached", description: "Identity photo initialized for onboarding." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleRegisterUser = () => {
     if (!formData.name || !formData.email) {
@@ -106,6 +122,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         role: formData.jobTitle || editingUser.role,
         dept: formData.deptCode || editingUser.dept,
         reportingManager: formData.reportingManager,
+        image: formData.image || editingUser.image
       };
       
       onSaveUser(updatedUser);
@@ -123,6 +140,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         role: formData.jobTitle || 'Standard Operator',
         dept: formData.deptCode || 'Admin',
         reportingManager: formData.reportingManager,
+        image: formData.image,
         permissions: { overview: 'read' },
         lastLogin: 'Never',
         status: 'offline'
@@ -165,7 +183,8 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       jobTitle: user.role,
       deptCode: user.dept,
       reportingManager: user.reportingManager || '',
-      password: '••••••••'
+      password: '••••••••',
+      image: user.image
     });
     setStep(1);
     setIsWizardOpen(true);
@@ -192,7 +211,8 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       jobTitle: '',
       deptCode: '',
       reportingManager: '',
-      password: ''
+      password: '',
+      image: undefined
     });
   };
 
@@ -232,8 +252,12 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                     <TableCell className="px-8">
                       <div className="flex items-center gap-4">
                         <div className="relative">
-                          <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200">
-                            {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
+                          <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200 overflow-hidden">
+                            {user.image ? (
+                              <img src={user.image} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'
+                            )}
                           </div>
                           {user.status === 'online' && (
                             <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
@@ -379,48 +403,74 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Foundational Contact Protocols</p>
                       </div>
                     </div>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Employee ID</Label>
-                          <Input 
-                            placeholder="e.g. ID_PR_001" 
-                            className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                            value={formData.id}
-                            onChange={(e) => setFormData({...formData, id: e.target.value})}
-                          />
+                    
+                    <div className="flex gap-8 items-start">
+                      <div className="relative group/photo shrink-0">
+                        <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-slate-50 shadow-lg bg-slate-100 flex items-center justify-center">
+                          {formData.image ? (
+                            <img src={formData.image} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <UserCircle className="h-12 w-12 text-slate-300" />
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
-                          <Input 
-                            placeholder="e.g. John Operator" 
-                            className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                            value={formData.name}
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          />
-                        </div>
+                        <input 
+                          type="file" 
+                          id="onboard-photo-upload" 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                        />
+                        <label 
+                          htmlFor="onboard-photo-upload"
+                          className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform"
+                        >
+                          <Camera className="h-4 w-4" />
+                        </label>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Contact number</Label>
-                          <div className="relative">
+
+                      <div className="flex-1 space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Employee ID</Label>
                             <Input 
-                              placeholder="+91 00000 00000" 
-                              className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
-                              value={formData.phone}
-                              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                              placeholder="e.g. ID_PR_001" 
+                              className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                              value={formData.id}
+                              onChange={(e) => setFormData({...formData, id: e.target.value})}
                             />
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
+                            <Input 
+                              placeholder="e.g. John Operator" 
+                              className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                              value={formData.name}
+                              onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Mail ID</Label>
-                          <Input 
-                            placeholder="name@toolroom.tech" 
-                            className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                            value={formData.email}
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Contact number</Label>
+                            <div className="relative">
+                              <Input 
+                                placeholder="+91 00000 00000" 
+                                className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                              />
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Mail ID</Label>
+                            <Input 
+                              placeholder="name@toolroom.tech" 
+                              className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                              value={formData.email}
+                              onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

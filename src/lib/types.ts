@@ -191,6 +191,7 @@ export interface SystemUser {
   email: string;
   role: string;
   dept: string;
+  image?: string;
   phone?: string;
   reportingManager?: string;
   permissions: Record<string, PermissionLevel>;

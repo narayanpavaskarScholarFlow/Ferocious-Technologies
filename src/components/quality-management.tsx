@@ -107,6 +107,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     return allReports.filter(r => r.workOrderId === selectedOrder.id);
   }, [allReports, selectedOrder?.id]);
 
+  // Derive current QC operation from live orders to ensure sub-tasks sync
+  const currentQCOperation = useMemo(() => {
+    if (!selectedOrder) return null;
+    const order = orders.find(o => o.id === selectedOrder.id);
+    return order?.routing?.find(op => op.name === 'QC') || null;
+  }, [orders, selectedOrder]);
+
+  const qcSubTasks = useMemo(() => currentQCOperation?.subTasks || [], [currentQCOperation]);
+
   const qcEntries = useMemo(() => {
     const results: { order: Order; operation: RoutingOperation }[] = [];
     orders.forEach(o => {
@@ -148,8 +157,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
     setDocumentNonBlocking(doc(db, 'orders', order.id), {
       routing: updatedRouting,
-      // If status is completed, we might want to update order progress here too
-      // but the operations component typically handles that logic.
     }, { merge: true });
 
     toast({
@@ -578,16 +585,39 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <div className="p-2 bg-primary rounded-lg text-white shadow-lg shadow-primary/20"><Plus className="h-4 w-4" /></div>
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manual Protocol Entry</h4>
                 </div>
+                
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Component / Operation Name</Label>
-                  <Input 
-                    placeholder="e.g. Front Spindle Housing" 
-                    className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold"
-                    value={manualComponentName}
-                    onChange={(e) => setManualComponentName(e.target.value)}
-                  />
-                  <p className="text-[9px] text-slate-400 font-medium italic">* Define the technical identity for this manual inspection thread.</p>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Component Identification</Label>
+                  <Select 
+                    value={manualComponentName} 
+                    onValueChange={setManualComponentName}
+                  >
+                    <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase">
+                      <SelectValue placeholder="Identify component..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                      {qcSubTasks.length > 0 ? (
+                        qcSubTasks.map(st => (
+                          <SelectItem key={st.id} value={st.name} className="text-xs font-bold uppercase">{st.name}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled className="text-[10px] font-bold uppercase">No Routing Sub-tasks</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  
+                  <div className="pt-2 border-t border-slate-100 mt-2">
+                    <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Manual Override</Label>
+                    <Input 
+                      placeholder="Or enter name manually..." 
+                      className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold mt-1"
+                      value={manualComponentName}
+                      onChange={(e) => setManualComponentName(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium italic">* Select from QC routing sub-tasks or enter a manual technical identity.</p>
                 </div>
+
                 <Button 
                   disabled={!manualComponentName}
                   className="w-full h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase tracking-widest text-[10px] shadow-xl flex gap-3"
@@ -682,9 +712,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Target (mm)</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Tolerance</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[140px]">Limits</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Actual Measured</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[80px]">Status</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-left pl-6">Observations</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-center w-[120px]">Actual Measured</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-center w-[80px]">Status</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-left pl-6">Observations</TableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>

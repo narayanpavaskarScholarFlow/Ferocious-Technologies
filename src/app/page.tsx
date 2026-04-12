@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -92,8 +93,8 @@ function IndustrialERPInternal() {
   }, [currentUser, usersData]);
 
   const permissions = useMemo(() => {
-    // Superuser: Master Admin gets full clearance on every single protocol
-    if (currentUser === 'Master Admin') {
+    // Superuser: Master Admin or Plant Controller role gets full clearance
+    if (currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller') {
       const fullClearance: Record<string, PermissionLevel> = {
         overview: 'full',
         orders: 'full',
@@ -137,15 +138,15 @@ function IndustrialERPInternal() {
 
   // Access Control Helper
   const hasAccess = useCallback((view: string): boolean => {
-    // Master Admin always has access
-    if (currentUser === 'Master Admin') return true;
+    // Superusers always have access
+    if (currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller') return true;
     
     // Admin always has access to profile settings
     if (view === 'settings') return true;
     
     const level = permissions[view];
     return level && level !== 'none';
-  }, [permissions, currentUser]);
+  }, [permissions, currentUser, currentUserData]);
 
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { 
   ShieldCheck, 
   Search, 
@@ -693,7 +694,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target} ({dim.upperLimit}/{dim.lowerLimit})</TableCell>
                         <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
                         <TableCell className="text-center border-r border-slate-100">
-                          <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full", dim.status === 'OK' ? "bg-emerald-500 text-white" : dim.status === 'NOT OK' ? "bg-rose-500 text-white" : "bg-slate-100 text-slate-400")}>
+                          <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full", dim.status === 'OK' ? "bg-emerald-50 text-white" : dim.status === 'NOT OK' ? "bg-rose-50 text-white" : "bg-slate-100 text-slate-400")}>
                             {dim.status}
                           </Badge>
                         </TableCell>

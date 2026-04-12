@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -39,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const JOB_TITLES = [
   "Manager",
@@ -517,11 +517,11 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                 </div>
                 <div className="space-y-2.5">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Window Start</Label>
-                  <Input type="date" className="h-14 bg-slate-50 border-none rounded-2xl text-xs font-bold shadow-inner" />
+                  <DatePicker onChange={() => {}} className="h-14 bg-slate-50 border-none rounded-2xl text-xs shadow-inner" />
                 </div>
                 <div className="space-y-2.5">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Window End</Label>
-                  <Input type="date" className="h-14 bg-slate-50 border-none rounded-2xl text-xs font-bold shadow-inner" />
+                  <DatePicker onChange={() => {}} className="h-14 bg-slate-50 border-none rounded-2xl text-xs shadow-inner" />
                 </div>
               </div>
 
@@ -563,20 +563,18 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Start Date</Label>
-                <Input 
-                  type="date"
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
+                <DatePicker 
                   value={newAnnual.startDate}
-                  onChange={(e) => setNewAnnual({...newAnnual, startDate: e.target.value})}
+                  onChange={(val) => setNewAnnual({...newAnnual, startDate: val})}
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs shadow-inner"
                 />
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">End Date</Label>
-                <Input 
-                  type="date"
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
+                <DatePicker 
                   value={newAnnual.endDate}
-                  onChange={(e) => setNewAnnual({...newAnnual, endDate: e.target.value})}
+                  onChange={(val) => setNewAnnual({...newAnnual, endDate: val})}
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs shadow-inner"
                 />
               </div>
             </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -16,7 +15,7 @@ import {
   ArrowRight,
   Receipt,
   Building2,
-  Calendar,
+  Calendar as CalendarIcon,
   Hash,
   Truck,
   User,
@@ -52,6 +51,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { DatePicker } from '@/components/ui/date-picker';
 
 type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses';
 
@@ -394,11 +394,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Date:</span>
-                  <Input 
-                    type="date" 
-                    className="h-10 bg-white border-slate-200 text-[10px] w-32 rounded-lg" 
+                  <DatePicker 
                     value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
+                    onChange={setFilterDate}
+                    className="h-10 w-44 rounded-xl text-[10px]"
                   />
                 </div>
 
@@ -544,9 +543,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                    <Calendar className="h-3 w-3" /> Protocol Date
+                    <CalendarIcon className="h-3 w-3" /> Protocol Date
                   </Label>
-                  <Input type="date" className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
+                  <DatePicker 
+                    value={formData.date} 
+                    onChange={(val) => setFormData({...formData, date: val})}
+                    className="h-12 rounded-xl text-xs"
+                  />
                 </div>
 
                 <div className="space-y-3">

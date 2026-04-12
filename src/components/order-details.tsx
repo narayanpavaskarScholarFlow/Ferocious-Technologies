@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,13 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface OrderDetailsProps {
   orderId: string | null;
@@ -42,8 +40,10 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
   const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start'>('Yet to start');
   const [parts, setParts] = useState<PartRow[]>([]);
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
+  
+  // Format dates as YYYY-MM-DD for consistency with DatePicker
+  const [startDateStr, setStartDateStr] = useState("");
+  const [endDateStr, setEndDateStr] = useState("");
 
   useEffect(() => {
     if (orderId) {
@@ -55,18 +55,18 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setPriority(existing.priority);
         setStatus(existing.status);
         
-        if (existing.startDate) {
-          try {
-            const [d, m, y] = existing.startDate.split('.').map(Number);
-            setStartDate(new Date(y, m - 1, d));
-          } catch (e) {}
-        }
-        if (existing.endDate) {
-          try {
-            const [d, m, y] = existing.endDate.split('.').map(Number);
-            setEndDate(new Date(y, m - 1, d));
-          } catch (e) {}
-        }
+        // Convert dd.mm.yyyy or other formats back to yyyy-mm-dd
+        const parseToISO = (str?: string) => {
+          if (!str) return "";
+          if (str.includes('.')) {
+            const [d, m, y] = str.split('.');
+            return `${y}-${m}-${d}`;
+          }
+          return str;
+        };
+
+        setStartDateStr(parseToISO(existing.startDate));
+        setEndDateStr(parseToISO(existing.endDate));
       }
     } else {
       const generatedId = `${Math.floor(80000 + Math.random() * 10000)}`;
@@ -75,24 +75,13 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setLead("");
       setPriority("Medium");
       setStatus("Yet to start");
-      setStartDate(undefined);
-      setEndDate(undefined);
+      setStartDateStr("");
+      setEndDateStr("");
     }
   }, [orderId, orders]);
 
-  const handleAddPart = () => {
-    const newPart: PartRow = {
-      id: (parts.length + 1).toString().padStart(2, '0'),
-      name: '',
-      sku: '',
-      qty: '0 UNITS',
-      duration: '0.0 HOURS'
-    };
-    setParts([...parts, newPart]);
-  };
-
   const handleCommitOrder = () => {
-    if (!customer || !startDate || !endDate) {
+    if (!customer || !startDateStr || !endDateStr) {
       toast({
         variant: "destructive",
         title: "Validation Failure",
@@ -101,13 +90,16 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       return;
     }
 
-    // IMPORTANT: Only include progress and amountSpent for NEW orders.
-    // For updates, we omit them to prevent overwriting automated/machining values.
+    const formatDate = (isoStr: string) => {
+      const date = new Date(isoStr);
+      return isValid(date) ? format(date, 'dd.MM.yyyy') : isoStr;
+    };
+
     const orderToSave: any = {
       id: displayId,
       customer: customer,
-      startDate: format(startDate, 'dd.MM.yyyy'),
-      endDate: format(endDate, 'dd.MM.yyyy'),
+      startDate: formatDate(startDateStr),
+      endDate: formatDate(endDateStr),
       priority: priority,
       status: status,
       owner: lead || 'Unassigned',
@@ -203,60 +195,22 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                   <CalendarIcon className="h-3 w-3" /> Planned Start Date
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        darkInputClasses,
-                        "justify-start text-left font-bold w-full border-none hover:bg-[#111827] hover:text-white",
-                        !startDate && "text-white/20"
-                      )}
-                    >
-                      {startDate ? format(startDate, "PPP") : <span>Set Start Date...</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 text-slate-500" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-[#0a0f18] border-white/10 rounded-2xl shadow-2xl" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                      className="bg-transparent"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePicker 
+                  value={startDateStr}
+                  onChange={setStartDateStr}
+                  className="bg-[#0a0f18] border-none text-white h-12 rounded-xl text-xs font-bold"
+                />
               </div>
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                   <CalendarIcon className="h-3 w-3" /> Target End Date
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        darkInputClasses,
-                        "justify-start text-left font-bold w-full border-none hover:bg-[#111827] hover:text-white",
-                        !endDate && "text-white/20"
-                      )}
-                    >
-                      {endDate ? format(endDate, "PPP") : <span>Set Target Date...</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 text-slate-500" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-[#0a0f18] border-white/10 rounded-2xl shadow-2xl" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                      className="bg-transparent"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePicker 
+                  value={endDateStr}
+                  onChange={setEndDateStr}
+                  className="bg-[#0a0f18] border-none text-white h-12 rounded-xl text-xs font-bold"
+                />
               </div>
             </div>
 

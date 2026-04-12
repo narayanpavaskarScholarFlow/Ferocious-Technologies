@@ -27,7 +27,7 @@ import {
   ChevronUp, 
   CircleDot,
   Trash2,
-  Calendar,
+  Calendar as CalendarIcon,
   FileSpreadsheet,
   Clock,
   AlertTriangle,
@@ -42,6 +42,7 @@ import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useColle
 import { doc, collection } from 'firebase/firestore';
 import { AnnualLeaveEntry } from './manpower-utilization';
 import { useToast } from '@/hooks/use-toast';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const INITIAL_STEPS = [
   "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
@@ -519,31 +520,25 @@ export function OperationsStatus({
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-center font-code text-xs text-slate-500">
-                              <Input 
-                                type="date"
-                                min={orderMinDate}
-                                max={orderMaxDate}
+                            <TableCell className="text-center">
+                              <DatePicker 
                                 value={op.startDate}
+                                onChange={(val) => handleStartDateChange(op.id, idx, val)}
                                 className={cn(
-                                  "bg-transparent border-none text-center text-xs h-8 p-0",
+                                  "h-9 border-none bg-transparent text-center text-xs font-code",
                                   startIsHoliday && "text-amber-600 font-bold"
                                 )}
-                                onChange={(e) => handleStartDateChange(op.id, idx, e.target.value)}
                               />
                             </TableCell>
-                            <TableCell className="text-center font-code text-xs text-slate-500">
-                              <Input 
-                                type="date"
-                                min={orderMinDate}
-                                max={orderMaxDate}
+                            <TableCell className="text-center">
+                              <DatePicker 
+                                disabled={isNA}
                                 value={op.endDate}
+                                onChange={(val) => handleEndDateChange(op.id, idx, val)}
                                 className={cn(
-                                  "bg-transparent border-none text-center text-xs h-8 p-0",
+                                  "h-9 border-none bg-transparent text-center text-xs font-code",
                                   isNA && "opacity-50"
                                 )}
-                                readOnly={isNA}
-                                onChange={(e) => handleEndDateChange(op.id, idx, e.target.value)}
                               />
                             </TableCell>
                             <TableCell>
@@ -647,31 +642,20 @@ export function OperationsStatus({
                                         <div className="grid grid-cols-2 lg:col-span-3 gap-4">
                                           <div className="space-y-2">
                                             <Label className="text-[9px] font-bold uppercase text-slate-500">Start</Label>
-                                            <div className="relative">
-                                              <Input 
-                                                type="date"
-                                                min={op.startDate}
-                                                max={op.endDate}
-                                                value={task.startDate}
-                                                onChange={(e) => handleUpdateSubTask(idx, sIdx, { startDate: e.target.value })}
-                                                className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px] pr-8" 
-                                              />
-                                              <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
-                                            </div>
+                                            <DatePicker 
+                                              value={task.startDate}
+                                              onChange={(val) => handleUpdateSubTask(idx, sIdx, { startDate: val })}
+                                              className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]"
+                                            />
                                           </div>
                                           <div className="space-y-2">
                                             <Label className="text-[9px] font-bold uppercase text-slate-500">End</Label>
-                                            <div className="relative">
-                                              <Input 
-                                                type="date"
-                                                min={op.startDate}
-                                                max={op.endDate}
-                                                value={task.endDate}
-                                                className="h-9 bg-slate-100 border-none rounded-lg text-[10px] pr-8 cursor-not-allowed opacity-60" 
-                                                readOnly
-                                              />
-                                              <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300 pointer-events-none" />
-                                            </div>
+                                            <DatePicker 
+                                              disabled
+                                              value={task.endDate}
+                                              onChange={() => {}}
+                                              className="h-9 bg-slate-100 border-none rounded-lg text-[10px] opacity-60"
+                                            />
                                           </div>
                                         </div>
                                         <div className="lg:col-span-3 space-y-2">

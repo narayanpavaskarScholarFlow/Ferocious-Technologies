@@ -31,7 +31,8 @@ import {
   Edit2,
   Upload,
   Image as ImageIcon,
-  Maximize2
+  Maximize2,
+  X
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -94,6 +95,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   
   const [manualComponentName, setManualComponentName] = useState('');
   const [isDrawingDialogOpen, setIsDrawingDialogOpen] = useState(false);
+  const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
   const [pendingDrawingFile, setPendingDrawingFile] = useState<string | undefined>();
   
   const [checks, setChecks] = useState<Record<string, CheckStatus>>({});
@@ -716,7 +718,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <div className="flex flex-col gap-4">
                           <div className="flex items-center gap-4">
                             <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-slate-50 text-[#001F3D]"><FileText className="h-6 w-6" /></div>
-                            <div className="min-w-0 flex-1"><p className="text-[11px] font-bold text-[#001F3D] uppercase truncate">{report.drawingName}</p><p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{report.id}</p></div>
+                            <div className="min-w-0 flex-1"><p className="text-11px font-bold text-[#001F3D] uppercase truncate">{report.drawingName}</p><p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{report.id}</p></div>
                           </div>
                           <div className="flex items-center justify-between mt-2">
                             <Badge className={cn("text-[8px] font-bold uppercase px-3 py-1 rounded-full", report.verdict === 'Pass' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>{report.verdict === 'Pass' ? 'OK' : 'NOT OK'}</Badge>
@@ -780,7 +782,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <ImageIcon className="h-4 w-4 text-primary" />
                         <h4 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Technical Blueprint Attachment</h4>
                       </div>
-                      <div className="relative">
+                      <div className="flex gap-2">
                         <input 
                           type="file" 
                           id="matrix-drawing-upload" 
@@ -796,12 +798,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       </div>
                     </div>
                     {pendingDrawingFile ? (
-                      <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-white border border-slate-100 shadow-inner group">
+                      <div 
+                        className="relative w-full h-48 rounded-2xl overflow-hidden bg-white border border-slate-100 shadow-inner group cursor-zoom-in"
+                        onClick={() => setIsZoomDialogOpen(true)}
+                      >
                         <img src={pendingDrawingFile} alt="Technical Blueprint" className="w-full h-full object-contain p-2" />
                         <div className="absolute inset-0 bg-[#001F3D]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                           <div className="bg-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2">
                             <Maximize2 className="h-3.5 w-3.5 text-primary" />
-                            <span className="text-[8px] font-bold uppercase tracking-widest text-slate-900">Blueprint Active</span>
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-slate-900">Click to Zoom</span>
                           </div>
                         </div>
                       </div>
@@ -1137,6 +1142,39 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl flex gap-3" onClick={() => commitReportToLedger()}>
                 Commit & Preview <ChevronRight className="h-4 w-4" />
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Blueprint Zoom Viewer Dialog */}
+      <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
+        <DialogContent className="max-w-[95vw] h-[90vh] bg-slate-900 border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+          <div className="relative w-full h-full flex flex-col">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-primary/20 rounded-lg text-primary"><Maximize2 className="h-5 w-5" /></div>
+                <div>
+                  <h3 className="text-lg font-display font-bold text-white uppercase tracking-tight">Full-Scale Matrix Viewer</h3>
+                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Protocol: {manualComponentName}</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsZoomDialogOpen(false)} className="h-10 w-10 text-white/40 hover:text-white hover:bg-white/10 rounded-full">
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto scrollbar-hide">
+              {pendingDrawingFile && (
+                <img 
+                  src={pendingDrawingFile} 
+                  alt="High-Resolution Blueprint" 
+                  className="max-w-none w-auto max-h-none h-auto object-contain shadow-2xl"
+                  style={{ minWidth: '100%', minHeight: '100%' }}
+                />
+              )}
+            </div>
+            <div className="p-4 bg-slate-900 border-t border-white/5 text-center shrink-0">
+              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.4em]">Proprietary Matrix Data • Bharat Axis Pvt Ltd</p>
             </div>
           </div>
         </DialogContent>

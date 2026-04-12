@@ -266,12 +266,12 @@ function IndustrialERPInternal() {
   }
 
   return (
-    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body overflow-hidden">
+    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block">
       <div className="hidden lg:block print:hidden">
         <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
         <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-blue-100/60 shrink-0 px-6 md:px-10 flex items-center justify-between shadow-sm shadow-blue-200/20 z-50 print:hidden">
           <div className="flex items-center gap-2 md:gap-8">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -363,11 +363,11 @@ function IndustrialERPInternal() {
         </header>
 
         <main className={cn(
-          "flex-1 overflow-y-auto w-full print:overflow-visible print:p-0 print:max-w-none print:m-0",
+          "flex-1 overflow-y-auto w-full print:overflow-visible print:p-0 print:max-w-none print:m-0 print:block",
           currentView === 'gantt' ? "p-0" : "p-6 md:p-10 max-w-[1800px] mx-auto"
         )}>
           <div className={cn(
-            "animate-in fade-in slide-in-from-bottom-4 duration-1000 print:animate-none print:slide-in-from-bottom-0 print:duration-0",
+            "animate-in fade-in slide-in-from-bottom-4 duration-1000 print:animate-none print:slide-in-from-bottom-0 print:duration-0 print:block",
             currentView === 'gantt' && "h-full"
           )}>
             {currentView === 'overview' && (

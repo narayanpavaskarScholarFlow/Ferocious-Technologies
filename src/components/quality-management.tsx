@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -9,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ShieldCheck, 
   Search, 
@@ -62,7 +62,7 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', balloonNo: 'BL-01', typeOfDim: '', target: '100.00', tolerance: '±0.05', upperLimit: '100.050', lowerLimit: '99.950', actual: '', status: 'Pending', remark: '' },
+  { id: '1', balloonNo: 'BL-01', typeOfDim: 'Normal Dim', target: '', tolerance: '±', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
 ];
 
 interface QualityManagementProps {
@@ -219,9 +219,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     const newDim: DimensionRecord = {
       id: Math.random().toString(36).substr(2, 9),
       balloonNo: balloonNo,
-      typeOfDim: '',
-      target: '0.00',
-      tolerance: '±0.00',
+      typeOfDim: 'Normal Dim',
+      target: '',
+      tolerance: '±',
       upperLimit: '0.000',
       lowerLimit: '0.000',
       actual: '',
@@ -602,7 +602,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="hover:bg-transparent border-b border-slate-100">
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[120px]">Balloon No.</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[120px]">Type of Dim</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[160px]">Type of Dim</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Target (mm)</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Tolerance</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[160px]">Tolerance Limits</TableHead>
@@ -625,13 +625,18 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             />
                           </TableCell>
                           <TableCell className="px-4">
-                            <Input 
-                              id={`type-${dim.id}`}
-                              className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl" 
-                              placeholder="Dim Type" 
+                            <Select 
                               value={dim.typeOfDim} 
-                              onChange={(e) => handleUpdateDimension(dim.id, 'typeOfDim', e.target.value)} 
-                            />
+                              onValueChange={(val) => handleUpdateDimension(dim.id, 'typeOfDim', val)}
+                            >
+                              <SelectTrigger className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl focus:ring-primary/20">
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                <SelectItem value="Normal Dim" className="text-xs font-bold uppercase">Normal Dim</SelectItem>
+                                <SelectItem value="Angle Dim" className="text-xs font-bold uppercase">Angle Dim</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>
                             <Input 

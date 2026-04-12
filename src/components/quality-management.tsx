@@ -62,7 +62,7 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', balloonNo: 'BL-01', target: '100.00', tolerance: '±0.05', upperLimit: '100.050', lowerLimit: '99.950', actual: '', status: 'Pending', remark: '' },
+  { id: '1', balloonNo: 'BL-01', typeOfDim: '', target: '100.00', tolerance: '±0.05', upperLimit: '100.050', lowerLimit: '99.950', actual: '', status: 'Pending', remark: '' },
 ];
 
 interface QualityManagementProps {
@@ -219,6 +219,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     const newDim: DimensionRecord = {
       id: Math.random().toString(36).substr(2, 9),
       balloonNo: balloonNo,
+      typeOfDim: '',
       target: '0.00',
       tolerance: '±0.00',
       upperLimit: '0.000',
@@ -601,6 +602,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="hover:bg-transparent border-b border-slate-100">
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[120px]">Balloon No.</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[120px]">Type of Dim</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Target (mm)</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Tolerance</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[160px]">Tolerance Limits</TableHead>
@@ -622,10 +624,19 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                               onChange={(e) => handleUpdateDimension(dim.id, 'balloonNo', e.target.value)} 
                             />
                           </TableCell>
+                          <TableCell className="px-4">
+                            <Input 
+                              id={`type-${dim.id}`}
+                              className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl" 
+                              placeholder="Dim Type" 
+                              value={dim.typeOfDim} 
+                              onChange={(e) => handleUpdateDimension(dim.id, 'typeOfDim', e.target.value)} 
+                            />
+                          </TableCell>
                           <TableCell>
                             <Input 
                               id={`target-${dim.id}`}
-                              className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
+                              className="h-10 bg-white border-2 border-primary/10 font-code font-bold text-xs text-center rounded-xl" 
                               value={dim.target} 
                               onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)} 
                               onKeyDown={(e) => handleKeyDown(e, 'target', idx, dim.id)}
@@ -634,7 +645,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           <TableCell>
                             <Input 
                               id={`tolerance-${dim.id}`}
-                              className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
+                              className="h-10 bg-white border-2 border-primary/10 font-code font-bold text-xs text-center rounded-xl" 
                               value={dim.tolerance} 
                               onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)} 
                               onKeyDown={(e) => handleKeyDown(e, 'tolerance', idx, dim.id)}
@@ -760,6 +771,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <TableHeader className="bg-slate-50">
                     <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
                       <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-32">Balloon No.</TableHead>
+                      <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-32">Type of Dim</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Target / Limits</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 text-primary">Actual Measured</TableHead>
                       <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-24">Verdict</TableHead>
@@ -770,6 +782,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     {dimensions.map((dim) => (
                       <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/50">
                         <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700 uppercase py-5">{dim.balloonNo}</TableCell>
+                        <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700 uppercase py-5">{dim.typeOfDim}</TableCell>
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target} ({dim.upperLimit}/{dim.lowerLimit})</TableCell>
                         <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
                         <TableCell className="text-center border-r border-slate-100">
@@ -787,11 +800,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <div className="grid grid-cols-2 gap-40 pt-20">
               <div className="space-y-10 text-center">
                 <div className="h-[1px] bg-slate-300 w-full" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Audit Officer Signature</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Auditor Name</p>
               </div>
               <div className="space-y-10 text-center">
                 <div className="h-[1px] bg-slate-300 w-full" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compliance Director</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Final Approved by</p>
               </div>
             </div>
           </Card>

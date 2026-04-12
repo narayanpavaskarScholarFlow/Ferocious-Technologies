@@ -1,4 +1,3 @@
-
 export type ToolStatus = 'active' | 'obsolete' | 'maintenance' | 'fault';
 
 export type MachineCategory = 
@@ -202,6 +201,7 @@ export interface SystemUser {
 export interface DimensionRecord {
   id: string;
   balloonNo: string;
+  typeOfDim: string;
   target: string;
   tolerance: string;
   upperLimit: string;

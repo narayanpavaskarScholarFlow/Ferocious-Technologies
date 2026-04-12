@@ -734,7 +734,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       )}
 
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && (
-        <div className="space-y-10 pb-20 max-w-[1100px] mx-auto animate-in zoom-in-95 duration-500 px-2">
+        <div className="space-y-10 pb-20 max-w-[900px] mx-auto animate-in zoom-in-95 duration-500 px-2 print:max-w-full print:p-0">
           <div className="flex justify-between items-center px-4 print:hidden">
             <Button variant="ghost" onClick={() => setCurrentStep('checklist')} className="rounded-xl gap-3 h-12 font-bold uppercase text-[10px] tracking-widest text-slate-400 hover:text-slate-900">
               <ArrowLeft className="h-4 w-4" /> Edit Matrix
@@ -748,7 +748,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </Button>
             </div>
           </div>
-          <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-16 space-y-12 transition-all duration-700", currentStep === 'review' && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
+          <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0", currentStep === 'review' && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
             <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -760,7 +760,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 </div>
               </div>
               <div className="text-right space-y-3">
-                <h2 className="text-5xl font-display font-bold text-[#001F3D] tracking-tighter uppercase">Inspection Sheet</h2>
+                <h2 className="text-4xl font-display font-bold text-[#001F3D] tracking-tighter uppercase">Inspection Sheet</h2>
                 <div className="flex flex-col items-end gap-2">
                   <Badge className={cn("border-none text-[9px] font-bold px-5 py-1.5 rounded-full", hasFailures ? "bg-red-600 text-white" : "bg-primary text-white")}>
                     {hasFailures ? 'DEVIATION_ALERT' : 'CERTIFIED_LEDGER'}
@@ -771,45 +771,47 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </div>
             <div className="space-y-8">
               <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Manual Compliance Matrix</h3>
-              <div className="border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+              <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm">
                 <Table className="border-collapse">
                   <TableHeader className="bg-slate-50">
                     <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
-                      <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-32">Balloon No.</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-32">Type of Dim</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200">Target / Limits</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 text-primary">Actual Measured</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-center border-r border-slate-200 w-24">Verdict</TableHead>
-                      <TableHead className="text-[9px] font-bold uppercase text-left pl-6">Observations</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-20">Balloon No.</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-24">Type of Dim</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-24">Target (mm)</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-24">Limits</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-primary w-24">Actual</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-20">Verdict</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-left pl-4">Observations</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {dimensions.map((dim) => (
                       <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/50">
-                        <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700 uppercase py-5">{dim.balloonNo}</TableCell>
-                        <TableCell className="font-bold text-xs border-r border-slate-100 text-slate-700 uppercase py-5">{dim.typeOfDim}</TableCell>
-                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-500">{dim.target} ({dim.upperLimit}/{dim.lowerLimit})</TableCell>
-                        <TableCell className="text-center font-code text-sm font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
+                        <TableCell className="font-bold text-[10px] border-r border-slate-100 text-slate-700 uppercase py-4">{dim.balloonNo}</TableCell>
+                        <TableCell className="font-bold text-[10px] border-r border-slate-100 text-slate-700 uppercase py-4">{dim.typeOfDim}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-900">{dim.target || '0.000'}</TableCell>
+                        <TableCell className="text-center font-code text-[9px] border-r border-slate-100 text-slate-500">{dim.upperLimit}/{dim.lowerLimit}</TableCell>
+                        <TableCell className="text-center font-code text-[10px] font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>
                         <TableCell className="text-center border-r border-slate-100">
-                          <Badge className={cn("text-[8px] font-bold uppercase w-16 justify-center rounded-full", dim.status === 'OK' ? "bg-emerald-50 text-white" : dim.status === 'NOT OK' ? "bg-rose-50 text-white" : "bg-slate-100 text-slate-400")}>
+                          <Badge className={cn("text-[7px] font-bold uppercase w-14 justify-center rounded-full", dim.status === 'OK' ? "bg-emerald-50 text-emerald-700" : dim.status === 'NOT OK' ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-400")}>
                             {dim.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="pl-6 text-[10px] font-medium text-slate-500 uppercase italic">{dim.remark || '---'}</TableCell>
+                        <TableCell className="pl-4 text-[9px] font-medium text-slate-500 uppercase italic truncate max-w-[150px]">{dim.remark || '---'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-40 pt-20">
-              <div className="space-y-10 text-center">
+            <div className="grid grid-cols-2 gap-40 pt-16">
+              <div className="space-y-8 text-center">
                 <div className="h-[1px] bg-slate-300 w-full" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Auditor Name</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Auditor Name</p>
               </div>
-              <div className="space-y-10 text-center">
+              <div className="space-y-8 text-center">
                 <div className="h-[1px] bg-slate-300 w-full" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Final Approved by</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Final Approved by</p>
               </div>
             </div>
           </Card>

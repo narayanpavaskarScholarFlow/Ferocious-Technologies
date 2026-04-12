@@ -29,7 +29,12 @@ import {
   CalendarCheck,
   Wallet,
   Save,
-  RefreshCw
+  RefreshCw,
+  Shield,
+  UserCircle,
+  Briefcase,
+  Network,
+  Camera
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -203,7 +208,6 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     setIsUpdatingBalance(userId);
     onSaveUser(updatedUser);
     
-    // Brief timeout to simulate server sync for UI feel
     setTimeout(() => {
       setIsUpdatingBalance(null);
       toast({
@@ -365,13 +369,13 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 border-slate-200"
+                      className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 border-slate-200 shadow-sm"
                       onClick={() => handleNavigateToBalance(member.id)}
                     >
                       <Wallet className="h-3 w-3" /> Balance
                     </Button>
                     <Button 
-                      className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white"
+                      className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white shadow-lg shadow-primary/10"
                       onClick={() => handleNavigateToApply(member.id)}
                     >
                       <CalendarCheck className="h-3 w-3" /> Apply Leave
@@ -796,11 +800,11 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
           <DialogDescription className="sr-only">Update or register human resources for operational tracking and scheduling.</DialogDescription>
           
           <div className="flex h-[600px]">
-            <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
+            <div className="w-72 bg-slate-900 p-10 border-r border-slate-800 flex flex-col justify-between">
               <div className="space-y-10">
-                <div className="p-4 bg-[#001F3D] rounded-2xl w-fit shadow-xl shadow-primary/20 relative">
+                <div className="p-4 bg-primary rounded-2xl w-fit shadow-xl shadow-primary/20 relative">
                   {editingUserId ? <Edit2 className="h-7 w-7 text-white" /> : <UserPlus className="h-7 w-7 text-white" />}
-                  <div className={cn("absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white animate-pulse", editingUserId ? "bg-primary" : "bg-green-500")} />
+                  <div className={cn("absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-slate-900 animate-pulse", editingUserId ? "bg-accent" : "bg-emerald-500")} />
                 </div>
                 <div className="space-y-8">
                   {[
@@ -811,28 +815,28 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
                       {item.s < 2 && (
                         <div className={cn(
                           "absolute left-3 top-8 w-[1px] h-10 transition-colors",
-                          step > item.s ? "bg-emerald-500" : "bg-slate-200"
+                          step > item.s ? "bg-emerald-500" : "bg-slate-700"
                         )} />
                       )}
                       <div className={cn(
                         "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10",
-                        step === item.s ? "bg-[#001F3D] border-[#001F3D] text-white scale-125 shadow-lg shadow-primary/30" : 
-                        step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-400"
+                        step === item.s ? "bg-white border-white text-slate-900 scale-125 shadow-lg shadow-white/20" : 
+                        step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-slate-800 border-slate-700 text-slate-500"
                       )}>
                         {step > item.s ? <Check className="h-3 w-3" /> : item.s}
                       </div>
                       <div className="flex flex-col">
                         <span className={cn(
                           "text-[11px] font-bold transition-colors duration-500 leading-none",
-                          step === item.s ? "text-[#001F3D]" : "text-slate-400"
+                          step === item.s ? "text-white" : "text-slate-500"
                         )}>{item.label}</span>
-                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-[0.15em] mt-1.5">{item.desc}</span>
+                        <span className="text-[9px] text-slate-600 uppercase font-bold tracking-[0.15em] mt-1.5">{item.desc}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">
+              <div className="text-[9px] font-bold text-slate-700 uppercase tracking-[0.3em]">
                 {editingUserId ? 'RESOURCE_MOD_V2.4' : 'RESOURCE_REG_V2.4'}
               </div>
             </div>

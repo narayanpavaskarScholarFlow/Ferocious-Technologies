@@ -256,11 +256,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     onSaveRecord(record);
 
-    // Automation: If this is an Inward record linked to an Order, update the Order's "Amount Spent"
     if (activeCategory === 'inward' && formData.orderId) {
       const linkedOrder = orders.find(o => o.id === formData.orderId);
       if (linkedOrder) {
-        // Calculate the total of all inward records for this order including the current one
         const otherRecordsForOrder = records.filter(r => r.type === 'inward' && r.orderId === formData.orderId && r.id !== record.id);
         const totalAmountSpent = [...otherRecordsForOrder, record].reduce((acc, curr) => acc + (curr.amount || 0), 0);
         
@@ -674,7 +672,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Document Terms & Conditions</Label>
-                      <textarea 
+                      <Textarea 
                         className="w-full h-48 bg-slate-50 border-none rounded-2xl p-6 text-xs font-medium text-slate-600 focus:ring-primary/20 resize-none shadow-inner"
                         value={formData.note}
                         onChange={(e) => setFormData({...formData, note: e.target.value})}
@@ -722,7 +720,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </div>
                   <div className="space-y-2.5">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Internal Logistics Note</Label>
-                    <textarea className="w-full h-full min-h-[140px] bg-slate-50 border-none rounded-2xl p-6 text-xs font-medium text-slate-600 focus:ring-primary/20 resize-none shadow-inner" value={formData.note} onChange={(e) => setFormData({...formData, note: e.target.value})} />
+                    <Textarea className="w-full h-full min-h-[140px] bg-slate-50 border-none rounded-2xl p-6 text-xs font-medium text-slate-600 focus:ring-primary/20 resize-none shadow-inner" value={formData.note} onChange={(e) => setFormData({...formData, note: e.target.value})} />
                   </div>
                 </div>
               )}

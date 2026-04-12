@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -99,8 +98,10 @@
         "id": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string" },
+        "phone": { "type": "string" },
         "role": { "type": "string" },
         "dept": { "type": "string" },
+        "reportingManager": { "type": "string" },
         "status": { "type": "string" },
         "shift": { "type": "string" },
         "efficiency": { "type": "number" },

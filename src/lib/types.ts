@@ -191,6 +191,8 @@ export interface SystemUser {
   email: string;
   role: string;
   dept: string;
+  phone?: string;
+  reportingManager?: string;
   permissions: Record<string, PermissionLevel>;
   lastLogin: string;
   status: 'online' | 'offline' | 'active' | 'break' | 'off';

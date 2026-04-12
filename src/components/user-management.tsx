@@ -19,7 +19,9 @@ import {
   Edit2,
   UserX,
   Eye,
-  EyeOff
+  EyeOff,
+  Phone,
+  Network
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -41,7 +43,8 @@ const JOB_TITLES = [
   "VMC Programmer",
   "VMC Operator",
   "Tool Maker",
-  "Senior Tool Maker"
+  "Senior Tool Maker",
+  "Plant Controller"
 ];
 
 const DEPARTMENTS = [
@@ -71,11 +74,13 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   
   // Wizard Form State
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     email: '',
     phone: '',
     jobTitle: '',
     deptCode: '',
+    reportingManager: '',
     password: ''
   });
 
@@ -97,8 +102,10 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         ...editingUser,
         name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         role: formData.jobTitle || editingUser.role,
         dept: formData.deptCode || editingUser.dept,
+        reportingManager: formData.reportingManager,
       };
       
       onSaveUser(updatedUser);
@@ -109,11 +116,13 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       });
     } else {
       const newUser: SystemUser = {
-        id: `USER-${Math.floor(1000 + Math.random() * 9000)}`,
+        id: formData.id || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
         name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         role: formData.jobTitle || 'Standard Operator',
         dept: formData.deptCode || 'Admin',
+        reportingManager: formData.reportingManager,
         permissions: { overview: 'read' },
         lastLogin: 'Never',
         status: 'offline'
@@ -149,11 +158,13 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   const handleEditUser = (user: SystemUser) => {
     setEditingUser(user);
     setFormData({
+      id: user.id,
       name: user.name,
       email: user.email,
-      phone: '',
+      phone: user.phone || '',
       jobTitle: user.role,
       deptCode: user.dept,
+      reportingManager: user.reportingManager || '',
       password: '••••••••'
     });
     setStep(1);
@@ -174,11 +185,13 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     setEditingUser(null);
     setShowPassword(false);
     setFormData({
+      id: '',
       name: '',
       email: '',
       phone: '',
       jobTitle: '',
       deptCode: '',
+      reportingManager: '',
       password: ''
     });
   };
@@ -367,23 +380,48 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       </div>
                     </div>
                     <div className="space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
-                        <Input 
-                          placeholder="e.g. John Operator" 
-                          className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Employee ID</Label>
+                          <Input 
+                            placeholder="e.g. ID_PR_001" 
+                            className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                            value={formData.id}
+                            onChange={(e) => setFormData({...formData, id: e.target.value})}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
+                          <Input 
+                            placeholder="e.g. John Operator" 
+                            className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Network Email Address</Label>
-                        <Input 
-                          placeholder="name@toolroom.tech" 
-                          className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Contact number</Label>
+                          <div className="relative">
+                            <Input 
+                              placeholder="+91 00000 00000" 
+                              className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
+                              value={formData.phone}
+                              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            />
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Mail ID</Label>
+                          <Input 
+                            placeholder="name@toolroom.tech" 
+                            className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -399,31 +437,45 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       </div>
                     </div>
                     <div className="space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Job Title</Label>
-                        <Select value={formData.jobTitle} onValueChange={(val) => setFormData({...formData, jobTitle: val})}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
-                            <SelectValue placeholder="Select functional title..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl">
-                            {JOB_TITLES.map(title => (
-                              <SelectItem key={title} value={title} className="text-xs font-bold uppercase">{title}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Role</Label>
+                          <Select value={formData.jobTitle} onValueChange={(val) => setFormData({...formData, jobTitle: val})}>
+                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
+                              <SelectValue placeholder="Select role..." />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-2xl">
+                              {JOB_TITLES.map(title => (
+                                <SelectItem key={title} value={title} className="text-xs font-bold uppercase">{title}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
+                          <Select value={formData.deptCode} onValueChange={(val) => setFormData({...formData, deptCode: val})}>
+                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
+                              <SelectValue placeholder="Select dept..." />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-2xl">
+                              {DEPARTMENTS.map(dept => (
+                                <SelectItem key={dept} value={dept} className="text-xs font-bold uppercase">{dept}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
-                        <Select value={formData.deptCode} onValueChange={(val) => setFormData({...formData, deptCode: val})}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
-                            <SelectValue placeholder="Select department..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl">
-                            {DEPARTMENTS.map(dept => (
-                              <SelectItem key={dept} value={dept} className="text-xs font-bold uppercase">{dept}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Reporting manager</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Identify supervisor node..." 
+                            className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
+                            value={formData.reportingManager}
+                            onChange={(e) => setFormData({...formData, reportingManager: e.target.value})}
+                          />
+                          <Network className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        </div>
                       </div>
                     </div>
                   </div>

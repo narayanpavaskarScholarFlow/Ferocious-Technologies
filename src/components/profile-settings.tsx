@@ -43,7 +43,11 @@ import {
   FileText,
   ArrowDownLeft,
   ArrowUpRight,
-  CalendarDays
+  CalendarDays,
+  Phone,
+  Briefcase,
+  Network,
+  Fingerprint
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -139,14 +143,28 @@ export function ProfileSettings({
 
   const [adminName, setAdminName] = useState('');
   const [adminRole, setAdminRole] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+  const [adminDept, setAdminDept] = useState('');
+  const [adminId, setAdminId] = useState('');
+  const [adminReportingManager, setAdminReportingManager] = useState('');
 
   useEffect(() => {
     if (activeAdmin) {
       setAdminName(activeAdmin.name);
       setAdminRole(activeAdmin.role);
+      setAdminEmail(activeAdmin.email);
+      setAdminPhone(activeAdmin.phone || '');
+      setAdminDept(activeAdmin.dept);
+      setAdminId(activeAdmin.id);
+      setAdminReportingManager(activeAdmin.reportingManager || '');
     } else {
       setAdminName(currentUser || 'Master Admin');
       setAdminRole('Plant Controller');
+      setAdminEmail(currentUser === 'Master Admin' ? 'admin@bharataxis.tech' : '');
+      setAdminDept('Admin');
+      setAdminId('ID_PR_0001');
+      setAdminReportingManager('Self / Board');
     }
   }, [activeAdmin, currentUser]);
 
@@ -162,13 +180,19 @@ export function ProfileSettings({
     const profileToSave: SystemUser = activeAdmin ? {
       ...activeAdmin,
       name: adminName,
-      role: adminRole
-    } : {
-      id: `ADMIN-${Date.now()}`,
-      name: adminName,
-      email: `${adminName.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
       role: adminRole,
-      dept: 'Admin',
+      email: adminEmail,
+      phone: adminPhone,
+      dept: adminDept,
+      reportingManager: adminReportingManager
+    } : {
+      id: adminId || `ADMIN-${Date.now()}`,
+      name: adminName,
+      email: adminEmail || `${adminName.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
+      phone: adminPhone,
+      role: adminRole,
+      dept: adminDept || 'Admin',
+      reportingManager: adminReportingManager,
       permissions: { overview: 'full' },
       lastLogin: new Date().toISOString(),
       status: 'online'
@@ -264,11 +288,19 @@ export function ProfileSettings({
                 <div className="w-full grid grid-cols-2 gap-3 mt-8 pt-8 border-t border-slate-50">
                   <div className="p-3 bg-slate-50 rounded-xl text-left">
                     <p className="text-[8px] text-slate-400 uppercase font-bold mb-1">Employee ID</p>
-                    <p className="text-[11px] font-bold text-[#001F3D]">{activeAdmin?.id.split('-')[0] || 'ID_PR_XXXX'}</p>
+                    <p className="text-[11px] font-bold text-[#001F3D]">{adminId || 'ID_PR_XXXX'}</p>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl text-left">
                     <p className="text-[8px] text-slate-400 uppercase font-bold mb-1">Access Tier</p>
                     <Badge className="bg-primary/10 text-primary border-none text-[8px] font-bold px-2 py-0">COMMAND</Badge>
+                  </div>
+                </div>
+
+                <div className="w-full mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center gap-4 text-left">
+                  <div className="p-2 bg-primary rounded-lg text-white"><Network className="h-4 w-4" /></div>
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Reporting Line</p>
+                    <p className="text-[10px] font-bold text-[#001F3D] uppercase">{adminReportingManager || 'None Defined'}</p>
                   </div>
                 </div>
 
@@ -284,26 +316,75 @@ export function ProfileSettings({
 
             <div className="lg:col-span-8 space-y-6">
               <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[2rem] space-y-10">
-                <div className="space-y-8">
+                <div className="space-y-10">
                   <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                     <User className="h-5 w-5 text-primary" />
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Identity Details</h3>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Master Identity Matrix</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Network Alias</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                        <Fingerprint className="h-3 w-3" /> Emp ID
+                      </Label>
                       <Input 
-                        value={adminName} 
-                        onChange={(e) => setAdminName(e.target.value)}
-                        className="h-11 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20" 
+                        value={adminId} 
+                        onChange={(e) => setAdminId(e.target.value)}
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">Functional Role</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">User name</Label>
+                      <Input 
+                        value={adminName} 
+                        onChange={(e) => setAdminName(e.target.value)}
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                        <Phone className="h-3 w-3" /> Contact number
+                      </Label>
+                      <Input 
+                        value={adminPhone} 
+                        onChange={(e) => setAdminPhone(e.target.value)}
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Mail ID</Label>
+                      <Input 
+                        value={adminEmail} 
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Department</Label>
+                      <Input 
+                        value={adminDept} 
+                        onChange={(e) => setAdminDept(e.target.value)}
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                        <Briefcase className="h-3 w-3" /> Role (Roll)
+                      </Label>
                       <Input 
                         value={adminRole} 
                         onChange={(e) => setAdminRole(e.target.value)}
-                        className="h-11 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20" 
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                        <Network className="h-3 w-3" /> Reporting manager
+                      </Label>
+                      <Input 
+                        value={adminReportingManager} 
+                        onChange={(e) => setAdminReportingManager(e.target.value)}
+                        className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
                       />
                     </div>
                   </div>
@@ -326,7 +407,7 @@ export function ProfileSettings({
               </div>
               <div className="flex items-center gap-4 w-full md:w-auto">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Identity:</span>
-                <Select value={currentUserMatrix?.id || ''} onValueChange={setSelectedUserForMatrix}>
+                <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
                   <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
                     <SelectValue placeholder="Select User..." />
                   </SelectTrigger>

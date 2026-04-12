@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -22,7 +23,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   ChevronRight,
-  CalendarDays
+  CalendarDays,
+  CalendarRange
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +37,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Machine, MachineCategory, Order } from '@/lib/types';
 import placeholderImages from '@/app/lib/placeholder-images.json';
@@ -67,10 +70,11 @@ const DAILY_UTILIZATION_DATA = [
 
 export function MachineUtilization({ machines, orders, onSaveMachine }: MachineUtilizationProps) {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('fleet');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAddMachineOpen, setIsAddMachineOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
-  const [selectedMachineForLoad, setSelectedMachineForLoad] = useState<Machine | null>(null);
+  const [selectedMachineIdForLoad, setSelectedMachineIdForLoad] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -148,15 +152,10 @@ export function MachineUtilization({ machines, orders, onSaveMachine }: MachineU
     return (machines.reduce((acc, m) => acc + m.load, 0) / machines.length).toFixed(1);
   }, [machines]);
 
-  if (selectedMachineForLoad) {
-    return (
-      <MachineLoadPlan 
-        machine={selectedMachineForLoad} 
-        orders={orders} 
-        onBack={() => setSelectedMachineForLoad(null)} 
-      />
-    );
-  }
+  const handleViewSchedule = (machineId: string) => {
+    setSelectedMachineIdForLoad(machineId);
+    setActiveTab('schedule');
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
@@ -173,24 +172,6 @@ export function MachineUtilization({ machines, orders, onSaveMachine }: MachineU
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
-            <Button 
-              variant={viewMode === 'grid' ? 'default' : 'ghost'} 
-              size="sm" 
-              className={cn("h-9 rounded-lg px-4", viewMode === 'grid' && "bg-white text-primary shadow-sm hover:bg-white")}
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4 mr-2" /> Grid
-            </Button>
-            <Button 
-              variant={viewMode === 'list' ? 'default' : 'ghost'} 
-              size="sm" 
-              className={cn("h-9 rounded-lg px-4", viewMode === 'list' && "bg-white text-primary shadow-sm hover:bg-white")}
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4 mr-2" /> List
-            </Button>
-          </div>
           <Button 
             onClick={handleOpenAdd}
             className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-3 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
@@ -200,249 +181,288 @@ export function MachineUtilization({ machines, orders, onSaveMachine }: MachineU
         </div>
       </header>
 
-      {/* Daily Utilization Matrix */}
-      <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden group">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="h-1 w-8 bg-primary rounded-full" />
-              <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Fleet Performance</h4>
-            </div>
-            <p className="text-2xl font-bold tracking-tight text-[#001F3D]">Daily Utilization Trend</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Average OEE</p>
-              <p className="text-3xl font-display font-bold text-primary">{averageOEE}%</p>
-            </div>
-            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] font-bold px-4 py-1.5 rounded-full">NOMINAL</Badge>
-          </div>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm">
+          <TabsTrigger value="fleet" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+            <Factory className="h-3.5 w-3.5 mr-2" /> Asset Fleet Matrix
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+            <CalendarRange className="h-3.5 w-3.5 mr-2" /> Master Load Matrix
+          </TabsTrigger>
+        </TabsList>
 
-        <div className="h-[280px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={DAILY_UTILIZATION_DATA}>
-              <defs>
-                <linearGradient id="colorUtil" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis 
-                dataKey="day" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
-                dy={15}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
-                tickFormatter={(val) => `${val}%`}
-              />
-              <ChartTooltip 
-                content={({active, payload}) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-[#001F3D] text-white px-4 py-3 rounded-2xl shadow-2xl border-none animate-in zoom-in-95">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-1">{payload[0].payload.day}</p>
-                        <p className="text-xl font-display font-bold">{payload[0].value}% <span className="text-[10px] text-emerald-400">OEE</span></p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#6366f1" 
-                strokeWidth={4} 
-                fillOpacity={1} 
-                fill="url(#colorUtil)" 
-                animationDuration={2000}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+        <TabsContent value="fleet" className="m-0 space-y-10">
+          <div className="flex justify-end px-2">
+            <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+              <Button 
+                variant={viewMode === 'grid' ? 'default' : 'ghost'} 
+                size="sm" 
+                className={cn("h-9 rounded-lg px-4", viewMode === 'grid' && "bg-white text-primary shadow-sm hover:bg-white")}
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" /> Grid
+              </Button>
+              <Button 
+                variant={viewMode === 'list' ? 'default' : 'ghost'} 
+                size="sm" 
+                className={cn("h-9 rounded-lg px-4", viewMode === 'list' && "bg-white text-primary shadow-sm hover:bg-white")}
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4 mr-2" /> List
+              </Button>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {machines.map((machine) => (
-              <Card key={machine.id} className="glass-card p-0 group overflow-hidden border-none hover:shadow-2xl hover:translate-y-[-4px] transition-all duration-500">
-                <div className="relative aspect-[16/10] w-full overflow-hidden">
-                  <Image 
-                    src={machine.image} 
-                    alt={machine.name} 
-                    fill 
-                    className="object-cover transition-all duration-1000 group-hover:scale-110"
-                    data-ai-hint="industrial machine"
+          <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden group">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-1 w-8 bg-primary rounded-full" />
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Fleet Performance</h4>
+                </div>
+                <p className="text-2xl font-bold tracking-tight text-[#001F3D]">Daily Utilization Trend</p>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Average OEE</p>
+                  <p className="text-3xl font-display font-bold text-primary">{averageOEE}%</p>
+                </div>
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] font-bold px-4 py-1.5 rounded-full">NOMINAL</Badge>
+              </div>
+            </div>
+
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={DAILY_UTILIZATION_DATA}>
+                  <defs>
+                    <linearGradient id="colorUtil" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="day" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
+                    dy={15}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#001F3D]/90 via-[#001F3D]/20 to-transparent" />
-                  
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-9 w-9 rounded-xl bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/10"
-                      onClick={() => handleOpenEdit(machine)}
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <Badge className="bg-primary/20 text-white border-white/10 backdrop-blur-md text-[8px] font-bold tracking-widest uppercase mb-2">
-                          {machine.type}
-                        </Badge>
-                        <h3 className="text-xl font-display font-bold text-white tracking-tight">{machine.name}</h3>
-                        <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">{machine.mcNumber}</p>
-                      </div>
-                      <div className={cn(
-                        "h-2.5 w-2.5 rounded-full mb-1 animate-pulse",
-                        machine.status === 'active' ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]' : 'bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.5)]'
-                      )} />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-8 space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Manufacturer</p>
-                      <p className="text-xs font-bold text-slate-700 uppercase">{machine.make}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cost Center</p>
-                      <p className="text-xs font-bold text-primary">₹ {machine.costPerHour}/hr</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                      <span className="text-slate-400">Current Load Factor</span>
-                      <span className={cn(
-                        machine.load > 80 ? "text-emerald-500" : machine.load > 50 ? "text-primary" : "text-amber-500"
-                      )}>
-                        {machine.load}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={cn(
-                          "h-full transition-all duration-1000",
-                          machine.load > 80 ? "bg-emerald-500" : machine.load > 50 ? "bg-primary" : "bg-amber-500"
-                        )}
-                        style={{ width: `${machine.load}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <Button 
-                    className="w-full bg-[#001F3D] hover:bg-black text-white rounded-xl h-11 font-bold text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-primary/10 mt-4"
-                    onClick={() => setSelectedMachineForLoad(machine)}
-                  >
-                    <CalendarDays className="h-4 w-4" /> View Load Schedule
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2.5rem]">
-            <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-[0.2em] flex items-center gap-3">
-                <LayoutGrid className="h-4 w-4 text-primary" /> Master Asset Directory
-              </h3>
-              <Badge variant="outline" className="bg-white border-slate-200 text-[10px] font-bold uppercase h-8 px-4">Live Inventory: {machines.length}</Badge>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-white border-b border-slate-50">
-                    <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identification</th>
-                    <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Specifications</th>
-                    <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Costing</th>
-                    <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-                    <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">OEE</th>
-                    <th className="px-8 py-6"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {machines.map((machine) => (
-                    <tr key={machine.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-xl relative overflow-hidden border border-slate-100 shadow-sm shrink-0">
-                            <Image src={machine.image} alt="" fill className="object-cover" />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
+                    tickFormatter={(val) => `${val}%`}
+                  />
+                  <ChartTooltip 
+                    content={({active, payload}) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-[#001F3D] text-white px-4 py-3 rounded-2xl shadow-2xl border-none animate-in zoom-in-95">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-1">{payload[0].payload.day}</p>
+                            <p className="text-xl font-display font-bold">{payload[0].value}% <span className="text-[10px] text-emerald-400">OEE</span></p>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-[#001F3D] uppercase">{machine.name}</span>
-                            <span className="text-[10px] text-slate-400 font-code font-bold uppercase">{machine.mcNumber}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-6">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-slate-700">{machine.type}</span>
-                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{machine.make} • {machine.bedSize}</span>
-                        </div>
-                      </td>
-                      <td className="py-6">
-                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-code font-bold text-xs">
-                          ₹ {machine.costPerHour.toLocaleString()}/hr
-                        </Badge>
-                      </td>
-                      <td className="py-6 text-center">
-                        <Badge className={cn(
-                          "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
-                          machine.status === 'active' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
-                        )}>
-                          {machine.status}
-                        </Badge>
-                      </td>
-                      <td className="py-6 text-center">
-                        <div className="inline-flex items-center gap-2">
-                          <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-primary" style={{ width: `${machine.load}%` }} />
-                          </div>
-                          <span className="text-[10px] font-code font-bold text-slate-600">{machine.load}%</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
-                            onClick={() => setSelectedMachineForLoad(machine)}
-                          >
-                            <CalendarDays className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
-                            onClick={() => handleOpenEdit(machine)}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#6366f1" 
+                    strokeWidth={4} 
+                    fillOpacity={1} 
+                    fill="url(#colorUtil)" 
+                    animationDuration={2000}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </Card>
-        )}
-      </div>
+
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {machines.map((machine) => (
+                <Card key={machine.id} className="glass-card p-0 group overflow-hidden border-none hover:shadow-2xl hover:translate-y-[-4px] transition-all duration-500">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden">
+                    <Image 
+                      src={machine.image} 
+                      alt={machine.name} 
+                      fill 
+                      className="object-cover transition-all duration-1000 group-hover:scale-110"
+                      data-ai-hint="industrial machine"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#001F3D]/90 via-[#001F3D]/20 to-transparent" />
+                    
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-9 w-9 rounded-xl bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/10"
+                        onClick={() => handleOpenEdit(machine)}
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <div className="flex justify-between items-end">
+                        <div className="space-y-1">
+                          <Badge className="bg-primary/20 text-white border-white/10 backdrop-blur-md text-[8px] font-bold tracking-widest uppercase mb-2">
+                            {machine.type}
+                          </Badge>
+                          <h3 className="text-xl font-display font-bold text-white tracking-tight">{machine.name}</h3>
+                          <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">{machine.mcNumber}</p>
+                        </div>
+                        <div className={cn(
+                          "h-2.5 w-2.5 rounded-full mb-1 animate-pulse",
+                          machine.status === 'active' ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]' : 'bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.5)]'
+                        )} />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-8 space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Manufacturer</p>
+                        <p className="text-xs font-bold text-slate-700 uppercase">{machine.make}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cost Center</p>
+                        <p className="text-xs font-bold text-primary">₹ {machine.costPerHour}/hr</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-slate-400">Current Load Factor</span>
+                        <span className={cn(
+                          machine.load > 80 ? "text-emerald-500" : machine.load > 50 ? "text-primary" : "text-amber-500"
+                        )}>
+                          {machine.load}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full transition-all duration-1000",
+                            machine.load > 80 ? "bg-emerald-500" : machine.load > 50 ? "bg-primary" : "bg-amber-500"
+                          )}
+                          style={{ width: `${machine.load}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <Button 
+                      className="w-full bg-[#001F3D] hover:bg-black text-white rounded-xl h-11 font-bold text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-primary/10 mt-4"
+                      onClick={() => handleViewSchedule(machine.id)}
+                    >
+                      <CalendarDays className="h-4 w-4" /> View Load Schedule
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2.5rem]">
+              <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-[0.2em] flex items-center gap-3">
+                  <LayoutGrid className="h-4 w-4 text-primary" /> Master Asset Directory
+                </h3>
+                <Badge variant="outline" className="bg-white border-slate-200 text-[10px] font-bold uppercase h-8 px-4">Live Inventory: {machines.length}</Badge>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-white border-b border-slate-50">
+                      <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identification</th>
+                      <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Specifications</th>
+                      <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Costing</th>
+                      <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
+                      <th className="py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">OEE</th>
+                      <th className="px-8 py-6"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {machines.map((machine) => (
+                      <tr key={machine.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-xl relative overflow-hidden border border-slate-100 shadow-sm shrink-0">
+                              <Image src={machine.image} alt="" fill className="object-cover" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-[#001F3D] uppercase">{machine.name}</span>
+                              <span className="text-[10px] text-slate-400 font-code font-bold uppercase">{machine.mcNumber}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-6">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-bold text-slate-700">{machine.type}</span>
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{machine.make} • {machine.bedSize}</span>
+                          </div>
+                        </td>
+                        <td className="py-6">
+                          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 font-code font-bold text-xs">
+                            ₹ {machine.costPerHour.toLocaleString()}/hr
+                          </Badge>
+                        </td>
+                        <td className="py-6 text-center">
+                          <Badge className={cn(
+                            "text-[9px] font-bold uppercase px-3 py-1 rounded-full",
+                            machine.status === 'active' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
+                          )}>
+                            {machine.status}
+                          </Badge>
+                        </td>
+                        <td className="py-6 text-center">
+                          <div className="inline-flex items-center gap-2">
+                            <div className="h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary" style={{ width: `${machine.load}%` }} />
+                            </div>
+                            <span className="text-[10px] font-code font-bold text-slate-600">{machine.load}%</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                              onClick={() => handleViewSchedule(machine.id)}
+                            >
+                              <CalendarDays className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                              onClick={() => handleOpenEdit(machine)}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="schedule" className="m-0">
+          <MachineLoadPlan 
+            machines={machines} 
+            orders={orders} 
+            initialMachineId={selectedMachineIdForLoad}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={isAddMachineOpen} onOpenChange={setIsAddMachineOpen}>
         <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">

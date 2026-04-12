@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -33,7 +34,9 @@ import {
   AlertTriangle,
   User,
   Lock,
-  Cpu
+  Cpu,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -266,6 +269,24 @@ export function OperationsStatus({
     }
   };
 
+  const moveOperation = (idx: number, direction: 'up' | 'down') => {
+    const newRouting = [...operations];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= newRouting.length) return;
+    
+    // Swap protocol
+    [newRouting[idx], newRouting[targetIdx]] = [newRouting[targetIdx], newRouting[idx]];
+    
+    // Propagate timeline from the earliest changed index
+    const final = propagateSequentialDates(newRouting, Math.min(idx, targetIdx));
+    saveRouting(final);
+    
+    toast({
+      title: "Sequence Protocol Re-aligned",
+      description: `Operation "${newRouting[targetIdx].name}" shifted ${direction}. Timeline synchronized.`
+    });
+  };
+
   const handleAddOperation = () => {
     if (newOpName) {
       const lastOp = operations[operations.length - 1];
@@ -445,7 +466,7 @@ export function OperationsStatus({
             <Table>
               <TableHeader className="bg-slate-50/50 border-b border-slate-100">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-20">Seq.</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Seq. Reorder</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[200px]">Operation / Task Row</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">Start Date</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">End Date</TableHead>
@@ -477,7 +498,7 @@ export function OperationsStatus({
                             isNA && "opacity-50 grayscale bg-slate-50/50"
                           )}>
                             <TableCell className="px-8 font-code text-xs text-slate-300 font-bold">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3">
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
@@ -486,6 +507,14 @@ export function OperationsStatus({
                                 >
                                   {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                                 </Button>
+                                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-slate-400 hover:text-primary" onClick={() => moveOperation(idx, 'up')} disabled={idx === 0}>
+                                    <ArrowUp className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-slate-400 hover:text-primary" onClick={() => moveOperation(idx, 'down')} disabled={idx === operations.length - 1}>
+                                    <ArrowDown className="h-3 w-3" />
+                                  </Button>
+                                </div>
                                 {(idx + 1).toString().padStart(2, '0')}
                               </div>
                             </TableCell>

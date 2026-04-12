@@ -14,7 +14,6 @@ import {
   Search, 
   CheckCircle2, 
   Printer, 
-  Download, 
   ChevronRight, 
   ArrowLeft,
   Check,
@@ -25,18 +24,13 @@ import {
   Trash2,
   User,
   ClipboardCheck,
-  Eye,
   FileBadge,
   Unlock,
   ShieldAlert,
-  AlertCircle,
   ArchiveX,
-  Box,
   Edit2,
-  Lock,
   Upload,
   Image as ImageIcon,
-  Loader2,
   Maximize2
 } from 'lucide-react';
 import { 
@@ -52,8 +46,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogDescription,
-  DialogFooter
+  DialogDescription
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -776,16 +769,58 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <TabsList className="bg-slate-100 p-1 rounded-full mb-8 h-12 inline-flex border border-slate-200 w-fit shrink-0">
                 <TabsTrigger value="customer" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm transition-all">Dimension Ledger</TabsTrigger>
                 <TabsTrigger value="internal" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm transition-all">Verification Nodes</TabsTrigger>
-                <TabsTrigger value="blueprint" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm transition-all">Technical Blueprint Attachment</TabsTrigger>
               </TabsList>
               
               <TabsContent value="customer" className="m-0 flex-1 overflow-hidden flex flex-col">
-                <div className="flex justify-between items-center px-1 mb-6 shrink-0">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Balloon Measurement Registry</h3>
-                  <Button variant="ghost" onClick={handleAddDimension} className="text-[9px] uppercase font-bold gap-2 text-primary hover:bg-primary/5 h-8 px-4 rounded-xl">
-                    <Plus className="h-3.5 w-3.5" /> Append Measurement Row
-                  </Button>
+                <div className="space-y-6 mb-8 shrink-0">
+                  {/* Integrated Blueprint Display */}
+                  <div className="bg-slate-50/50 border border-slate-200 rounded-3xl p-6 flex flex-col gap-4">
+                    <div className="flex justify-between items-center px-1">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="h-4 w-4 text-primary" />
+                        <h4 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Technical Blueprint Attachment</h4>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          id="matrix-drawing-upload" 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={handleDrawingUpload}
+                        />
+                        <Button variant="ghost" asChild className="h-8 px-4 rounded-xl font-bold uppercase text-[9px] tracking-widest text-primary hover:bg-primary/5">
+                          <label htmlFor="matrix-drawing-upload" className="cursor-pointer flex items-center gap-2">
+                            <Upload className="h-3.5 w-3.5" /> Replace Drawing
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
+                    {pendingDrawingFile ? (
+                      <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-white border border-slate-100 shadow-inner group">
+                        <img src={pendingDrawingFile} alt="Technical Blueprint" className="w-full h-full object-contain p-2" />
+                        <div className="absolute inset-0 bg-[#001F3D]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <div className="bg-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2">
+                            <Maximize2 className="h-3.5 w-3.5 text-primary" />
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-slate-900">Blueprint Active</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white/50 text-slate-400 gap-2">
+                        <ImageIcon className="h-8 w-8 opacity-20" />
+                        <p className="text-[9px] font-bold uppercase tracking-widest">No Technical Drawing Attached</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center px-1">
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Balloon Measurement Registry</h3>
+                    <Button variant="ghost" onClick={handleAddDimension} className="text-[9px] uppercase font-bold gap-2 text-primary hover:bg-primary/5 h-8 px-4 rounded-xl">
+                      <Plus className="h-3.5 w-3.5" /> Append Measurement Row
+                    </Button>
+                  </div>
                 </div>
+
                 <ScrollArea className="flex-1">
                   <Table>
                     <TableHeader className="bg-slate-50/50">
@@ -921,57 +956,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     ))}
                   </div>
                 </ScrollArea>
-              </TabsContent>
-              <TabsContent value="blueprint" className="m-0 flex-1 overflow-hidden flex flex-col">
-                <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                  {pendingDrawingFile ? (
-                    <div className="relative w-full max-w-4xl h-full min-h-[400px] flex flex-col gap-6">
-                      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><CheckCircle2 className="h-5 w-5" /></div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 uppercase">Active Blueprint Registry</p>
-                            <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Manual Entry Association Active</p>
-                          </div>
-                        </div>
-                        <Button variant="outline" className="h-10 rounded-xl gap-2 text-[10px] font-bold uppercase border-slate-200" onClick={() => setPendingDrawingFile(undefined)}>
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" /> Replace Drawing
-                        </Button>
-                      </div>
-                      <div className="flex-1 relative rounded-[2rem] overflow-hidden bg-white border border-slate-100 shadow-inner group">
-                        <img src={pendingDrawingFile} alt="Technical Blueprint" className="w-full h-full object-contain p-4" />
-                        <div className="absolute inset-0 bg-[#001F3D]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                          <div className="bg-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
-                            <Maximize2 className="h-4 w-4 text-primary" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Blueprint Active</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-6 text-center max-w-md">
-                      <div className="p-8 bg-white rounded-full shadow-xl shadow-slate-200/50"><ImageIcon className="h-12 w-12 text-slate-300" /></div>
-                      <div>
-                        <h4 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">No Blueprint Detected</h4>
-                        <p className="text-xs text-slate-400 mt-2 font-medium">Attach a technical drawing to provide visual context for the dimensional measurement ledger.</p>
-                      </div>
-                      <div className="relative">
-                        <input 
-                          type="file" 
-                          id="matrix-drawing-upload" 
-                          className="hidden" 
-                          accept="image/*"
-                          onChange={handleDrawingUpload}
-                        />
-                        <Button asChild className="h-12 px-8 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-primary/20">
-                          <label htmlFor="matrix-drawing-upload" className="cursor-pointer flex items-center gap-2">
-                            <Upload className="h-4 w-4" /> Attach Technical Matrix
-                          </label>
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </TabsContent>
             </Tabs>
             <div className="pt-8 border-t border-slate-100 flex gap-4 mt-8 shrink-0">

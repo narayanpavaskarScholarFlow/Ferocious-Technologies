@@ -202,6 +202,7 @@ export interface DimensionRecord {
   id: string;
   balloonNo: string;
   typeOfDim: string;
+  instrument: string;
   target: string;
   tolerance: string;
   upperLimit: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,8 @@ import {
   ShieldAlert,
   AlertCircle,
   ArchiveX,
-  Box
+  Box,
+  Edit2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -45,7 +46,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord } from '@/lib/types';
-import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 
 type QualityStep = 'list' | 'upload' | 'checklist' | 'report' | 'review' | 'approval';
@@ -61,8 +62,10 @@ const MACHINING_OPS = [
   "Assembly - Fit & Function Test"
 ];
 
+const INSTRUMENTS = ["Vernier", "CMM", "Hight gauge", "Micro meter"];
+
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', balloonNo: 'BL-01', typeOfDim: 'Normal Dim', target: '', tolerance: '±', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
+  { id: '1', balloonNo: 'BL-01', typeOfDim: 'Normal Dim', instrument: 'Vernier', target: '', tolerance: '±', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
 ];
 
 interface QualityManagementProps {
@@ -162,6 +165,28 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     setCurrentStep('review');
   };
 
+  const handleEditReport = (report: QualityReport) => {
+    const order = orders.find(o => o.id === report.workOrderId);
+    if (!order) return;
+    setSelectedOrder(order);
+    setActiveReportId(report.id);
+    setManualComponentName(report.drawingName);
+    setDimensions(report.dimensions);
+    setChecks(report.checks as any);
+    const qcOp = order.routing?.find(op => op.name === 'QC');
+    if (qcOp) setSelectedOp(qcOp);
+    setCurrentStep('checklist');
+  };
+
+  const handleDeleteReport = (reportId: string) => {
+    deleteDocumentNonBlocking(doc(db, 'quality_reports', reportId));
+    toast({
+      title: "Report Deleted",
+      description: "The inspection record has been purged from the archive.",
+      variant: "destructive"
+    });
+  };
+
   const handleUpdateDimension = (id: string, field: keyof DimensionRecord, value: string) => {
     setDimensions(prev => prev.map(dim => {
       if (dim.id !== id) return dim;
@@ -220,6 +245,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       id: Math.random().toString(36).substr(2, 9),
       balloonNo: balloonNo,
       typeOfDim: 'Normal Dim',
+      instrument: 'Vernier',
       target: '',
       tolerance: '±',
       upperLimit: '0.000',
@@ -547,11 +573,19 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-slate-50 text-[#001F3D]"><FileText className="h-6 w-6" /></div>
                             <div className="min-w-0 flex-1"><p className="text-[11px] font-bold text-[#001F3D] uppercase truncate">{report.drawingName}</p><p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{report.id}</p></div>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mt-2">
                             <Badge className={cn("text-[8px] font-bold uppercase px-3 py-1 rounded-full", report.verdict === 'Pass' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>{report.verdict === 'Pass' ? 'OK' : 'NOT OK'}</Badge>
-                            <Button size="sm" variant="outline" className="h-9 rounded-xl text-[9px] font-bold uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white border-none" onClick={() => { setActiveReportId(report.id); setManualComponentName(report.drawingName); setDimensions(report.dimensions); setChecks(report.checks as any); setCurrentStep(report.status === 'Released' ? 'approval' : 'review'); }}>
-                              <Eye className="h-3.5 w-3.5" /> Preview Report
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEditReport(report)}>
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDeleteReport(report.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm" className="h-8 rounded-lg text-[8px] font-bold uppercase tracking-widest bg-[#001F3D] hover:bg-black text-white border-none" onClick={() => { setActiveReportId(report.id); setManualComponentName(report.drawingName); setDimensions(report.dimensions); setChecks(report.checks as any); setCurrentStep(report.status === 'Released' ? 'approval' : 'review'); }}>
+                                Preview
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </Card>
@@ -601,14 +635,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <Table>
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="hover:bg-transparent border-b border-slate-100">
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[120px]">Balloon No.</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[160px]">Type of Dim</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Target (mm)</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Tolerance</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[160px]">Tolerance Limits</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[140px]">Actual Measured</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Status</TableHead>
-                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-left pl-6">Observations / Remarks</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[100px]">Balloon No.</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[140px]">Type of Dim</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[140px]">Instrument</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Target (mm)</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Tolerance</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[140px]">Limits</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Actual Measured</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[80px]">Status</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-left pl-6">Observations</TableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -638,6 +673,21 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                               </SelectContent>
                             </Select>
                           </TableCell>
+                          <TableCell className="px-4">
+                            <Select 
+                              value={dim.instrument} 
+                              onValueChange={(val) => handleUpdateDimension(dim.id, 'instrument', val)}
+                            >
+                              <SelectTrigger className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl focus:ring-primary/20">
+                                <SelectValue placeholder="Instrument" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                {INSTRUMENTS.map(inst => (
+                                  <SelectItem key={inst} value={inst} className="text-xs font-bold uppercase">{inst}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
                           <TableCell>
                             <Input 
                               id={`target-${dim.id}`}
@@ -659,7 +709,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           <TableCell className="text-center">
                             <div className="flex flex-col items-center gap-0.5">
                               <span className="text-[10px] font-code font-bold text-slate-600">{dim.upperLimit} / {dim.lowerLimit}</span>
-                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">UP / LOW LIMIT</span>
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Limits</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -681,7 +731,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           <TableCell className="pl-6">
                             <Input 
                               id={`remark-${dim.id}`}
-                              placeholder="Technical observations..." 
+                              placeholder="Notes..." 
                               className="h-10 bg-slate-50/50 border-none text-[10px] rounded-xl font-medium" 
                               value={dim.remark} 
                               onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)} 
@@ -775,12 +825,13 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 <Table className="border-collapse">
                   <TableHeader className="bg-slate-50">
                     <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
-                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-20">Balloon No.</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-24">Type of Dim</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-24">Target (mm)</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-16">Balloon No.</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-20">Type of Dim</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-20">Instrument</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-20">Target (mm)</TableHead>
                       <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-24">Limits</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-primary w-24">Actual</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-20">Verdict</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-primary w-20">Actual</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-16">Verdict</TableHead>
                       <TableHead className="text-[8px] font-bold uppercase text-left pl-4">Observations</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -789,6 +840,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       <TableRow key={dim.id} className="border-b border-slate-100 hover:bg-slate-50/50">
                         <TableCell className="font-bold text-[10px] border-r border-slate-100 text-slate-700 uppercase py-4">{dim.balloonNo}</TableCell>
                         <TableCell className="font-bold text-[10px] border-r border-slate-100 text-slate-700 uppercase py-4">{dim.typeOfDim}</TableCell>
+                        <TableCell className="font-bold text-[9px] border-r border-slate-100 text-slate-500 uppercase py-4">{dim.instrument}</TableCell>
                         <TableCell className="text-center font-code text-[10px] border-r border-slate-100 text-slate-900">{dim.target || '0.000'}</TableCell>
                         <TableCell className="text-center font-code text-[9px] border-r border-slate-100 text-slate-500">{dim.upperLimit}/{dim.lowerLimit}</TableCell>
                         <TableCell className="text-center font-code text-[10px] font-bold border-r border-slate-100 text-primary">{dim.actual || '---'}</TableCell>

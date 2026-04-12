@@ -68,7 +68,7 @@ const ACCESS_NODES = [
   { id: 'smart-quote', label: 'AI Smart Quoting (Gemini)', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'SQCDP Performance Metrics', category: 'Strategic Hub', icon: LineChart },
   { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },
-  { id: 'production-planner', label: 'Mass Production Matrix', category: 'Production Control', icon: Factory },
+  { id: 'production-planner', label: 'High-Volume Production Matrix: Planning & Tracking', category: 'Production Control', icon: Factory },
   { id: 'order-create', label: 'Production: New Order Protocol', category: 'Production Control', icon: Plus },
   { id: 'gantt', label: 'Visual Timeline (Gantt)', category: 'Production Control', icon: LayoutGrid },
   { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
@@ -333,11 +333,11 @@ export function ProfileSettings({
                     <div className="w-full grid grid-cols-2 gap-4 mt-4 relative z-10">
                       <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
                         <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Employee Node</p>
-                        <p className="text-[11px] font-code font-bold text-white print:text-slate-900">{adminId || 'ID_PR_0001'}</p>
+                        <p className="text-11px font-code font-bold text-white print:text-slate-900">{adminId || 'ID_PR_0001'}</p>
                       </div>
                       <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
                         <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Plant Section</p>
-                        <p className="text-[11px] font-bold text-white uppercase truncate print:text-slate-900">{adminDept || 'General'}</p>
+                        <p className="text-11px font-bold text-white uppercase truncate print:text-slate-900">{adminDept || 'General'}</p>
                       </div>
                     </div>
                   </div>

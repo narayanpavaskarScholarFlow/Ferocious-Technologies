@@ -27,7 +27,9 @@ import {
   ClipboardList,
   Info,
   CalendarCheck,
-  Wallet
+  Wallet,
+  Save,
+  RefreshCw
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -83,9 +85,10 @@ export interface AnnualLeaveEntry {
 interface ManpowerUtilizationProps {
   users: SystemUser[];
   onSaveUser: (user: SystemUser) => void;
+  currentUser?: string | null;
 }
 
-export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationProps) {
+export function ManpowerUtilization({ users, onSaveUser, currentUser }: ManpowerUtilizationProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
@@ -94,7 +97,10 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [selectedUserIdForLeave, setSelectedUserIdForLeave] = useState<string | null>(null);
   const [step, setStep] = useState(1);
+  const [isUpdatingBalance, setIsUpdatingBalance] = useState<string | null>(null);
   
+  const isMasterAdmin = currentUser === 'Master Admin';
+
   const [newAnnual, setNewAnnual] = useState({
     description: '',
     month: MONTHS[new Date().getMonth()],
@@ -163,7 +169,8 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
       lastLogin: editingUserId ? (users.find(u => u.id === editingUserId)?.lastLogin || 'Never') : 'Never',
       phone: '',
       reportingManager: '',
-      image: ''
+      image: '',
+      leaveBalance: editingUserId ? (users.find(u => u.id === editingUserId)?.leaveBalance || { annual: 12, sick: 6, casual: 8 }) : { annual: 12, sick: 6, casual: 8 }
     };
 
     onSaveUser(member);
@@ -176,6 +183,34 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
     setEditingUserId(null);
     setStep(1);
     setNewStaff({ name: '', role: '', dept: '', shift: 'Morning', email: '' });
+  };
+
+  const handleUpdateBalance = (userId: string, field: 'annual' | 'sick' | 'casual', value: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    const numValue = parseInt(value) || 0;
+    const currentBalance = user.leaveBalance || { annual: 0, sick: 0, casual: 0 };
+    
+    const updatedUser: SystemUser = {
+      ...user,
+      leaveBalance: {
+        ...currentBalance,
+        [field]: numValue
+      }
+    };
+
+    setIsUpdatingBalance(userId);
+    onSaveUser(updatedUser);
+    
+    // Brief timeout to simulate server sync for UI feel
+    setTimeout(() => {
+      setIsUpdatingBalance(null);
+      toast({
+        title: "Balance Adjusted",
+        description: `Leave credit for ${user.name} has been modified.`
+      });
+    }, 500);
   };
 
   const handleAddAnnualLeave = () => {
@@ -306,7 +341,9 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                       </div>
                       <div className="space-y-1 text-center">
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Balance</p>
-                        <p className="text-[10px] font-bold text-primary">26 Days</p>
+                        <p className="text-[10px] font-bold text-primary">
+                          {(member.leaveBalance?.annual || 0) + (member.leaveBalance?.sick || 0) + (member.leaveBalance?.casual || 0)} Days
+                        </p>
                       </div>
                       <div className="text-right space-y-1">
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
@@ -389,6 +426,11 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                {isMasterAdmin && (
+                  <Badge className="bg-red-50 text-red-600 border-red-100 font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px] flex gap-2">
+                    <Shield className="h-3 w-3" /> Full Matrix Control Active
+                  </Badge>
+                )}
                 {selectedUserIdForLeave && (
                   <Button variant="ghost" size="sm" onClick={() => setSelectedUserIdForLeave(null)} className="text-[9px] font-bold uppercase text-slate-400 hover:text-red-500">
                     Clear Focus
@@ -414,33 +456,76 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
               <TableBody>
                 {safeUsers
                   .filter(u => !selectedUserIdForLeave || u.id === selectedUserIdForLeave)
-                  .map((user) => (
-                  <TableRow key={user.id} className={cn(
-                    "h-20 border-slate-50 hover:bg-slate-50/30 transition-colors",
-                    selectedUserIdForLeave === user.id && "bg-primary/[0.02]"
-                  )}>
-                    <TableCell className="px-10">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-[#001F3D] uppercase tracking-tight">{user.name}</span>
-                        <span className="text-[9px] text-slate-400 font-code font-bold uppercase tracking-tighter mt-0.5">{user.id}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center font-code text-xs font-bold text-slate-600">12 d</TableCell>
-                    <TableCell className="text-center font-code text-xs font-bold text-slate-600">06 d</TableCell>
-                    <TableCell className="text-center font-code text-xs font-bold text-slate-600">08 d</TableCell>
-                    <TableCell className="text-center font-code text-sm text-primary font-bold px-10">26 DAYS</TableCell>
-                    <TableCell className="pr-10">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-8 rounded-lg text-[9px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5"
-                        onClick={() => handleNavigateToApply(user.id)}
-                      >
-                        Apply
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                  .map((user) => {
+                    const balance = user.leaveBalance || { annual: 12, sick: 6, casual: 8 };
+                    const total = balance.annual + balance.sick + balance.casual;
+                    
+                    return (
+                      <TableRow key={user.id} className={cn(
+                        "h-20 border-slate-50 hover:bg-slate-50/30 transition-colors",
+                        selectedUserIdForLeave === user.id && "bg-primary/[0.02]"
+                      )}>
+                        <TableCell className="px-10">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-[#001F3D] uppercase tracking-tight">{user.name}</span>
+                            <span className="text-[9px] text-slate-400 font-code font-bold uppercase tracking-tighter mt-0.5">{user.id}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-code text-xs font-bold text-slate-600">
+                          {isMasterAdmin ? (
+                            <Input 
+                              type="number"
+                              className="w-16 h-8 bg-slate-50 border-none rounded text-center mx-auto"
+                              defaultValue={balance.annual}
+                              onBlur={(e) => handleUpdateBalance(user.id, 'annual', e.target.value)}
+                            />
+                          ) : (
+                            `${balance.annual} d`
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-code text-xs font-bold text-slate-600">
+                          {isMasterAdmin ? (
+                            <Input 
+                              type="number"
+                              className="w-16 h-8 bg-slate-50 border-none rounded text-center mx-auto"
+                              defaultValue={balance.sick}
+                              onBlur={(e) => handleUpdateBalance(user.id, 'sick', e.target.value)}
+                            />
+                          ) : (
+                            `${balance.sick} d`
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-code text-xs font-bold text-slate-600">
+                          {isMasterAdmin ? (
+                            <Input 
+                              type="number"
+                              className="w-16 h-8 bg-slate-50 border-none rounded text-center mx-auto"
+                              defaultValue={balance.casual}
+                              onBlur={(e) => handleUpdateBalance(user.id, 'casual', e.target.value)}
+                            />
+                          ) : (
+                            `${balance.casual} d`
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-code text-sm text-primary font-bold px-10">
+                          <div className="flex items-center justify-center gap-2">
+                            {isUpdatingBalance === user.id ? <RefreshCw className="h-3 w-3 animate-spin text-slate-300" /> : null}
+                            {total} DAYS
+                          </div>
+                        </TableCell>
+                        <TableCell className="pr-10">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 rounded-lg text-[9px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5"
+                            onClick={() => handleNavigateToApply(user.id)}
+                          >
+                            Apply
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 {safeUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="h-32 text-center text-slate-400 font-code text-[10px] italic uppercase tracking-widest">_NO_RESOURCE_DATA_FOUND_</TableCell>

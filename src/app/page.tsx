@@ -552,6 +552,7 @@ function IndustrialERPInternal() {
               <ManpowerUtilization 
                 users={usersData}
                 onSaveUser={handleSaveUser}
+                currentUser={currentUser}
               />
             )}
             {currentView === 'customer-orders' && hasAccess('customer-orders') && (

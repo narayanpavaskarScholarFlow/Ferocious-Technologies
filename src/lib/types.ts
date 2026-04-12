@@ -185,6 +185,12 @@ export interface InventoryItem {
 
 export type PermissionLevel = 'read' | 'edit' | 'full' | 'none';
 
+export interface UserLeaveBalance {
+  annual: number;
+  sick: number;
+  casual: number;
+}
+
 export interface SystemUser {
   id: string;
   name: string;
@@ -200,6 +206,7 @@ export interface SystemUser {
   status: 'online' | 'offline' | 'active' | 'break' | 'off';
   shift?: 'Morning' | 'Evening' | 'Night';
   efficiency?: number;
+  leaveBalance?: UserLeaveBalance;
 }
 
 export interface DimensionRecord {

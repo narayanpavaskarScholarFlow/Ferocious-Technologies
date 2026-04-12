@@ -91,3 +91,26 @@
 .floating-sidebar {
   @apply bg-[#0f172a] shadow-2xl;
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .no-print, .print\:hidden {
+    display: none !important;
+  }
+  .print-only, .print\:block {
+    display: block !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

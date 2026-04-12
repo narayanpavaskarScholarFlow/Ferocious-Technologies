@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -441,9 +441,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     setActiveReportId(null);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.focus();
+      window.print();
+    }
+  }, []);
 
   const hasFailures = useMemo(() => dimensions.some(d => d.status === 'NOT OK'), [dimensions]);
 
@@ -1044,7 +1047,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       )}
 
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && (
-        <div className="space-y-10 pb-20 max-w-[900px] mx-auto animate-in zoom-in-95 duration-500 px-2 print:max-w-full print:p-0 print:m-0 print:block">
+        <div className="space-y-10 pb-20 max-w-[800px] mx-auto animate-in zoom-in-95 duration-500 px-2 print:max-w-full print:p-0 print:m-0 print:block print:w-full">
           <div className="flex justify-between items-center px-4 print:hidden">
             <Button variant="ghost" onClick={() => setCurrentStep('checklist')} className="rounded-xl gap-3 h-12 font-bold uppercase text-[10px] tracking-widest text-slate-400 hover:text-slate-900">
               <ArrowLeft className="h-4 w-4" /> Edit Matrix
@@ -1099,17 +1102,17 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             <div className="space-y-8">
               <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Manual Compliance Matrix</h3>
               <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm">
-                <Table className="border-collapse">
+                <Table className="border-collapse w-full">
                   <TableHeader className="bg-slate-50">
                     <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
-                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-16">Balloon No.</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-20">Type of Dim</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-20">Instrument</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-20">Target (mm)</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-24">Limits</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-primary w-20">Actual</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 w-16">Verdict</TableHead>
-                      <TableHead className="text-[8px] font-bold uppercase text-left pl-4">Observations</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[10%]">Balloon No.</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[12%]">Type of Dim</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[12%]">Instrument</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-[#001F3D] w-[10%]">Target (mm)</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-[#001F3D] w-[12%]">Limits</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-primary w-[10%]">Actual</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-center border-r border-slate-200 text-[#001F3D] w-[10%]">Verdict</TableHead>
+                      <TableHead className="text-[8px] font-bold uppercase text-left pl-4 text-[#001F3D]">Observations</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

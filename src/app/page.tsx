@@ -266,7 +266,7 @@ function IndustrialERPInternal() {
   }
 
   return (
-    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block">
+    <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block print:bg-white">
       <div className="hidden lg:block print:hidden">
         <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
       </div>

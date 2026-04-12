@@ -263,7 +263,7 @@ export function ProfileSettings({
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full print:block">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm print:hidden">
           <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            <UserCircle className="h-3.5 w-3.5 mr-2" /> Admin Profile
+            <UserCircle className="h-3.5 w-3.5 mr-2" /> User Profile
           </TabsTrigger>
           {currentUser === 'Master Admin' && (
             <TabsTrigger value="access" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">

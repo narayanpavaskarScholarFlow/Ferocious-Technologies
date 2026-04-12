@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -141,9 +142,11 @@ function IndustrialERPInternal() {
   };
 
   const permissions = useMemo(() => {
-    // Superuser: Master Admin or Plant Controller role gets full clearance
-    if (currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller') {
-      const fullClearance: Record<string, PermissionLevel> = {
+    const isMasterAdmin = currentUser === 'Master Admin';
+    const isPlantController = currentUserData?.role === 'Plant Controller';
+
+    if (isMasterAdmin || isPlantController) {
+      const clearance: Record<string, PermissionLevel> = {
         overview: 'full',
         orders: 'full',
         sqcdp: 'full',
@@ -152,7 +155,6 @@ function IndustrialERPInternal() {
         manpower: 'full',
         'customer-orders': 'full',
         'weekly-plan': 'full',
-        users: 'full',
         vendor: 'full',
         'order-details': 'full',
         billing: 'full',
@@ -162,7 +164,6 @@ function IndustrialERPInternal() {
         settings: 'full',
         gantt: 'full',
         'smart-quote': 'full',
-        matrix: 'full',
         'quality-review': 'full',
         'quality-release': 'full',
         'quality-report-delete': 'full',
@@ -179,14 +180,32 @@ function IndustrialERPInternal() {
         'hr-planning': 'full',
         'holiday-matrix': 'full'
       };
-      return fullClearance;
+
+      // User Directory and Access Matrix are strictly reserved for Master Admin
+      if (isMasterAdmin) {
+        clearance.users = 'full';
+        clearance.matrix = 'full';
+      } else {
+        clearance.users = 'none';
+        clearance.matrix = 'none';
+      }
+
+      return clearance;
     }
     return currentUserData?.permissions || {};
   }, [currentUser, currentUserData]);
 
   // Access Control Helper
   const hasAccess = useCallback((view: string): boolean => {
-    if (currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller') return true;
+    // Master Admin has keys to every operational and administrative node
+    if (currentUser === 'Master Admin') return true;
+    
+    // Plant Controller role is restricted from identity management and access matrix
+    if (currentUserData?.role === 'Plant Controller') {
+      if (view === 'users' || view === 'matrix') return false;
+      return true;
+    }
+
     if (view === 'settings') return true;
     const level = permissions[view];
     return level && level !== 'none';
@@ -444,7 +463,7 @@ function IndustrialERPInternal() {
                     </div>
                     <div className="relative">
                       <Avatar className="h-11 w-11 border-2 border-white shadow-xl shadow-slate-200 transition-transform group-hover:scale-105">
-                        <AvatarImage src={`https://picsum.photos/seed/${currentUser}/100/100`} />
+                        <AvatarImage src={currentUserData?.image || `https://picsum.photos/seed/${currentUser}/100/100`} />
                         <AvatarFallback className="bg-primary text-white text-xs font-bold">SA</AvatarFallback>
                       </Avatar>
                       <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
@@ -612,7 +631,7 @@ function IndustrialERPInternal() {
                 <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto font-medium leading-relaxed">
                   Your identity node lacks clearance for this module. Contact the System Administrator to modify your Access Matrix credentials.
                 </p>
-                <Button onClick={() => setCurrentView('overview')} variant="outline" className="mt-8 rounded-xl font-bold uppercase text-[10px] tracking-widest border-slate-200">
+                <Button onClick={() => handleViewChange('overview')} variant="outline" className="mt-8 rounded-xl font-bold uppercase text-[10px] tracking-widest border-slate-200">
                   Return to Dashboard
                 </Button>
               </div>

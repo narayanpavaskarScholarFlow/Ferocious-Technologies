@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -52,7 +53,8 @@ import {
   Upload,
   Printer,
   QrCode,
-  Eye
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -263,12 +265,16 @@ export function ProfileSettings({
           <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
             <UserCircle className="h-3.5 w-3.5 mr-2" /> Admin Profile
           </TabsTrigger>
-          <TabsTrigger value="access" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            <Users className="h-3.5 w-3.5 mr-2" /> User Directory
-          </TabsTrigger>
-          <TabsTrigger value="matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
-          </TabsTrigger>
+          {currentUser === 'Master Admin' && (
+            <TabsTrigger value="access" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
+              <Users className="h-3.5 w-3.5 mr-2" /> User Directory
+            </TabsTrigger>
+          )}
+          {currentUser === 'Master Admin' && (
+            <TabsTrigger value="matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
+              <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="profile" className="m-0 space-y-8 print:m-0 print:space-y-0">
@@ -495,123 +501,127 @@ export function ProfileSettings({
           </div>
         </TabsContent>
 
-        <TabsContent value="access" className="m-0 print:hidden">
-          <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
-        </TabsContent>
+        {currentUser === 'Master Admin' && (
+          <TabsContent value="access" className="m-0 print:hidden">
+            <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="matrix" className="m-0 print:hidden">
-          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
-            <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div>
-                <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Hierarchical Security Assignment Ledger</p>
+        {currentUser === 'Master Admin' && (
+          <TabsContent value="matrix" className="m-0 print:hidden">
+            <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
+              <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Hierarchical Security Assignment Ledger</p>
+                </div>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Identity:</span>
+                  <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
+                    <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
+                      <SelectValue placeholder="Select User..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100">
+                      {users.map(u => (
+                        <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex items-center gap-4 w-full md:w-auto">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Identity:</span>
-                <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
-                  <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
-                    <SelectValue placeholder="Select User..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-100">
-                    {users.map(u => (
-                      <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="p-10">
-              {currentUserMatrix ? (
-                <div className="space-y-12">
-                  <div className="flex items-center justify-between px-4 py-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg overflow-hidden border border-white/10">
-                        {currentUserMatrix.image ? (
-                          <img src={currentUserMatrix.image} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'
-                        )}
+              
+              <div className="p-10">
+                {currentUserMatrix ? (
+                  <div className="space-y-12">
+                    <div className="flex items-center justify-between px-4 py-6 bg-slate-50/50 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg overflow-hidden border border-white/10">
+                          {currentUserMatrix.image ? (
+                            <img src={currentUserMatrix.image} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{currentUserMatrix.name}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{currentUserMatrix.role} • {currentUserMatrix.dept}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{currentUserMatrix.name}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{currentUserMatrix.role} • {currentUserMatrix.dept}</p>
-                      </div>
+                      <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px]">PROTOCOL_ACTIVE</Badge>
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px]">PROTOCOL_ACTIVE</Badge>
-                  </div>
 
-                  <div className="space-y-16">
-                    {Object.entries(groupedPermissions).map(([category, nodes]) => (
-                      <div key={category} className="space-y-8">
-                        <div className="flex items-center gap-4">
-                          <div className="h-px bg-slate-100 flex-1" />
-                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] px-4 whitespace-nowrap">{category}</h4>
-                          <div className="h-px bg-slate-100 flex-1" />
-                        </div>
+                    <div className="space-y-16">
+                      {Object.entries(groupedPermissions).map(([category, nodes]) => (
+                        <div key={category} className="space-y-8">
+                          <div className="flex items-center gap-4">
+                            <div className="h-px bg-slate-100 flex-1" />
+                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] px-4 whitespace-nowrap">{category}</h4>
+                            <div className="h-px bg-slate-100 flex-1" />
+                          </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                          {nodes.map(node => {
-                            const currentLevel = (currentUserMatrix.permissions && currentUserMatrix.permissions[node.id]) || 'none';
-                            const Icon = node.icon;
-                            
-                            return (
-                              <div key={node.id} className="group p-6 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-6 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/5">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-primary/5 transition-colors">
-                                      <Icon className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {nodes.map(node => {
+                              const currentLevel = (currentUserMatrix.permissions && currentUserMatrix.permissions[node.id]) || 'none';
+                              const Icon = node.icon;
+                              
+                              return (
+                                <div key={node.id} className="group p-6 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-6 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-primary/5 transition-colors">
+                                        <Icon className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
+                                      </div>
+                                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-tight">{node.label}</span>
                                     </div>
-                                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-tight">{node.label}</span>
+                                    <div className={cn(
+                                      "h-2 w-2 rounded-full",
+                                      currentLevel === 'full' ? "bg-accent animate-pulse" : 
+                                      currentLevel === 'edit' ? "bg-primary" : 
+                                      currentLevel === 'read' ? "bg-emerald-500" : "bg-slate-200"
+                                    )} />
                                   </div>
-                                  <div className={cn(
-                                    "h-2 w-2 rounded-full",
-                                    currentLevel === 'full' ? "bg-accent animate-pulse" : 
-                                    currentLevel === 'edit' ? "bg-primary" : 
-                                    currentLevel === 'read' ? "bg-emerald-500" : "bg-slate-200"
-                                  )} />
-                                </div>
 
-                                <Select 
-                                  value={currentLevel} 
-                                  onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, node.id, val as PermissionLevel)}
-                                >
-                                  <SelectTrigger className={cn(
-                                    "h-11 border-none text-[10px] font-bold uppercase rounded-xl transition-all shadow-inner",
-                                    currentLevel === 'full' ? "bg-accent/10 text-accent" :
-                                    currentLevel === 'edit' ? "bg-primary/10 text-primary" :
-                                    currentLevel === 'read' ? "bg-emerald-50 text-emerald-600" :
-                                    "bg-slate-50 text-slate-400"
-                                  )}>
-                                    <SelectValue placeholder="Access Level" />
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                                    <SelectItem value="none" className="text-[10px] font-bold uppercase">No Access</SelectItem>
-                                    <SelectItem value="read" className="text-[10px] font-bold uppercase">View Only</SelectItem>
-                                    <SelectItem value="edit" className="text-[10px] font-bold uppercase">Modify/Edit</SelectItem>
-                                    <SelectItem value="full" className="text-[10px] font-bold uppercase">Full command</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            );
-                          })}
+                                  <Select 
+                                    value={currentLevel} 
+                                    onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, node.id, val as PermissionLevel)}
+                                  >
+                                    <SelectTrigger className={cn(
+                                      "h-11 border-none text-[10px] font-bold uppercase rounded-xl transition-all shadow-inner",
+                                      currentLevel === 'full' ? "bg-accent/10 text-accent" :
+                                      currentLevel === 'edit' ? "bg-primary/10 text-primary" :
+                                      currentLevel === 'read' ? "bg-emerald-50 text-emerald-600" :
+                                      "bg-slate-50 text-slate-400"
+                                    )}>
+                                      <SelectValue placeholder="Access Level" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                      <SelectItem value="none" className="text-[10px] font-bold uppercase">No Access</SelectItem>
+                                      <SelectItem value="read" className="text-[10px] font-bold uppercase">View Only</SelectItem>
+                                      <SelectItem value="edit" className="text-[10px] font-bold uppercase">Modify/Edit</SelectItem>
+                                      <SelectItem value="full" className="text-[10px] font-bold uppercase">Full command</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-32 opacity-30 text-center">
-                  <div className="p-10 bg-slate-50 rounded-full mb-8">
-                    <Shield className="h-20 w-20 text-slate-300" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-32 opacity-30 text-center">
+                    <div className="p-10 bg-slate-50 rounded-full mb-8">
+                      <Shield className="h-20 w-20 text-slate-300" />
+                    </div>
+                    <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Synchronization Required</h4>
+                    <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
                   </div>
-                  <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Synchronization Required</h4>
-                  <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
-                </div>
-              )}
-            </div>
-          </Card>
-        </TabsContent>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -806,7 +806,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <div className="absolute inset-0 bg-[#001F3D]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                           <div className="bg-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2">
                             <Maximize2 className="h-3.5 w-3.5 text-primary" />
-                            <span className="text-[8px] font-bold uppercase tracking-widest text-slate-900">Click to Zoom</span>
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-slate-900">Click to Fit Screen</span>
                           </div>
                         </div>
                       </div>
@@ -1147,34 +1147,36 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         </DialogContent>
       </Dialog>
 
-      {/* Blueprint Zoom Viewer Dialog */}
+      {/* High-Fidelity Fullscreen Fit-to-Screen Viewer */}
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
-        <DialogContent className="max-w-[95vw] h-[90vh] bg-slate-900 border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
+        <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col transition-all duration-500">
           <div className="relative w-full h-full flex flex-col">
-            <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
+            <div className="p-4 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between shrink-0 z-50">
               <div className="flex items-center gap-4">
-                <div className="p-2 bg-primary/20 rounded-lg text-primary"><Maximize2 className="h-5 w-5" /></div>
+                <div className="p-2 bg-primary/20 rounded-lg text-primary shadow-lg shadow-primary/10"><Maximize2 className="h-5 w-5" /></div>
                 <div>
                   <h3 className="text-lg font-display font-bold text-white uppercase tracking-tight">Full-Scale Matrix Viewer</h3>
-                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Protocol: {manualComponentName}</p>
+                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Protocol Identification: {manualComponentName}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsZoomDialogOpen(false)} className="h-10 w-10 text-white/40 hover:text-white hover:bg-white/10 rounded-full">
-                <X className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={() => setIsZoomDialogOpen(false)} className="h-12 w-12 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                <X className="h-7 w-7" />
               </Button>
             </div>
-            <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto scrollbar-hide">
+            <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden group">
               {pendingDrawingFile && (
                 <img 
                   src={pendingDrawingFile} 
-                  alt="High-Resolution Blueprint" 
-                  className="max-w-none w-auto max-h-none h-auto object-contain shadow-2xl"
-                  style={{ minWidth: '100%', minHeight: '100%' }}
+                  alt="Fit-to-Screen Technical Blueprint" 
+                  className="max-w-full max-h-full object-contain shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-transform duration-700"
                 />
               )}
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/40 backdrop-blur-md rounded-full border border-white/10 text-white/60 text-[9px] font-bold uppercase tracking-[0.4em] opacity-0 group-hover:opacity-100 transition-opacity">
+                Matrix fit to screen protocol active
+              </div>
             </div>
-            <div className="p-4 bg-slate-900 border-t border-white/5 text-center shrink-0">
-              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.4em]">Proprietary Matrix Data • Bharat Axis Pvt Ltd</p>
+            <div className="p-4 bg-slate-900/80 backdrop-blur-md border-t border-white/10 text-center shrink-0">
+              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Proprietary Matrix Data • Bharat Axis Pvt Ltd • Plant Control v2.4</p>
             </div>
           </div>
         </DialogContent>

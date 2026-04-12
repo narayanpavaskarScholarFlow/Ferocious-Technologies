@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -108,7 +107,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Global Reports Listener for the Review Tab
+  // Global Reports Listener
   const allReportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const { data: allReportsData } = useCollection<QualityReport>(allReportsQuery);
   const allReports = allReportsData || [];
@@ -117,19 +116,16 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     return allReports.filter(r => r.status === 'Review Pending');
   }, [allReports]);
 
-  // Reports specifically for the selected Work Order
   const orderReports = useMemo(() => {
     if (!selectedOrder) return [];
     return allReports.filter(r => r.workOrderId === selectedOrder.id);
   }, [allReports, selectedOrder?.id]);
 
-  // Current active report being previewed
   const activePreviewReport = useMemo(() => {
     if (!activeReportId) return null;
     return allReports.find(r => r.id === activeReportId) || null;
   }, [allReports, activeReportId]);
 
-  // Derive current QC operation from live orders to ensure sub-tasks sync
   const currentQCOperation = useMemo(() => {
     if (!selectedOrder) return null;
     const order = orders.find(o => o.id === selectedOrder.id);
@@ -385,7 +381,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       toast({ variant: "destructive", title: "Identity Required", description: "Please enter a component name for manual entry." });
       return;
     }
-    // If no drawing was attached in registry or tab, prompt one last time
     if (!pendingDrawingFile) {
       setIsDrawingDialogOpen(true);
     } else {

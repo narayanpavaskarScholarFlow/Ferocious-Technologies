@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Label } from '@/components/ui/label';
 import { 
   ChevronLeft, 
   Calendar as CalendarIcon, 
@@ -73,8 +74,17 @@ export function MachineLoadPlan({ machines, orders, initialMachineId }: MachineL
     return machineSchedule.filter(item => {
       if (!item.startDate || !item.endDate) return false;
       const start = item.startDate;
-      const end = item.endDate;
-      return filterDate >= start && filterDate <= end;
+      const end = endOfMonth(new Date(item.endDate)); // Simplified check for visualization
+      const targetDate = new Date(filterDate);
+      
+      // Basic overlap check
+      const startD = new Date(item.startDate);
+      const endD = new Date(item.endDate);
+      targetDate.setHours(0,0,0,0);
+      startD.setHours(0,0,0,0);
+      endD.setHours(0,0,0,0);
+      
+      return targetDate >= startD && targetDate <= endD;
     });
   }, [machineSchedule, filterDate]);
 

@@ -544,6 +544,7 @@ function IndustrialERPInternal() {
             {currentView === 'machine-utilization' && hasAccess('machine-utilization') && (
               <MachineUtilization 
                 machines={machines}
+                orders={orders}
                 onSaveMachine={handleSaveMachine}
               />
             )}
@@ -618,6 +619,7 @@ function IndustrialERPInternal() {
                 orders={orders}
                 users={usersData}
                 vendors={vendors}
+                machines={machines}
               />
             )}
 

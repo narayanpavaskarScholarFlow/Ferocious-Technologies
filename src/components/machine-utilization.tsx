@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -22,7 +21,8 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  ChevronRight
+  ChevronRight,
+  CalendarDays
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,7 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Machine, MachineCategory } from '@/lib/types';
+import { Machine, MachineCategory, Order } from '@/lib/types';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 import { 
   Area, 
@@ -47,9 +47,11 @@ import {
   Tooltip as ChartTooltip,
   CartesianGrid
 } from 'recharts';
+import { MachineLoadPlan } from './machine-load-plan';
 
 interface MachineUtilizationProps {
   machines: Machine[];
+  orders: Order[];
   onSaveMachine: (machine: Machine) => void;
 }
 
@@ -63,11 +65,12 @@ const DAILY_UTILIZATION_DATA = [
   { day: 'Sun', value: 30 },
 ];
 
-export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizationProps) {
+export function MachineUtilization({ machines, orders, onSaveMachine }: MachineUtilizationProps) {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAddMachineOpen, setIsAddMachineOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
+  const [selectedMachineForLoad, setSelectedMachineForLoad] = useState<Machine | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -144,6 +147,16 @@ export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizati
     if (machines.length === 0) return 0;
     return (machines.reduce((acc, m) => acc + m.load, 0) / machines.length).toFixed(1);
   }, [machines]);
+
+  if (selectedMachineForLoad) {
+    return (
+      <MachineLoadPlan 
+        machine={selectedMachineForLoad} 
+        orders={orders} 
+        onBack={() => setSelectedMachineForLoad(null)} 
+      />
+    );
+  }
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
@@ -330,6 +343,13 @@ export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizati
                       />
                     </div>
                   </div>
+
+                  <Button 
+                    className="w-full bg-[#001F3D] hover:bg-black text-white rounded-xl h-11 font-bold text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-primary/10 mt-4"
+                    onClick={() => setSelectedMachineForLoad(machine)}
+                  >
+                    <CalendarDays className="h-4 w-4" /> View Load Schedule
+                  </Button>
                 </div>
               </Card>
             ))}
@@ -396,14 +416,24 @@ export function MachineUtilization({ machines, onSaveMachine }: MachineUtilizati
                         </div>
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
-                          onClick={() => handleOpenEdit(machine)}
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                            onClick={() => setSelectedMachineForLoad(machine)}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                            onClick={() => handleOpenEdit(machine)}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

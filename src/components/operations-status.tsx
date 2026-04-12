@@ -32,12 +32,13 @@ import {
   Clock,
   AlertTriangle,
   User,
-  Lock
+  Lock,
+  Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import React from 'react';
-import { Order, RoutingOperation, SubTask, SystemUser, Vendor } from '@/lib/types';
+import { Order, RoutingOperation, SubTask, SystemUser, Vendor, Machine } from '@/lib/types';
 import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { AnnualLeaveEntry } from './manpower-utilization';
@@ -68,6 +69,7 @@ interface OperationsStatusProps {
   orders?: Order[];
   users?: SystemUser[];
   vendors?: Vendor[];
+  machines?: Machine[];
 }
 
 export function OperationsStatus({ 
@@ -77,7 +79,8 @@ export function OperationsStatus({
   onStatusChange,
   orders = [],
   users = [],
-  vendors = []
+  vendors = [],
+  machines = []
 }: OperationsStatusProps) {
   const db = useFirestore();
   const { toast } = useToast();
@@ -668,7 +671,13 @@ export function OperationsStatus({
                                               <SelectValue placeholder="Resource Allocation" />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-xl">
-                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1 flex items-center gap-2">
+                                              <SelectItem value="machines" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1 flex items-center gap-2">
+                                                <Cpu className="h-3 w-3" /> Industrial Assets
+                                              </SelectItem>
+                                              {machines.map(m => (
+                                                <SelectItem key={m.id} value={m.id} className="text-[10px] font-medium">{m.name} ({m.mcNumber})</SelectItem>
+                                              ))}
+                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-blue-500/50 bg-blue-50 px-2 py-1 flex items-center gap-2">
                                                 <User className="h-3 w-3" /> Internal (Resources)
                                               </SelectItem>
                                               {users.map(u => (

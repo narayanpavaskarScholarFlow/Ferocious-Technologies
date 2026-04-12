@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -274,17 +273,10 @@ export function OperationsStatus({
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= newRouting.length) return;
     
-    // Swap protocol
     [newRouting[idx], newRouting[targetIdx]] = [newRouting[targetIdx], newRouting[idx]];
     
-    // Propagate timeline from the earliest changed index
     const final = propagateSequentialDates(newRouting, Math.min(idx, targetIdx));
     saveRouting(final);
-    
-    toast({
-      title: "Sequence Protocol Re-aligned",
-      description: `Operation "${newRouting[targetIdx].name}" shifted ${direction}. Timeline synchronized.`
-    });
   };
 
   const handleAddOperation = () => {
@@ -293,11 +285,7 @@ export function OperationsStatus({
       const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
       
       if (orderMaxDate && startFrom >= orderMaxDate) {
-        toast({
-          variant: "destructive",
-          title: "Timeline Violation",
-          description: "Cannot append operations beyond the master order end date."
-        });
+        toast({ variant: "destructive", title: "Limit Reached", description: "Timeline exceeded." });
         return;
       }
 
@@ -322,11 +310,7 @@ export function OperationsStatus({
     const startFrom = lastSub ? lastSub.endDate || op.startDate : op.startDate;
 
     if (startFrom >= op.endDate) {
-      toast({
-        variant: "destructive",
-        title: "Boundary Rejection",
-        description: "Operation end date reached. Cannot add sequential sub-tasks."
-      });
+      toast({ variant: "destructive", title: "Boundary Error", description: "End date reached." });
       return;
     }
 
@@ -417,441 +401,191 @@ export function OperationsStatus({
   };
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-2xl hidden sm:block">
-             <FileSpreadsheet className="h-7 w-7 text-primary" />
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+             <FileSpreadsheet className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-display font-bold uppercase tracking-tight text-slate-900">Operational Spreadsheet</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Sequential Progress Protocols Active</p>
+            <h2 className="text-lg font-headline font-bold uppercase text-slate-900">Spreadsheet</h2>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="rounded-full border-slate-200 h-11 px-6 font-bold text-[10px] uppercase tracking-wider hover:bg-slate-50"
-            onClick={onNavigateToVendor}
+        <div className="flex items-center gap-3">
+          <Select 
+            value={selectedWorkOrder || undefined} 
+            onValueChange={handleSelectChange}
           >
-            Manage Vendors <ExternalLink className="ml-2 h-3.5 w-3.5" />
+            <SelectTrigger className="w-[180px] h-9 bg-white text-xs font-bold border-slate-200 rounded-lg">
+              <SelectValue placeholder="Select WO..." />
+            </SelectTrigger>
+            <SelectContent>
+              {orders.map(order => (
+                <SelectItem key={order.id} value={order.id} className="text-xs">{order.id} - {order.customer}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={onNavigateToVendor} className="h-9 px-4 text-[10px] uppercase font-bold rounded-lg border-slate-200">
+            Vendors <ExternalLink className="ml-2 h-3 w-3" />
           </Button>
-          <div className="h-8 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden xs:block">Active Order:</span>
-            <Select 
-              value={selectedWorkOrder || undefined} 
-              onValueChange={handleSelectChange}
-            >
-              <SelectTrigger className="flex-1 sm:w-[200px] h-11 bg-white text-sm font-bold border-slate-200 rounded-full shadow-sm">
-                <SelectValue placeholder="Select ID..." />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl">
-                {orders && orders.length > 0 ? orders.map(order => (
-                  <SelectItem key={order.id} value={order.id}>{order.id} - {order.customer}</SelectItem>
-                )) : (
-                  <SelectItem value="none" disabled>No Orders Found</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <Card className="lg:col-span-12 overflow-hidden border-slate-200 bg-white shadow-xl rounded-[1.5rem] md:rounded-[2rem]">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/50 border-b border-slate-100">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Seq. Reorder</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[200px]">Operation / Task Row</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">Start Date</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center min-w-[120px]">End Date</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-center w-[200px]">Status</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right px-8 w-20">
-                    <Settings2 className="h-3.5 w-3.5 ml-auto" />
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedWorkOrder ? (
-                  <>
-                    {operations.map((op, idx) => {
-                      const currentStatus = op.status || "Yet to start";
-                      const isExpanded = !!expandedOps[idx];
-                      const isNA = currentStatus === 'NA';
-                      const startIsHoliday = isHoliday(op.startDate);
-                      const hasSubs = op.subTasks && op.subTasks.length > 0;
-                      const completedSubs = hasSubs ? op.subTasks.filter(s => s.status === 'Completed').length : 0;
-                      const allSubsCompleted = hasSubs ? completedSubs === op.subTasks.length : true;
-                      const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
-                      
-                      const isQCLocked = op.name === 'QC';
-
-                      return (
-                        <React.Fragment key={op.id}>
-                          <TableRow className={cn(
-                            "h-20 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group",
-                            isNA && "opacity-50 grayscale bg-slate-50/50"
-                          )}>
-                            <TableCell className="px-8 font-code text-xs text-slate-300 font-bold">
-                              <div className="flex items-center gap-3">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-6 w-6 text-slate-300 hover:text-primary hover:bg-primary/5 -ml-4"
-                                  onClick={() => setExpandedOps(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                                >
-                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </Button>
-                                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-slate-400 hover:text-primary" onClick={() => moveOperation(idx, 'up')} disabled={idx === 0}>
-                                    <ArrowUp className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-slate-400 hover:text-primary" onClick={() => moveOperation(idx, 'down')} disabled={idx === operations.length - 1}>
-                                    <ArrowDown className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                {(idx + 1).toString().padStart(2, '0')}
+      <Card className="overflow-hidden border-slate-200 bg-white rounded-xl shadow-sm">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-bold text-[9px] uppercase text-slate-400 py-3 px-4 w-20">Seq.</TableHead>
+                <TableHead className="font-bold text-[9px] uppercase text-slate-400">Operation</TableHead>
+                <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center w-28">Start</TableHead>
+                <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center w-28">End</TableHead>
+                <TableHead className="font-bold text-[9px] uppercase text-center w-32">Status</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {selectedWorkOrder ? (
+                <>
+                  {operations.map((op, idx) => {
+                    const currentStatus = op.status || "Yet to start";
+                    const isExpanded = !!expandedOps[idx];
+                    const isNA = currentStatus === 'NA';
+                    const hasSubs = op.subTasks && op.subTasks.length > 0;
+                    
+                    return (
+                      <React.Fragment key={op.id}>
+                        <TableRow className={cn(
+                          "h-12 border-b border-slate-50 hover:bg-slate-50/30 group",
+                          isNA && "opacity-50 grayscale"
+                        )}>
+                          <TableCell className="px-4">
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => setExpandedOps(prev => ({ ...prev, [idx]: !prev[idx] }))}>
+                                {isExpanded ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />}
+                              </button>
+                              <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => moveOperation(idx, 'up')} disabled={idx === 0}><ArrowUp className="h-2 w-2" /></button>
+                                <button onClick={() => moveOperation(idx, 'down')} disabled={idx === operations.length - 1}><ArrowDown className="h-2 w-2" /></button>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                  <Select 
-                                    disabled={isQCLocked}
-                                    value={op.name} 
-                                    onValueChange={(newName) => {
-                                      const updated = operations.map(o => o.id === op.id ? { ...o, name: newName } : o);
-                                      saveRouting(updated);
-                                    }}
-                                  >
-                                    <SelectTrigger className={cn(
-                                      "h-8 border-none bg-transparent hover:bg-slate-100 text-sm font-bold uppercase tracking-tight p-0 focus:ring-0 w-fit gap-2",
-                                      isNA ? "text-slate-400 line-through" : "text-slate-700"
-                                    )}>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl">
-                                      {INITIAL_STEPS.map(step => (
-                                        <SelectItem key={step} value={step} className="text-xs font-bold uppercase">{step}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {startIsHoliday && <Badge variant="outline" className="text-[8px] border-amber-200 text-amber-600 bg-amber-50 h-4">Holiday Shifted</Badge>}
-                                  {isQCLocked && <Lock className="h-3 w-3 text-slate-300" />}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <div className="h-1 w-16 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary" style={{ width: `${opProgress}%` }} />
-                                  </div>
-                                  <span className="text-[8px] font-bold text-slate-400 uppercase">{opProgress}% complete</span>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <DatePicker 
-                                value={op.startDate}
-                                onChange={(val) => handleStartDateChange(op.id, idx, val)}
-                                className={cn(
-                                  "h-9 border-none bg-transparent text-center text-xs font-code",
-                                  startIsHoliday && "text-amber-600 font-bold"
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <DatePicker 
-                                disabled={isNA}
-                                value={op.endDate}
-                                onChange={(val) => handleEndDateChange(op.id, idx, val)}
-                                className={cn(
-                                  "h-9 border-none bg-transparent text-center text-xs font-code",
-                                  isNA && "opacity-50"
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button 
-                                      disabled={(hasSubs && !allSubsCompleted) || isQCLocked}
-                                      className={cn(
-                                        "outline-none focus:ring-4 focus:ring-primary/10 rounded-full transition-all w-full max-w-[160px] relative group/trigger",
-                                        ((hasSubs && !allSubsCompleted) || isQCLocked) && "opacity-60 cursor-not-allowed"
-                                      )}
-                                    >
-                                      <Badge 
-                                        variant="outline"
-                                        className={cn(
-                                          "text-[9px] font-bold uppercase py-2 px-4 w-full justify-center rounded-full border transition-all shadow-sm",
-                                          (!hasSubs || allSubsCompleted) && !isQCLocked ? "hover:scale-105" : "",
-                                          getStatusStyles(currentStatus)
-                                        )}
-                                      >
-                                        {((hasSubs && !allSubsCompleted) || isQCLocked) && <Lock className="h-2.5 w-2.5 mr-2 opacity-50" />}
-                                        {currentStatus}
-                                      </Badge>
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  {(!hasSubs || allSubsCompleted) && !isQCLocked && (
-                                    <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100">
-                                      {STATUS_OPTIONS.map((opt) => (
-                                        <DropdownMenuItem 
-                                          key={opt.label}
-                                          onClick={() => handleLocalStatusChange(op.id, opt.label)}
-                                          className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50"
-                                        >
-                                          <div className={cn("h-2 w-2 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
-                                          <span className="text-xs font-bold uppercase tracking-wider">{opt.label}</span>
-                                        </DropdownMenuItem>
-                                      ))}
-                                      
-                                      <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger className="flex items-center gap-3 cursor-pointer rounded-xl h-10 px-3 hover:bg-slate-50">
-                                          <Truck className="h-4 w-4 text-purple-600" />
-                                          <span className="text-xs font-bold uppercase tracking-wider">Vendor</span>
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuPortal>
-                                          <DropdownMenuSubContent className="w-56 p-2 rounded-2xl border-slate-100 shadow-2xl">
-                                            {vendors.map((vendor) => (
-                                              <DropdownMenuItem 
-                                                key={vendor.id}
-                                                onClick={() => handleLocalStatusChange(op.id, 'Vendor', vendor.name)}
-                                                className="cursor-pointer text-[10px] font-bold uppercase h-10 rounded-xl px-3"
-                                              >
-                                                {vendor.name}
-                                              </DropdownMenuItem>
-                                            ))}
-                                          </DropdownMenuSubContent>
-                                        </DropdownMenuPortal>
-                                      </DropdownMenuSub>
-                                    </DropdownMenuContent>
-                                  )}
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right px-8">
-                               <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-slate-200 hover:text-red-500 rounded-full"
-                                onClick={() => saveRouting(operations.filter(o => o.id !== op.id))}
-                               >
-                                 <Trash2 className="h-3.5 w-3.5" />
-                               </Button>
-                            </TableCell>
-                          </TableRow>
-                          
-                          {isExpanded && !isNA && (
-                            <TableRow className="bg-slate-50/40 border-b border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                              <TableCell colSpan={6} className="pl-8 sm:pl-24 py-8 pr-4 sm:pr-12">
-                                <div className="space-y-6">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                      <CircleDot className="h-3 w-3 text-primary" /> Sequential Sub-Tasks for {op.name}
-                                    </div>
-                                    <Badge variant="outline" className="text-[8px] bg-white text-slate-400">Locked within {op.startDate} to {op.endDate}</Badge>
-                                  </div>
-                                  
-                                  <div className="space-y-4">
-                                    {op.subTasks.map((task, sIdx) => (
-                                      <div key={task.id} className="flex flex-col lg:grid lg:grid-cols-12 gap-4 items-stretch lg:items-end bg-white p-5 rounded-2xl border border-slate-100 shadow-sm group/task relative">
-                                        <div className="lg:col-span-3 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Sub-Task Identity</Label>
-                                          <Input 
-                                            defaultValue={task.name}
-                                            onBlur={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
-                                            className={cn(
-                                              "h-9 bg-slate-50/50 border-none rounded-lg text-xs font-bold",
-                                              task.status === 'Completed' && "text-slate-400 line-through"
-                                            )} 
-                                          />
-                                        </div>
-                                        <div className="grid grid-cols-2 lg:col-span-3 gap-4">
-                                          <div className="space-y-2">
-                                            <Label className="text-[9px] font-bold uppercase text-slate-500">Start</Label>
-                                            <DatePicker 
-                                              value={task.startDate}
-                                              onChange={(val) => handleUpdateSubTask(idx, sIdx, { startDate: val })}
-                                              className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]"
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label className="text-[9px] font-bold uppercase text-slate-500">End</Label>
-                                            <DatePicker 
-                                              disabled
-                                              value={task.endDate}
-                                              onChange={() => {}}
-                                              className="h-9 bg-slate-100 border-none rounded-lg text-[10px] opacity-60"
-                                            />
-                                          </div>
-                                        </div>
-                                        <div className="lg:col-span-3 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Resource Node</Label>
-                                          <Select 
-                                            value={task.machineId} 
-                                            onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}
-                                          >
-                                            <SelectTrigger className="h-9 bg-slate-50/50 border-none rounded-lg text-[10px]">
-                                              <SelectValue placeholder="Resource Allocation" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                              <SelectItem value="machines" disabled className="text-[9px] font-bold uppercase text-primary/50 bg-primary/5 px-2 py-1 flex items-center gap-2">
-                                                <Cpu className="h-3 w-3" /> Industrial Assets
-                                              </SelectItem>
-                                              {machines.map(m => (
-                                                <SelectItem key={m.id} value={m.id} className="text-[10px] font-medium">{m.name} ({m.mcNumber})</SelectItem>
-                                              ))}
-                                              <SelectItem value="internal" disabled className="text-[9px] font-bold uppercase text-blue-500/50 bg-blue-50 px-2 py-1 flex items-center gap-2">
-                                                <User className="h-3 w-3" /> Internal (Resources)
-                                              </SelectItem>
-                                              {users.map(u => (
-                                                <SelectItem key={u.id} value={u.id} className="text-[10px] font-medium">{u.name} ({u.role})</SelectItem>
-                                              ))}
-                                              <SelectItem value="external" disabled className="text-[9px] font-bold uppercase text-purple-500/50 bg-purple-50 px-2 py-1 flex items-center gap-2">
-                                                <Truck className="h-3 w-3" /> External (Partners)
-                                              </SelectItem>
-                                              {vendors.map(v => (
-                                                <SelectItem key={v.id} value={v.id} className="text-[10px] font-medium">{v.name}</SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                        <div className="lg:col-span-2 space-y-2">
-                                          <Label className="text-[9px] font-bold uppercase text-slate-400">Status</Label>
-                                          <Select 
-                                            value={task.status || 'Yet to start'} 
-                                            onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { status: val })}
-                                          >
-                                            <SelectTrigger className={cn(
-                                              "h-9 border-none rounded-lg text-[10px] font-bold uppercase",
-                                              getStatusStyles(task.status || 'Yet to start')
-                                            )}>
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                                              {STATUS_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.label} value={opt.label} className="text-[10px] font-bold uppercase">
-                                                  <div className="flex items-center gap-2">
-                                                    <div className={cn("h-1.5 w-1.5 rounded-full", opt.color.split(' ')[0].replace('text-', 'bg-'))} />
-                                                    {opt.label}
-                                                  </div>
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                        <div className="lg:col-span-1 flex justify-end">
-                                          <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-9 w-9 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-full"
-                                            onClick={() => handleRemoveSubTask(idx, sIdx)}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  <div className="flex flex-col sm:flex-row gap-3 max-w-md pt-4">
-                                    <div className="relative flex-1">
-                                      <Input 
-                                        placeholder="Add sequential sub-item..." 
-                                        className="h-11 bg-white border-slate-200 rounded-xl pl-10 text-[10px] font-bold uppercase tracking-widest focus-visible:ring-primary/20"
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            handleAddSubTask(idx, e.currentTarget.value);
-                                            e.currentTarget.value = '';
-                                          }
-                                        }}
-                                      />
-                                      <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                    </div>
-                                    <Button 
-                                      size="sm"
-                                      className="h-11 rounded-xl bg-slate-900 hover:bg-black text-white px-6 font-bold text-[10px] uppercase"
-                                      onClick={(e) => {
-                                        const input = e.currentTarget.previousElementSibling?.querySelector('input') as HTMLInputElement;
-                                        if (input) {
-                                          handleAddSubTask(idx, input.value);
-                                          input.value = '';
-                                        }
-                                      }}
-                                    >
-                                      Add Item
-                                    </Button>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                    <TableRow className="bg-slate-50/30">
-                      <TableCell colSpan={6} className="p-6">
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <div className="relative flex-1">
-                            <Select value={newOpName} onValueChange={setNewOpName}>
-                              <SelectTrigger className="h-12 bg-white border-slate-200 rounded-2xl pl-10 text-xs font-bold uppercase tracking-widest focus:ring-primary/20">
-                                <Plus className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                <SelectValue placeholder="Select routing operation..." />
+                              <span className="text-[10px] font-bold text-slate-300">{(idx + 1).toString().padStart(2, '0')}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select 
+                              disabled={op.name === 'QC'}
+                              value={op.name} 
+                              onValueChange={(newName) => {
+                                const updated = operations.map(o => o.id === op.id ? { ...o, name: newName } : o);
+                                saveRouting(updated);
+                              }}
+                            >
+                              <SelectTrigger className="h-7 border-none bg-transparent p-0 text-[11px] font-bold uppercase tracking-tight focus:ring-0">
+                                <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="rounded-2xl border-slate-100">
+                              <SelectContent>
                                 {INITIAL_STEPS.map(step => (
-                                  <SelectItem key={step} value={step} className="text-xs font-bold uppercase">{step}</SelectItem>
+                                  <SelectItem key={step} value={step} className="text-[10px] font-bold uppercase">{step}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
-                          </div>
-                          <Button 
-                            onClick={handleAddOperation}
-                            className="h-12 px-8 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-[10px] uppercase tracking-[0.2em]"
-                          >
-                            Append Row
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </>
-                ) : (
+                          </TableCell>
+                          <TableCell className="p-0">
+                            <DatePicker 
+                              value={op.startDate}
+                              onChange={(val) => handleStartDateChange(op.id, idx, val)}
+                              className="h-8 border-none bg-transparent text-center text-[10px]"
+                            />
+                          </TableCell>
+                          <TableCell className="p-0">
+                            <DatePicker 
+                              disabled={isNA}
+                              value={op.endDate}
+                              onChange={(val) => handleEndDateChange(op.id, idx, val)}
+                              className="h-8 border-none bg-transparent text-center text-[10px]"
+                            />
+                          </TableCell>
+                          <TableCell className="px-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Badge variant="outline" className={cn("text-[8px] font-bold uppercase py-1 w-full justify-center rounded-md cursor-pointer", getStatusStyles(currentStatus))}>
+                                  {currentStatus}
+                                </Badge>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="w-48 text-[10px] font-bold uppercase">
+                                {STATUS_OPTIONS.map(opt => (
+                                  <DropdownMenuItem key={opt.label} onClick={() => handleLocalStatusChange(op.id, opt.label)}>{opt.label}</DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                          <TableCell className="px-4">
+                             <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-200 hover:text-red-500" onClick={() => saveRouting(operations.filter(o => o.id !== op.id))}>
+                               <Trash2 className="h-3 w-3" />
+                             </Button>
+                          </TableCell>
+                        </TableRow>
+                        
+                        {isExpanded && !isNA && (
+                          <TableRow className="bg-slate-50/20">
+                            <TableCell colSpan={6} className="pl-12 py-4">
+                              <div className="space-y-3">
+                                {op.subTasks.map((task, sIdx) => (
+                                  <div key={task.id} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100">
+                                    <Input 
+                                      defaultValue={task.name}
+                                      onBlur={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
+                                      className="h-7 bg-slate-50 border-none text-[10px] font-bold flex-1" 
+                                    />
+                                    <DatePicker value={task.startDate} onChange={(val) => handleUpdateSubTask(idx, sIdx, { startDate: val })} className="h-7 w-28 text-[9px]" />
+                                    <Select value={task.machineId} onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}>
+                                      <SelectTrigger className="h-7 w-32 text-[9px] bg-slate-50 border-none"><SelectValue placeholder="Resource" /></SelectTrigger>
+                                      <SelectContent>
+                                        {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-[9px]">{m.name}</SelectItem>)}
+                                        {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[9px]">{u.name}</SelectItem>)}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300" onClick={() => handleRemoveSubTask(idx, sIdx)}><Trash2 className="h-3 w-3" /></Button>
+                                  </div>
+                                ))}
+                                <div className="flex gap-2">
+                                  <Input 
+                                    placeholder="Add sub-task..." 
+                                    className="h-8 text-[10px]"
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { handleAddSubTask(idx, e.currentTarget.value); e.currentTarget.value = ''; } }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                   <TableRow>
-                    <TableCell colSpan={6} className="h-80 p-0">
-                      <div className="flex flex-col items-center justify-center text-center opacity-40 px-4">
-                        <div className="bg-slate-50 p-8 rounded-full mb-6">
-                          <Layers className="h-12 w-12 text-slate-300" />
-                        </div>
-                        <h3 className="text-lg md:text-xl font-display font-bold text-slate-900 tracking-tight">Select Order to Open Spreadsheet</h3>
-                        <p className="text-sm text-slate-500 max-w-xs mt-2 font-medium">
-                          Search or select an active Work Order from the selector to load its operational routing ledger.
-                        </p>
+                    <TableCell colSpan={6} className="p-4 bg-slate-50/30">
+                      <div className="flex gap-2">
+                        <Select value={newOpName} onValueChange={setNewOpName}>
+                          <SelectTrigger className="h-9 bg-white text-[10px] font-bold uppercase"><SelectValue placeholder="New Operation..." /></SelectTrigger>
+                          <SelectContent>
+                            {INITIAL_STEPS.map(step => <SelectItem key={step} value={step}>{step}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={handleAddOperation} className="h-9 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase">Add</Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </div>
-
-      {holidays && holidays.length > 0 && (
-        <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex items-start gap-4">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Active Planning Buffer</p>
-            <p className="text-[11px] text-amber-700 font-medium leading-snug">
-              The scheduling engine is currently bypassing <b>{holidays.length} plant holidays</b>. Any operation falling on these dates is automatically shifted to the next available working day.
-            </p>
-          </div>
+                </>
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs italic">Select an order to view spreadsheet</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
+      </Card>
     </div>
   );
 }

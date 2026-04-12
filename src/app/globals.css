@@ -23,7 +23,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 243 75% 59%;
-    --radius: 1.5rem;
+    --radius: 1rem;
   }
 
   .dark {
@@ -60,15 +60,15 @@
 }
 
 .premium-card {
-  @apply bg-white border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] rounded-[2.5rem] overflow-hidden transition-all duration-500;
+  @apply bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-hidden transition-all duration-300;
 }
 
 .premium-card:hover {
-  @apply shadow-[0_48px_80px_-12px_rgba(0,0,0,0.12)] translate-y-[-4px];
+  @apply shadow-[0_20px_50px_rgba(0,0,0,0.08)] translate-y-[-2px];
 }
 
 .glass-panel {
-  @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl;
+  @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-lg;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -91,7 +91,7 @@
 @media print {
   @page {
     size: A4;
-    margin: 1.5cm;
+    margin: 1cm;
   }
   body {
     background: white !important;

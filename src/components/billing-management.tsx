@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +33,10 @@ import {
   ChevronRight,
   Calculator,
   Download,
-  Box
+  Box,
+  Filter,
+  X,
+  FileBarChart
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -85,6 +88,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
+  // Advanced Filtering State
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterCustomer, setFilterCustomer] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<string>('');
+
   // Advanced Billing State
   const [lineItems, setLineItems] = useState<BillingLineItem[]>([]);
   const [formData, setFormData] = useState({
@@ -96,19 +104,34 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     itemName: '',
     orderId: '',
     receiverName: '',
-    paymentStatus: 'pending',
+    paymentStatus: 'Pending',
     paymentMethod: 'Bank Transfer' as 'Cash' | 'Bank Transfer',
     transactionDetails: ''
   });
 
   const filteredRecords = useMemo(() => {
-    return records.filter(r => 
-      r.type === activeCategory && (
-        r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        r.number.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [records, activeCategory, searchTerm]);
+    return records.filter(r => {
+      const matchesType = r.type === activeCategory;
+      const matchesSearch = r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           r.number.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || r.status === filterStatus;
+      const matchesCustomer = filterCustomer === 'all' || r.customerId === filterCustomer;
+      const matchesDate = !filterDate || r.date === filterDate;
+
+      return matchesType && matchesSearch && matchesStatus && matchesCustomer && matchesDate;
+    });
+  }, [records, activeCategory, searchTerm, filterStatus, filterCustomer, filterDate]);
+
+  const handlePrintLedger = useCallback(() => {
+    window.print();
+  }, []);
+
+  const resetFilters = () => {
+    setFilterStatus('all');
+    setFilterCustomer('all');
+    setFilterDate('');
+    setSearchTerm('');
+  };
 
   // Quotation Specific Metrics
   const quoteMetrics = useMemo(() => {
@@ -128,9 +151,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     lineItems.forEach(item => {
       const lineBase = item.qty * item.price;
-      const lineDiscount = (lineBase * item.discount) / 100;
+      const lineDiscount = (lineBase * (item.discount || 0)) / 100;
       const taxableAmount = lineBase - lineDiscount;
-      const lineTax = (taxableAmount * item.gstRate) / 100;
+      const lineTax = (taxableAmount * (item.gstRate || 0)) / 100;
 
       subTotal += lineBase;
       discountTotal += lineDiscount;
@@ -163,7 +186,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       itemName: '',
       orderId: '',
       receiverName: '',
-      paymentStatus: 'pending',
+      paymentStatus: 'Pending',
       paymentMethod: 'Bank Transfer',
       transactionDetails: ''
     });
@@ -182,7 +205,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       itemName: record.itemName || '',
       orderId: record.orderId || '',
       receiverName: record.receiverName || '',
-      paymentStatus: record.status.toLowerCase() === 'paid' ? 'paid' : 'pending',
+      paymentStatus: record.status || 'Pending',
       paymentMethod: record.paymentMethod || 'Bank Transfer',
       transactionDetails: record.transactionDetails || ''
     });
@@ -262,7 +285,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       date: formData.date,
       number: formData.number,
       amount: finalAmount,
-      status: formData.paymentStatus === 'paid' ? 'Paid' : 'Pending',
+      status: formData.paymentStatus,
       note: formData.note,
       itemName: formData.itemName,
       orderId: formData.orderId,
@@ -286,8 +309,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+    <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
             <CreditCard className="h-4 w-4" />
@@ -299,6 +322,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           <p className="text-muted-foreground font-medium">Commercial lifecycle management from Quote to Final Settlement.</p>
         </div>
         <div className="flex items-center gap-3">
+           <Button variant="outline" className="rounded-xl border-slate-200 gap-2 h-11 px-6 font-bold text-[10px] uppercase tracking-widest shadow-sm" onClick={handlePrintLedger}>
+             <Printer className="h-4 w-4" /> Print Ledger Matrix
+           </Button>
            {selectedRecords.length > 0 && (
              <Button variant="destructive" className="rounded-xl gap-2 h-11 px-6 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-red-500/20" onClick={handleBulkDelete}>
                <Trash2 className="h-4 w-4" /> Delete Selected ({selectedRecords.length})
@@ -310,8 +336,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
       </header>
 
-      <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }}>
-        <TabsList className="bg-slate-100 p-1.5 rounded-2xl mb-8 h-14 inline-flex border border-slate-200/60 shadow-sm gap-2">
+      <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
+        <TabsList className="bg-slate-100 p-1.5 rounded-2xl mb-8 h-14 inline-flex border border-slate-200/60 shadow-sm gap-2 print:hidden">
           {['quotation', 'invoice', 'proforma', 'inward', 'outward'].map((cat) => (
             <TabsTrigger key={cat} value={cat} className="rounded-xl px-6 h-11 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
               {cat}
@@ -319,107 +345,164 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           ))}
         </TabsList>
 
-        {activeCategory === 'quotation' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-in slide-in-from-top-2 duration-500">
-            <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-primary/30 transition-all">
-              <div className="h-14 w-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                <DollarSign className="h-7 w-7" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Quoted Value</p>
-                <p className="text-2xl font-display font-bold text-[#001F3D]">₹ {quoteMetrics.totalValue.toLocaleString('en-IN')}</p>
-              </div>
-            </Card>
-            <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-amber-500/30 transition-all">
-              <div className="h-14 w-14 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-                <Clock className="h-7 w-7" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Protocols</p>
-                <p className="text-2xl font-display font-bold text-[#001F3D]">{quoteMetrics.pendingCount}</p>
-              </div>
-            </Card>
-            <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-emerald-500/30 transition-all">
-              <div className="h-14 w-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                <FileText className="h-7 w-7" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Master Records</p>
-                <p className="text-2xl font-display font-bold text-[#001F3D]">{quoteMetrics.totalCount}</p>
-              </div>
-            </Card>
+        <div className="print:block">
+          {/* Printing header for the Ledger */}
+          <div className="hidden print:block mb-10 border-b-2 border-[#001F3D] pb-6">
+            <h1 className="text-2xl font-display font-bold">BHARAT AXIS - {activeCategory.toUpperCase()} LEDGER</h1>
+            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Generated: {new Date().toLocaleDateString()}</p>
           </div>
-        )}
 
-        <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-2xl">
-          <div className="p-8 border-b border-slate-100 flex items-center bg-slate-50/50">
-            <div className="relative w-96">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="Search records..." className="pl-10 h-11 bg-white border-slate-200 text-xs font-bold" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          {activeCategory === 'quotation' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-in slide-in-from-top-2 duration-500 print:hidden">
+              <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-primary/30 transition-all">
+                <div className="h-14 w-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <DollarSign className="h-7 w-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Quoted Value</p>
+                  <p className="text-2xl font-display font-bold text-[#001F3D]">₹ {quoteMetrics.totalValue.toLocaleString('en-IN')}</p>
+                </div>
+              </Card>
+              <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-amber-500/30 transition-all">
+                <div className="h-14 w-14 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                  <Clock className="h-7 w-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Protocols</p>
+                  <p className="text-2xl font-display font-bold text-[#001F3D]">{quoteMetrics.pendingCount}</p>
+                </div>
+              </Card>
+              <Card className="p-8 bg-white border-slate-200/60 shadow-lg rounded-2xl flex items-center gap-6 group hover:border-emerald-500/30 transition-all">
+                <div className="h-14 w-14 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                  <FileText className="h-7 w-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Master Records</p>
+                  <p className="text-2xl font-display font-bold text-[#001F3D]">{quoteMetrics.totalCount}</p>
+                </div>
+              </Card>
             </div>
-          </div>
-          <Table>
-            <TableHeader className="bg-white">
-              <TableRow className="hover:bg-transparent border-slate-100">
-                <TableHead className="w-12 py-6 px-6">
-                  <Checkbox 
-                    checked={selectedRecords.length === filteredRecords.length && filteredRecords.length > 0} 
-                    onCheckedChange={toggleSelectAll} 
+          )}
+
+          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem] print:shadow-none print:border-none">
+            <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row items-center gap-6 bg-slate-50/50 print:hidden">
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input placeholder="Search records..." className="pl-10 h-11 bg-white border-slate-200 text-xs font-bold" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Date:</span>
+                  <Input 
+                    type="date" 
+                    className="h-10 bg-white border-slate-200 text-[10px] w-32 rounded-lg" 
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
                   />
-                </TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6">Identity / Ref</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Entity Name</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
-                <TableHead className="w-32"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRecords.map((record) => (
-                <TableRow key={record.id} className="h-20 border-slate-50 hover:bg-slate-50/50 group">
-                  <TableCell className="px-6">
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Identity:</span>
+                  <Select value={filterCustomer} onValueChange={setFilterCustomer}>
+                    <SelectTrigger className="h-10 w-40 bg-white text-[10px] font-bold uppercase border-slate-200 rounded-lg">
+                      <SelectValue placeholder="All Accounts" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100">
+                      <SelectItem value="all" className="text-[10px] font-bold uppercase">All Accounts</SelectItem>
+                      {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase">{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">State:</span>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="h-10 w-36 bg-white text-[10px] font-bold uppercase border-slate-200 rounded-lg">
+                      <SelectValue placeholder="All States" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100">
+                      <SelectItem value="all" className="text-[10px] font-bold uppercase">All States</SelectItem>
+                      <SelectItem value="Pending" className="text-[10px] font-bold uppercase">Pending</SelectItem>
+                      <SelectItem value="Completed" className="text-[10px] font-bold uppercase">Completed</SelectItem>
+                      <SelectItem value="Yet to start" className="text-[10px] font-bold uppercase">Yet to start</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(filterStatus !== 'all' || filterCustomer !== 'all' || filterDate || searchTerm) && (
+                  <Button variant="ghost" size="sm" onClick={resetFilters} className="text-[9px] font-bold uppercase gap-2 text-slate-400 hover:text-red-500">
+                    <X className="h-3 w-3" /> Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader className="bg-white">
+                <TableRow className="hover:bg-transparent border-slate-100">
+                  <TableHead className="w-12 py-6 px-6 print:hidden">
                     <Checkbox 
-                      checked={selectedRecords.includes(record.id)} 
-                      onCheckedChange={() => toggleSelectRow(record.id)} 
+                      checked={selectedRecords.length === filteredRecords.length && filteredRecords.length > 0} 
+                      onCheckedChange={toggleSelectAll} 
                     />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-[#001F3D]">{record.number}</span>
-                      <span className="text-[9px] text-slate-400 font-code">{record.date}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-bold text-slate-700 uppercase">{record.customerName}</TableCell>
-                  <TableCell className="text-right font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className={cn(
-                      "text-[9px] font-bold uppercase",
-                      record.status === 'Paid' ? "bg-green-50 text-green-700 border-green-100" : "bg-blue-50 text-blue-700 border-blue-100"
-                    )}>{record.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right pr-8">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handlePreview(record)}>
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEdit(record)}>
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(record.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6">Identity / Ref</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Entity Name</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
+                  <TableHead className="w-32 print:hidden"></TableHead>
                 </TableRow>
-              ))}
-              {filteredRecords.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs font-medium italic">No records detected in this category ledger.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.map((record) => (
+                  <TableRow key={record.id} className="h-20 border-slate-50 hover:bg-slate-50/50 group print:h-12">
+                    <TableCell className="px-6 print:hidden">
+                      <Checkbox 
+                        checked={selectedRecords.includes(record.id)} 
+                        onCheckedChange={() => toggleSelectRow(record.id)} 
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-[#001F3D]">{record.number}</span>
+                        <span className="text-[9px] text-slate-400 font-code">{record.date}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-slate-700 uppercase">{record.customerName}</TableCell>
+                    <TableCell className="text-right font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={cn(
+                        "text-[9px] font-bold uppercase",
+                        record.status === 'Completed' || record.status === 'Paid' ? "bg-green-50 text-green-700 border-green-100" : 
+                        record.status === 'Yet to start' ? "bg-purple-50 text-purple-700 border-purple-100" :
+                        "bg-blue-50 text-blue-700 border-blue-100"
+                      )}>{record.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-8 print:hidden">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handlePreview(record)}>
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEdit(record)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(record.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredRecords.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs font-medium italic">No records detected in this category ledger.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
       </Tabs>
 
       {/* Main Creation/Edit Dialog */}
@@ -449,7 +532,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
                       <SelectValue placeholder="Identify entity..." />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-xl shadow-2xl border-slate-100">
                       {['inward'].includes(activeCategory) ? (
                         vendors.map(v => <SelectItem key={v.id} value={v.id} className="text-xs font-bold uppercase">{v.name}</SelectItem>)
                       ) : (
@@ -468,15 +551,16 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                    <Receipt className="h-3 w-3" /> Linked Work Order
+                    <Filter className="h-3 w-3" /> Operational Status
                   </Label>
-                  <Select value={formData.orderId} onValueChange={(val) => setFormData({...formData, orderId: val})}>
-                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold">
-                      <SelectValue placeholder="Production link..." />
+                  <Select value={formData.paymentStatus} onValueChange={(val) => setFormData({...formData, paymentStatus: val})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="none">General / No Link</SelectItem>
-                      {orders.map(o => <SelectItem key={o.id} value={o.id}>#{o.id} - {o.customer}</SelectItem>)}
+                    <SelectContent className="rounded-xl shadow-2xl border-slate-100">
+                      <SelectItem value="Pending" className="text-xs font-bold uppercase">Pending</SelectItem>
+                      <SelectItem value="Completed" className="text-xs font-bold uppercase">Completed</SelectItem>
+                      <SelectItem value="Yet to start" className="text-xs font-bold uppercase">Yet to start</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -511,7 +595,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </TableHeader>
                       <TableBody>
                         {lineItems.map((item) => {
-                          const itemTotal = (item.qty * item.price) * (1 - item.discount / 100) * (1 + item.gstRate / 100);
+                          const itemTotal = (item.qty * item.price) * (1 - (item.discount || 0) / 100) * (1 + (item.gstRate || 0) / 100);
                           return (
                             <TableRow key={item.id} className="border-slate-50 hover:bg-white/50 group transition-colors">
                               <TableCell className="px-6">
@@ -623,7 +707,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
       {/* Industrial Print Preview Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-[900px] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[95vh]">
+        <DialogContent className="max-w-[900px] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[95vh] print:shadow-none print:rounded-none">
           <div className="p-12 overflow-y-auto hide-scrollbar print:p-0">
             <div id="print-document" className="space-y-10">
               <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-8">

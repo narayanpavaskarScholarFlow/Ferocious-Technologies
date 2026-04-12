@@ -724,7 +724,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {orderReports.map((report) => (
                       <Card key={report.id} className="bg-white border-slate-200 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-2"><Badge className={cn("text-[8px] font-bold uppercase", report.status === 'Released' ? "bg-emerald-500 text-white" : "bg-blue-500 text-white")}>{report.status}</Badge></div>
+                        <div className="absolute top-0 right-0 p-2"><Badge className={cn("text-[8px] font-bold uppercase", report.status === 'Released' ? "bg-emerald-50 text-white" : "bg-blue-500 text-white")}>{report.status}</Badge></div>
                         <div className="flex flex-col gap-4">
                           <div className="flex items-center gap-4">
                             <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-slate-50 text-[#001F3D]"><FileText className="h-6 w-6" /></div>
@@ -995,21 +995,23 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       )}
 
       {(currentStep === 'report' || currentStep === 'review' || currentStep === 'approval') && selectedOrder && (
-        <div className="space-y-10 pb-20 max-w-[900px] mx-auto animate-in zoom-in-95 duration-500 px-2 print:max-w-full print:p-0">
+        <div className="space-y-10 pb-20 max-w-[900px] mx-auto animate-in zoom-in-95 duration-500 px-2 print:max-w-full print:p-0 print:m-0">
           <div className="flex justify-between items-center px-4 print:hidden">
             <Button variant="ghost" onClick={() => setCurrentStep('checklist')} className="rounded-xl gap-3 h-12 font-bold uppercase text-[10px] tracking-widest text-slate-400 hover:text-slate-900">
               <ArrowLeft className="h-4 w-4" /> Edit Matrix
             </Button>
             <div className="flex gap-4">
-              <Button variant="outline" onClick={() => window.print()} className="rounded-xl gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 shadow-sm">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => window.print()} 
+                className="rounded-xl gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 shadow-sm"
+              >
                 <Printer className="h-4 w-4" /> Print Matrix
-              </Button>
-              <Button className="rounded-xl bg-slate-900 hover:bg-black text-white gap-3 h-12 px-8 font-bold uppercase text-[10px] tracking-widest shadow-xl">
-                <Download className="h-4 w-4" /> Export Protocol
               </Button>
             </div>
           </div>
-          <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0", (currentStep === 'review' || currentStep === 'approval') && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
+          <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full", (currentStep === 'review' || currentStep === 'approval') && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
             <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">

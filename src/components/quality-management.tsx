@@ -227,24 +227,39 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       status: 'Pending',
       remark: ''
     };
-    setDimensions([...dimensions, newDim]);
+    setDimensions(prev => [...prev, newDim]);
     return newDim.id;
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, idx: number, dimId: string) => {
+  const handleKeyDown = (e: React.KeyboardEvent, field: string, idx: number, dimId: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const isLast = idx === dimensions.length - 1;
-      if (isLast) {
-        const newId = handleAddDimension();
+      
+      let nextField = '';
+      let nextId = dimId;
+
+      if (field === 'target') {
+        nextField = 'tolerance';
+      } else if (field === 'tolerance') {
+        nextField = 'actual';
+      } else if (field === 'actual') {
+        nextField = 'remark';
+      } else if (field === 'remark') {
+        nextField = 'target';
+        const isLast = idx === dimensions.length - 1;
+        if (isLast) {
+          const newId = handleAddDimension();
+          nextId = newId;
+        } else {
+          nextId = dimensions[idx + 1].id;
+        }
+      }
+
+      if (nextField) {
         setTimeout(() => {
-          const nextInput = document.getElementById(`actual-${newId}`);
-          nextInput?.focus();
+          const el = document.getElementById(`${nextField}-${nextId}`);
+          el?.focus();
         }, 50);
-      } else {
-        const nextId = dimensions[idx + 1].id;
-        const nextInput = document.getElementById(`actual-${nextId}`);
-        nextInput?.focus();
       }
     }
   };
@@ -532,7 +547,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             <div className="min-w-0 flex-1"><p className="text-[11px] font-bold text-[#001F3D] uppercase truncate">{report.drawingName}</p><p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{report.id}</p></div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <Badge className={cn("text-[8px] font-bold uppercase px-3 py-1 rounded-full", report.verdict === 'Pass' ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700")}>{report.verdict === 'Pass' ? 'OK' : 'NOT OK'}</Badge>
+                            <Badge className={cn("text-[8px] font-bold uppercase px-3 py-1 rounded-full", report.verdict === 'Pass' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>{report.verdict === 'Pass' ? 'OK' : 'NOT OK'}</Badge>
                             <Button size="sm" variant="outline" className="h-9 rounded-xl text-[9px] font-bold uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white border-none" onClick={() => { setActiveReportId(report.id); setManualComponentName(report.drawingName); setDimensions(report.dimensions); setChecks(report.checks as any); setCurrentStep(report.status === 'Released' ? 'approval' : 'review'); }}>
                               <Eye className="h-3.5 w-3.5" /> Preview Report
                             </Button>
@@ -599,13 +614,31 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       {dimensions.map((dim, idx) => (
                         <TableRow key={dim.id} className="border-b border-slate-50 h-16 hover:bg-slate-50/30 transition-colors">
                           <TableCell className="px-4">
-                            <Input className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl text-center" placeholder="e.g. BL-01" value={dim.balloonNo} onChange={(e) => handleUpdateDimension(dim.id, 'balloonNo', e.target.value)} />
+                            <Input 
+                              id={`balloon-${dim.id}`}
+                              className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl text-center" 
+                              placeholder="e.g. BL-01" 
+                              value={dim.balloonNo} 
+                              onChange={(e) => handleUpdateDimension(dim.id, 'balloonNo', e.target.value)} 
+                            />
                           </TableCell>
                           <TableCell>
-                            <Input className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" value={dim.target} onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)} />
+                            <Input 
+                              id={`target-${dim.id}`}
+                              className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
+                              value={dim.target} 
+                              onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)} 
+                              onKeyDown={(e) => handleKeyDown(e, 'target', idx, dim.id)}
+                            />
                           </TableCell>
                           <TableCell>
-                            <Input className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" value={dim.tolerance} onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)} />
+                            <Input 
+                              id={`tolerance-${dim.id}`}
+                              className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" 
+                              value={dim.tolerance} 
+                              onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)} 
+                              onKeyDown={(e) => handleKeyDown(e, 'tolerance', idx, dim.id)}
+                            />
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex flex-col items-center gap-0.5">
@@ -619,7 +652,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                               className={cn("h-10 bg-white border-2 font-code font-bold text-sm text-center rounded-xl shadow-inner transition-all", dim.status === 'OK' ? "border-emerald-200 text-emerald-700" : dim.status === 'NOT OK' ? "border-red-200 text-red-700" : "border-primary/10")} 
                               value={dim.actual} 
                               onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, idx, dim.id)}
+                              onKeyDown={(e) => handleKeyDown(e, 'actual', idx, dim.id)}
                             />
                           </TableCell>
                           <TableCell>
@@ -630,7 +663,14 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             </div>
                           </TableCell>
                           <TableCell className="pl-6">
-                            <Input placeholder="Technical observations..." className="h-10 bg-slate-50/50 border-none text-[10px] rounded-xl font-medium" value={dim.remark} onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)} />
+                            <Input 
+                              id={`remark-${dim.id}`}
+                              placeholder="Technical observations..." 
+                              className="h-10 bg-slate-50/50 border-none text-[10px] rounded-xl font-medium" 
+                              value={dim.remark} 
+                              onChange={(e) => handleUpdateDimension(dim.id, 'remark', e.target.value)} 
+                              onKeyDown={(e) => handleKeyDown(e, 'remark', idx, dim.id)}
+                            />
                           </TableCell>
                           <TableCell className="px-2">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => setDimensions(dimensions.filter(d => d.id !== dim.id))}>
@@ -664,7 +704,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </Tabs>
             <div className="pt-8 border-t border-slate-100 flex gap-4 mt-8 shrink-0">
               <div className="flex-1 flex flex-col justify-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Shortcut: Hit ENTER on Actual column to go to next dimension</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Shortcut: Hit ENTER to move to next field (Target &rarr; Tolerance &rarr; Actual &rarr; Remark &rarr; Next Target)</p>
               </div>
               <div className="flex gap-4">
                 <Button variant="ghost" className="h-14 rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] text-slate-400 px-8" onClick={() => setCurrentStep('upload')}>Abort Entry</Button>

@@ -53,8 +53,10 @@ import {
   Printer,
   QrCode,
   Eye,
+  EyeOff,
   RefreshCw,
-  Factory
+  Factory,
+  Key
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -122,6 +124,7 @@ export function ProfileSettings({
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
 
   const groupedPermissions = useMemo(() => {
@@ -140,6 +143,7 @@ export function ProfileSettings({
   const [adminName, setAdminName] = useState('');
   const [adminRole, setAdminRole] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
   const [adminDept, setAdminDept] = useState('');
   const [adminId, setAdminId] = useState('');
@@ -151,6 +155,7 @@ export function ProfileSettings({
       setAdminName(activeAdmin.name);
       setAdminRole(activeAdmin.role);
       setAdminEmail(activeAdmin.email);
+      setAdminPassword(activeAdmin.password || '');
       setAdminPhone(activeAdmin.phone || '');
       setAdminDept(activeAdmin.dept);
       setAdminId(activeAdmin.id);
@@ -160,6 +165,7 @@ export function ProfileSettings({
       setAdminName(currentUser || 'Master Admin');
       setAdminRole('Plant Controller');
       setAdminEmail(currentUser === 'Master Admin' ? 'admin@bharataxis.tech' : '');
+      setAdminPassword(currentUser === 'Master Admin' ? 'admin123' : '');
       setAdminDept('Admin');
       setAdminId('ID_PR_0001');
       setAdminReportingManager('Self / Board');
@@ -193,6 +199,7 @@ export function ProfileSettings({
       name: adminName,
       role: adminRole,
       email: adminEmail,
+      password: adminPassword,
       phone: adminPhone || '',
       dept: adminDept,
       image: adminImage || '',
@@ -201,6 +208,7 @@ export function ProfileSettings({
       id: adminId || `ADMIN-${Date.now()}`,
       name: adminName,
       email: adminEmail || `${adminName.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
+      password: adminPassword || 'admin123',
       phone: adminPhone || '',
       role: adminRole,
       dept: adminDept || 'Admin',
@@ -453,6 +461,30 @@ export function ProfileSettings({
                         />
                       ) : (
                         <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D]">{adminEmail || 'NOT_SET'}</div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                        <Key className="h-3 w-3 text-primary" /> Security Key (Password)
+                      </Label>
+                      {isEditing ? (
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"}
+                            value={adminPassword} 
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner pr-12" 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D]">••••••••</div>
                       )}
                     </div>
                     <div className="space-y-2">

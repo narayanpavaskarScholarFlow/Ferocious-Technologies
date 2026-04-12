@@ -196,6 +196,7 @@ export interface SystemUser {
   id: string;
   name: string;
   email: string;
+  password?: string; // New field for security protocol
   role: string;
   dept: string;
   image?: string;

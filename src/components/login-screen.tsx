@@ -57,7 +57,11 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
         u.email.toLowerCase() === username.toLowerCase()
       );
 
-      if (foundUser || username.toLowerCase() === 'master admin') {
+      // Verify credentials against master ledger
+      const isMasterAdmin = username.toLowerCase() === 'master admin' && password === 'admin123';
+      const isUserMatch = foundUser && (foundUser.password === password || (!foundUser.password && password === 'user123'));
+
+      if (isMasterAdmin || isUserMatch) {
         const loginIdentity = foundUser ? foundUser.name : 'Master Admin';
         onLogin(loginIdentity);
         toast({
@@ -68,7 +72,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
         toast({
           variant: "destructive",
           title: "Identity Rejection",
-          description: "Unauthorized credentials detected. Node access denied."
+          description: "Unauthorized credentials detected. Security key mismatch."
         });
       }
     }, 800);

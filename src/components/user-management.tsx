@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -105,11 +104,11 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   };
 
   const handleRegisterUser = () => {
-    if (!formData.name || !formData.email) {
+    if (!formData.name || !formData.email || !formData.password) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Identity name and email are required."
+        description: "Full credentials (Name, Email, and Security Key) are required."
       });
       return;
     }
@@ -119,6 +118,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         ...editingUser,
         name: formData.name,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone || '',
         role: formData.jobTitle || editingUser.role,
         dept: formData.deptCode || editingUser.dept,
@@ -137,6 +137,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         id: formData.id || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
         name: formData.name,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone || '',
         role: formData.jobTitle || 'Standard Operator',
         dept: formData.deptCode || 'Admin',
@@ -154,7 +155,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         name: formData.name,
         email: formData.email,
         role: newUser.role,
-        temporaryPassword: formData.password || 'Secure_Axis_2025'
+        temporaryPassword: formData.password
       }).then(res => {
         if (res.success) {
           toast({
@@ -184,7 +185,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       jobTitle: user.role,
       deptCode: user.dept,
       reportingManager: user.reportingManager || '',
-      password: '••••••••',
+      password: user.password || '',
       image: user.image
     });
     setStep(1);
@@ -538,16 +539,16 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       <div className="h-1 w-8 bg-red-500 rounded-full" />
                       <div>
                         <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">03. Credentials</h3>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Secure Password Initialization</p>
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Secure Identity Initialization</p>
                       </div>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Initial System Password</Label>
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Identity Security Key (Password)</Label>
                         <div className="relative">
                           <Input 
                             type={showPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
+                            placeholder="e.g. Pass_1234" 
                             className="h-12 bg-slate-50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20"
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -565,7 +566,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       <div className="p-6 bg-red-500/[0.03] rounded-2xl border border-red-500/10 flex gap-5 items-center">
                         <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shrink-0" />
                         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest leading-relaxed">
-                          Secure activation link and 2FA setup instructions will be dispatched automatically to the registered network email.
+                          This security key will be required for gateway entry. Users can view and modify their own credentials within their Profile Settings.
                         </p>
                       </div>
                     </div>

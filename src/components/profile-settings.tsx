@@ -70,6 +70,7 @@ const ACCESS_NODES = [
   
   // Category: Quality & Compliance
   { id: 'quality', label: 'Quality Inspection Pipeline', category: 'Quality & Compliance', icon: ShieldCheck },
+  { id: 'quality-review', label: 'Final Compliance Review (Tab Access)', category: 'Quality & Compliance', icon: Unlock },
   { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
   { id: 'quality-report-delete', label: 'Quality: Delete Compliance Report Protocol', category: 'Quality & Compliance', icon: Trash2 },
   

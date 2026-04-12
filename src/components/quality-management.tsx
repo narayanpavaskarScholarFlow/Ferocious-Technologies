@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -32,7 +33,8 @@ import {
   Upload,
   Image as ImageIcon,
   Maximize2,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -451,6 +453,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   };
 
   const canDeleteReport = permissions?.['quality-report-delete'] === 'edit' || permissions?.['quality-report-delete'] === 'full';
+  const hasReviewTabAccess = permissions?.['quality-review'] !== 'none';
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -483,14 +486,16 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <TabsTrigger value="pipeline" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
                 <Activity className="h-3.5 w-3.5 mr-2" /> Inspection Pipeline
               </TabsTrigger>
-              <TabsTrigger value="review" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
-                <Unlock className="h-3.5 w-3.5 mr-2" /> Final Compliance Review
-                {reviewPendingReports.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-pulse">
-                    {reviewPendingReports.length}
-                  </span>
-                )}
-              </TabsTrigger>
+              {hasReviewTabAccess && (
+                <TabsTrigger value="review" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
+                  <Unlock className="h-3.5 w-3.5 mr-2" /> Final Compliance Review
+                  {reviewPendingReports.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-pulse">
+                      {reviewPendingReports.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="pipeline" className="m-0 space-y-8">
@@ -542,6 +547,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Order ID</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Assigned Resource</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-center w-32">Start Date</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-center w-32">End Date</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-center w-[200px]">Status</TableHead>
                       <TableHead className="text-right px-8 w-20"></TableHead>
                     </TableRow>
@@ -556,6 +563,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                             <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary"><User className="h-4 w-4" /></div>
                             <span className="text-[11px] font-bold text-slate-700 uppercase">{getResourceName(operation)}</span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-center font-code text-[10px] font-bold text-slate-500">
+                          {operation.startDate}
+                        </TableCell>
+                        <TableCell className="text-center font-code text-[10px] font-bold text-slate-500">
+                          {operation.endDate}
                         </TableCell>
                         <TableCell className="text-center">
                           <Select 
@@ -603,52 +616,54 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </Card>
             </TabsContent>
 
-            <TabsContent value="review" className="m-0 space-y-8">
-              <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
-                <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-red-600 rounded-xl shadow-lg shadow-red-600/20"><Unlock className="h-6 w-6 text-white" /></div>
-                    <div>
-                      <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Compliance Review Matrix</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Cross-Order Authorization Ledger</p>
+            {hasReviewTabAccess && (
+              <TabsContent value="review" className="m-0 space-y-8">
+                <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
+                  <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-red-600 rounded-xl shadow-lg shadow-red-600/20"><Unlock className="h-6 w-6 text-white" /></div>
+                      <div>
+                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Compliance Review Matrix</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Cross-Order Authorization Ledger</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <Table>
-                  <TableHeader className="bg-white border-b border-slate-100">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Report ID</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Work Order</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Manual Identity</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-center w-32">Verdict</TableHead>
-                      <TableHead className="text-right px-8 w-20"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reviewPendingReports.map((report) => (
-                      <TableRow key={report.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
-                        <TableCell className="px-8 font-code text-xs font-bold text-slate-400">{report.id}</TableCell>
-                        <TableCell className="font-bold text-[#001F3D]">#{report.workOrderId}</TableCell>
-                        <TableCell className="text-[11px] font-bold text-slate-700 uppercase">{report.drawingName}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge className={cn("text-[9px] font-bold uppercase px-3 py-1 rounded-full", report.verdict === 'Pass' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>
-                            {report.verdict === 'Pass' ? 'OK' : 'NOT OK'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right px-8">
-                          <Button 
-                            className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold uppercase h-10 px-6 shadow-xl"
-                            onClick={() => handleOpenReportForReview(report)}
-                          >
-                            Authorize Release
-                          </Button>
-                        </TableCell>
+                  <Table>
+                    <TableHeader className="bg-white border-b border-slate-100">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Report ID</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400">Work Order</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400">Manual Identity</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-center w-32">Verdict</TableHead>
+                        <TableHead className="text-right px-8 w-20"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            </TabsContent>
+                    </TableHeader>
+                    <TableBody>
+                      {reviewPendingReports.map((report) => (
+                        <TableRow key={report.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
+                          <TableCell className="px-8 font-code text-xs font-bold text-slate-400">{report.id}</TableCell>
+                          <TableCell className="font-bold text-[#001F3D]">#{report.workOrderId}</TableCell>
+                          <TableCell className="text-[11px] font-bold text-slate-700 uppercase">{report.drawingName}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge className={cn("text-[9px] font-bold uppercase px-3 py-1 rounded-full", report.verdict === 'Pass' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>
+                              {report.verdict === 'Pass' ? 'OK' : 'NOT OK'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right px-8">
+                            <Button 
+                              className="rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold uppercase h-10 px-6 shadow-xl"
+                              onClick={() => handleOpenReportForReview(report)}
+                            >
+                              Authorize Release
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       )}

@@ -37,7 +37,8 @@ import {
   Lock,
   Upload,
   Image as ImageIcon,
-  Loader2
+  Loader2,
+  Maximize2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -209,6 +210,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     setManualComponentName(report.drawingName);
     setDimensions(report.dimensions);
     setChecks(report.checks as any);
+    setPendingDrawingFile(report.drawingFile);
     const qcOp = order.routing?.find(op => op.name === 'QC');
     if (qcOp) setSelectedOp(qcOp);
     setCurrentStep('review');
@@ -383,8 +385,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       toast({ variant: "destructive", title: "Identity Required", description: "Please enter a component name for manual entry." });
       return;
     }
-    // Ask for drawing attachment before proceeding
-    setIsDrawingDialogOpen(true);
+    // If no drawing was attached in registry or tab, prompt one last time
+    if (!pendingDrawingFile) {
+      setIsDrawingDialogOpen(true);
+    } else {
+      commitReportToLedger();
+    }
   };
 
   const submitForReview = () => {
@@ -618,49 +624,84 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <div className="p-4 bg-primary/5 rounded-2xl"><ClipboardCheck className="h-8 w-8 text-primary" /></div>
               <div>
                 <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Manual Audit Protocol</h3>
-                <p className="text-xs text-slate-500">Inspection matrix initialization for Order #{selectedOrder.id}.</p>
+                <p className="text-xs text-slate-500">Technical Matrix Registry for Order #{selectedOrder.id}.</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow relative z-10">
             <div className="lg:col-span-4 space-y-8 flex flex-col min-h-0">
-              <div className="p-8 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-6">
+              <div className="p-8 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-8">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary rounded-lg text-white shadow-lg shadow-primary/20"><Plus className="h-4 w-4" /></div>
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manual Protocol Entry</h4>
                 </div>
                 
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Component Identification</Label>
-                  <Select 
-                    value={manualComponentName} 
-                    onValueChange={setManualComponentName}
-                  >
-                    <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase">
-                      <SelectValue placeholder="Identify component..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                      {qcSubTasks.length > 0 ? (
-                        qcSubTasks.map(st => (
-                          <SelectItem key={st.id} value={st.name} className="text-xs font-bold uppercase">{st.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled className="text-[10px] font-bold uppercase">No Routing Sub-tasks</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  
-                  <div className="pt-2 border-t border-slate-100 mt-2">
-                    <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Manual Override</Label>
-                    <Input 
-                      placeholder="Or enter name manually..." 
-                      className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold mt-1"
-                      value={manualComponentName}
-                      onChange={(e) => setManualComponentName(e.target.value)}
-                    />
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Component Identification</Label>
+                    <Select 
+                      value={manualComponentName} 
+                      onValueChange={setManualComponentName}
+                    >
+                      <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase">
+                        <SelectValue placeholder="Identify component..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                        {qcSubTasks.length > 0 ? (
+                          qcSubTasks.map(st => (
+                            <SelectItem key={st.id} value={st.name} className="text-xs font-bold uppercase">{st.name}</SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled className="text-[10px] font-bold uppercase">No Routing Sub-tasks</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    
+                    <div className="pt-2 border-t border-slate-100 mt-2">
+                      <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Manual Override</Label>
+                      <Input 
+                        placeholder="Or enter name manually..." 
+                        className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold mt-1"
+                        value={manualComponentName}
+                        onChange={(e) => setManualComponentName(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-medium italic">* Select from QC routing sub-tasks or enter a manual technical identity.</p>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                      <ImageIcon className="h-3.5 w-3.5 text-primary" /> Technical Blueprint
+                    </Label>
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        id="initial-drawing-upload" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleDrawingUpload}
+                      />
+                      <label 
+                        htmlFor="initial-drawing-upload"
+                        className={cn(
+                          "h-24 w-full flex flex-col items-center justify-center gap-2 px-4 rounded-2xl text-[9px] font-bold uppercase tracking-widest cursor-pointer transition-all border-2 border-dashed",
+                          pendingDrawingFile ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-primary/50"
+                        )}
+                      >
+                        {pendingDrawingFile ? (
+                          <>
+                            <CheckCircle2 className="h-5 w-5" />
+                            Drawing Matrix Cached
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5" />
+                            Attach Blueprint Matrix
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <Button 
@@ -700,7 +741,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button variant="outline" size="sm" className="h-8 rounded-lg text-[8px] font-bold uppercase tracking-widest bg-[#001F3D] hover:bg-black text-white border-none" onClick={() => { setActiveReportId(report.id); setManualComponentName(report.drawingName); setDimensions(report.dimensions); setChecks(report.checks as any); setCurrentStep(report.status === 'Released' ? 'approval' : 'review'); }}>
+                              <Button variant="outline" size="sm" className="h-8 rounded-lg text-[8px] font-bold uppercase tracking-widest bg-[#001F3D] hover:bg-black text-white border-none" onClick={() => { handleOpenReportForReview(report); }}>
                                 Preview
                               </Button>
                             </div>
@@ -740,6 +781,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <TabsList className="bg-slate-100 p-1 rounded-full mb-8 h-12 inline-flex border border-slate-200 w-fit shrink-0">
                 <TabsTrigger value="customer" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm transition-all">Dimension Ledger</TabsTrigger>
                 <TabsTrigger value="internal" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm transition-all">Verification Nodes</TabsTrigger>
+                <TabsTrigger value="blueprint" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm transition-all">Technical Blueprint Attachment</TabsTrigger>
               </TabsList>
               
               <TabsContent value="customer" className="m-0 flex-1 overflow-hidden flex flex-col">
@@ -885,6 +927,57 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   </div>
                 </ScrollArea>
               </TabsContent>
+              <TabsContent value="blueprint" className="m-0 flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                  {pendingDrawingFile ? (
+                    <div className="relative w-full max-w-4xl h-full min-h-[400px] flex flex-col gap-6">
+                      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><CheckCircle2 className="h-5 w-5" /></div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 uppercase">Active Blueprint Registry</p>
+                            <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Manual Entry Association Active</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" className="h-10 rounded-xl gap-2 text-[10px] font-bold uppercase border-slate-200" onClick={() => setPendingDrawingFile(undefined)}>
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" /> Replace Drawing
+                        </Button>
+                      </div>
+                      <div className="flex-1 relative rounded-[2rem] overflow-hidden bg-white border border-slate-100 shadow-inner group">
+                        <img src={pendingDrawingFile} alt="Technical Blueprint" className="w-full h-full object-contain p-4" />
+                        <div className="absolute inset-0 bg-[#001F3D]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <div className="bg-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
+                            <Maximize2 className="h-4 w-4 text-primary" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Blueprint Active</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-6 text-center max-w-md">
+                      <div className="p-8 bg-white rounded-full shadow-xl shadow-slate-200/50"><ImageIcon className="h-12 w-12 text-slate-300" /></div>
+                      <div>
+                        <h4 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">No Blueprint Detected</h4>
+                        <p className="text-xs text-slate-400 mt-2 font-medium">Attach a technical drawing to provide visual context for the dimensional measurement ledger.</p>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          id="matrix-drawing-upload" 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={handleDrawingUpload}
+                        />
+                        <Button asChild className="h-12 px-8 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-primary/20">
+                          <label htmlFor="matrix-drawing-upload" className="cursor-pointer flex items-center gap-2">
+                            <Upload className="h-4 w-4" /> Attach Technical Matrix
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
             </Tabs>
             <div className="pt-8 border-t border-slate-100 flex gap-4 mt-8 shrink-0">
               <div className="flex-1 flex flex-col justify-center">
@@ -916,7 +1009,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </Button>
             </div>
           </div>
-          <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0", currentStep === 'review' && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
+          <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0", (currentStep === 'review' || currentStep === 'approval') && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
             <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -938,10 +1031,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
             </div>
 
-            {/* Embedded Drawing Preview in Report */}
+            {/* Integrated Blueprint Display in Final Report */}
             {activePreviewReport?.drawingFile && (
               <div className="space-y-4">
-                <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Technical Blueprint Attachment</h3>
+                <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Technical Blueprint Identification</h3>
                 <div className="relative w-full border border-slate-100 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 min-h-[200px] max-h-[400px]">
                   <img 
                     src={activePreviewReport.drawingFile} 
@@ -1008,12 +1101,14 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               <Button className={cn("rounded-2xl h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl", hasFailures ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700")} onClick={finalApproval}>
                 {hasFailures ? 'Force Release with Deviations' : 'Authorize Quality Release'}
               </Button>
-            ) : null}
+            ) : (
+              <Button className="rounded-2xl bg-[#001F3D] hover:bg-black text-white h-16 px-16 font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl" onClick={() => setCurrentStep('upload')}>Close Review</Button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Drawing Attachment Protocol Dialog */}
+      {/* Drawing Attachment Protocol Dialog (Fallback) */}
       <Dialog open={isDrawingDialogOpen} onOpenChange={setIsDrawingDialogOpen}>
         <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
           <DialogHeader className="mb-8">
@@ -1054,14 +1149,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   )}
                 </label>
               </div>
-              {pendingDrawingFile && (
-                <div className="relative h-24 w-full rounded-xl overflow-hidden border border-slate-100 bg-slate-50">
-                  <img src={pendingDrawingFile} alt="Preview" className="h-full w-full object-contain" />
-                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 bg-white/80 hover:bg-white text-red-500" onClick={() => setPendingDrawingFile(undefined)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
             </div>
 
             <div className="flex gap-4 pt-4">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -118,11 +119,11 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         ...editingUser,
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        phone: formData.phone || '',
         role: formData.jobTitle || editingUser.role,
         dept: formData.deptCode || editingUser.dept,
-        reportingManager: formData.reportingManager,
-        image: formData.image || editingUser.image
+        reportingManager: formData.reportingManager || '',
+        image: formData.image || editingUser.image || ''
       };
       
       onSaveUser(updatedUser);
@@ -136,11 +137,11 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         id: formData.id || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        phone: formData.phone || '',
         role: formData.jobTitle || 'Standard Operator',
         dept: formData.deptCode || 'Admin',
-        reportingManager: formData.reportingManager,
-        image: formData.image,
+        reportingManager: formData.reportingManager || '',
+        image: formData.image || '',
         permissions: { overview: 'read' },
         lastLogin: 'Never',
         status: 'offline'

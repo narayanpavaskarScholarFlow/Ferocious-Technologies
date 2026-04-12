@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -146,7 +147,11 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
       shift: newStaff.shift,
       efficiency: editingUserId ? (users.find(u => u.id === editingUserId)?.efficiency || 0) : 0,
       permissions: editingUserId ? (users.find(u => u.id === editingUserId)?.permissions || { overview: 'read' }) : { overview: 'read' },
-      lastLogin: editingUserId ? (users.find(u => u.id === editingUserId)?.lastLogin || 'Never') : 'Never'
+      lastLogin: editingUserId ? (users.find(u => u.id === editingUserId)?.lastLogin || 'Never') : 'Never',
+      // Ensure optional fields are never undefined for Firestore
+      phone: '',
+      reportingManager: '',
+      image: ''
     };
 
     onSaveUser(member);
@@ -633,7 +638,7 @@ export function ManpowerUtilization({ users, onSaveUser }: ManpowerUtilizationPr
                         )} />
                       )}
                       <div className={cn(
-                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10 shadow-sm",
+                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10",
                         step === item.s ? "bg-[#001F3D] border-[#001F3D] text-white scale-125 shadow-lg shadow-primary/30" : 
                         step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-400"
                       )}>

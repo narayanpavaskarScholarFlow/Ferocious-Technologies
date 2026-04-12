@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -54,7 +53,8 @@ import {
   Printer,
   QrCode,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Factory
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -68,6 +68,7 @@ const ACCESS_NODES = [
   { id: 'smart-quote', label: 'AI Smart Quoting (Gemini)', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'SQCDP Performance Metrics', category: 'Strategic Hub', icon: LineChart },
   { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },
+  { id: 'production-planner', label: 'Mass Production Matrix', category: 'Production Control', icon: Factory },
   { id: 'order-create', label: 'Production: New Order Protocol', category: 'Production Control', icon: Plus },
   { id: 'gantt', label: 'Visual Timeline (Gantt)', category: 'Production Control', icon: LayoutGrid },
   { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
@@ -332,7 +333,7 @@ export function ProfileSettings({
                     <div className="w-full grid grid-cols-2 gap-4 mt-4 relative z-10">
                       <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
                         <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Employee Node</p>
-                        <p className="text-[11px] font-code font-bold text-white print:text-slate-900">{adminId || 'ID_PR_XXXX'}</p>
+                        <p className="text-[11px] font-code font-bold text-white print:text-slate-900">{adminId || 'ID_PR_0001'}</p>
                       </div>
                       <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
                         <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Plant Section</p>
@@ -615,7 +616,7 @@ export function ProfileSettings({
                       <Shield className="h-20 w-20 text-slate-300" />
                     </div>
                     <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Synchronization Required</h4>
-                    <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
+                    <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
                   </div>
                 )}
               </div>

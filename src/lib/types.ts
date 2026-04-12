@@ -53,7 +53,8 @@ export type ViewType =
   | 'quality'
   | 'settings'
   | 'gantt'
-  | 'smart-quote';
+  | 'smart-quote'
+  | 'production-planner';
 
 export interface SubTask {
   id: string;
@@ -237,4 +238,23 @@ export interface QualityReport {
   releasedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProductionBatch {
+  id: string;
+  orderId: string;
+  partName: string;
+  machineId: string;
+  machineName: string;
+  operatorId: string;
+  operatorName: string;
+  targetQty: number;
+  actualQty: number;
+  scrapQty: number;
+  cycleTimeSec: number;
+  cavities: number;
+  status: 'Running' | 'Paused' | 'Completed' | 'Setup';
+  startTime: string;
+  endTime?: string;
+  lastSync: string;
 }

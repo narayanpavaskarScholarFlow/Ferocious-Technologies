@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   LayoutGrid,
   BrainCircuit,
-  Zap
+  Zap,
+  Factory
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -41,6 +42,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {} }: Side
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Orders' },
+      { id: 'production-planner' as ViewType, icon: Factory, label: 'Mass Production' },
       { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Gantt' },
       { id: 'operations' as ViewType, icon: Layers, label: 'Spreadsheet' },
       { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality' },

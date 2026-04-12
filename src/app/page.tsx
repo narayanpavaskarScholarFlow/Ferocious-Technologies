@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -20,6 +20,7 @@ import { QualityManagement } from '@/components/quality-management';
 import { ProductionGantt } from '@/components/production-gantt';
 import { ProfileSettings } from '@/components/profile-settings';
 import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
+import { ProductionPlanner } from '@/components/production-planner';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
@@ -72,6 +73,7 @@ function IndustrialERPInternal() {
   const inventoryQuery = useMemoFirebase(() => collection(db, 'inventory'), [db]);
   const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
+  const batchesQuery = useMemoFirebase(() => collection(db, 'production_batches'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -81,6 +83,7 @@ function IndustrialERPInternal() {
   const { data: inventoryData } = useCollection<InventoryItem>(inventoryQuery);
   const { data: billingData } = useCollection<BillingRecord>(billingQuery);
   const { data: logsData } = useCollection<WorkLogEntryType>(logsQuery);
+  const { data: batchesData } = useCollection<ProductionBatch>(batchesQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -90,6 +93,7 @@ function IndustrialERPInternal() {
   const inventory = inventoryData || [];
   const billing = billingData || [];
   const logs = logsData || [];
+  const batches = batchesData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -177,7 +181,8 @@ function IndustrialERPInternal() {
         'vendor-onboard': 'full',
         'maintenance': 'full',
         'hr-planning': 'full',
-        'holiday-matrix': 'full'
+        'holiday-matrix': 'full',
+        'production-planner': 'full'
       };
 
       if (isMasterAdmin) {
@@ -300,6 +305,14 @@ function IndustrialERPInternal() {
 
   const handleDeleteUser = (userId: string) => {
     deleteDocumentNonBlocking(doc(db, 'users', userId));
+  };
+
+  const handleSaveBatch = (batch: ProductionBatch) => {
+    setDocumentNonBlocking(doc(db, 'production_batches', batch.id), batch, { merge: true });
+  };
+
+  const handleDeleteBatch = (id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'production_batches', id));
   };
 
   const handleUpdateStatusFromQC = (orderId: string, operation: string, status: string) => {
@@ -430,6 +443,16 @@ function IndustrialERPInternal() {
               />
             )}
             {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
+            {currentView === 'production-planner' && (
+              <ProductionPlanner 
+                batches={batches}
+                orders={orders}
+                machines={machines}
+                users={usersData}
+                onSaveBatch={handleSaveBatch}
+                onDeleteBatch={handleDeleteBatch}
+              />
+            )}
             {currentView === 'orders' && (
               <ShopFloorOrders 
                 orders={orders}

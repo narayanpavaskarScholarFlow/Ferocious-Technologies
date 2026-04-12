@@ -163,6 +163,22 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     ];
   }, [qcEntries, reviewPendingReports]);
 
+  // Logic to check if all components are released for a specific order's QC operation
+  const isQCReadyForCompletion = (order: Order, op: RoutingOperation, newlyReleasedReportId?: string) => {
+    const orderReports = allReports.filter(r => r.workOrderId === order.id);
+    const subTasks = op.subTasks || [];
+    
+    // If no components (sub-tasks) are defined in QC routing, we allow manual completion as fallback
+    if (subTasks.length === 0) return true;
+
+    // Check if every component defined in the QC sub-tasks has a corresponding released report
+    return subTasks.every(st => {
+      const report = orderReports.find(r => r.drawingName === st.name);
+      const isReleased = (report && report.status === 'Released') || (report && report.id === newlyReleasedReportId);
+      return isReleased;
+    });
+  };
+
   const handleStatusUpdate = (order: Order, opId: string, newStatus: string) => {
     const updatedRouting = order.routing?.map(op => 
       op.id === opId ? { ...op, status: newStatus } : op
@@ -396,14 +412,32 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
   const finalApproval = () => {
     if (!activeReportId) return;
+    
+    // 1. Finalize the individual component report
     updateDocumentNonBlocking(doc(db, 'quality_reports', activeReportId), {
       status: 'Released',
       releasedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
+
+    // 2. Automated status logic: If all components released, set QC status to Completed
+    if (selectedOrder && selectedOp) {
+      if (isQCReadyForCompletion(selectedOrder, selectedOp, activeReportId)) {
+        handleStatusUpdate(selectedOrder, selectedOp.id, 'Completed');
+        toast({
+          title: "QC Protocol Completed",
+          description: `All components for Order #${selectedOrder.id} released. Master status updated to Completed.`
+        });
+      } else {
+        toast({
+          title: "Component Released",
+          description: "Individual compliance report verified and released."
+        });
+      }
+    }
+
     setCurrentStep('upload'); 
     setActiveReportId(null);
-    if (selectedOrder && onUpdateStatus) onUpdateStatus(selectedOrder.id, 'QC', 'Completed');
   };
 
   const hasFailures = useMemo(() => dimensions.some(d => d.status === 'NOT OK'), [dimensions]);
@@ -535,9 +569,22 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl shadow-2xl border-slate-100">
-                              {STATUS_OPTIONS.map(opt => (
-                                <SelectItem key={opt} value={opt} className="text-[10px] font-bold uppercase">{opt}</SelectItem>
-                              ))}
+                              {STATUS_OPTIONS.map(opt => {
+                                const isCompletedOption = opt === 'Completed';
+                                const isReady = isQCReadyForCompletion(order, operation);
+                                const isDisabled = isCompletedOption && !isReady;
+                                
+                                return (
+                                  <SelectItem 
+                                    key={opt} 
+                                    value={opt} 
+                                    disabled={isDisabled}
+                                    className="text-[10px] font-bold uppercase"
+                                  >
+                                    {opt} {isDisabled && "(Reports Pending)"}
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         </TableCell>

@@ -32,7 +32,8 @@ import {
   AlertCircle,
   ArchiveX,
   Box,
-  Edit2
+  Edit2,
+  Lock
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -63,6 +64,8 @@ const MACHINING_OPS = [
 ];
 
 const INSTRUMENTS = ["Vernier", "CMM", "Hight gauge", "Micro meter"];
+
+const STATUS_OPTIONS = ["Pending", "Yet to start", "Hold", "Completed", "WIP"];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
   { id: '1', balloonNo: 'BL-01', typeOfDim: 'Normal Dim', instrument: 'Vernier', target: '', tolerance: '±', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
@@ -129,7 +132,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
   const statsData = useMemo(() => {
     const pendingCount = qcEntries.filter(e => 
-      ['Yet to start', 'WIP', 'Ready for QC'].includes(e.operation.status || '')
+      ['Yet to start', 'WIP', 'Pending'].includes(e.operation.status || '')
     ).length;
     const inReviewCount = reviewPendingReports.length;
     return [
@@ -137,6 +140,23 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       { name: 'Compliance Review', count: inReviewCount, color: '#ef4444' },
     ];
   }, [qcEntries, reviewPendingReports]);
+
+  const handleStatusUpdate = (order: Order, opId: string, newStatus: string) => {
+    const updatedRouting = order.routing?.map(op => 
+      op.id === opId ? { ...op, status: newStatus } : op
+    ) || [];
+
+    setDocumentNonBlocking(doc(db, 'orders', order.id), {
+      routing: updatedRouting,
+      // If status is completed, we might want to update order progress here too
+      // but the operations component typically handles that logic.
+    }, { merge: true });
+
+    toast({
+      title: "Status Synchronized",
+      description: `QC status for Order #${order.id} updated to ${newStatus}.`
+    });
+  };
 
   const handleSelectTask = (order: Order, op: RoutingOperation) => {
     if (selectedOrder?.id !== order.id) {
@@ -342,6 +362,14 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
 
   const hasFailures = useMemo(() => dimensions.some(d => d.status === 'NOT OK'), [dimensions]);
 
+  const getStatusStyles = (status?: string) => {
+    if (status === 'Completed') return "text-green-600 bg-green-50 border-green-200";
+    if (status === 'WIP') return "text-blue-600 bg-blue-50 border-blue-200";
+    if (status === 'Hold') return "text-red-600 bg-red-50 border-red-200";
+    if (status === 'Pending') return "text-amber-600 bg-amber-50 border-amber-200";
+    return "text-slate-400 bg-slate-100 border-slate-200";
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 print:hidden px-2">
@@ -432,7 +460,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Order ID</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Assigned Resource</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-center w-[200px]">Status</TableHead>
                       <TableHead className="text-right px-8 w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -448,9 +476,22 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge className="text-[9px] font-bold uppercase px-3 py-1 rounded-full border shadow-sm bg-amber-50 text-amber-700 border-amber-100">
-                            {operation.status || 'Pending'}
-                          </Badge>
+                          <Select 
+                            value={operation.status || 'Pending'} 
+                            onValueChange={(val) => handleStatusUpdate(order, operation.id, val)}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-9 border-none rounded-full text-[10px] font-bold uppercase w-full max-w-[160px] mx-auto",
+                              getStatusStyles(operation.status || 'Pending')
+                            )}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-2xl border-slate-100">
+                              {STATUS_OPTIONS.map(opt => (
+                                <SelectItem key={opt} value={opt} className="text-[10px] font-bold uppercase">{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-right px-8">
                           <Button 

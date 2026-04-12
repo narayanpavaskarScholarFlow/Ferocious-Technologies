@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,7 +24,7 @@ import {
   Plus, 
   Settings2, 
   ChevronDown, 
-  ChevronUp,
+  ChevronUp, 
   CircleDot,
   Trash2,
   Calendar,
@@ -56,6 +55,7 @@ const STATUS_OPTIONS = [
   { label: "WIP", color: "text-blue-600 bg-blue-50 border-blue-200" },
   { label: "Hold", color: "text-red-600 bg-red-50 border-red-200" },
   { label: "Review Pending", color: "text-amber-600 bg-amber-50 border-amber-200" },
+  { label: "Pending", color: "text-amber-600 bg-amber-50 border-amber-200" },
   { label: "NA", color: "text-slate-400 bg-slate-100 border-slate-200" },
 ];
 
@@ -464,6 +464,8 @@ export function OperationsStatus({
                       const allSubsCompleted = hasSubs ? completedSubs === op.subTasks.length : true;
                       const opProgress = hasSubs ? Math.round((completedSubs / op.subTasks.length) * 100) : (currentStatus === 'Completed' ? 100 : 0);
                       
+                      const isQCLocked = op.name === 'QC';
+
                       return (
                         <React.Fragment key={op.id}>
                           <TableRow className={cn(
@@ -487,6 +489,7 @@ export function OperationsStatus({
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
                                   <Select 
+                                    disabled={isQCLocked}
                                     value={op.name} 
                                     onValueChange={(newName) => {
                                       const updated = operations.map(o => o.id === op.id ? { ...o, name: newName } : o);
@@ -506,6 +509,7 @@ export function OperationsStatus({
                                     </SelectContent>
                                   </Select>
                                   {startIsHoliday && <Badge variant="outline" className="text-[8px] border-amber-200 text-amber-600 bg-amber-50 h-4">Holiday Shifted</Badge>}
+                                  {isQCLocked && <Lock className="h-3 w-3 text-slate-300" />}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="h-1 w-16 bg-slate-100 rounded-full overflow-hidden">
@@ -547,26 +551,26 @@ export function OperationsStatus({
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <button 
-                                      disabled={hasSubs && !allSubsCompleted}
+                                      disabled={(hasSubs && !allSubsCompleted) || isQCLocked}
                                       className={cn(
                                         "outline-none focus:ring-4 focus:ring-primary/10 rounded-full transition-all w-full max-w-[160px] relative group/trigger",
-                                        hasSubs && !allSubsCompleted && "opacity-60 cursor-not-allowed"
+                                        ((hasSubs && !allSubsCompleted) || isQCLocked) && "opacity-60 cursor-not-allowed"
                                       )}
                                     >
                                       <Badge 
                                         variant="outline"
                                         className={cn(
                                           "text-[9px] font-bold uppercase py-2 px-4 w-full justify-center rounded-full border transition-all shadow-sm",
-                                          !hasSubs || allSubsCompleted ? "hover:scale-105" : "",
+                                          (!hasSubs || allSubsCompleted) && !isQCLocked ? "hover:scale-105" : "",
                                           getStatusStyles(currentStatus)
                                         )}
                                       >
-                                        {hasSubs && !allSubsCompleted && <Lock className="h-2.5 w-2.5 mr-2 opacity-50" />}
+                                        {((hasSubs && !allSubsCompleted) || isQCLocked) && <Lock className="h-2.5 w-2.5 mr-2 opacity-50" />}
                                         {currentStatus}
                                       </Badge>
                                     </button>
                                   </DropdownMenuTrigger>
-                                  {(!hasSubs || allSubsCompleted) && (
+                                  {(!hasSubs || allSubsCompleted) && !isQCLocked && (
                                     <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100">
                                       {STATUS_OPTIONS.map((opt) => (
                                         <DropdownMenuItem 

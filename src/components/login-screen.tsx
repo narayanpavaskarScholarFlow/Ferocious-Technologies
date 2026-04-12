@@ -59,8 +59,8 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
         u.email.toLowerCase() === username.toLowerCase()
       );
 
-      // Simple password check (for prototype purposes, matching username/admin)
-      if (foundUser || username.toLowerCase() === 'admin') {
+      // Simple password check (for prototype purposes, matching Master Admin)
+      if (foundUser || username.toLowerCase() === 'master admin') {
         const loginIdentity = foundUser ? foundUser.name : 'Master Admin';
         onLogin(loginIdentity);
         toast({
@@ -131,7 +131,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Alias / Email</Label>
                   <div className="relative group">
                     <Input 
-                      placeholder="e.g. John Operator" 
+                      placeholder="e.g. Master Admin" 
                       className="h-14 bg-slate-50 border-none text-slate-900 text-xs font-bold rounded-2xl pl-12 focus-visible:ring-primary/20 transition-all shadow-inner"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}

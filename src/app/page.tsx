@@ -24,7 +24,7 @@ import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles } from 'lucide-react';
+import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -57,7 +57,7 @@ function IndustrialERPInternal() {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   
-  // Firestore Collections with safety guards
+  // Firestore Collections
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
   const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
   const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
@@ -85,12 +85,21 @@ function IndustrialERPInternal() {
   const billing = billingData || [];
   const logs = logsData || [];
 
+  // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
     if (!currentUser || !usersData) return null;
     return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
 
-  const permissions = currentUserData?.permissions || {};
+  const permissions = useMemo(() => currentUserData?.permissions || {}, [currentUserData]);
+
+  // Access Control Helper
+  const hasAccess = useCallback((view: string): boolean => {
+    // Admin always has access to profile settings
+    if (view === 'settings') return true;
+    const level = permissions[view];
+    return level && level !== 'none';
+  }, [permissions]);
 
   const [globalSearch, setGlobalSearch] = useState('');
   const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
@@ -127,22 +136,15 @@ function IndustrialERPInternal() {
           title: "Session Timeout",
           description: "You have been logged out due to 3 minutes of inactivity.",
         });
-      }, 3 * 60 * 1000); // 180,000 ms = 3 minutes
+      }, 3 * 60 * 1000);
     };
 
-    // Activity listeners
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
-    activityEvents.forEach(event => {
-      window.addEventListener(event, resetInactivityTimer);
-    });
-
-    resetInactivityTimer(); // Initialize timer
+    activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer));
+    resetInactivityTimer();
 
     return () => {
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, resetInactivityTimer);
-      });
+      activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer));
       if (inactivityTimer) clearTimeout(inactivityTimer);
     };
   }, [isLoggedIn, handleLogout, toast]);
@@ -150,28 +152,38 @@ function IndustrialERPInternal() {
   const handleSearchChange = (val: string) => {
     setGlobalSearch(val);
     const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
-    if (isOrderPattern && orders?.find(o => o.id === val)) {
+    if (isOrderPattern && orders?.find(o => o.id === val) && hasAccess('operations')) {
       setActiveWorkOrderId(val);
       setCurrentView('operations');
     }
   };
 
   const handleNavigateToOperations = (orderId: string) => {
+    if (!hasAccess('operations')) {
+      toast({ variant: "destructive", title: "Access Denied", description: "You do not have clearance for the Operational Spreadsheet." });
+      return;
+    }
     setActiveWorkOrderId(orderId);
     setCurrentView('operations');
   };
 
   const handleNavigateToOrderDetails = (orderId: string | null) => {
+    const permKey = orderId ? 'orders' : 'order-create';
+    if (!hasAccess(permKey)) {
+      toast({ variant: "destructive", title: "Access Denied", description: "Unauthorized protocol execution attempted." });
+      return;
+    }
     setActiveWorkOrderId(orderId);
     setCurrentView('order-details');
   };
 
-  const handleBackToOrders = () => {
-    setCurrentView('orders');
-  };
-
   const handleViewChange = (view: ViewType) => {
     setIsMobileMenuOpen(false);
+    if (!hasAccess(view)) {
+      toast({ variant: "destructive", title: "Security Matrix Alert", description: `Your identity node does not have '${view}' clearance.` });
+      return;
+    }
+    
     if (view === 'users') {
       setCurrentView('settings');
       setSettingsActiveTab('access');
@@ -233,7 +245,6 @@ function IndustrialERPInternal() {
       op.name === operation ? { ...op, status } : op
     );
 
-    // Calculate progress (simplified version of OperationsStatus logic)
     const activeOps = updatedRouting.filter(op => op.status !== 'NA');
     const completedTasksCount = updatedRouting.reduce((acc, op) => {
       if (op.status === 'NA') return acc;
@@ -252,23 +263,26 @@ function IndustrialERPInternal() {
     }, { merge: true });
   };
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-slate-50" />;
-  }
+  if (!mounted) return <div className="min-h-screen bg-slate-50" />;
 
   if (!isLoggedIn) {
     return (
       <>
-        <LoginScreen onLogin={handleLogin} />
+        <LoginScreen onLogin={handleLogin} users={usersData} />
         <Toaster />
       </>
     );
   }
 
+  // Redirect to overview if current view access is revoked while active
+  if (currentView !== 'overview' && currentView !== 'settings' && !hasAccess(currentView)) {
+    setCurrentView('overview');
+  }
+
   return (
     <div className="flex min-h-screen bg-blue-50/30 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block print:bg-white">
       <div className="hidden lg:block print:hidden">
-        <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
+        <SidebarNav currentView={currentView} onViewChange={handleViewChange} permissions={permissions} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
@@ -283,7 +297,7 @@ function IndustrialERPInternal() {
               <SheetContent side="left" className="p-0 w-24 bg-[#0f172a] border-none">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">Access all Bharat Axis Pvt Ltd modules</SheetDescription>
-                <SidebarNav currentView={currentView} onViewChange={handleViewChange} />
+                <SidebarNav currentView={currentView} onViewChange={handleViewChange} permissions={permissions} />
               </SheetContent>
             </Sheet>
 
@@ -318,12 +332,14 @@ function IndustrialERPInternal() {
                   <Bell className="h-5 w-5 text-slate-600" />
                   <span className="absolute top-3 right-3 h-2 w-2 bg-accent rounded-full border-2 border-white shadow-[0_0_8px_rgba(244,63,94,0.4)]" />
                 </button>
-                <button 
-                  onClick={() => setCurrentView('smart-quote')}
-                  className="h-11 w-11 flex items-center justify-center rounded-xl bg-primary/5 hover:bg-primary/10 transition-all text-primary"
-                >
-                  <Sparkles className="h-5 w-5" />
-                </button>
+                {hasAccess('smart-quote') && (
+                  <button 
+                    onClick={() => setCurrentView('smart-quote')}
+                    className="h-11 w-11 flex items-center justify-center rounded-xl bg-primary/5 hover:bg-primary/10 transition-all text-primary"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </button>
+                )}
               </div>
 
               <div className="h-10 w-[1px] bg-slate-200 hidden xs:block" />
@@ -333,11 +349,11 @@ function IndustrialERPInternal() {
                   <div className="flex items-center gap-4 pl-2 group cursor-pointer">
                     <div className="text-right hidden md:block">
                       <p className="text-xs font-bold leading-none text-[#0f172a]">{currentUser}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1.5 group-hover:text-primary transition-colors">Plant Controller</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1.5 group-hover:text-primary transition-colors">{currentUserData?.role || 'Plant Controller'}</p>
                     </div>
                     <div className="relative">
                       <Avatar className="h-11 w-11 border-2 border-white shadow-xl shadow-slate-200 transition-transform group-hover:scale-105">
-                        <AvatarImage src="https://picsum.photos/seed/axis-user/100/100" />
+                        <AvatarImage src={`https://picsum.photos/seed/${currentUser}/100/100`} />
                         <AvatarFallback className="bg-primary text-white text-xs font-bold">SA</AvatarFallback>
                       </Avatar>
                       <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
@@ -349,9 +365,11 @@ function IndustrialERPInternal() {
                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 cursor-pointer">
                     <div className="p-2 bg-slate-50 rounded-lg text-slate-600"><User className="h-4 w-4" /></div> My Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 cursor-pointer">
-                    <div className="p-2 bg-slate-50 rounded-lg text-slate-600"><Settings className="h-4 w-4" /></div> System Matrix
-                  </DropdownMenuItem>
+                  {hasAccess('matrix') && (
+                    <DropdownMenuItem onClick={() => { setCurrentView('settings'); setSettingsActiveTab('matrix'); }} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 cursor-pointer">
+                      <div className="p-2 bg-slate-50 rounded-lg text-slate-600"><Settings className="h-4 w-4" /></div> System Matrix
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="my-2" />
                   <DropdownMenuItem onClick={handleLogout} className="rounded-xl h-11 px-3 text-xs font-bold gap-3 text-rose-600 cursor-pointer focus:bg-rose-50 focus:text-rose-700">
                     <div className="p-2 bg-rose-50 rounded-lg text-rose-600"><LogOut className="h-4 w-4" /></div> Terminate Session
@@ -370,24 +388,24 @@ function IndustrialERPInternal() {
             "animate-in fade-in slide-in-from-bottom-4 duration-1000 print:animate-none print:slide-in-from-bottom-0 print:duration-0 print:block",
             currentView === 'gantt' && "h-full"
           )}>
-            {currentView === 'overview' && (
+            {currentView === 'overview' && hasAccess('overview') && (
               <ShopFloorOverview 
                 orders={orders}
-                onNavigateToOrders={() => setCurrentView('orders')}
-                onNavigateToMachine={() => setCurrentView('machine-utilization')}
-                onNavigateToInventory={() => setCurrentView('inventory')}
-                onNavigateToBilling={() => setCurrentView('billing')}
+                onNavigateToOrders={() => handleViewChange('orders')}
+                onNavigateToMachine={() => handleViewChange('machine-utilization')}
+                onNavigateToInventory={() => handleViewChange('inventory')}
+                onNavigateToBilling={() => handleViewChange('billing')}
               />
             )}
-            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
-            {currentView === 'orders' && (
+            {currentView === 'smart-quote' && hasAccess('smart-quote') && <SmartQuotingAssistant machines={machines} />}
+            {currentView === 'orders' && hasAccess('orders') && (
               <ShopFloorOrders 
                 orders={orders}
                 onNavigateToOperations={handleNavigateToOperations} 
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />
             )}
-            {currentView === 'billing' && (
+            {currentView === 'billing' && hasAccess('billing') && (
               <BillingManagement 
                 customers={customers} 
                 vendors={vendors} 
@@ -398,13 +416,13 @@ function IndustrialERPInternal() {
                 onDeleteRecord={handleDeleteBillingRecord}
               />
             )}
-            {currentView === 'inventory' && (
+            {currentView === 'inventory' && hasAccess('inventory') && (
               <InventoryManagement 
                 items={inventory}
                 onSaveItem={handleSaveInventoryItem}
               />
             )}
-            {currentView === 'work-log' && (
+            {currentView === 'work-log' && hasAccess('work-log') && (
               <WorkLogEntry 
                 logs={logs} 
                 machines={machines}
@@ -412,32 +430,32 @@ function IndustrialERPInternal() {
                 onAddLog={(l) => setDocumentNonBlocking(doc(db, 'work_logs', l.id), l, { merge: true })} 
               />
             )}
-            {currentView === 'sqcdp' && <ShopFloorSQCDP />}
-            {currentView === 'machine-utilization' && (
+            {currentView === 'sqcdp' && hasAccess('sqcdp') && <ShopFloorSQCDP />}
+            {currentView === 'machine-utilization' && hasAccess('machine-utilization') && (
               <MachineUtilization 
                 machines={machines}
                 onSaveMachine={handleSaveMachine}
               />
             )}
-            {currentView === 'manpower' && (
+            {currentView === 'manpower' && hasAccess('manpower') && (
               <ManpowerUtilization 
                 users={usersData}
                 onSaveUser={handleSaveUser}
               />
             )}
-            {currentView === 'customer-orders' && (
+            {currentView === 'customer-orders' && hasAccess('customer-orders') && (
               <CustomerOrders 
                 customers={customers} 
                 onSaveCustomer={handleSaveCustomer} 
               />
             )}
-            {currentView === 'weekly-plan' && (
+            {currentView === 'weekly-plan' && hasAccess('weekly-plan') && (
               <WeeklyPlan 
                 logs={logs} 
-                onNavigateToGantt={() => setCurrentView('gantt')}
+                onNavigateToGantt={() => handleViewChange('gantt')}
               />
             )}
-            {currentView === 'vendor' && (
+            {currentView === 'vendor' && hasAccess('vendor') && (
               <VendorManagement 
                 vendors={vendors}
                 onSaveVendor={handleSaveVendor}
@@ -454,15 +472,15 @@ function IndustrialERPInternal() {
                 onDeleteUser={handleDeleteUser}
               />
             )}
-            {currentView === 'gantt' && (
+            {currentView === 'gantt' && hasAccess('gantt') && (
               <ProductionGantt 
                 orders={orders}
                 searchTerm={globalSearch}
-                onNavigateToSchedule={() => setCurrentView('weekly-plan')}
+                onNavigateToSchedule={() => handleViewChange('weekly-plan')}
                 onNavigateToOperations={handleNavigateToOperations}
               />
             )}
-            {currentView === 'quality' && (
+            {currentView === 'quality' && hasAccess('quality') && (
               <QualityManagement 
                 orders={orders}
                 users={usersData}
@@ -471,26 +489,42 @@ function IndustrialERPInternal() {
                 permissions={permissions}
               />
             )}
-            {currentView === 'order-details' && (
+            {currentView === 'order-details' && (hasAccess('orders') || hasAccess('order-create')) && (
               <OrderDetails 
                 orderId={activeWorkOrderId} 
-                onBack={handleBackToOrders} 
+                onBack={() => handleViewChange('orders')} 
                 customers={customers}
                 staff={usersData}
                 onSave={handleSaveOrder}
                 orders={orders}
               />
             )}
-            {currentView === 'operations' && (
+            {currentView === 'operations' && hasAccess('operations') && (
               <OperationsStatus 
                 initialOrderId={activeWorkOrderId} 
                 onOrderIdChange={setActiveWorkOrderId} 
-                onNavigateToVendor={() => setCurrentView('vendor')}
+                onNavigateToVendor={() => handleViewChange('vendor')}
                 onStatusChange={(o, op, s) => {}}
                 orders={orders}
                 users={usersData}
                 vendors={vendors}
               />
+            )}
+
+            {/* Un-authorized View Placeholder */}
+            {currentView !== 'overview' && currentView !== 'settings' && !hasAccess(currentView) && (
+              <div className="h-[60vh] flex flex-col items-center justify-center opacity-40 text-center">
+                <div className="p-8 bg-slate-100 rounded-full mb-6">
+                  <ShieldAlert className="h-16 w-16 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Protocol Rejected</h3>
+                <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto font-medium leading-relaxed">
+                  Your identity node lacks clearance for this module. Contact the System Administrator to modify your Access Matrix credentials.
+                </p>
+                <Button onClick={() => setCurrentView('overview')} variant="outline" className="mt-8 rounded-xl font-bold uppercase text-[10px] tracking-widest border-slate-200">
+                  Return to Dashboard
+                </Button>
+              </div>
             )}
           </div>
         </main>

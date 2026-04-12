@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ViewType } from '@/lib/types';
+import { useState, useEffect, useMemo } from 'react';
+import { ViewType, PermissionLevel } from '@/lib/types';
 import { 
   LayoutDashboard, 
   Box,
@@ -29,32 +29,41 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface SidebarNavProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  permissions?: Record<string, PermissionLevel>;
 }
 
-export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
+export function SidebarNav({ currentView, onViewChange, permissions = {} }: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const menuItems = [
-    { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
-    { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Orders' },
-    { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Timeline' },
-    { id: 'operations' as ViewType, icon: Layers, label: 'Routing' },
-    { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality' },
-    { id: 'inventory' as ViewType, icon: Boxes, label: 'Inventory' },
-    { id: 'billing' as ViewType, icon: CreditCard, label: 'Finance' },
-    { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Logs' },
-    { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Assets' },
-    { id: 'manpower' as ViewType, icon: Users, label: 'Resources' },
-    { id: 'sqcdp' as ViewType, icon: LineChart, label: 'SQCDP' },
-    { id: 'customer-orders' as ViewType, icon: Package, label: 'CRM' },
-    { id: 'vendor' as ViewType, icon: Truck, label: 'Supply' },
-    { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Schedule' },
-    { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: 'Smart Quote' },
-  ];
+  const menuItems = useMemo(() => {
+    const items = [
+      { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
+      { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Orders' },
+      { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Timeline' },
+      { id: 'operations' as ViewType, icon: Layers, label: 'Routing' },
+      { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality' },
+      { id: 'inventory' as ViewType, icon: Boxes, label: 'Inventory' },
+      { id: 'billing' as ViewType, icon: CreditCard, label: 'Finance' },
+      { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Logs' },
+      { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Assets' },
+      { id: 'manpower' as ViewType, icon: Users, label: 'Resources' },
+      { id: 'sqcdp' as ViewType, icon: LineChart, label: 'SQCDP' },
+      { id: 'customer-orders' as ViewType, icon: Package, label: 'CRM' },
+      { id: 'vendor' as ViewType, icon: Truck, label: 'Supply' },
+      { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Schedule' },
+      { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: 'Smart Quote' },
+    ];
+
+    // Filter items based on the Access Matrix
+    return items.filter(item => {
+      const level = permissions[item.id];
+      return level && level !== 'none';
+    });
+  }, [permissions]);
 
   if (!mounted) {
     return <div className="w-20 lg:w-24 bg-[#0f172a] h-screen" />;
@@ -62,7 +71,7 @@ export function SidebarNav({ currentView, onViewChange }: SidebarNavProps) {
 
   return (
     <div className="w-full lg:w-24 bg-[#0f172a] flex flex-col items-center py-10 gap-10 z-50 sticky top-0 h-screen overflow-y-auto hide-scrollbar border-r border-white/5 shadow-2xl">
-      <div className="p-4 bg-primary rounded-2xl shadow-xl shadow-primary/20 transition-transform hover:scale-110 active:scale-95 cursor-pointer">
+      <div className="p-4 bg-primary rounded-2xl shadow-xl shadow-primary/20 transition-transform hover:scale-110 active:scale-95 cursor-pointer" onClick={() => onViewChange('overview')}>
         <Zap className="h-7 w-7 text-white fill-white" />
       </div>
 

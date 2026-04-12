@@ -21,12 +21,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { SystemUser } from '@/lib/types';
 
 interface LoginScreenProps {
   onLogin: (user: string) => void;
+  users: SystemUser[];
 }
 
-export function LoginScreen({ onLogin }: LoginScreenProps) {
+export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const { toast } = useToast();
   const [view, setView] = useState<'login' | 'reset'>('login');
   const [username, setUsername] = useState('');
@@ -47,19 +49,31 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     }
 
     setIsLoading(true);
+    
+    // Simulate verification against the users list
+    // In a real app, this would use Firebase Auth, but here we mirror the Access Matrix logic
     setTimeout(() => {
       setIsLoading(false);
-      if (username.toLowerCase() === 'admin' || username === 'Sys_Admin_01') {
-        onLogin('Sys_Admin_01');
+      
+      const foundUser = users.find(u => 
+        u.name.toLowerCase() === username.toLowerCase() || 
+        u.email.toLowerCase() === username.toLowerCase()
+      );
+
+      // Simple password check (for prototype purposes, matching username/admin)
+      // Any valid user from the matrix can log in with their name/email
+      if (foundUser || username.toLowerCase() === 'admin') {
+        const loginIdentity = foundUser ? foundUser.name : 'Sys_Admin_01';
+        onLogin(loginIdentity);
         toast({
           title: "Access Granted",
-          description: "Welcome back, Plant Controller. ERP Matrix initialized."
+          description: `Welcome back, ${loginIdentity}. ERP Matrix initialized.`
         });
       } else {
         toast({
           variant: "destructive",
           title: "Identity Rejection",
-          description: "Unauthorized credentials detected. Event logged."
+          description: "Unauthorized credentials detected. Node access denied."
         });
       }
     }, 800);
@@ -116,10 +130,10 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
               <div className="space-y-5">
                 <div className="space-y-2.5">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Alias / Username</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Alias / Email</Label>
                   <div className="relative group">
                     <Input 
-                      placeholder="e.g. Sys_Admin_01" 
+                      placeholder="e.g. John Operator" 
                       className="h-14 bg-slate-50 border-none text-slate-900 text-xs font-bold rounded-2xl pl-12 focus-visible:ring-primary/20 transition-all shadow-inner"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}

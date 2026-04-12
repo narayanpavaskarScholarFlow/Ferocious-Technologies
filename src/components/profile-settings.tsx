@@ -127,6 +127,7 @@ export function ProfileSettings({
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
 
+  // Categories for Matrix
   const groupedPermissions = useMemo(() => {
     const groups: Record<string, typeof ACCESS_NODES> = {};
     ACCESS_NODES.forEach(node => {
@@ -135,6 +136,13 @@ export function ProfileSettings({
     });
     return groups;
   }, []);
+
+  // Sync selected user for matrix on load
+  useEffect(() => {
+    if (users.length > 0 && !selectedUserForMatrix) {
+      setSelectedUserForMatrix(users[0].id);
+    }
+  }, [users, selectedUserForMatrix]);
 
   const activeAdmin = useMemo(() => {
     return users.find(u => u.name === currentUser || u.email?.includes(String(currentUser).toLowerCase())) || null;
@@ -245,8 +253,8 @@ export function ProfileSettings({
     });
 
     toast({
-      title: "Permission Escalated",
-      description: `Access level for ${pageId} has been updated.`,
+      title: "Permission Matrix Updated",
+      description: `Access level for ${pageId} committed to security ledger.`,
     });
   };
 
@@ -550,7 +558,7 @@ export function ProfileSettings({
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Identity:</span>
-                  <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
+                  <Select value={currentUserMatrix?.id || ''} onValueChange={setSelectedUserForMatrix}>
                     <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
                       <SelectValue placeholder="Select User..." />
                     </SelectTrigger>

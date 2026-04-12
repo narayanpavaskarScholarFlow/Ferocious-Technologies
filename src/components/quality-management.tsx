@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +62,7 @@ const MACHINING_OPS = [
 ];
 
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
-  { id: '1', balloonNo: '1', target: '100.00', tolerance: '±0.05', upperLimit: '100.050', lowerLimit: '99.950', actual: '', status: 'Pending', remark: '' },
+  { id: '1', balloonNo: 'BL-01', target: '100.00', tolerance: '±0.05', upperLimit: '100.050', lowerLimit: '99.950', actual: '', status: 'Pending', remark: '' },
 ];
 
 interface QualityManagementProps {
@@ -214,9 +214,11 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   };
 
   const handleAddDimension = () => {
+    const nextSeq = dimensions.length + 1;
+    const balloonNo = `BL-${nextSeq.toString().padStart(2, '0')}`;
     const newDim: DimensionRecord = {
       id: Math.random().toString(36).substr(2, 9),
-      balloonNo: '',
+      balloonNo: balloonNo,
       target: '0.00',
       tolerance: '±0.00',
       upperLimit: '0.000',
@@ -226,6 +228,25 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       remark: ''
     };
     setDimensions([...dimensions, newDim]);
+    return newDim.id;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, idx: number, dimId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const isLast = idx === dimensions.length - 1;
+      if (isLast) {
+        const newId = handleAddDimension();
+        setTimeout(() => {
+          const nextInput = document.getElementById(`actual-${newId}`);
+          nextInput?.focus();
+        }, 50);
+      } else {
+        const nextId = dimensions[idx + 1].id;
+        const nextInput = document.getElementById(`actual-${nextId}`);
+        nextInput?.focus();
+      }
+    }
   };
 
   const saveReportDraft = () => {
@@ -567,6 +588,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-4 px-4 w-[120px]">Balloon No.</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Target (mm)</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[120px]">Tolerance</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[160px]">Tolerance Limits</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[140px]">Actual Measured</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-center w-[100px]">Status</TableHead>
                         <TableHead className="text-[9px] font-bold uppercase text-slate-400 text-left pl-6">Observations / Remarks</TableHead>
@@ -574,10 +596,10 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dimensions.map((dim) => (
+                      {dimensions.map((dim, idx) => (
                         <TableRow key={dim.id} className="border-b border-slate-50 h-16 hover:bg-slate-50/30 transition-colors">
                           <TableCell className="px-4">
-                            <Input className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl text-center" placeholder="e.g. 1" value={dim.balloonNo} onChange={(e) => handleUpdateDimension(dim.id, 'balloonNo', e.target.value)} />
+                            <Input className="h-10 bg-slate-50/50 border-none font-bold text-xs rounded-xl text-center" placeholder="e.g. BL-01" value={dim.balloonNo} onChange={(e) => handleUpdateDimension(dim.id, 'balloonNo', e.target.value)} />
                           </TableCell>
                           <TableCell>
                             <Input className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" value={dim.target} onChange={(e) => handleUpdateDimension(dim.id, 'target', e.target.value)} />
@@ -585,8 +607,20 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                           <TableCell>
                             <Input className="h-10 bg-slate-50/50 border-none font-code font-bold text-xs text-center rounded-xl" value={dim.tolerance} onChange={(e) => handleUpdateDimension(dim.id, 'tolerance', e.target.value)} />
                           </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-code font-bold text-slate-600">{dim.upperLimit} / {dim.lowerLimit}</span>
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">UP / LOW LIMIT</span>
+                            </div>
+                          </TableCell>
                           <TableCell>
-                            <Input className={cn("h-10 bg-white border-2 font-code font-bold text-sm text-center rounded-xl shadow-inner transition-all", dim.status === 'OK' ? "border-emerald-200 text-emerald-700" : dim.status === 'NOT OK' ? "border-red-200 text-red-700" : "border-primary/10")} value={dim.actual} onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)} />
+                            <Input 
+                              id={`actual-${dim.id}`}
+                              className={cn("h-10 bg-white border-2 font-code font-bold text-sm text-center rounded-xl shadow-inner transition-all", dim.status === 'OK' ? "border-emerald-200 text-emerald-700" : dim.status === 'NOT OK' ? "border-red-200 text-red-700" : "border-primary/10")} 
+                              value={dim.actual} 
+                              onChange={(e) => handleUpdateDimension(dim.id, 'actual', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, idx, dim.id)}
+                            />
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-center">
@@ -629,10 +663,15 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </TabsContent>
             </Tabs>
             <div className="pt-8 border-t border-slate-100 flex gap-4 mt-8 shrink-0">
-              <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] text-slate-400" onClick={() => setCurrentStep('upload')}>Abort Entry</Button>
-              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] shadow-2xl flex gap-3" onClick={saveReportDraft}>
-                Generate Compliance Draft <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex-1 flex flex-col justify-center">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Shortcut: Hit ENTER on Actual column to go to next dimension</p>
+              </div>
+              <div className="flex gap-4">
+                <Button variant="ghost" className="h-14 rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] text-slate-400 px-8" onClick={() => setCurrentStep('upload')}>Abort Entry</Button>
+                <Button className="h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[9px] shadow-2xl flex gap-3 px-12" onClick={saveReportDraft}>
+                  Generate Compliance Draft <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

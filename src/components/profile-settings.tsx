@@ -56,7 +56,8 @@ import {
   EyeOff,
   RefreshCw,
   Factory,
-  Key
+  Key,
+  Kanban
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -67,6 +68,7 @@ import { cn } from '@/lib/utils';
 
 const ACCESS_NODES = [
   { id: 'overview', label: 'Command Matrix (Dashboard)', category: 'Strategic Hub', icon: LayoutGrid },
+  { id: 'agile', label: 'Agile Kanban Flow (Task Matrix)', category: 'Strategic Hub', icon: Kanban },
   { id: 'smart-quote', label: 'AI Smart Quoting (Gemini)', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'SQCDP Performance Metrics', category: 'Strategic Hub', icon: LineChart },
   { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },

@@ -54,7 +54,8 @@ export type ViewType =
   | 'settings'
   | 'gantt'
   | 'smart-quote'
-  | 'production-planner';
+  | 'production-planner'
+  | 'agile';
 
 export interface SubTask {
   id: string;

@@ -20,7 +20,8 @@ import {
   LayoutGrid,
   BrainCircuit,
   Zap,
-  Factory
+  Factory,
+  Kanban
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -41,6 +42,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {} }: Side
   const menuItems = useMemo(() => {
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Overview' },
+      { id: 'agile' as ViewType, icon: Kanban, label: 'Agile Flow' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Orders' },
       { id: 'production-planner' as ViewType, icon: Factory, label: 'Mass Production' },
       { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Gantt' },

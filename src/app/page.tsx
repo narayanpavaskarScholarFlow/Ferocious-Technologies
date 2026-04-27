@@ -21,11 +21,12 @@ import { ProductionGantt } from '@/components/production-gantt';
 import { ProfileSettings } from '@/components/profile-settings';
 import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { ProductionPlanner } from '@/components/production-planner';
+import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert, KeyRound, AlertTriangle } from 'lucide-react';
+import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert, KeyRound, AlertTriangle, Kanban } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -151,6 +152,7 @@ function IndustrialERPInternal() {
     if (isMasterAdmin || isPlantController) {
       const clearance: Record<string, PermissionLevel> = {
         overview: 'full',
+        agile: 'full',
         orders: 'full',
         sqcdp: 'full',
         operations: 'full',
@@ -427,11 +429,11 @@ function IndustrialERPInternal() {
 
         <main className={cn(
           "flex-1 overflow-y-auto w-full print:overflow-visible print:p-0 print:max-w-none print:m-0 print:block",
-          currentView === 'gantt' ? "p-0" : "p-6"
+          currentView === 'gantt' || currentView === 'agile' ? "p-0" : "p-6"
         )}>
           <div className={cn(
             "animate-in fade-in slide-in-from-bottom-2 duration-500 print:animate-none print:block",
-            currentView === 'gantt' && "h-full"
+            (currentView === 'gantt' || currentView === 'agile') && "h-full"
           )}>
             {currentView === 'overview' && (
               <ShopFloorOverview 
@@ -442,6 +444,7 @@ function IndustrialERPInternal() {
                 onNavigateToBilling={() => handleViewChange('billing')}
               />
             )}
+            {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
             {currentView === 'production-planner' && (
               <ProductionPlanner 

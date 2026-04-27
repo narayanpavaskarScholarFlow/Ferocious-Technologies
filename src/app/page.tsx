@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -53,6 +53,12 @@ import {
 import { collection, doc } from 'firebase/firestore';
 import { differenceInDays, parseISO } from 'date-fns';
 
+const DEFAULT_UI_SETTINGS: UISettings = {
+  fontSize: 13,
+  tableDensity: 'compact',
+  borderRadius: 1,
+};
+
 function IndustrialERPInternal() {
   const db = useFirestore();
   const { toast } = useToast();
@@ -65,6 +71,9 @@ function IndustrialERPInternal() {
   const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   
+  // UI Customization State
+  const [uiSettings, setUISettings] = useState<UISettings>(DEFAULT_UI_SETTINGS);
+
   // Firestore Collections
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
   const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
@@ -101,6 +110,22 @@ function IndustrialERPInternal() {
     if (!currentUser || !usersData) return null;
     return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
+
+  // Apply UI Settings when changed or on mount
+  useEffect(() => {
+    const targetSettings = currentUserData?.uiSettings || DEFAULT_UI_SETTINGS;
+    setUISettings(targetSettings);
+    
+    document.documentElement.style.setProperty('--base-font-size', `${targetSettings.fontSize}px`);
+    document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
+    
+    const densityMap = {
+      compact: '0.5rem',
+      standard: '1rem',
+      comfortable: '1.5rem'
+    };
+    document.documentElement.style.setProperty('--table-cell-padding', densityMap[targetSettings.tableDensity]);
+  }, [currentUserData?.uiSettings]);
 
   // Password Policy Logic
   useEffect(() => {
@@ -317,6 +342,22 @@ function IndustrialERPInternal() {
     deleteDocumentNonBlocking(doc(db, 'production_batches', id));
   };
 
+  const handleUpdateUISettings = (settings: UISettings) => {
+    if (currentUserData) {
+      handleSaveUser({
+        ...currentUserData,
+        uiSettings: settings
+      });
+    } else if (currentUser === 'Master Admin') {
+       // For Master Admin if no user profile exists, just apply to local state
+       setUISettings(settings);
+       document.documentElement.style.setProperty('--base-font-size', `${settings.fontSize}px`);
+       document.documentElement.style.setProperty('--radius', `${settings.borderRadius}rem`);
+       const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
+       document.documentElement.style.setProperty('--table-cell-padding', densityMap[settings.tableDensity]);
+    }
+  };
+
   const handleUpdateStatusFromQC = (orderId: string, operation: string, status: string) => {
     const order = orders.find(o => o.id === orderId);
     if (!order || !order.routing) return;
@@ -530,6 +571,9 @@ function IndustrialERPInternal() {
                 users={usersData}
                 onSaveUser={handleSaveUser}
                 onDeleteUser={handleDeleteUser}
+                uiSettings={uiSettings}
+                onUpdateUISettings={handleUpdateUISettings}
+                currentUserData={currentUserData}
               />
             )}
             {currentView === 'gantt' && (

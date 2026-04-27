@@ -24,6 +24,10 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 243 75% 59%;
     --radius: 1rem;
+    
+    /* Dynamic UI Variables */
+    --base-font-size: 13px;
+    --table-cell-padding: 0.5rem;
   }
 
   .dark {
@@ -55,12 +59,18 @@
   }
   body {
     @apply bg-background text-foreground font-body antialiased selection:bg-primary/20;
-    font-size: 13px;
+    font-size: var(--base-font-size, 13px);
+  }
+
+  /* Global Table Padding Control */
+  table td, table th {
+    padding-top: var(--table-cell-padding, 0.5rem) !important;
+    padding-bottom: var(--table-cell-padding, 0.5rem) !important;
   }
 }
 
 .premium-card {
-  @apply bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-hidden transition-all duration-300;
+  @apply bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[var(--radius)] overflow-hidden transition-all duration-300;
 }
 
 .premium-card:hover {

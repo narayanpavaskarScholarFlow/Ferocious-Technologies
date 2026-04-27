@@ -57,13 +57,17 @@ import {
   RefreshCw,
   Factory,
   Key,
-  Kanban
+  Kanban,
+  Type,
+  Maximize,
+  TableProperties
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
-import { SystemUser, PermissionLevel } from '@/lib/types';
+import { SystemUser, PermissionLevel, UISettings } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 const ACCESS_NODES = [
@@ -112,6 +116,9 @@ interface ProfileSettingsProps {
   users: SystemUser[];
   onSaveUser: (user: SystemUser) => void;
   onDeleteUser: (userId: string) => void;
+  uiSettings: UISettings;
+  onUpdateUISettings: (settings: UISettings) => void;
+  currentUserData: SystemUser | null;
 }
 
 export function ProfileSettings({ 
@@ -121,13 +128,18 @@ export function ProfileSettings({
   currentUser,
   users,
   onSaveUser,
-  onDeleteUser
+  onDeleteUser,
+  uiSettings,
+  onUpdateUISettings,
+  currentUserData
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
+
+  const isHighLevelAdmin = currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller';
 
   // Categories for Matrix
   const groupedPermissions = useMemo(() => {
@@ -294,6 +306,11 @@ export function ProfileSettings({
               <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
             </TabsTrigger>
           )}
+          {isHighLevelAdmin && (
+            <TabsTrigger value="config" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
+              <Monitor className="h-3.5 w-3.5 mr-2" /> System UI Config
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="profile" className="m-0 space-y-8 print:m-0 print:space-y-0">
@@ -301,7 +318,7 @@ export function ProfileSettings({
             <div className="lg:col-span-4 space-y-6 print:w-full print:flex print:justify-center">
               {/* Digital Industrial ID Card */}
               <div id="id-card-printable" className="relative group/id print:w-[350px]">
-                <Card className="p-0 bg-slate-900 border-slate-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] rounded-[2rem] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 print:shadow-none print:rotate-0 print:scale-100 print:rounded-none print:border-2 print:border-slate-200">
+                <Card className="p-0 bg-slate-900 border-slate-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] rounded-[var(--radius)] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 print:shadow-none print:rotate-0 print:scale-100 print:rounded-none print:border-2 print:border-slate-200">
                   {/* ID Card Header */}
                   <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent" />
@@ -387,7 +404,7 @@ export function ProfileSettings({
             </div>
 
             <div className="lg:col-span-8 space-y-6 print:hidden">
-              <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[2rem] space-y-10">
+              <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[var(--radius)] space-y-10">
                 <div className="space-y-10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
@@ -552,7 +569,7 @@ export function ProfileSettings({
 
         {currentUser === 'Master Admin' && (
           <TabsContent value="matrix" className="m-0 print:hidden">
-            <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
+            <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[var(--radius)]">
               <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                   <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
@@ -661,6 +678,94 @@ export function ProfileSettings({
                     <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
                   </div>
                 )}
+              </div>
+            </Card>
+          </TabsContent>
+        )}
+
+        {isHighLevelAdmin && (
+          <TabsContent value="config" className="m-0 print:hidden space-y-8">
+            <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[var(--radius)]">
+              <div className="flex items-center gap-4 mb-10 border-l-4 border-primary pl-4">
+                <Monitor className="h-6 w-6 text-primary" />
+                <div>
+                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">System UI Customization Matrix</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">High-Level Architectural Scaling Protocol</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                <div className="space-y-10">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <Type className="h-4 w-4" /> Global Typographic Scale
+                      </Label>
+                      <Badge variant="outline" className="font-code text-primary">{uiSettings.fontSize}px</Badge>
+                    </div>
+                    <div className="px-2">
+                      <Slider 
+                        min={11} 
+                        max={16} 
+                        step={1} 
+                        value={[uiSettings.fontSize]} 
+                        onValueChange={(val) => onUpdateUISettings({ ...uiSettings, fontSize: val[0] })}
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-medium italic">Adjust the base font size for the entire ERP ecosystem.</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <Maximize className="h-4 w-4" /> Architectural Corner Radius
+                      </Label>
+                      <Badge variant="outline" className="font-code text-primary">{uiSettings.borderRadius}rem</Badge>
+                    </div>
+                    <div className="px-2">
+                      <Slider 
+                        min={0} 
+                        max={3} 
+                        step={0.1} 
+                        value={[uiSettings.borderRadius]} 
+                        onValueChange={(val) => onUpdateUISettings({ ...uiSettings, borderRadius: val[0] })}
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-medium italic">Control the "Premium feel" via global component rounding.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-10">
+                  <div className="space-y-6">
+                    <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                      <TableProperties className="h-4 w-4" /> Spreadsheet Matrix Density
+                    </Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(['compact', 'standard', 'comfortable'] as const).map((density) => (
+                        <Button
+                          key={density}
+                          variant={uiSettings.tableDensity === density ? 'default' : 'outline'}
+                          className={cn(
+                            "h-14 rounded-xl font-bold uppercase text-[9px] tracking-widest border-slate-200",
+                            uiSettings.tableDensity === density ? "bg-[#001F3D] text-white" : "text-slate-400 hover:text-[#001F3D]"
+                          )}
+                          onClick={() => onUpdateUISettings({ ...uiSettings, tableDensity: density })}
+                        >
+                          {density}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-medium italic">Instantly adjust cell padding for high-density or comfortable data reading.</p>
+                  </div>
+
+                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4 items-start">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary shadow-sm"><ShieldCheck className="h-4 w-4" /></div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Protocol Advisory</p>
+                      <p className="text-[11px] text-slate-500 leading-relaxed mt-1">Changes are persisted to your master identity node and applied globally across your active session.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Card>
           </TabsContent>

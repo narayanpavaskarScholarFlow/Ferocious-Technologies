@@ -193,11 +193,17 @@ export interface UserLeaveBalance {
   casual: number;
 }
 
+export interface UISettings {
+  fontSize: number;
+  tableDensity: 'compact' | 'standard' | 'comfortable';
+  borderRadius: number;
+}
+
 export interface SystemUser {
   id: string;
   name: string;
   email: string;
-  password?: string; // New field for security protocol
+  password?: string;
   role: string;
   dept: string;
   image?: string;
@@ -205,11 +211,12 @@ export interface SystemUser {
   reportingManager?: string;
   permissions: Record<string, PermissionLevel>;
   lastLogin: string;
-  lastPasswordChange?: string; // ISO date string
+  lastPasswordChange?: string;
   status: 'online' | 'offline' | 'active' | 'break' | 'off';
   shift?: 'Morning' | 'Evening' | 'Night';
   efficiency?: number;
   leaveBalance?: UserLeaveBalance;
+  uiSettings?: UISettings;
 }
 
 export interface DimensionRecord {
@@ -231,7 +238,7 @@ export interface QualityReport {
   workOrderId: string;
   drawingId: string;
   drawingName: string;
-  drawingFile?: string; // Data URI or URL of the attached blueprint
+  drawingFile?: string; 
   dimensions: DimensionRecord[];
   checks: Record<string, string>;
   status: 'Draft' | 'Review Pending' | 'Released';

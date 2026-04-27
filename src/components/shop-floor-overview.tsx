@@ -43,8 +43,6 @@ export function ShopFloorOverview({
 }: ShopFloorOverviewProps) {
   
   const kpiData = [
-    { id: 'inventory', label: 'Material Ledger', total: '0', sub1: 'SKUs', sub1Val: 0, sub2: 'Short', sub2Val: 0, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'billing', label: 'Financial Hub', total: '₹ 0.00', sub1: 'MTD', sub1Val: '₹ 0', sub2: 'Due', sub2Val: '₹ 0', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'orders', label: 'Active Jobs', total: orders.length.toString(), sub1: 'WIP', sub1Val: orders.filter(o => o.status === 'Active').length, sub2: 'Queued', sub2Val: orders.filter(o => o.status === 'Pending').length, icon: ShoppingCart, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -89,6 +89,7 @@ function IndustrialERPInternal() {
   const batchesQuery = useMemoFirebase(() => collection(db, 'production_batches'), [db]);
   const trainingsQuery = useMemoFirebase(() => collection(db, 'trainings'), [db]);
   const assignmentsQuery = useMemoFirebase(() => collection(db, 'training_assignments'), [db]);
+  const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -101,6 +102,7 @@ function IndustrialERPInternal() {
   const { data: batchesData } = useCollection<ProductionBatch>(batchesQuery);
   const { data: trainingsData } = useCollection<Training>(trainingsQuery);
   const { data: assignmentsData } = useCollection<TrainingAssignment>(assignmentsQuery);
+  const { data: reportsData } = useCollection<QualityReport>(reportsQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -113,6 +115,7 @@ function IndustrialERPInternal() {
   const batches = batchesData || [];
   const trainings = trainingsData || [];
   const assignments = assignmentsData || [];
+  const reports = reportsData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -594,7 +597,15 @@ function IndustrialERPInternal() {
                 onAddLog={(l) => setDocumentNonBlocking(doc(db, 'work_logs', l.id), l, { merge: true })} 
               />
             )}
-            {currentView === 'sqcdp' && <ShopFloorSQCDP />}
+            {currentView === 'sqcdp' && (
+              <ShopFloorSQCDP 
+                orders={orders}
+                reports={reports}
+                logs={logs}
+                users={usersData}
+                assignments={assignments}
+              />
+            )}
             {currentView === 'machine-utilization' && (
               <MachineUtilization 
                 machines={machines}

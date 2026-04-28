@@ -198,6 +198,8 @@ export interface UISettings {
   fontSize: number;
   tableDensity: 'compact' | 'standard' | 'comfortable';
   borderRadius: number;
+  primaryColor: string; // HSL string "243 75% 59%"
+  sidebarMode: 'slim' | 'full';
 }
 
 export interface SystemUser {

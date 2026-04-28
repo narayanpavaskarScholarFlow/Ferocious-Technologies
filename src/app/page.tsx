@@ -58,6 +58,8 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   fontSize: 13,
   tableDensity: 'compact',
   borderRadius: 1,
+  primaryColor: '243 75% 59%',
+  sidebarMode: 'slim'
 };
 
 function IndustrialERPInternal() {
@@ -125,6 +127,7 @@ function IndustrialERPInternal() {
     
     document.documentElement.style.setProperty('--base-font-size', `${targetSettings.fontSize}px`);
     document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
+    document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
     
     const densityMap = {
       compact: '0.5rem',
@@ -384,10 +387,11 @@ function IndustrialERPInternal() {
         uiSettings: settings
       });
     } else if (currentUser === 'Master Admin') {
-       // For Master Admin if no user profile exists, just apply to local state
+       // For Master Admin if no user profile exists, apply locally
        setUISettings(settings);
        document.documentElement.style.setProperty('--base-font-size', `${settings.fontSize}px`);
        document.documentElement.style.setProperty('--radius', `${settings.borderRadius}rem`);
+       document.documentElement.style.setProperty('--primary', settings.primaryColor);
        const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
        document.documentElement.style.setProperty('--table-cell-padding', densityMap[settings.tableDensity]);
     }
@@ -430,10 +434,20 @@ function IndustrialERPInternal() {
     );
   }
 
+  const isSlimSidebar = uiSettings.sidebarMode === 'slim';
+
   return (
     <div className="flex min-h-screen bg-slate-50/50 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block print:bg-white">
-      <div className="hidden lg:block print:hidden">
-        <SidebarNav currentView={currentView} onViewChange={handleViewChange} permissions={permissions} />
+      <div className={cn(
+        "hidden lg:block print:hidden transition-all duration-500",
+        isSlimSidebar ? "w-20" : "w-64"
+      )}>
+        <SidebarNav 
+          currentView={currentView} 
+          onViewChange={handleViewChange} 
+          permissions={permissions} 
+          isSlim={isSlimSidebar}
+        />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
@@ -446,7 +460,12 @@ function IndustrialERPInternal() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-20 bg-[#001F3D]">
-                <SidebarNav currentView={currentView} onViewChange={handleViewChange} permissions={permissions} />
+                <SidebarNav 
+                  currentView={currentView} 
+                  onViewChange={handleViewChange} 
+                  permissions={permissions} 
+                  isSlim={true}
+                />
               </SheetContent>
             </Sheet>
 

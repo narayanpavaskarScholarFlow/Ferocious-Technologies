@@ -60,7 +60,8 @@ import {
   Kanban,
   Type,
   Maximize,
-  TableProperties
+  TableProperties,
+  GraduationCap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -83,6 +84,7 @@ const ACCESS_NODES = [
   { id: 'weekly-plan', label: 'Master Production Schedule', category: 'Production Control', icon: Calendar },
   { id: 'work-log', label: 'Daily Operator Work Logs', category: 'Production Control', icon: ClipboardList },
   { id: 'quality', label: 'Quality Inspection Pipeline', category: 'Quality & Compliance', icon: ShieldCheck },
+  { id: 'training', label: 'Training & Skill Matrix', category: 'Quality & Compliance', icon: GraduationCap },
   { id: 'quality-review', label: 'Final Compliance Review (Tab Access)', category: 'Quality & Compliance', icon: Unlock },
   { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
   { id: 'quality-report-delete', label: 'Quality: Delete Compliance Report Protocol', category: 'Quality & Compliance', icon: Trash2 },

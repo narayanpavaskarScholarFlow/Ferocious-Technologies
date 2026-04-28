@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -22,6 +22,7 @@ import { ProfileSettings } from '@/components/profile-settings';
 import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { ProductionPlanner } from '@/components/production-planner';
 import { AgileBoard } from '@/components/agile-board';
+import { TrainingManagement } from '@/components/training-management';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
@@ -84,6 +85,8 @@ function IndustrialERPInternal() {
   const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
   const batchesQuery = useMemoFirebase(() => collection(db, 'production_batches'), [db]);
+  const trainingsQuery = useMemoFirebase(() => collection(db, 'trainings'), [db]);
+  const assignmentsQuery = useMemoFirebase(() => collection(db, 'training_assignments'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -94,6 +97,8 @@ function IndustrialERPInternal() {
   const { data: billingData } = useCollection<BillingRecord>(billingQuery);
   const { data: logsData } = useCollection<WorkLogEntryType>(logsQuery);
   const { data: batchesData } = useCollection<ProductionBatch>(batchesQuery);
+  const { data: trainingsData } = useCollection<Training>(trainingsQuery);
+  const { data: assignmentsData } = useCollection<TrainingAssignment>(assignmentsQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -104,6 +109,8 @@ function IndustrialERPInternal() {
   const billing = billingData || [];
   const logs = logsData || [];
   const batches = batchesData || [];
+  const trainings = trainingsData || [];
+  const assignments = assignmentsData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -209,7 +216,8 @@ function IndustrialERPInternal() {
         'maintenance': 'full',
         'hr-planning': 'full',
         'holiday-matrix': 'full',
-        'production-planner': 'full'
+        'production-planner': 'full',
+        training: 'full'
       };
 
       if (isMasterAdmin) {
@@ -340,6 +348,33 @@ function IndustrialERPInternal() {
 
   const handleDeleteBatch = (id: string) => {
     deleteDocumentNonBlocking(doc(db, 'production_batches', id));
+  };
+
+  const handleSaveTraining = (training: Training) => {
+    setDocumentNonBlocking(doc(db, 'trainings', training.id), training, { merge: true });
+  };
+
+  const handleDeleteTraining = (id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'trainings', id));
+  };
+
+  const handleSaveAssignment = (asg: TrainingAssignment) => {
+    setDocumentNonBlocking(doc(db, 'training_assignments', asg.id), asg, { merge: true });
+    
+    // Performance Impact Logic
+    if (asg.status === 'Completed') {
+      const user = usersData.find(u => u.id === asg.userId);
+      const training = trainings.find(t => t.id === asg.trainingId);
+      if (user && training) {
+        const currentEff = user.efficiency || 70;
+        const newEff = Math.min(currentEff + (training.impactScore * 0.5), 100);
+        handleSaveUser({ ...user, efficiency: newEff });
+      }
+    }
+  };
+
+  const handleDeleteAssignment = (id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'training_assignments', id));
   };
 
   const handleUpdateUISettings = (settings: UISettings) => {
@@ -519,6 +554,17 @@ function IndustrialERPInternal() {
               <InventoryManagement 
                 items={inventory}
                 onSaveItem={handleSaveInventoryItem}
+              />
+            )}
+            {currentView === 'training' && (
+              <TrainingManagement 
+                trainings={trainings}
+                assignments={assignments}
+                users={usersData}
+                onSaveTraining={handleSaveTraining}
+                onDeleteTraining={handleDeleteTraining}
+                onSaveAssignment={handleSaveAssignment}
+                onDeleteAssignment={handleDeleteAssignment}
               />
             )}
             {currentView === 'work-log' && (

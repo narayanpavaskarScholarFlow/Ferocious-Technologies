@@ -55,7 +55,8 @@ export type ViewType =
   | 'gantt'
   | 'smart-quote'
   | 'production-planner'
-  | 'agile';
+  | 'agile'
+  | 'training';
 
 export interface SubTask {
   id: string;
@@ -266,4 +267,26 @@ export interface ProductionBatch {
   startTime: string;
   endTime?: string;
   lastSync: string;
+}
+
+export interface Training {
+  id: string;
+  title: string;
+  description: string;
+  department: string;
+  durationHours: number;
+  impactScore: number; // How much it affects efficiency (0-10)
+}
+
+export interface TrainingAssignment {
+  id: string;
+  trainingId: string;
+  trainingTitle: string;
+  userId: string;
+  userName: string;
+  assignedDate: string;
+  targetDate: string;
+  completionDate?: string;
+  status: 'Assigned' | 'In-Progress' | 'Completed' | 'Overdue' | 'Failed';
+  score?: number;
 }

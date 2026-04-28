@@ -21,7 +21,8 @@ import {
   BrainCircuit,
   Zap,
   Factory,
-  Kanban
+  Kanban,
+  GraduationCap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -48,6 +49,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {} }: Side
       { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Gantt' },
       { id: 'operations' as ViewType, icon: Layers, label: 'Spreadsheet' },
       { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality' },
+      { id: 'training' as ViewType, icon: GraduationCap, label: 'Training Matrix' },
       { id: 'inventory' as ViewType, icon: Boxes, label: 'Inventory' },
       { id: 'billing' as ViewType, icon: CreditCard, label: 'Billing' },
       { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Work Logs' },

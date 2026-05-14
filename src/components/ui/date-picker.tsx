@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 interface DatePickerProps {
   value?: string;
@@ -22,10 +23,10 @@ interface DatePickerProps {
 }
 
 /**
- * High-Fidelity Industrial Date Picker
- * Exactly matches the reference image with dark trigger and premium matrix popover.
+ * Standardized Industrial Temporal Matrix Date Picker
+ * Matches the "TEMPORAL MATRIX" template with dark header and yellow node badge.
  */
-export function DatePicker({ value, onChange, placeholder = "Pick a date", className, disabled }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "Select a date", className, disabled }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
 
   const dateValue = React.useMemo(() => {
@@ -39,6 +40,10 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
       onChange(format(date, "yyyy-MM-dd"));
       setOpen(false);
     }
+  };
+
+  const onToday = () => {
+    handleSelect(new Date());
   };
 
   return (
@@ -61,14 +66,15 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
           </div>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[1.5rem] overflow-hidden bg-white animate-in zoom-in-95 duration-200" align="start" sideOffset={12}>
-        <div className="bg-slate-900 px-5 py-3 border-b border-white/5 flex items-center justify-between">
-          <div className="flex flex-col">
-            <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Temporal Matrix</h4>
-            <p className="text-[7px] text-white/40 uppercase font-bold tracking-widest">Protocol v2.4_SYNC</p>
+      <PopoverContent className="w-[300px] p-0 border-none shadow-[0_60px_120px_-20px_rgba(0,0,0,0.5)] rounded-[1.5rem] overflow-hidden bg-white animate-in zoom-in-95 duration-200" align="start" sideOffset={12}>
+        <div className="bg-[#0A0F18] px-6 py-5 border-b border-white/5 flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <h4 className="text-[11px] font-bold text-white uppercase tracking-[0.3em]">Temporal Matrix</h4>
+            <p className="text-[8px] text-white/30 uppercase font-bold tracking-widest">Protocol v2.4_SYNC</p>
           </div>
-          <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold px-2 py-0">ACTIVE_NODE</Badge>
+          <Badge className="bg-amber-500 text-black border-none text-[8px] font-black px-2.5 py-0.5 rounded-sm">ACTIVE_NODE</Badge>
         </div>
+        
         <Calendar
           mode="single"
           selected={dateValue}
@@ -76,6 +82,16 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
           initialFocus
           className="p-0"
         />
+
+        <div className="p-3 border-t border-slate-50 bg-slate-50/30">
+          <Button 
+            type="button"
+            onClick={onToday}
+            className="w-full h-10 bg-[#0A0F18] hover:bg-black text-white font-bold text-[10px] uppercase tracking-[0.2em] rounded-xl shadow-lg transition-all"
+          >
+            Today
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   )

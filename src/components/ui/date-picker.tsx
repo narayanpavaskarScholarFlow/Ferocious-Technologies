@@ -54,24 +54,24 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
           disabled={disabled}
           variant={"outline"}
           className={cn(
-            "w-full justify-between text-left font-bold transition-all border-slate-200 h-10 px-3 bg-white hover:bg-slate-50 rounded-xl",
-            !value && "text-slate-400 font-medium",
-            open && "ring-2 ring-blue-600/20 border-blue-600/50",
+            "w-full justify-between text-left font-bold transition-all border-none h-12 px-4 bg-[#0a0f18] hover:bg-[#111827] rounded-xl text-white",
+            !value && "text-white/40",
+            open && "ring-2 ring-blue-600/50",
             className
           )}
         >
-          <span className="truncate">
+          <span className="truncate text-xs uppercase tracking-widest">
             {dateValue ? format(dateValue, "yyyy-MM-dd") : <span>{placeholder}</span>}
           </span>
           <div className={cn(
-            "p-1.5 rounded-lg transition-colors ml-2",
-            open ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500"
+            "p-2 rounded-lg transition-colors ml-2",
+            open ? "bg-blue-600 text-white" : "bg-white/10 text-white/60"
           )}>
-            <CalendarIcon className="h-3.5 w-3.5" />
+            <CalendarIcon className="h-4 w-4" />
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 border-none shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[1.5rem] overflow-hidden animate-in zoom-in-95" align="start" sideOffset={8}>
+      <PopoverContent className="w-auto p-0 border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[2rem] overflow-hidden animate-in zoom-in-95" align="start" sideOffset={8}>
         <Calendar
           mode="single"
           selected={dateValue}
@@ -79,9 +79,8 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
           onClear={value ? handleClear : undefined}
           onToday={handleToday}
           initialFocus
-          captionLayout="dropdown-buttons"
-          fromYear={2020}
-          toYear={2035}
+          weekStartsOn={1}
+          className="bg-white"
         />
       </PopoverContent>
     </Popover>

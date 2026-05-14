@@ -29,11 +29,13 @@ function Calendar({
         month: "space-y-4",
         caption: "flex justify-between pt-1 relative items-center px-2 mb-4",
         caption_label: "text-sm font-bold text-slate-900 uppercase tracking-tight",
-        nav: "space-x-1 flex items-center gap-1",
+        nav: "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 transition-opacity border-slate-200 rounded-md"
         ),
+        nav_button_previous: "absolute left-2",
+        nav_button_next: "absolute right-2",
         table: "w-full border-collapse space-y-1",
         head_row: "flex mb-2",
         head_cell: "text-slate-400 rounded-md w-9 font-bold text-[10px] uppercase text-center",

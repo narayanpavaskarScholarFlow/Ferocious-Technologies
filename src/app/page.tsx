@@ -7,7 +7,7 @@ import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
 import { MachineUtilization } from '@/components/machine-utilization';
-import { ManpowerUtilization } from '@/components/manpower-utilization';
+import { HRManagement } from '@/components/hr-management';
 import { CustomerOrders } from '@/components/customer-orders';
 import { WeeklyPlan } from '@/components/weekly-plan';
 import { OperationsStatus } from '@/components/operations-status';
@@ -22,7 +22,6 @@ import { ProfileSettings } from '@/components/profile-settings';
 import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { ProductionPlanner } from '@/components/production-planner';
 import { AgileBoard } from '@/components/agile-board';
-import { TrainingManagement } from '@/components/training-management';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
@@ -195,6 +194,7 @@ function IndustrialERPInternal() {
         sqcdp: 'full',
         operations: 'full',
         'machine-utilization': 'full',
+        hr: 'full',
         manpower: 'full',
         'customer-orders': 'full',
         'weekly-plan': 'full',
@@ -246,6 +246,7 @@ function IndustrialERPInternal() {
       return true;
     }
     if (view === 'settings') return true;
+    if (view === 'hr') return hasAccess('manpower') || hasAccess('training');
     const level = permissions[view];
     return level && level !== 'none';
   }, [permissions, currentUser, currentUserData]);
@@ -578,15 +579,17 @@ function IndustrialERPInternal() {
                 onSaveItem={handleSaveInventoryItem}
               />
             )}
-            {currentView === 'training' && (
-              <TrainingManagement 
+            {currentView === 'hr' && (
+              <HRManagement 
+                users={usersData}
                 trainings={trainings}
                 assignments={assignments}
-                users={usersData}
+                onSaveUser={handleSaveUser}
                 onSaveTraining={handleSaveTraining}
                 onDeleteTraining={handleDeleteTraining}
                 onSaveAssignment={handleSaveAssignment}
                 onDeleteAssignment={handleDeleteAssignment}
+                currentUser={currentUser}
               />
             )}
             {currentView === 'work-log' && (
@@ -611,13 +614,6 @@ function IndustrialERPInternal() {
                 machines={machines}
                 orders={orders}
                 onSaveMachine={handleSaveMachine}
-              />
-            )}
-            {currentView === 'manpower' && (
-              <ManpowerUtilization 
-                users={usersData}
-                onSaveUser={handleSaveUser}
-                currentUser={currentUser}
               />
             )}
             {currentView === 'customer-orders' && (

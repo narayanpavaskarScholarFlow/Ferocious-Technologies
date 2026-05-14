@@ -41,7 +41,7 @@ export type ViewType =
   | 'sqcdp' 
   | 'operations' 
   | 'machine-utilization' 
-  | 'manpower' 
+  | 'hr' 
   | 'customer-orders' 
   | 'weekly-plan' 
   | 'users'
@@ -56,7 +56,8 @@ export type ViewType =
   | 'smart-quote'
   | 'production-planner'
   | 'agile'
-  | 'training';
+  | 'training'
+  | 'manpower';
 
 export interface SubTask {
   id: string;

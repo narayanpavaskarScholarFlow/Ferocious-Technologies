@@ -24,7 +24,8 @@ import {
   Kanban,
   GraduationCap,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -46,18 +47,17 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
   const menuItems = useMemo(() => {
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Command Matrix' },
+      { id: 'hr' as ViewType, icon: Users, label: 'HR Command' },
       { id: 'agile' as ViewType, icon: Kanban, label: 'Agile Kanban' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Master Orders' },
       { id: 'production-planner' as ViewType, icon: Factory, label: 'Mass Production' },
       { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Visual Gantt' },
       { id: 'operations' as ViewType, icon: Layers, label: 'Spreadsheet' },
       { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality Hub' },
-      { id: 'training' as ViewType, icon: GraduationCap, label: 'Training Matrix' },
       { id: 'inventory' as ViewType, icon: Boxes, label: 'Stock Ledger' },
       { id: 'billing' as ViewType, icon: CreditCard, label: 'Financial Hub' },
       { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Daily Logs' },
       { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Asset Fleet' },
-      { id: 'manpower' as ViewType, icon: Users, label: 'Personnel' },
       { id: 'sqcdp' as ViewType, icon: LineChart, label: 'Performance' },
       { id: 'vendor' as ViewType, icon: Truck, label: 'Supply Chain' },
       { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Plan' },
@@ -65,6 +65,12 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     ];
 
     return items.filter(item => {
+      // For HR, check both manpower and training permissions
+      if (item.id === 'hr') {
+        const manpowerLevel = permissions['manpower'];
+        const trainingLevel = permissions['training'];
+        return (manpowerLevel && manpowerLevel !== 'none') || (trainingLevel && trainingLevel !== 'none');
+      }
       const level = permissions[item.id];
       return level && level !== 'none';
     });

@@ -2,16 +2,17 @@
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker, useDayPicker, useNavigation } from "react-day-picker"
+import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants, Button } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
 /**
  * High-Fidelity Industrial Calendar
- * Features Month/Year filters and precision-aligned day headers.
+ * Matches the reference image with centered Today node and premium matrix styling.
  */
 function Calendar({
   className,
@@ -24,22 +25,21 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn("p-0 bg-white", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row space-y-0",
+        months: "flex flex-col space-y-0",
         month: "space-y-0",
-        caption: "flex justify-between items-center py-4 px-4 relative",
-        caption_label: "hidden", // Hidden because we use dropdowns
-        caption_dropdowns: "flex gap-2 items-center flex-1 justify-center",
-        dropdown: "bg-slate-50 border border-slate-200 rounded-md text-[11px] font-bold text-[#003366] px-2 py-1 focus:ring-2 focus:ring-primary/20 outline-none h-8 cursor-pointer uppercase tracking-tighter",
-        nav: "absolute inset-x-4 flex justify-between items-center pointer-events-none z-10",
+        caption: "flex justify-between items-center py-4 px-5 relative border-b border-slate-100",
+        caption_label: "text-[11px] font-bold text-slate-900 uppercase tracking-widest",
+        nav: "flex items-center gap-1",
         nav_button: cn(
-          "h-8 w-8 bg-white border border-slate-100 p-0 shadow-sm opacity-100 hover:bg-slate-50 transition-all text-primary pointer-events-auto cursor-pointer rounded-lg flex items-center justify-center"
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-white p-0 opacity-100 hover:bg-slate-50 border-slate-200 text-slate-500 rounded-lg"
         ),
         nav_button_previous: "",
         nav_button_next: "",
         table: "w-full border-collapse",
-        head_row: "flex border-b border-slate-100 py-1.5",
-        head_cell: "text-slate-400 w-10 font-bold text-[9px] uppercase text-center flex-1 tracking-widest",
-        row: "flex w-full mt-1",
+        head_row: "flex border-b border-slate-50 px-3",
+        head_cell: "text-slate-400 w-9 font-bold text-[9px] uppercase text-center flex-1 py-3 tracking-tighter",
+        row: "flex w-full mt-1 px-3 pb-2",
         cell: cn(
           "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1",
           props.mode === "range"
@@ -47,7 +47,7 @@ function Calendar({
             : ""
         ),
         day: cn(
-          "h-10 w-10 p-0 font-bold text-xs transition-all text-primary hover:bg-primary/5 flex items-center justify-center rounded-lg"
+          "h-9 w-9 p-0 font-bold text-[10px] transition-all text-slate-600 hover:bg-primary/5 flex items-center justify-center rounded-lg"
         ),
         day_range_start: "day-range-start bg-primary text-primary-foreground rounded-none rounded-l-lg",
         day_range_end: "day-range-end bg-primary text-primary-foreground rounded-none rounded-r-lg",
@@ -62,6 +62,28 @@ function Calendar({
       components={{
         IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        Footer: () => {
+          const { onDayClick } = useDayPicker();
+          const handleToday = () => {
+            const today = new Date();
+            // This manually triggers selection if in single mode
+            if (props.mode === 'single' && props.onSelect) {
+              (props.onSelect as any)(today);
+            }
+          };
+
+          return (
+            <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+              <Button 
+                type="button"
+                onClick={handleToday}
+                className="w-full h-10 bg-primary hover:bg-[#002d4f] text-white font-bold text-[10px] uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20 transition-all"
+              >
+                Today
+              </Button>
+            </div>
+          );
+        }
       }}
       {...props}
     />

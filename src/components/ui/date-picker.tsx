@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { format, isValid } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Circle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
@@ -11,7 +11,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 interface DatePickerProps {
@@ -23,8 +22,8 @@ interface DatePickerProps {
 }
 
 /**
- * Standardized Industrial Temporal Matrix Date Picker
- * Matches the "TEMPORAL MATRIX" template with dark header and yellow node badge.
+ * Classic Legacy Template Date Picker
+ * Matches the requested "Input + Button" trigger and boxed calendar style.
  */
 export function DatePicker({ value, onChange, placeholder = "Select a date", className, disabled }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
@@ -47,53 +46,70 @@ export function DatePicker({ value, onChange, placeholder = "Select a date", cla
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div className={cn("group cursor-pointer w-full", className)}>
-          <div className={cn(
-            "bg-[#0a0f18] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between shadow-2xl transition-all hover:border-primary/40",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}>
-            <span className={cn(
-              "font-bold text-[11px] tracking-tight uppercase",
-              dateValue ? "text-white" : "text-slate-500"
-            )}>
-              {dateValue ? format(dateValue, "MMM dd, yyyy") : placeholder}
-            </span>
-            <div className="h-7 w-7 rounded-lg bg-white/10 flex items-center justify-center border border-white/5 shadow-inner">
-              <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-            </div>
-          </div>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 border-none shadow-[0_60px_120px_-20px_rgba(0,0,0,0.5)] rounded-[1.5rem] overflow-hidden bg-white animate-in zoom-in-95 duration-200" align="start" sideOffset={12}>
-        {/* Standard Matrix Header */}
-        <div className="bg-[#0A0F18] px-6 py-5 border-b border-white/5 flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <h4 className="text-[11px] font-bold text-white uppercase tracking-[0.3em]">Temporal Matrix</h4>
-            <p className="text-[8px] text-white/30 uppercase font-bold tracking-widest">Protocol v2.4_SYNC</p>
-          </div>
-          <Badge className="bg-amber-400 text-black border-none text-[8px] font-black px-2.5 py-0.5 rounded-sm">ACTIVE_NODE</Badge>
-        </div>
-        
-        <Calendar
-          mode="single"
-          selected={dateValue}
-          onSelect={handleSelect}
-          initialFocus
-          className="p-0"
+    <div className={cn("flex items-center gap-1.5", className)}>
+      <div className="flex-1 relative">
+        <input
+          readOnly
+          disabled={disabled}
+          value={dateValue ? format(dateValue, "d/M/yyyy") : ""}
+          placeholder={placeholder}
+          className={cn(
+            "w-full h-8 px-2 border border-slate-400 bg-white text-sm font-normal focus:outline-none shadow-inner",
+            disabled && "bg-slate-50 cursor-not-allowed"
+          )}
         />
-
-        <div className="p-3 border-t border-slate-50 bg-slate-50/30">
-          <Button 
+      </div>
+      
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
             type="button"
-            onClick={onToday}
-            className="w-full h-10 bg-[#0A0F18] hover:bg-black text-white font-bold text-[10px] uppercase tracking-[0.2em] rounded-xl shadow-lg transition-all"
+            disabled={disabled}
+            className={cn(
+              "h-8 px-3 bg-slate-200 border border-slate-400 text-sm font-medium hover:bg-slate-300 active:bg-slate-400 transition-colors shadow-sm",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
           >
-            Today
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+            Date
+          </button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-auto p-0 border border-slate-300 shadow-xl rounded-sm overflow-hidden bg-white" 
+          align="end" 
+          sideOffset={5}
+        >
+          {/* Custom Header for the Popover to match reference nav buttons */}
+          <Calendar
+            mode="single"
+            selected={dateValue}
+            onSelect={handleSelect}
+            initialFocus
+            className="p-0"
+            classNames={{
+              caption: "flex items-center justify-between p-3 border-b border-slate-100",
+              caption_label: "text-sm font-medium text-slate-900 capitalize",
+              nav: "flex items-center gap-1",
+            }}
+            components={{
+              IconLeft: () => <ChevronLeft className="h-3 w-3" />,
+              IconRight: () => <ChevronRight className="h-3 w-3" />,
+              // Adding the custom "Today/Dot" button in the navigation group
+            }}
+          />
+          
+          {/* Action Hub as the middle button in navigation is hard with standard DayPicker, 
+              so we add it to the header area or footer as a floating-ish element if needed.
+              For 1:1 parity with the nav icons in the image: */}
+          <div className="absolute top-3 right-12 flex items-center pointer-events-none">
+             <button 
+               onClick={(e) => { e.stopPropagation(); onToday(); }}
+               className="pointer-events-auto h-7 w-7 bg-slate-100 border border-slate-300 flex items-center justify-center rounded-sm hover:bg-slate-200 shadow-sm mx-1"
+             >
+               <Circle className="h-2 w-2 fill-slate-600 text-slate-600" />
+             </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }

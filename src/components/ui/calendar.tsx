@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Circle } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -18,45 +18,44 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-0 bg-white", className)}
+      className={cn("p-4 bg-white", className)}
       classNames={{
-        months: "flex flex-col space-y-0",
-        month: "space-y-0",
-        caption: "flex flex-col items-center pt-4 px-5 relative",
-        caption_label: "text-[12px] font-bold text-slate-900 uppercase tracking-widest mt-1",
-        nav: "flex items-center justify-between w-full absolute top-4 left-0 px-5",
+        months: "flex flex-col space-y-4",
+        month: "space-y-4",
+        caption: "flex items-center justify-between pt-1 relative px-1",
+        caption_label: "text-sm font-medium text-slate-900 flex items-center gap-1",
+        nav: "flex items-center gap-1",
         nav_button: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-7 w-7 bg-transparent p-0 opacity-100 hover:text-primary transition-colors rounded-lg"
+          "h-7 w-7 bg-slate-100 border border-slate-300 flex items-center justify-center rounded-sm hover:bg-slate-200 transition-colors text-slate-600 shadow-sm"
         ),
         nav_button_previous: "",
         nav_button_next: "",
-        table: "w-full border-collapse mt-4",
-        head_row: "flex px-3 border-b border-slate-50",
-        head_cell: "text-slate-400 font-bold text-[10px] w-9 flex-1 py-3 text-center",
-        row: "flex w-full mt-1 px-3 pb-3",
+        table: "w-full border-collapse border border-[#3b82f6]/30",
+        head_row: "flex bg-white",
+        head_cell: "text-slate-900 font-normal text-[11px] w-9 h-8 flex items-center justify-center border-b border-[#3b82f6]/20",
+        row: "flex w-full",
         cell: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1",
+          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1 h-9 w-9",
           props.mode === "range"
             ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md"
             : ""
         ),
         day: cn(
-          "h-9 w-9 p-0 font-bold text-[11px] transition-all text-slate-600 hover:bg-primary/5 flex items-center justify-center rounded-lg"
+          "h-full w-full p-0 font-normal text-[12px] text-slate-900 flex items-center justify-center hover:bg-slate-100 transition-all"
         ),
-        day_range_start: "day-range-start bg-primary text-primary-foreground rounded-none rounded-l-lg",
-        day_range_end: "day-range-end bg-primary text-primary-foreground rounded-none rounded-r-lg",
-        day_selected: "bg-primary text-white !rounded-lg !opacity-100 hover:bg-primary hover:text-white shadow-lg shadow-primary/20",
-        day_today: "text-primary ring-2 ring-primary/20 font-black",
-        day_outside: "day-outside text-slate-200 opacity-50 aria-selected:bg-slate-100/50 aria-selected:text-slate-500 aria-selected:opacity-30",
-        day_disabled: "text-slate-400 opacity-50",
-        day_range_middle: "aria-selected:bg-slate-50 aria-selected:text-slate-900",
+        day_range_start: "day-range-start bg-blue-600 text-white",
+        day_range_end: "day-range-end bg-blue-600 text-white",
+        day_selected: "border-2 border-slate-400 bg-white !text-slate-900 !opacity-100",
+        day_today: "font-bold text-blue-600",
+        day_outside: "day-outside text-slate-300 opacity-50",
+        day_disabled: "text-slate-300 opacity-50",
+        day_range_middle: "aria-selected:bg-slate-50",
         day_hidden: "invisible",
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        IconLeft: ({ ...props }) => <ChevronLeft className="h-3 w-3" />,
+        IconRight: ({ ...props }) => <ChevronRight className="h-3 w-3" />,
       }}
       {...props}
     />

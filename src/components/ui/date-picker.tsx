@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { format, isValid } from "date-fns"
-import { ChevronLeft, ChevronRight, Circle } from "lucide-react"
+import { format, isValid, parseISO } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
@@ -22,94 +22,47 @@ interface DatePickerProps {
 }
 
 /**
- * Classic Legacy Template Date Picker
- * Matches the requested "Input + Button" trigger and boxed calendar style.
+ * Standard Modern Date Picker
+ * High-fidelity UI with dark theme support and precision layout.
  */
 export function DatePicker({ value, onChange, placeholder = "Select a date", className, disabled }: DatePickerProps) {
-  const [open, setOpen] = React.useState(false);
-
   const dateValue = React.useMemo(() => {
     if (!value) return undefined;
-    const parsed = new Date(value);
+    const parsed = parseISO(value);
     return isValid(parsed) ? parsed : undefined;
   }, [value]);
 
-  const handleSelect = (date: Date | undefined) => {
-    if (date) {
-      onChange(format(date, "yyyy-MM-dd"));
-      setOpen(false);
-    }
-  };
-
-  const onToday = () => {
-    handleSelect(new Date());
-  };
-
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
-      <div className="flex-1 relative">
-        <input
-          readOnly
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
           disabled={disabled}
-          value={dateValue ? format(dateValue, "d/M/yyyy") : ""}
-          placeholder={placeholder}
           className={cn(
-            "w-full h-8 px-2 border border-slate-400 bg-white text-sm font-normal focus:outline-none shadow-inner",
-            disabled && "bg-slate-50 cursor-not-allowed"
+            "w-full justify-between text-left font-normal h-10 px-3 bg-slate-50 border-slate-200 rounded-xl hover:bg-slate-100 transition-all",
+            !dateValue && "text-muted-foreground",
+            className
           )}
-        />
-      </div>
-      
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            disabled={disabled}
-            className={cn(
-              "h-8 px-3 bg-slate-200 border border-slate-400 text-sm font-medium hover:bg-slate-300 active:bg-slate-400 transition-colors shadow-sm",
-              disabled && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            Date
-          </button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-auto p-0 border border-slate-300 shadow-xl rounded-sm overflow-hidden bg-white" 
-          align="end" 
-          sideOffset={5}
         >
-          {/* Custom Header for the Popover to match reference nav buttons */}
-          <Calendar
-            mode="single"
-            selected={dateValue}
-            onSelect={handleSelect}
-            initialFocus
-            className="p-0"
-            classNames={{
-              caption: "flex items-center justify-between p-3 border-b border-slate-100",
-              caption_label: "text-sm font-medium text-slate-900 capitalize",
-              nav: "flex items-center gap-1",
-            }}
-            components={{
-              IconLeft: () => <ChevronLeft className="h-3 w-3" />,
-              IconRight: () => <ChevronRight className="h-3 w-3" />,
-              // Adding the custom "Today/Dot" button in the navigation group
-            }}
-          />
-          
-          {/* Action Hub as the middle button in navigation is hard with standard DayPicker, 
-              so we add it to the header area or footer as a floating-ish element if needed.
-              For 1:1 parity with the nav icons in the image: */}
-          <div className="absolute top-3 right-12 flex items-center pointer-events-none">
-             <button 
-               onClick={(e) => { e.stopPropagation(); onToday(); }}
-               className="pointer-events-auto h-7 w-7 bg-slate-100 border border-slate-300 flex items-center justify-center rounded-sm hover:bg-slate-200 shadow-sm mx-1"
-             >
-               <Circle className="h-2 w-2 fill-slate-600 text-slate-600" />
-             </button>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+          <span className="font-bold text-xs uppercase tracking-wider">
+            {dateValue ? format(dateValue, "PPP") : placeholder}
+          </span>
+          <CalendarIcon className="h-4 w-4 text-slate-400" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-2xl" align="start">
+        <Calendar
+          mode="single"
+          selected={dateValue}
+          onSelect={(date) => {
+            if (date) {
+              onChange(format(date, "yyyy-MM-dd"));
+            }
+          }}
+          initialFocus
+          className="bg-white rounded-2xl"
+        />
+      </PopoverContent>
+    </Popover>
   )
 }

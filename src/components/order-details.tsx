@@ -39,7 +39,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [lead, setLead] = useState("");
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
   const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start'>('Yet to start');
-  const [parts, setParts] = useState<PartRow[]>([]);
   
   // Format dates as YYYY-MM-DD for consistency with DatePicker
   const [startDateStr, setStartDateStr] = useState("");
@@ -55,7 +54,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setPriority(existing.priority);
         setStatus(existing.status);
         
-        // Convert dd.mm.yyyy or other formats back to yyyy-mm-dd
         const parseToISO = (str?: string) => {
           if (!str) return "";
           if (str.includes('.')) {
@@ -91,7 +89,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
     }
 
     const formatDate = (isoStr: string) => {
-      const date = new Date(isoStr);
+      const date = parseISO(isoStr);
       return isValid(date) ? format(date, 'dd.MM.yyyy') : isoStr;
     };
 
@@ -118,9 +116,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
     });
   };
 
-  const darkInputClasses = "bg-[#0a0f18] border-none text-white h-12 focus-visible:ring-primary/50 text-sm font-bold placeholder:text-white/20 rounded-xl transition-all";
-  const darkSelectClasses = "bg-[#0a0f18] border-none text-white h-12 focus:ring-primary/50 text-xs font-bold uppercase tracking-widest rounded-xl";
-
   const currentOrderFromLedger = orders.find(o => o.id === displayId);
 
   return (
@@ -142,14 +137,14 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
           <Button 
-            className="flex-1 md:flex-none bg-[#0a0f18] hover:bg-[#111827] text-white px-8 h-12 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-xl shadow-black/10" 
+            variant="ghost"
+            className="flex-1 md:flex-none h-12 font-bold text-[10px] uppercase tracking-widest rounded-xl" 
             onClick={onBack}
           >
             Discard Changes
           </Button>
           <Button 
-            variant="outline"
-            className="flex-1 md:flex-none bg-white border-slate-200 text-[#001F3D] hover:bg-slate-50 gap-3 h-12 px-8 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-sm border-b-4 active:border-b-0 transition-all" 
+            className="flex-1 md:flex-none bg-[#001F3D] hover:bg-black text-white gap-3 h-12 px-8 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-xl shadow-primary/20 transition-all" 
             onClick={handleCommitOrder}
           >
             <Save className="h-4 w-4" /> {isNew ? 'Save Master Order' : 'Synchronize Identity'}
@@ -170,13 +165,13 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Building2 className="h-3 w-3" /> Customer Name (From CRM)
+                  <Building2 className="h-3 w-3" /> Customer Identity
                 </Label>
                 <Select value={customer} onValueChange={setCustomer}>
-                  <SelectTrigger className={darkSelectClasses}>
-                    <SelectValue placeholder={customers.length > 0 ? "Select Account..." : "No Customers Found"} />
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                    <SelectValue placeholder="Identify Account..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
+                  <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                     {customers.map(c => (
                       <SelectItem key={c.id} value={c.name} className="text-xs font-bold uppercase tracking-wider">{c.name}</SelectItem>
                     ))}
@@ -186,30 +181,30 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Hash className="h-3 w-3" /> Order ID / Ref (Auto)
+                  <Hash className="h-3 w-3" /> Thread Identification
                 </Label>
-                <Input value={displayId} readOnly className={cn(darkInputClasses, "opacity-60 cursor-not-allowed")} />
+                <Input value={displayId} readOnly className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code text-slate-400 opacity-60" />
               </div>
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <CalendarIcon className="h-3 w-3" /> Planned Start Date
+                  <CalendarIcon className="h-3 w-3" /> Planned Start
                 </Label>
                 <DatePicker 
                   value={startDateStr}
                   onChange={setStartDateStr}
-                  className="bg-[#0a0f18] border-none text-white h-12 rounded-xl text-xs font-bold"
+                  className="h-12"
                 />
               </div>
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <CalendarIcon className="h-3 w-3" /> Target End Date
+                  <CalendarIcon className="h-3 w-3" /> Target Finish
                 </Label>
                 <DatePicker 
                   value={endDateStr}
                   onChange={setEndDateStr}
-                  className="bg-[#0a0f18] border-none text-white h-12 rounded-xl text-xs font-bold"
+                  className="h-12"
                 />
               </div>
             </div>
@@ -217,28 +212,27 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
             <div className="pt-6">
               <div className="flex items-center gap-3 mb-8">
                 <DollarSign className="h-4 w-4 text-primary" />
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Financial Hub Integration</h3>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Financial Integration</h3>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Amount Spent (Live Ledger)</Label>
-                  <div className="relative group">
-                    <Input value={currentOrderFromLedger?.amountSpent || "₹ 0.00"} readOnly className="h-16 bg-slate-50 border-none text-[#001F3D] font-display font-bold text-2xl px-6 rounded-2xl shadow-inner" />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-slate-200" />
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Spent (Live Ledger)</Label>
+                  <div className="h-16 flex items-center px-6 bg-slate-50 rounded-2xl font-display font-bold text-2xl text-[#001F3D] shadow-inner">
+                    {currentOrderFromLedger?.amountSpent || "₹ 0.00"}
                   </div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synced with Financial Hub v2.4</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synchronized with Hub v2.4</p>
                 </div>
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                    <User className="h-3 w-3" /> Project Lead (Resource Mgmt)
+                    <User className="h-3 w-3" /> Command Lead
                   </Label>
                   <Select value={lead} onValueChange={setLead}>
-                    <SelectTrigger className={darkSelectClasses}>
-                      <SelectValue placeholder={staff.length > 0 ? "Assign Officer..." : "No Personnel Found"} />
+                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                      <SelectValue placeholder="Assign Personnel..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
+                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                       {staff.map(s => (
                         <SelectItem key={s.id} value={s.name} className="text-xs font-bold uppercase tracking-wider">{s.name} ({s.role})</SelectItem>
                       ))}
@@ -250,30 +244,30 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Priority Classification</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Priority Assignment</Label>
                 <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
-                  <SelectTrigger className={darkSelectClasses}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                    <SelectItem value="High" className="text-xs font-bold uppercase">High Priority - Emergency</SelectItem>
-                    <SelectItem value="Medium" className="text-xs font-bold uppercase">Standard Production</SelectItem>
-                    <SelectItem value="Low" className="text-xs font-bold uppercase">Backlog Maintenance</SelectItem>
+                  <SelectContent className="rounded-xl border-slate-100">
+                    <SelectItem value="High" className="text-xs font-bold uppercase text-red-600">Critical / Emergency</SelectItem>
+                    <SelectItem value="Medium" className="text-xs font-bold uppercase">Standard Protocol</SelectItem>
+                    <SelectItem value="Low" className="text-xs font-bold uppercase">Maintenance Queue</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Live Production Status</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Protocol State</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
-                  <SelectTrigger className={darkSelectClasses}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a0f18] text-white border-none rounded-xl">
-                    <SelectItem value="Yet to start" className="text-xs font-bold uppercase">Status: Yet to start</SelectItem>
-                    <SelectItem value="Active" className="text-xs font-bold uppercase">Status: Active Thread</SelectItem>
-                    <SelectItem value="Pending" className="text-xs font-bold uppercase">Status: Queue Standby</SelectItem>
-                    <SelectItem value="Delayed" className="text-xs font-bold uppercase text-red-400">Status: Delayed / Critical</SelectItem>
-                    <SelectItem value="Completed" className="text-xs font-bold uppercase text-green-400">Status: Completed</SelectItem>
+                  <SelectContent className="rounded-xl border-slate-100">
+                    <SelectItem value="Yet to start" className="text-xs font-bold uppercase">Ready_for_init</SelectItem>
+                    <SelectItem value="Active" className="text-xs font-bold uppercase">Node_Active</SelectItem>
+                    <SelectItem value="Pending" className="text-xs font-bold uppercase">On_Standby</SelectItem>
+                    <SelectItem value="Delayed" className="text-xs font-bold uppercase text-red-600">Blocked / Error</SelectItem>
+                    <SelectItem value="Completed" className="text-xs font-bold uppercase text-emerald-600">Terminal_Success</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -283,24 +277,22 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
         <div className="lg:col-span-4 space-y-8 sticky top-24">
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] flex flex-col relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Hash className="h-20 w-20 text-[#001F3D]" />
+            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+              <Target className="h-24 w-24 text-[#001F3D]" />
             </div>
             
             <div className="space-y-10 flex-grow relative z-10">
               <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Order Summary</h3>
-                <Badge className="bg-primary/5 text-primary border-none text-[8px] font-bold">WO_REPORT</Badge>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Thread Analytics</h3>
+                <Badge className="bg-primary/5 text-primary border-none text-[8px] font-bold uppercase px-2">Live_Tele</Badge>
               </div>
               
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Velocity Progress</span>
-                  <Badge className="bg-slate-100 text-slate-400 text-[10px] font-bold px-4 py-1.5 rounded-full">
-                    {currentOrderFromLedger?.progress || 0}%
-                  </Badge>
+                  <span className="text-xs font-bold text-primary">{currentOrderFromLedger?.progress || 0}%</span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50 p-[1px]">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden p-[1px]">
                   <div 
                     className="h-full bg-primary rounded-full transition-all duration-1000" 
                     style={{ width: `${currentOrderFromLedger?.progress || 0}%` }}
@@ -309,37 +301,31 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
                 <div className="pt-10 space-y-6">
                   <p className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.3em] flex items-center gap-2">
-                    <CreditCard className="h-3 w-3" /> Expenditure Summary
+                    <CreditCard className="h-3 w-3" /> Cumulative Consumption
                   </p>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Total Spent</span>
-                      <span className="text-xl font-display font-bold text-[#001F3D]">
-                        {currentOrderFromLedger?.amountSpent || "₹ 0.00"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center px-4">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Ledger State</span>
-                      <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-400 border-slate-200 uppercase font-bold px-4 py-1">SYNCHRONIZED</Badge>
-                    </div>
+                  <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Total Burn</span>
+                    <span className="text-xl font-display font-bold text-[#001F3D]">
+                      {currentOrderFromLedger?.amountSpent || "₹ 0.00"}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <Button variant="outline" className="w-full border-slate-200 bg-white text-slate-400 hover:text-primary hover:border-primary/20 gap-3 mt-12 text-[10px] font-bold uppercase tracking-widest h-16 rounded-2xl transition-all shadow-sm">
-              <Plus className="h-4 w-4" /> Register Sub-Component
+            <Button variant="outline" className="w-full border-slate-200 bg-white text-slate-400 hover:text-primary hover:border-primary/20 gap-3 mt-12 text-[10px] font-bold uppercase tracking-widest h-14 rounded-2xl transition-all shadow-sm">
+              <Plus className="h-4 w-4" /> Initialize Sub-Node
             </Button>
           </Card>
           
-          <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-center gap-4">
+          <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-center gap-4 animate-in slide-in-from-right-2 duration-1000">
             <div className="p-3 bg-primary rounded-xl text-white shadow-lg shadow-primary/20">
-              <User className="h-5 w-5" />
+              <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Assignment Verified</p>
+              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Matrix Sync Active</p>
               <p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">
-                {lead ? `${lead} is overseeing this thread.` : 'Assign a Command Lead to initialize this thread.'}
+                {lead ? `Operational node assigned to ${lead}.` : 'Awaiting lead assignment for protocol initialization.'}
               </p>
             </div>
           </div>

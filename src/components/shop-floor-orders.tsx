@@ -70,7 +70,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
             <TableHeader className="bg-white">
               <TableRow className="hover:bg-transparent border-b border-slate-100">
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Thread ID</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Identity</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-32">Start Date</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-32">End Date</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[160px]">Velocity Index</TableHead>
@@ -164,7 +164,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                         <ArchiveX className="h-20 w-20 text-slate-300" />
                       </div>
                       <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Ledger Offline</p>
-                      <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium leading-relaxed">No active production threads detected in the matrix. Initialize a new protocol to begin tracking.</p>
+                      <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium leading-relaxed">No active production threads detected in the matrix. Initialize a new protocol to begin tracking.</p>
                     </div>
                   </TableCell>
                 </TableRow>

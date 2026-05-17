@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -551,7 +552,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                   <TableHeader className="bg-white border-b border-slate-100">
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8 w-32">Order ID</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Identity</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Assigned Resource</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-center w-32">Start Date</TableHead>
                       <TableHead className="font-bold text-[10px] uppercase text-center w-32">End Date</TableHead>
@@ -700,7 +701,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Component Identification</Label>
                     <Select 
                       value={manualComponentName} 
-                      onValueChange={setManualComponentName}
+                      onValueChange={manualComponentName}
                     >
                       <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase">
                         <SelectValue placeholder="Identify component..." />

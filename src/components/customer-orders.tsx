@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useRef } from 'react';
@@ -256,7 +257,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                     <Checkbox checked={selectedCustomers.length === filteredCustomers.length && filteredCustomers.length > 0} onCheckedChange={handleSelectAll} />
                   </TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 w-20">Seq.</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Client Name</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Identity</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Type of Com</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
@@ -455,7 +456,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                             value={newCustomer.contactPerson}
                             onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                           />
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary" />
                         </div>
                       </div>
                       <div className="space-y-3">

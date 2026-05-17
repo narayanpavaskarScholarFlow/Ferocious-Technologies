@@ -205,7 +205,10 @@ export interface UISettings {
 
 export interface SystemUser {
   id: string;
-  name: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  name: string; // Full composite name
   email: string;
   password?: string;
   role: string;

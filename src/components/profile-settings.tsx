@@ -100,7 +100,7 @@ const ACCESS_NODES = [
   { id: 'quality-review', label: 'Final Compliance Review (Tab Access)', category: 'Quality & Compliance', icon: Unlock },
   { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
   { id: 'quality-report-delete', label: 'Quality: Delete Compliance Report Protocol', category: 'Quality & Compliance', icon: Trash2 },
-  { id: 'customer-orders', label: 'CRM / Account Pipeline', category: 'Commercial Operations', icon: Package },
+  { id: 'customer-orders', label: 'Customer Identity Matrix', category: 'Commercial Operations', icon: Package },
   { id: 'inventory-add', label: 'Inventory: Add Item to Ledger', category: 'Commercial Operations', icon: Plus },
   { id: 'billing', label: 'Financial Hub (Master Ledger)', category: 'Commercial Operations', icon: CreditCard },
   { id: 'billing-quotation', label: 'Finance: Quotation Protocol', category: 'Commercial Operations', icon: FileText },
@@ -176,7 +176,9 @@ export function ProfileSettings({
     return users.find(u => u.name === currentUser || u.email?.includes(String(currentUser).toLowerCase())) || null;
   }, [users, currentUser]);
 
-  const [adminName, setAdminName] = useState('');
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminFirstName, setAdminFirstName] = useState('');
+  const [adminLastName, setAdminLastName] = useState('');
   const [adminRole, setAdminRole] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -188,7 +190,9 @@ export function ProfileSettings({
 
   useEffect(() => {
     if (activeAdmin) {
-      setAdminName(activeAdmin.name);
+      setAdminUsername(activeAdmin.username || '');
+      setAdminFirstName(activeAdmin.firstName || '');
+      setAdminLastName(activeAdmin.lastName || '');
       setAdminRole(activeAdmin.role);
       setAdminEmail(activeAdmin.email);
       setAdminPassword(activeAdmin.password || '');
@@ -198,7 +202,9 @@ export function ProfileSettings({
       setAdminReportingManager(activeAdmin.reportingManager || '');
       setAdminImage(activeAdmin.image);
     } else {
-      setAdminName(currentUser || 'Master Admin');
+      setAdminUsername('admin');
+      setAdminFirstName('Master');
+      setAdminLastName('Admin');
       setAdminRole('Plant Controller');
       setAdminEmail(currentUser === 'Master Admin' ? 'admin@bharataxis.tech' : '');
       setAdminPassword(currentUser === 'Master Admin' ? 'admin123' : '');
@@ -230,9 +236,14 @@ export function ProfileSettings({
   const handleSaveAdminProfile = () => {
     setIsSaving(true);
     
+    const fullName = `${adminFirstName} ${adminLastName}`.trim();
+    
     const profileToSave: SystemUser = activeAdmin ? {
       ...activeAdmin,
-      name: adminName,
+      username: adminUsername,
+      firstName: adminFirstName,
+      lastName: adminLastName,
+      name: fullName,
       role: adminRole,
       email: adminEmail,
       password: adminPassword,
@@ -242,8 +253,11 @@ export function ProfileSettings({
       reportingManager: adminReportingManager || ''
     } : {
       id: adminId || `ADMIN-${Date.now()}`,
-      name: adminName,
-      email: adminEmail || `${adminName.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
+      username: adminUsername || 'admin',
+      firstName: adminFirstName,
+      lastName: adminLastName,
+      name: fullName,
+      email: adminEmail || `${adminUsername.toLowerCase()}@bharataxis.tech`,
       password: adminPassword || 'admin123',
       phone: adminPhone || '',
       role: adminRole,
@@ -263,7 +277,7 @@ export function ProfileSettings({
       setIsEditing(false);
       toast({
         title: "Identity Synchronized",
-        description: `Master metadata for ${adminName} has been committed to the ledger.`
+        description: `Master metadata for ${fullName} has been committed to the ledger.`
       });
     }, 800);
   };
@@ -372,8 +386,9 @@ export function ProfileSettings({
                     </div>
 
                     <div className="space-y-1 relative z-10">
-                      <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminName}</h3>
+                      <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminFirstName} {adminLastName}</h3>
                       <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{adminRole}</p>
+                      <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{adminUsername}</Badge>
                     </div>
 
                     <div className="w-full grid grid-cols-2 gap-4 mt-4 relative z-10">
@@ -463,15 +478,39 @@ export function ProfileSettings({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Identity User name</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">System Username</Label>
                       {isEditing ? (
                         <Input 
-                          value={adminName} 
-                          onChange={(e) => setAdminName(e.target.value)}
+                          value={adminUsername} 
+                          onChange={(e) => setAdminUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
                           className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
                         />
                       ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminName || 'NOT_SET'}</div>
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] font-code">@{adminUsername || 'NOT_SET'}</div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">First Name</Label>
+                      {isEditing ? (
+                        <Input 
+                          value={adminFirstName} 
+                          onChange={(e) => setAdminFirstName(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminFirstName || 'NOT_SET'}</div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Last Name</Label>
+                      {isEditing ? (
+                        <Input 
+                          value={adminLastName} 
+                          onChange={(e) => setAdminLastName(e.target.value)}
+                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminLastName || 'NOT_SET'}</div>
                       )}
                     </div>
                     <div className="space-y-2">

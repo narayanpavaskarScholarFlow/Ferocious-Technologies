@@ -57,6 +57,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
       setIsLoading(false);
       
       const foundUser = users.find(u => 
+        (u.username && u.username.toLowerCase() === username.toLowerCase()) ||
         u.name.toLowerCase() === username.toLowerCase() || 
         u.email.toLowerCase() === username.toLowerCase()
       );
@@ -139,7 +140,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Network Identifier</Label>
                   <div className="relative group/input">
                     <Input 
-                      placeholder="Alias or Corporate Email" 
+                      placeholder="Username, ID or Email" 
                       className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 transition-all shadow-inner placeholder:text-slate-300"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
@@ -266,4 +267,3 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
     </div>
   );
 }
-

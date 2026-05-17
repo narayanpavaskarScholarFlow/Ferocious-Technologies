@@ -24,7 +24,9 @@ import {
   Network,
   Camera,
   Upload,
-  UserCircle
+  UserCircle,
+  Hash,
+  Fingerprint
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -78,7 +80,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   // Wizard Form State
   const [formData, setFormData] = useState({
     id: '',
-    name: '',
+    username: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     jobTitle: '',
@@ -104,19 +108,24 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   };
 
   const handleRegisterUser = () => {
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.username || !formData.email || !formData.password) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Full credentials (Name, Email, and Security Key) are required."
+        description: "Full credentials (Username, First/Last Name, Email, and Password) are required."
       });
       return;
     }
 
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
     if (editingUser) {
       const updatedUser: SystemUser = {
         ...editingUser,
-        name: formData.name,
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        name: fullName,
         email: formData.email,
         password: formData.password,
         phone: formData.phone || '',
@@ -130,12 +139,15 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
 
       toast({
         title: "Identity Updated",
-        description: `Identity details for ${formData.name} have been synchronized.`,
+        description: `Identity details for ${fullName} have been synchronized.`,
       });
     } else {
       const newUser: SystemUser = {
         id: formData.id || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: formData.name,
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        name: fullName,
         email: formData.email,
         password: formData.password,
         phone: formData.phone || '',
@@ -152,7 +164,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
 
       // Call Genkit AI flow to simulate credential dispatch via email
       sendCredentials({
-        name: formData.name,
+        name: fullName,
         email: formData.email,
         role: newUser.role,
         temporaryPassword: formData.password
@@ -179,7 +191,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     setEditingUser(user);
     setFormData({
       id: user.id,
-      name: user.name,
+      username: user.username || '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
       email: user.email,
       phone: user.phone || '',
       jobTitle: user.role,
@@ -207,7 +221,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     setShowPassword(false);
     setFormData({
       id: '',
-      name: '',
+      username: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       jobTitle: '',
@@ -233,7 +249,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <Card className="lg:col-span-8 overflow-hidden border-slate-200/60 bg-white shadow-xl rounded-2xl min-h-[500px] flex flex-col">
+        <Card className="lg:col-span-12 overflow-hidden border-slate-200/60 bg-white shadow-xl rounded-2xl min-h-[500px] flex flex-col">
           <div className="bg-slate-50/50 border-b border-slate-100">
             <div className="flex items-center gap-2 p-5 border-b border-slate-100">
               <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse-red" />
@@ -243,6 +259,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">System Username</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Functional Role</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Session</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
@@ -267,9 +284,14 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
-                          <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">{user.id}</span>
+                          <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID: {user.id}</span>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-code text-[10px] bg-slate-50 text-slate-500 border-slate-200">
+                        @{user.username || 'not_set'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -303,7 +325,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-[400px] text-center">
+                    <TableCell colSpan={5} className="h-[400px] text-center">
                       <div className="flex flex-col items-center justify-center opacity-30 py-10">
                         <div className="p-6 bg-slate-50 rounded-full mb-6">
                           <UserX className="h-12 w-12 text-slate-300" />
@@ -318,28 +340,6 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
             </Table>
           </div>
         </Card>
-
-        <div className="lg:col-span-4 space-y-6">
-          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col gap-8">
-            <div className="flex justify-between items-center">
-              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Security Summary</h3>
-              <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            </div>
-            <div className="space-y-4">
-               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-primary/30 transition-all">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Active Sessions</p>
-                  <p className="text-4xl font-headline font-bold text-[#001F3D]">{users.filter(u => u.status === 'online').length}</p>
-                  <div className="h-1 w-8 bg-primary rounded-full mt-4 group-hover:w-12 transition-all duration-500" />
-               </div>
-               
-               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-red-500/30 transition-all">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Total Identities</p>
-                  <p className="text-4xl font-headline font-bold text-[#001F3D]">{users.length}</p>
-                  <div className="h-1 w-8 bg-red-500 rounded-full mt-4 group-hover:w-12 transition-all duration-500" />
-               </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
@@ -360,7 +360,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                 </div>
                 <div className="space-y-8">
                   {[
-                    { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & CONTACT' },
+                    { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & SYSTEM ID' },
                     { s: 2, label: 'Role Setup', desc: 'DEPT & FUNCTION' },
                     { s: 3, label: 'Credentials', desc: 'SECURITY SETUP' },
                   ].map((item) => (
@@ -402,7 +402,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       <div className="h-1 w-8 bg-red-500 rounded-full" />
                       <div>
                         <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingUser ? 'Update' : '01. Identity'}</h3>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Foundational Contact Protocols</p>
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Foundational Identity Protocols</p>
                       </div>
                     </div>
                     
@@ -442,15 +442,40 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Full Legal Name</Label>
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">System Username</Label>
+                            <div className="relative">
+                              <Input 
+                                placeholder="unique_alias" 
+                                className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
+                                value={formData.username}
+                                onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s/g, '')})}
+                              />
+                              <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">First Name</Label>
                             <Input 
-                              placeholder="e.g. John Operator" 
+                              placeholder="John" 
                               className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                              value={formData.name}
-                              onChange={(e) => setFormData({...formData, name: e.target.value})}
+                              value={formData.firstName}
+                              onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Last Name</Label>
+                            <Input 
+                              placeholder="Operator" 
+                              className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                              value={formData.lastName}
+                              onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                             />
                           </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Contact number</Label>

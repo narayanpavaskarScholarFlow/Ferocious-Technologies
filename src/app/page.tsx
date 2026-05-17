@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -337,12 +338,69 @@ function IndustrialERPInternal() {
     setDocumentNonBlocking(doc(db, 'inventory', item.id), item, { merge: true });
   };
 
+  /**
+   * Automated Expense Recalculation Node
+   * Sums all inward billing records + all machine utilization costs from work logs.
+   */
+  const recalculateOrderExpenses = useCallback((orderId: string, additionalLog?: WorkLogEntryType, additionalBilling?: BillingRecord) => {
+    if (!orderId) return;
+
+    // Filter relevant inward billing records from state
+    const inwardRecords = billing.filter(r => r.type === 'inward' && r.orderId === orderId);
+    // Include the record currently being saved if not already in state
+    if (additionalBilling && additionalBilling.type === 'inward' && additionalBilling.orderId === orderId && !inwardRecords.find(r => r.id === additionalBilling.id)) {
+      inwardRecords.push(additionalBilling);
+    }
+
+    // Filter relevant work logs from state
+    const relevantLogs = logs.filter(l => l.workOrderId === orderId);
+    // Include the log currently being saved if not already in state
+    if (additionalLog && additionalLog.workOrderId === orderId && !relevantLogs.find(l => l.id === additionalLog.id)) {
+      relevantLogs.push(additionalLog);
+    }
+
+    // Calculate total from billing (material/external costs)
+    const billingTotal = inwardRecords.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+    // Calculate total from logs (internal machine runtime costs)
+    const logsTotal = relevantLogs.reduce((acc, log) => {
+      const machine = machines.find(m => m.id === log.resourceId);
+      if (machine) {
+        const hours = parseFloat(log.duration.replace('h', '')) || 0;
+        return acc + (hours * machine.costPerHour);
+      }
+      return acc;
+    }, 0);
+
+    const grandTotal = billingTotal + logsTotal;
+    
+    setDocumentNonBlocking(doc(db, 'orders', orderId), {
+      amountSpent: `₹ ${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+    }, { merge: true });
+  }, [billing, logs, machines, db]);
+
   const handleSaveBillingRecord = (record: BillingRecord) => {
     setDocumentNonBlocking(doc(db, 'billing', record.id), record, { merge: true });
+    if (record.type === 'inward' && record.orderId) {
+      recalculateOrderExpenses(record.orderId, undefined, record);
+    }
+  };
+
+  const handleSaveWorkLog = (log: WorkLogEntryType) => {
+    setDocumentNonBlocking(doc(db, 'work_logs', log.id), log, { merge: true });
+    if (log.workOrderId) {
+      recalculateOrderExpenses(log.workOrderId, log);
+    }
   };
 
   const handleDeleteBillingRecord = (id: string) => {
+    const record = billing.find(r => r.id === id);
     deleteDocumentNonBlocking(doc(db, 'billing', id));
+    if (record?.type === 'inward' && record.orderId) {
+      // Small delay to ensure state reflects removal in recalculation if possible, 
+      // or rely on next refresh. For non-blocking, we just re-run.
+      setTimeout(() => recalculateOrderExpenses(record.orderId!), 100);
+    }
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -597,7 +655,7 @@ function IndustrialERPInternal() {
                 logs={logs} 
                 machines={machines}
                 users={usersData}
-                onAddLog={(l) => setDocumentNonBlocking(doc(db, 'work_logs', l.id), l, { merge: true })} 
+                onAddLog={handleSaveWorkLog} 
               />
             )}
             {currentView === 'sqcdp' && (

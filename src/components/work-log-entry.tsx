@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { WorkLogEntry as WorkLogEntryType, Machine, SystemUser, Order } from '@/lib/types';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface WorkLogEntryProps {
   logs: WorkLogEntryType[];
@@ -150,7 +151,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
           </div>
 
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden min-h-[400px]">
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             
             <div className="relative z-10 space-y-10">
               {step === 1 && (
@@ -197,7 +198,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                       <SelectTrigger className="h-16 bg-slate-50 border-none rounded-2xl text-sm font-bold uppercase shadow-inner">
                         <SelectValue placeholder="Identify Production Thread..." />
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                      <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                         {orders.map(order => (
                           <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase py-4">
                             WO #{order.id} — {order.customer}

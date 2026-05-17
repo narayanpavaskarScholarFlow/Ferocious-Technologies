@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -24,7 +23,8 @@ import {
   Clock, 
   ShieldCheck,
   FileText,
-  Hammer
+  Hammer,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
@@ -54,6 +54,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   
   const [poNumber, setPoNumber] = useState("");
   const [typeOfWork, setTypeOfWork] = useState("");
+  const [targetBudget, setTargetBudget] = useState("");
 
   useEffect(() => {
     if (orderId) {
@@ -66,6 +67,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setStatus(existing.status);
         setPoNumber(existing.poNumber || "");
         setTypeOfWork(existing.typeOfWork || "");
+        setTargetBudget(existing.targetBudget || "");
         
         const parseToISO = (str?: string) => {
           if (!str) return "";
@@ -90,6 +92,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setEndDateStr("");
       setPoNumber("");
       setTypeOfWork("");
+      setTargetBudget("");
     }
   }, [orderId, orders]);
 
@@ -118,6 +121,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       priority: priority,
       status: status,
       owner: lead || 'Unassigned',
+      targetBudget: targetBudget,
     };
 
     if (isNew) {
@@ -260,9 +264,15 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Spent (Live Ledger)</Label>
-                  <div className="h-16 flex items-center px-6 bg-slate-50 rounded-2xl font-display font-bold text-2xl text-[#001F3D] shadow-inner">
-                    {currentOrderFromLedger?.amountSpent || "₹ 0.00"}
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Target Budget</Label>
+                  <div className="relative">
+                    <Input 
+                      placeholder="0.00" 
+                      className="h-16 bg-slate-50 border-none rounded-2xl font-display font-bold text-2xl text-[#001F3D] shadow-inner pl-12 focus-visible:ring-primary/20"
+                      value={targetBudget}
+                      onChange={(e) => setTargetBudget(e.target.value)}
+                    />
+                    <span className="absolute left-6 top-1/2 -translate-y-1/2 font-display font-bold text-2xl text-slate-300">₹</span>
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synchronized with Hub v2.4</p>
                 </div>
@@ -320,7 +330,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
         <div className="lg:col-span-4 space-y-8 sticky top-24">
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] flex flex-col relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-0.05 transition-opacity">
               <Target className="h-24 w-24 text-[#001F3D]" />
             </div>
             
@@ -343,7 +353,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 </div>
 
                 <div className="pt-10 space-y-6">
-                  <p className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.3em] flex items-center gap-2">
+                  <p className="text-[9px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-2">
                     <CreditCard className="h-3 w-3" /> Cumulative Consumption
                   </p>
                   <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex justify-between items-center">

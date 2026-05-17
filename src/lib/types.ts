@@ -94,6 +94,7 @@ export interface Order {
   laborCost?: string;
   taxAmount?: string;
   totalQuoted?: string;
+  targetBudget?: string;
   routing?: RoutingOperation[];
 }
 

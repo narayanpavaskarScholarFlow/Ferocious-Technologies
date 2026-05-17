@@ -28,8 +28,8 @@ function Calendar({
       className={cn("p-3 bg-white rounded-2xl shadow-xl", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        month_caption: "flex justify-center pt-1 relative items-center mb-6",
+        month: "space-y-2",
+        month_caption: "flex justify-center pt-1 relative items-center mb-3",
         caption_label: "text-sm font-bold text-[#001F3D] uppercase tracking-widest",
         nav: "absolute left-0 flex items-center gap-1 pl-2",
         button_previous: cn(
@@ -41,9 +41,9 @@ function Calendar({
           "h-7 w-7 bg-transparent p-0 text-[#001F3D] hover:bg-slate-100 rounded-lg opacity-50 hover:opacity-100"
         ),
         month_grid: "w-full border-collapse",
-        weekdays: "flex mb-3 border-b border-slate-50 pb-2",
+        weekdays: "flex mb-1 border-b border-slate-50 pb-1.5",
         weekday: "text-[#001F3D]/40 w-9 font-bold text-[10px] uppercase text-center tracking-tighter",
-        week: "flex w-full mt-1.5",
+        week: "flex w-full mt-0.5",
         day: "p-0",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),

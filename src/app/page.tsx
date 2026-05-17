@@ -616,6 +616,9 @@ function IndustrialERPInternal() {
             {currentView === 'orders' && (
               <ShopFloorOrders 
                 orders={orders}
+                billing={billing}
+                logs={logs}
+                machines={machines}
                 onNavigateToOperations={handleNavigateToOperations} 
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
               />

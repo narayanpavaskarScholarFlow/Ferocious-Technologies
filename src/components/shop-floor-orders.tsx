@@ -1,31 +1,75 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Order } from '@/lib/types';
+import { Order, BillingRecord, WorkLogEntry, Machine } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, Plus, ArchiveX, Edit2, TrendingUp, Filter, User } from 'lucide-react';
+import { Search, Plus, ArchiveX, Edit2, TrendingUp, Filter, User, Receipt, Cpu, DollarSign, ChevronRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ShopFloorOrdersProps {
   orders: Order[];
   onNavigateToOperations?: (orderId: string) => void;
   onNavigateToOrderDetails?: (orderId: string | null) => void;
+  billing?: BillingRecord[];
+  logs?: WorkLogEntry[];
+  machines?: Machine[];
 }
 
-export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOrderDetails }: ShopFloorOrdersProps) {
+export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOrderDetails, billing = [], logs = [], machines = [] }: ShopFloorOrdersProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [breakupOrderId, setBreakupOrderId] = useState<string | null>(null);
 
   const filteredOrders = orders.filter(order => 
     order.id.includes(searchTerm) || 
     order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.poNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const selectedOrderForBreakup = useMemo(() => {
+    return orders.find(o => o.id === breakupOrderId);
+  }, [orders, breakupOrderId]);
+
+  const expenseBreakup = useMemo(() => {
+    if (!breakupOrderId) return { external: [], internal: [], totalExternal: 0, totalInternal: 0 };
+
+    const external = billing.filter(r => r.type === 'inward' && r.orderId === breakupOrderId);
+    const internalLogs = logs.filter(l => l.workOrderId === breakupOrderId);
+
+    const internal = internalLogs.map(log => {
+      const machine = machines.find(m => m.id === log.resourceId);
+      const hours = parseFloat(log.duration.replace('h', '')) || 0;
+      const rate = machine?.costPerHour || 0;
+      return {
+        id: log.id,
+        resourceName: log.resourceName,
+        operator: log.operator,
+        hours,
+        rate,
+        cost: hours * rate,
+        date: log.date
+      };
+    });
+
+    const totalExternal = external.reduce((acc, r) => acc + (r.amount || 0), 0);
+    const totalInternal = internal.reduce((acc, l) => acc + l.cost, 0);
+
+    return { external, internal, totalExternal, totalInternal };
+  }, [breakupOrderId, billing, logs, machines]);
 
   return (
     <div className="flex flex-col gap-10 animate-in fade-in duration-1000">
@@ -135,7 +179,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                         "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm",
                         order.priority === 'High' ? 'bg-red-50 text-red-600 border-red-100' :
                         order.priority === 'Medium' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        'bg-emerald-50 text-emerald-700 border-emerald-100'
                       )}
                     >
                       {order.priority}
@@ -150,9 +194,15 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="text-xs font-display font-bold text-[#001F3D]">
-                      {order.amountSpent || "₹ 0.00"}
-                    </span>
+                    <button 
+                      onClick={() => setBreakupOrderId(order.id)}
+                      className="group/expense flex flex-col items-center hover:scale-110 transition-transform cursor-pointer"
+                    >
+                      <span className="text-xs font-display font-bold text-[#001F3D] flex flex-col items-center">
+                        <span className="text-[8px] text-slate-400 font-bold mb-0.5 opacity-0 group-hover/expense:opacity-100 transition-opacity">BREAKUP</span>
+                        {order.amountSpent || "₹ 0.00"}
+                      </span>
+                    </button>
                   </TableCell>
                   <TableCell className="text-center">
                      <Badge className={cn(
@@ -193,6 +243,102 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
           </Table>
         </div>
       </Card>
+
+      <Dialog open={!!breakupOrderId} onOpenChange={(open) => !open && setBreakupOrderId(null)}>
+        <DialogContent className="max-w-2xl bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
+          <DialogHeader className="p-10 bg-slate-50/50 border-b border-slate-100 flex flex-row items-start justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-[0.2em] mb-2">
+                <DollarSign className="h-3.5 w-3.5" />
+                Financial Breakup Protocol
+              </div>
+              <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
+                WO #{breakupOrderId} <span className="text-slate-400 font-medium ml-2">Breakup</span>
+              </DialogTitle>
+              <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                Client: {selectedOrderForBreakup?.customer}
+              </DialogDescription>
+            </div>
+            <Badge className="bg-[#001F3D] text-white border-none px-4 py-1.5 rounded-full font-display text-lg">
+              {selectedOrderForBreakup?.amountSpent || "₹ 0.00"}
+            </Badge>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[500px]">
+            <div className="p-10 space-y-10">
+              {/* External Procurement Section */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-l-4 border-primary pl-4">
+                  <div className="flex items-center gap-3">
+                    <Receipt className="h-4 w-4 text-primary" />
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">External Procurement (Inward)</h4>
+                  </div>
+                  <span className="text-xs font-bold text-[#001F3D]">₹ {expenseBreakup.totalExternal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+
+                <div className="space-y-3">
+                  {expenseBreakup.external.map(record => (
+                    <div key={record.id} className="p-4 bg-slate-50/50 rounded-xl border border-slate-100 flex justify-between items-center group hover:border-primary/20 transition-all">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-700 uppercase">{record.itemName || 'Raw Material/Service'}</span>
+                        <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-1">{record.number} • {record.date}</span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">₹ {record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                  {expenseBreakup.external.length === 0 && (
+                    <p className="text-[10px] text-slate-300 font-medium italic text-center py-4">No external procurement nodes recorded.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Internal Resource Section */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-l-4 border-accent pl-4">
+                  <div className="flex items-center gap-3">
+                    <Cpu className="h-4 w-4 text-accent" />
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Internal Resource Utilization</h4>
+                  </div>
+                  <span className="text-xs font-bold text-[#001F3D]">₹ {expenseBreakup.totalInternal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+
+                <div className="space-y-3">
+                  {expenseBreakup.internal.map(log => (
+                    <div key={log.id} className="p-4 bg-slate-50/50 rounded-xl border border-slate-100 flex justify-between items-center group hover:border-accent/20 transition-all">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-700 uppercase">{log.resourceName}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[8px] font-bold border-slate-200">{log.hours}h @ ₹{log.rate}/hr</Badge>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Op: {log.operator}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">₹ {log.cost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                  {expenseBreakup.internal.length === 0 && (
+                    <p className="text-[10px] text-slate-300 font-medium italic text-center py-4">No asset utilization nodes recorded.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-8 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600 animate-pulse"><Info className="h-4 w-4" /></div>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">
+                Net valuation synchronized with <br />master ledger matrix v2.4.
+              </p>
+            </div>
+            <Button 
+              className="bg-[#001F3D] hover:bg-black text-white rounded-xl h-12 px-10 font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl"
+              onClick={() => setBreakupOrderId(null)}
+            >
+              Close Matrix <ChevronRight className="ml-2 h-3.5 w-3.5" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

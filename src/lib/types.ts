@@ -81,6 +81,8 @@ export interface RoutingOperation {
 export interface Order {
   id: string;
   customer: string;
+  poNumber?: string;
+  typeOfWork?: string;
   startDate: string;
   endDate: string;
   priority: 'High' | 'Medium' | 'Low';

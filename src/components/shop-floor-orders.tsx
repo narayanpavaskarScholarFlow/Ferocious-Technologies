@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Order } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, Plus, ArchiveX, Edit2, TrendingUp, Filter } from 'lucide-react';
+import { Search, Plus, ArchiveX, Edit2, TrendingUp, Filter, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,8 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
 
   const filteredOrders = orders.filter(order => 
     order.id.includes(searchTerm) || 
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase())
+    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.poNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -69,12 +70,15 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
           <Table>
             <TableHeader className="bg-white">
               <TableRow className="hover:bg-transparent border-b border-slate-100">
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Thread ID</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">WO. ID</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">PO No.</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Identity</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Type of Work</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-32">Start Date</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-32">End Date</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[160px]">Velocity Index</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Priority</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Project Owner</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-center w-32">Expenses</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
                 <TableHead className="text-right px-10 w-20"></TableHead>
@@ -90,10 +94,18 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                     #{order.id}
                   </TableCell>
                   <TableCell>
+                    <span className="text-[10px] font-bold text-slate-500 font-code uppercase">{order.poNumber || '---'}</span>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{order.customer}</span>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Lead: {order.owner}</span>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Matrix Active</span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-200 text-slate-500">
+                      {order.typeOfWork || 'General'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className="font-code text-[10px] font-bold text-slate-600 bg-slate-50 border-slate-200 px-3 py-1 rounded-lg">
@@ -129,6 +141,14 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                       {order.priority}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-3 w-3 text-primary" />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-700 uppercase">{order.owner || 'Unassigned'}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">
                     <span className="text-xs font-display font-bold text-[#001F3D]">
                       {order.amountSpent || "₹ 0.00"}
@@ -158,7 +178,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-[480px] text-center">
+                  <TableCell colSpan={12} className="h-[480px] text-center">
                     <div className="flex flex-col items-center justify-center opacity-30 py-10">
                       <div className="p-10 bg-slate-50 rounded-[3rem] mb-8">
                         <ArchiveX className="h-20 w-20 text-slate-300" />

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,9 @@ import {
   CreditCard, 
   Target, 
   Clock, 
-  ShieldCheck 
+  ShieldCheck,
+  FileText,
+  Hammer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
@@ -48,6 +51,9 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   
   const [startDateStr, setStartDateStr] = useState("");
   const [endDateStr, setEndDateStr] = useState("");
+  
+  const [poNumber, setPoNumber] = useState("");
+  const [typeOfWork, setTypeOfWork] = useState("");
 
   useEffect(() => {
     if (orderId) {
@@ -58,6 +64,8 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setLead(existing.owner || "");
         setPriority(existing.priority);
         setStatus(existing.status);
+        setPoNumber(existing.poNumber || "");
+        setTypeOfWork(existing.typeOfWork || "");
         
         const parseToISO = (str?: string) => {
           if (!str) return "";
@@ -80,6 +88,8 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setStatus("Yet to start");
       setStartDateStr("");
       setEndDateStr("");
+      setPoNumber("");
+      setTypeOfWork("");
     }
   }, [orderId, orders]);
 
@@ -101,6 +111,8 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
     const orderToSave: any = {
       id: displayId,
       customer: customer,
+      poNumber: poNumber,
+      typeOfWork: typeOfWork,
       startDate: formatDate(startDateStr),
       endDate: formatDate(endDateStr),
       priority: priority,
@@ -186,9 +198,33 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Hash className="h-3 w-3" /> Thread Identification
+                  <Hash className="h-3 w-3" /> WO. ID (Thread Identification)
                 </Label>
                 <Input value={displayId} readOnly className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code text-slate-400 opacity-60" />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                  <FileText className="h-3 w-3" /> PO Number
+                </Label>
+                <Input 
+                  placeholder="e.g. PO-7845-2024" 
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code focus-visible:ring-primary/20 shadow-inner"
+                  value={poNumber}
+                  onChange={(e) => setPoNumber(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                  <Hammer className="h-3 w-3" /> Type of Work
+                </Label>
+                <Input 
+                  placeholder="e.g. Mold Manufacturing" 
+                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold focus-visible:ring-primary/20 shadow-inner"
+                  value={typeOfWork}
+                  onChange={(e) => setTypeOfWork(e.target.value)}
+                />
               </div>
               
               <div className="space-y-3">
@@ -233,7 +269,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                    <User className="h-3 w-3" /> Command Lead
+                    <User className="h-3 w-3" /> Project Owner (Command Lead)
                   </Label>
                   <Select value={lead} onValueChange={setLead}>
                     <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">

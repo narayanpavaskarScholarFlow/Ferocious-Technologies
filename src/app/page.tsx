@@ -655,6 +655,8 @@ function IndustrialERPInternal() {
                 logs={logs} 
                 machines={machines}
                 users={usersData}
+                orders={orders}
+                currentUser={currentUser}
                 onAddLog={handleSaveWorkLog} 
               />
             )}

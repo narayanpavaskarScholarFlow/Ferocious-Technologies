@@ -112,7 +112,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Full credentials (Username, First/Last Name, Email, and Password) are required."
+        description: "Full credentials (User name, First/Last Name, Email, and Password) are required."
       });
       return;
     }
@@ -259,7 +259,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">System Username</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">User name</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Functional Role</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Session</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
@@ -360,7 +360,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                 </div>
                 <div className="space-y-8">
                   {[
-                    { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & SYSTEM ID' },
+                    { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & USER NAME' },
                     { s: 2, label: 'Role Setup', desc: 'DEPT & FUNCTION' },
                     { s: 3, label: 'Credentials', desc: 'SECURITY SETUP' },
                   ].map((item) => (
@@ -442,7 +442,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">System Username</Label>
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">User name</Label>
                             <div className="relative">
                               <Input 
                                 placeholder="unique_alias" 

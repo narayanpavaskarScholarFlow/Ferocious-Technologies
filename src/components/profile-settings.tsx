@@ -478,7 +478,7 @@ export function ProfileSettings({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">System Username</Label>
+                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">User name</Label>
                       {isEditing ? (
                         <Input 
                           value={adminUsername} 

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ClipboardList, 
   Plus, 
@@ -229,64 +230,66 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                     <div className="flex items-center gap-4">
                       <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Zap className="h-8 w-8" /></div>
                       <div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Stage 03: Matrix Entry</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Recording for WO #{selectedOrderId} on {selectedDate}</p>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">STAGE 03: MATRIX ENTRY</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">RECORDING FOR WO #{selectedOrderId} ON {selectedDate}</p>
                       </div>
                     </div>
                     <Button variant="outline" size="sm" className="h-9 rounded-xl border-slate-200 text-[9px] font-bold uppercase" onClick={() => setStep(2)}>
-                      Change WO
+                      CHANGE WO
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2.5">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Select Asset / Machine</Label>
-                      <Select onValueChange={setSelectedResource} value={selectedResourceId}>
-                        <SelectTrigger className={darkSelectClasses}>
-                          <SelectValue placeholder="Identify Resource..." />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                          <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Industrial Fleet</div>
-                          {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-xs font-bold uppercase">{m.name} ({m.mcNumber})</SelectItem>)}
-                          <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b my-1">Personnel Node</div>
-                          {users.map(u => <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2.5">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">SELECT ASSET / MACHINE</Label>
+                        <Select onValueChange={setSelectedResource} value={selectedResourceId}>
+                          <SelectTrigger className={darkSelectClasses}>
+                            <SelectValue placeholder="Identify Resource..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                            <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Industrial Fleet</div>
+                            {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-xs font-bold uppercase">{m.name} ({m.mcNumber})</SelectItem>)}
+                            <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b my-1">Personnel Node</div>
+                            {users.map(u => <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="space-y-2.5">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Duration (Hours)</Label>
-                      <div className="relative">
-                        <Input 
-                          placeholder="e.g. 4.5" 
-                          className={cn(darkInputClasses, "pr-12 text-center text-lg")}
-                          value={duration}
-                          onChange={(e) => setDuration(e.target.value)}
-                        />
-                        <Clock className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                      <div className="space-y-2.5">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">DURATION (HOURS)</Label>
+                        <div className="relative">
+                          <Input 
+                            placeholder="e.g. 4.5" 
+                            className={cn(darkInputClasses, "pr-12 text-center text-lg")}
+                            value={duration}
+                            onChange={(e) => setDuration(e.target.value)}
+                          />
+                          <Clock className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">ACTIVITY CLASSIFICATION</Label>
+                        <Select value={activityType} onValueChange={setActivityType}>
+                          <SelectTrigger className={darkSelectClasses}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="Production" className="text-xs font-bold uppercase">Production Cycle</SelectItem>
+                            <SelectItem value="Setup" className="text-xs font-bold uppercase">Machine Setup</SelectItem>
+                            <SelectItem value="Maintenance" className="text-xs font-bold uppercase">Maintenance Window</SelectItem>
+                            <SelectItem value="Idle" className="text-xs font-bold uppercase">Idle / Standby</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
                     <div className="space-y-2.5">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Activity Classification</Label>
-                      <Select value={activityType} onValueChange={setActivityType}>
-                        <SelectTrigger className={darkSelectClasses}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="Production" className="text-xs font-bold uppercase">Production Cycle</SelectItem>
-                          <SelectItem value="Setup" className="text-xs font-bold uppercase">Machine Setup</SelectItem>
-                          <SelectItem value="Maintenance" className="text-xs font-bold uppercase">Maintenance Window</SelectItem>
-                          <SelectItem value="Idle" className="text-xs font-bold uppercase">Idle / Standby</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Functional Description</Label>
-                      <Input 
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">FUNCTIONAL DESCRIPTION</Label>
+                      <Textarea 
                         placeholder="Task details..." 
-                        className={darkInputClasses}
+                        className={cn(darkInputClasses, "min-h-[120px] py-4 resize-none leading-relaxed")}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                       />
@@ -294,14 +297,14 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                   </div>
 
                   <div className="flex gap-4 pt-4">
-                    <Button variant="ghost" className="flex-1 h-16 rounded-2xl font-bold uppercase text-[10px] text-slate-400" onClick={() => setStep(2)}>
-                      <ChevronLeft className="mr-2 h-4 w-4" /> Abort
+                    <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase text-[10px] text-slate-400" onClick={() => setStep(2)}>
+                      <ChevronLeft className="mr-2 h-4 w-4" /> ABORT
                     </Button>
                     <Button 
                       className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl flex gap-3 group"
                       onClick={handleSaveLog}
                     >
-                      <Save className="h-4 w-4" /> Commit to Ledger
+                      <Save className="h-4 w-4" /> COMMIT TO LEDGER
                       <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Button>
                   </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -70,9 +71,11 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
               <TableRow className="hover:bg-transparent border-b border-slate-100">
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Thread ID</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account Identity</TableHead>
-                <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Timeline Window</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-32">Start Date</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-32">End Date</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400 min-w-[160px]">Velocity Index</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-slate-400">Priority</TableHead>
+                <TableHead className="font-bold text-[10px] uppercase text-center w-32">Expenses</TableHead>
                 <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
                 <TableHead className="text-right px-10 w-20"></TableHead>
               </TableRow>
@@ -93,11 +96,14 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="inline-flex flex-col items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-code font-bold text-slate-600">{order.startDate}</span>
-                      <div className="h-3 w-[1px] bg-slate-200 my-1" />
-                      <span className="text-[10px] font-code font-bold text-primary">{order.endDate}</span>
-                    </div>
+                    <Badge variant="outline" className="font-code text-[10px] font-bold text-slate-600 bg-slate-50 border-slate-200 px-3 py-1 rounded-lg">
+                      {order.startDate}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="font-code text-[10px] font-bold text-primary bg-blue-50 border-primary/10 px-3 py-1 rounded-lg">
+                      {order.endDate}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-3 cursor-pointer group/progress" onClick={() => onNavigateToOperations?.(order.id)}>
@@ -124,11 +130,16 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
+                    <span className="text-xs font-display font-bold text-[#001F3D]">
+                      {order.amountSpent || "₹ 0.00"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
                      <Badge className={cn(
                        "inline-flex px-5 py-2 rounded-full text-[9px] font-bold justify-center uppercase tracking-widest border shadow-lg",
-                       order.status === 'Active' ? 'bg-[#001F3D] text-white border-[#001F3D]' :
-                       order.status === 'Completed' ? 'bg-emerald-600 text-white border-emerald-600' :
-                       order.status === 'Delayed' ? 'bg-red-600 text-white border-red-600' :
+                       order.status === 'Active' ? "bg-[#001F3D] text-white border-[#001F3D]" :
+                       order.status === 'Completed' ? "bg-emerald-600 text-white border-emerald-600" :
+                       order.status === 'Delayed' ? "bg-red-600 text-white border-red-600" :
                        'bg-slate-100 text-slate-400 border-slate-200'
                      )}>
                        {order.status}

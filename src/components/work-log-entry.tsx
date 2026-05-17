@@ -26,7 +26,8 @@ import {
   AlertTriangle,
   Zap,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  FileCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -63,8 +64,9 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
 
   // Calculate Daily Totals for the selected date and operator
   const dailyStats = useMemo(() => {
+    const formattedTargetDate = new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const dayLogs = logs.filter(l => 
-      l.date === new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) &&
+      l.date === formattedTargetDate &&
       l.operator === operator
     );
     
@@ -115,11 +117,18 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
     setDescription('');
   };
 
+  const handleFinalSubmit = () => {
+    toast({
+      title: "Daily Protocol Finalized",
+      description: `Operational data for ${selectedDate} has been locked and transmitted to the central vault.`,
+    });
+  };
+
   const darkInputClasses = "bg-slate-50 border-none h-12 focus-visible:ring-primary/20 text-sm font-bold rounded-xl shadow-inner";
   const darkSelectClasses = "bg-slate-50 border-none h-12 focus:ring-primary/20 text-sm font-bold rounded-xl shadow-inner";
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-1000">
+    <div className="space-y-8 animate-in fade-in duration-1000 pb-20">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
@@ -134,7 +143,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-7 space-y-8">
+        <div className="lg:col-span-8 space-y-12">
           {/* Progress Indicator */}
           <div className="flex items-center gap-4 px-4">
             {[1, 2, 3].map((s) => (
@@ -151,7 +160,8 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
             ))}
           </div>
 
-          <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden min-h-[400px]">
+          {/* Entry Form Card */}
+          <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             
             <div className="relative z-10 space-y-10">
@@ -288,8 +298,8 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                     <div className="space-y-2.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">FUNCTIONAL DESCRIPTION</Label>
                       <Textarea 
-                        placeholder="Task details..." 
-                        className={cn(darkInputClasses, "min-h-[120px] py-4 resize-none leading-relaxed")}
+                        placeholder="Task details and technical observations..." 
+                        className={cn(darkInputClasses, "min-h-[160px] py-4 resize-none leading-relaxed")}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                       />
@@ -312,11 +322,89 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
               )}
             </div>
           </Card>
+
+          {/* Daily Log Summary Table Card */}
+          <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] overflow-hidden">
+            <div className="flex justify-between items-center mb-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 shadow-sm"><FileCheck className="h-6 w-6" /></div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-[0.2em]">Daily Log Summary Matrix</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Date: {selectedDate}</p>
+                </div>
+              </div>
+              <Badge variant="outline" className={cn(
+                "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm h-9",
+                dailyStats.totalHours >= 9 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
+              )}>
+                Cumulative: {dailyStats.totalHours.toFixed(1)}h / 9.0h
+              </Badge>
+            </div>
+
+            <div className="overflow-x-auto -mx-2">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-400 py-4 px-6">WO ID</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-400">Resource Node</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-400">Activity</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-center w-24">Duration</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase pl-6">Technical Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dailyStats.dayLogs.map((log) => (
+                    <TableRow key={log.id} className="border-b border-slate-50 h-16 hover:bg-slate-50/30 transition-colors">
+                      <TableCell className="px-6 font-bold text-[#001F3D]">#{log.workOrderId}</TableCell>
+                      <TableCell className="text-[11px] font-bold text-slate-700 uppercase">{log.resourceName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[8px] font-bold uppercase border-slate-100 bg-white">{log.type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center font-display font-bold text-[#001F3D] text-xs">
+                        {log.duration}
+                      </TableCell>
+                      <TableCell className="pl-6 text-[11px] text-slate-500 italic max-w-[240px] truncate">
+                        "{log.activity}"
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {dailyStats.dayLogs.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-32 text-center text-slate-300 font-medium italic text-xs">
+                        No operational nodes committed for this temporal window.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="flex items-start gap-3 max-w-sm">
+                <AlertTriangle className={cn("h-5 w-5 mt-0.5", dailyStats.totalHours < 9 ? "text-red-500" : "text-emerald-500")} />
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                  {dailyStats.totalHours < 9 
+                    ? `Requirement Mismatch: ${ (9 - dailyStats.totalHours).toFixed(1) }h remaining to satisfy the 9-hour operational baseline mandate.`
+                    : "Baseline Mandate Satisfied. Overtime protocols active for additional logging nodes."}
+                </p>
+              </div>
+              <Button 
+                disabled={dailyStats.totalHours < 9}
+                className={cn(
+                  "h-16 px-12 rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl transition-all duration-500 flex gap-3",
+                  dailyStats.totalHours >= 9 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30" : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                )}
+                onClick={handleFinalSubmit}
+              >
+                <Save className="h-4 w-4" /> Final Submit Protocol for {selectedDate}
+              </Button>
+            </div>
+          </Card>
         </div>
 
         {/* Daily Capacity Sidebar */}
-        <div className="lg:col-span-5 space-y-6">
-          <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative overflow-hidden group">
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative overflow-hidden group sticky top-24">
             <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
               <TrendingUp className="h-20 w-20" />
             </div>
@@ -369,36 +457,6 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                 </div>
               </div>
             </div>
-          </Card>
-
-          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex-1 flex flex-col overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <History className="h-3.5 w-3.5" /> Contextual Daily Audit
-              </h4>
-              <Badge variant="outline" className="text-[8px] border-slate-100 text-slate-400 font-bold px-2">{dailyStats.count} Entries</Badge>
-            </div>
-            
-            <ScrollArea className="flex-1 -mx-2 px-2">
-              <div className="space-y-4">
-                {dailyStats.dayLogs.map((log) => (
-                  <div key={log.id} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-primary/20 transition-all flex flex-col gap-2">
-                    <div className="flex justify-between items-start">
-                      <Badge variant="outline" className="text-[8px] font-bold border-primary/20 text-primary uppercase">WO #{log.workOrderId}</Badge>
-                      <span className="text-[10px] font-display font-bold text-[#001F3D]">{log.duration}</span>
-                    </div>
-                    <p className="text-[11px] font-bold text-slate-700 uppercase line-clamp-1">{log.resourceName}</p>
-                    <p className="text-[9px] text-slate-400 line-clamp-1 italic">"{log.activity}"</p>
-                  </div>
-                ))}
-                {dailyStats.count === 0 && (
-                  <div className="py-20 flex flex-col items-center justify-center opacity-20 text-center">
-                    <ArchiveX className="h-12 w-12 text-slate-400 mb-4" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest">Ledger Empty for {selectedDate}</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
           </Card>
         </div>
       </div>

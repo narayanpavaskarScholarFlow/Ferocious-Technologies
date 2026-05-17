@@ -342,7 +342,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       </header>
 
       <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
-        <TabsList className="bg-slate-100 p-1 rounded-full mb-6 h-12 inline-flex border border-slate-200 shadow-sm gap-1 print:hidden">
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-6 h-12 inline-flex border border-slate-200 shadow-sm gap-1 print:hidden">
           {['quotation', 'invoice', 'proforma', 'inward', 'outward', 'bank'].map((cat) => (
             <TabsTrigger key={cat} value={cat} className="rounded-full px-6 h-10 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
               {cat === 'bank' ? 'Bank Ledger' : cat}
@@ -552,6 +552,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] tracking-tight">
                   {editingRecordId ? 'Modify Record' : 'Initialize Protocol'}: {activeCategory === 'bank' ? 'Bank Entry' : activeCategory.toUpperCase()}
                 </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest mt-1">Configure and synchronize financial lifecycle documents.</DialogDescription>
               </div>
               <Badge className="bg-slate-100 text-slate-400 border-none font-code text-[10px] px-4 py-1.5 h-fit">{formData.number}</Badge>
             </DialogHeader>
@@ -852,6 +853,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
         <DialogContent className="max-w-[850px] bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden flex flex-col max-h-[90vh] print:shadow-none print:rounded-none">
+          <DialogTitle className="sr-only">Billing Record Matrix Preview</DialogTitle>
+          <DialogDescription className="sr-only">Print-ready visualization of the selected financial or logistical document.</DialogDescription>
           <div className="p-10 overflow-y-auto hide-scrollbar print:p-0 flex-1">
             <div id="print-document" className="space-y-8">
               <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-6">
@@ -976,7 +979,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
               <div className="pt-16 grid grid-cols-2 gap-32">
                 <div className="text-center space-y-3">
-                  <div className="h-[1px] bg-slate-200 w-full" />
+                  <div className="h-[1px] bg-slate-300 w-full" />
                   <p className="text-[8px] font-bold text-slate-400 uppercase">Customer Authorization</p>
                 </div>
                 <div className="text-center space-y-3">

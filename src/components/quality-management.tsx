@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -701,7 +700,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Component Identification</Label>
                     <Select 
                       value={manualComponentName} 
-                      onValueChange={manualComponentName}
+                      onValueChange={setManualComponentName}
                     >
                       <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase">
                         <SelectValue placeholder="Identify component..." />
@@ -1065,6 +1064,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </div>
           </div>
           <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:block", (currentStep === 'review' || currentStep === 'approval') && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
+            <DialogTitle className="sr-only">Compliance Report Protocol</DialogTitle>
+            <DialogDescription className="sr-only">Final visualization and verification of dimensional compliance data.</DialogDescription>
             <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10 print:pb-6">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -1167,6 +1168,9 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       <Dialog open={isDrawingDialogOpen} onOpenChange={setIsDrawingDialogOpen}>
         <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
           <DialogHeader className="mb-8">
+            <div className="p-4 bg-primary/10 rounded-2xl w-fit">
+              <ImageIcon className="h-8 w-8 text-primary" />
+            </div>
             <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Finalization Protocol</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Would you like to attach a drawing blueprint to the compliance report?</DialogDescription>
           </DialogHeader>
@@ -1219,6 +1223,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       {/* High-Fidelity Fullscreen Fit-to-Screen Viewer */}
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
         <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col transition-all duration-500">
+          <DialogTitle className="sr-only">High-Fidelity Matrix Viewer</DialogTitle>
+          <DialogDescription className="sr-only">Full-screen fit-to-screen protocol for technical blueprint inspection.</DialogDescription>
           <div className="relative w-full h-full flex flex-col">
             <div className="p-4 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between shrink-0 z-50">
               <div className="flex items-center gap-4">

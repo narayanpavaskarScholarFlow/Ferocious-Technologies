@@ -393,6 +393,15 @@ function IndustrialERPInternal() {
     }
   };
 
+  const handleDeleteWorkLog = (id: string) => {
+    const log = logs.find(l => l.id === id);
+    deleteDocumentNonBlocking(doc(db, 'work_logs', id));
+    if (log?.workOrderId) {
+      // Small delay to allow firestore removal to reflect if possible, but recalculate works on latest snapshot via onSnapshot
+      setTimeout(() => recalculateOrderExpenses(log.workOrderId!), 100);
+    }
+  };
+
   const handleDeleteBillingRecord = (id: string) => {
     const record = billing.find(r => r.id === id);
     deleteDocumentNonBlocking(doc(db, 'billing', id));
@@ -661,6 +670,7 @@ function IndustrialERPInternal() {
                 orders={orders}
                 currentUser={currentUser}
                 onAddLog={handleSaveWorkLog} 
+                onDeleteLog={handleDeleteWorkLog}
               />
             )}
             {currentView === 'sqcdp' && (

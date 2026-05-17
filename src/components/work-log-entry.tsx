@@ -29,7 +29,9 @@ import {
   CheckCircle2,
   FileCheck,
   LayoutGrid,
-  Lock
+  Lock,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -40,13 +42,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface WorkLogEntryProps {
   logs: WorkLogEntryType[];
   onAddLog: (log: WorkLogEntryType) => void;
+  onDeleteLog?: (id: string) => void;
   machines: Machine[];
   users: SystemUser[];
   orders: Order[];
   currentUser: string | null;
 }
 
-export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentUser }: WorkLogEntryProps) {
+export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, orders, currentUser }: WorkLogEntryProps) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -56,12 +59,13 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
   const [duration, setDuration] = useState('');
   const [description, setDescription] = useState('');
   const [operator, setOperator] = useState(currentUser || '');
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !operator) {
       setOperator(currentUser);
     }
-  }, [currentUser]);
+  }, [currentUser, operator]);
 
   // Calculate Daily Totals for the selected date and operator
   const dailyStats = useMemo(() => {
@@ -83,6 +87,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
 
   const handleDateChangeAttempt = (newDate: string) => {
     // Industrial Rule: Cannot change date if current selection hasn't met 9h baseline
+    // Only enforce if logs actually exist for the currently selected date
     if (dailyStats.totalHours > 0 && dailyStats.totalHours < 9) {
       toast({
         variant: "destructive",
@@ -92,6 +97,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
       return;
     }
     setSelectedDate(newDate);
+    setStep(1); // Reset to step 1 when changing date
   };
 
   const handleSaveLog = () => {
@@ -106,8 +112,8 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
 
     const resource = machines.find(m => m.id === selectedResourceId) || users.find(u => u.id === selectedResourceId);
     
-    const newLog: WorkLogEntryType = {
-      id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+    const logData: WorkLogEntryType = {
+      id: editingLogId || `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
       resourceId: selectedResourceId,
       resourceName: resource ? resource.name : `Resource ${selectedResourceId}`,
       operator: operator || 'System User',
@@ -119,15 +125,47 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
       workOrderId: selectedOrderId
     };
 
-    onAddLog(newLog);
+    onAddLog(logData);
     
     toast({
-      title: "Log Synchronized",
+      title: editingLogId ? "Entry Updated" : "Log Synchronized",
       description: `Entry for WO #${selectedOrderId} committed to master ledger.`,
     });
 
+    // Reset entry form but stay on Step 2
     setDuration('');
     setDescription('');
+    setSelectedResource('');
+    setEditingLogId(null);
+  };
+
+  const handleEdit = (log: WorkLogEntryType) => {
+    setEditingLogId(log.id);
+    setSelectedOrderId(log.workOrderId || '');
+    setSelectedResource(log.resourceId);
+    setActivityType(log.type);
+    setDuration(log.duration.replace('h', ''));
+    setDescription(log.activity);
+    setStep(2); // Ensure we are in the entry step
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    toast({
+      title: "Edit Protocol Active",
+      description: "Log details loaded into entry matrix."
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (onDeleteLog) {
+      onDeleteLog(id);
+      toast({
+        variant: "destructive",
+        title: "Entry Purged",
+        description: "Operation node removed from daily ledger."
+      });
+    }
   };
 
   const handleFinalSubmit = () => {
@@ -162,7 +200,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
         </div>
       </header>
 
-      {/* Relocated Capacity Matrix - Horizontal Bar (The Green Box Area) */}
+      {/* Capacity Matrix Status Bar */}
       <div className="px-4">
         <Card className="bg-[#001F3D] text-white border-none shadow-2xl rounded-[2rem] overflow-hidden group">
           <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '40px 40px' }} />
@@ -219,7 +257,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4">
-        {/* Main Entry Matrix - Expanded to Full Width */}
+        {/* Main Entry Matrix */}
         <div className="lg:col-span-12 space-y-10">
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
@@ -281,7 +319,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Recording for WO #{selectedOrderId} on {selectedDate}</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-10 rounded-xl text-slate-400 font-bold uppercase text-[9px] hover:text-[#001F3D]" onClick={() => setStep(1)}>
+                    <Button variant="ghost" size="sm" className="h-10 rounded-xl text-slate-400 font-bold uppercase text-[9px] hover:text-[#001F3D]" onClick={() => { setStep(1); setEditingLogId(null); }}>
                       <ChevronLeft className="mr-2 h-4 w-4" /> Change Selection
                     </Button>
                   </div>
@@ -344,12 +382,12 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                   </div>
 
                   <div className="flex gap-4 pt-6">
-                    <Button variant="ghost" className="flex-1 h-16 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400" onClick={() => setStep(1)}>Abort</Button>
+                    <Button variant="ghost" className="flex-1 h-16 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400" onClick={() => { setStep(1); setEditingLogId(null); }}>Abort</Button>
                     <Button 
                       className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl shadow-primary/20 flex gap-4 group"
                       onClick={handleSaveLog}
                     >
-                      <Save className="h-5 w-5" /> Commit to Ledger
+                      <Save className="h-5 w-5" /> {editingLogId ? 'Update Ledger Entry' : 'Commit to Ledger'}
                       <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </Button>
                   </div>
@@ -358,6 +396,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
             </div>
           </Card>
 
+          {/* Daily Log Summary Matrix */}
           <Card className="p-12 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] overflow-hidden">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
               <div className="flex items-center gap-6">
@@ -391,6 +430,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                     <TableHead className="text-[11px] font-bold uppercase text-slate-400">Classification</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase text-center w-32">Duration</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase pl-10">Technical Observation</TableHead>
+                    <TableHead className="text-right pr-10 w-32">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -418,11 +458,31 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
                           "{log.activity}"
                         </p>
                       </TableCell>
+                      <TableCell className="text-right pr-10">
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl"
+                            onClick={() => handleEdit(log)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-slate-300 hover:text-red-500 rounded-xl"
+                            onClick={() => handleDelete(log.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {dailyStats.dayLogs.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-64 text-center">
+                      <TableCell colSpan={6} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center opacity-20 py-10">
                           <ArchiveX className="h-20 w-20 text-slate-300 mb-6" />
                           <p className="text-xl font-display font-bold uppercase tracking-tight text-slate-400">Ledger Matrix Idle</p>

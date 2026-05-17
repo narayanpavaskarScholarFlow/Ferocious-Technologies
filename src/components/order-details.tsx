@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, isValid } from 'date-fns';
-import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock } from 'lucide-react';
+import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -23,14 +23,6 @@ interface OrderDetailsProps {
   orders: Order[];
 }
 
-interface PartRow {
-  id: string;
-  name: string;
-  sku: string;
-  qty: string;
-  duration: string;
-}
-
 export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders }: OrderDetailsProps) {
   const { toast } = useToast();
   const isNew = !orderId;
@@ -40,7 +32,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
   const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start'>('Yet to start');
   
-  // Format dates as YYYY-MM-DD for consistency with DatePicker
   const [startDateStr, setStartDateStr] = useState("");
   const [endDateStr, setEndDateStr] = useState("");
 

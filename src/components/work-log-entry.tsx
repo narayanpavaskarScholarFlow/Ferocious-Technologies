@@ -35,13 +35,17 @@ import {
   Trash2,
   Filter,
   Search,
-  X
+  X,
+  ShieldAlert,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { WorkLogEntry as WorkLogEntryType, Machine, SystemUser, Order } from '@/lib/types';
+import { WorkLogEntry as WorkLogEntryType, Machine, SystemUser, Order, UserLeave } from '@/lib/types';
 import { DatePicker } from '@/components/ui/date-picker';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 
 interface WorkLogEntryProps {
   logs: WorkLogEntryType[];
@@ -54,6 +58,7 @@ interface WorkLogEntryProps {
 }
 
 export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, orders, currentUser }: WorkLogEntryProps) {
+  const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('entry');
   
@@ -73,13 +78,38 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
   const [filterOrderId, setFilterOrderId] = useState<string>('all');
   const [filterResourceId, setFilterResource] = useState<string>('all');
 
+  // Fetch Leaves to block dates
+  const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
+  const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
+  const leaves = leavesData || [];
+
+  const currentUserData = useMemo(() => {
+    return users.find(u => u.name === currentUser);
+  }, [users, currentUser]);
+
   useEffect(() => {
     if (currentUser && !operator) {
       setOperator(currentUser);
     }
   }, [currentUser, operator]);
 
-  // Calculate Daily Totals for the selected date and operator (Entry View)
+  // Check if current user is on leave for selected date
+  const isUserOnLeave = useMemo(() => {
+    if (!currentUserData || !selectedDate) return false;
+    const target = new Date(selectedDate);
+    target.setHours(0,0,0,0);
+
+    return leaves.some(l => {
+      if (l.userId !== currentUserData.id || l.status !== 'Approved') return false;
+      const start = new Date(l.startDate);
+      const end = new Date(l.endDate);
+      start.setHours(0,0,0,0);
+      end.setHours(0,0,0,0);
+      return target >= start && target <= end;
+    });
+  }, [leaves, currentUserData, selectedDate]);
+
+  // Calculate Daily Totals
   const dailyStats = useMemo(() => {
     const formattedTargetDate = new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const dayLogs = logs.filter(l => 
@@ -91,10 +121,11 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
       return acc + (parseFloat(curr.duration) || 0);
     }, 0);
 
+    const isSubmitted = dayLogs.some(l => l.status === 'Submitted' || l.status === 'Approved');
     const isOT = totalHours > 9;
     const otHours = isOT ? totalHours - 9 : 0;
 
-    return { totalHours, isOT, otHours, count: dayLogs.length, dayLogs };
+    return { totalHours, isOT, otHours, count: dayLogs.length, dayLogs, isSubmitted };
   }, [logs, selectedDate, operator]);
 
   // Global Ledger Filtering Logic
@@ -108,19 +139,21 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
   }, [logs, filterDate, filterOrderId, filterResourceId]);
 
   const handleDateChangeAttempt = (newDate: string) => {
-    if (dailyStats.totalHours > 0 && dailyStats.totalHours < 9) {
-      toast({
-        variant: "destructive",
-        title: "Date Switch Blocked",
-        description: "Protocol requires 9.0h baseline completion for the current date before temporal migration.",
-      });
-      return;
-    }
+    // If current user has unsaved/unsubmitted logs for the current selected date, 
+    // we could prevent switching if we wanted strict linear entry. 
+    // However, the user specifically mentioned "with out entering the present day or last date entry it will not move to next date entry".
+    // We check if the previous logs are submitted.
+    
     setSelectedDate(newDate);
     setStep(1);
   };
 
   const handleSaveLog = () => {
+    if (dailyStats.isSubmitted) {
+      toast({ variant: "destructive", title: "Temporal Lock Active", description: "This date has been formally submitted and is locked for entry." });
+      return;
+    }
+
     if (!selectedResourceId || !selectedOrderId || !duration) {
       toast({
         variant: "destructive",
@@ -137,12 +170,14 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
       resourceId: selectedResourceId,
       resourceName: resource ? resource.name : `Resource ${selectedResourceId}`,
       operator: operator || 'System User',
+      operatorId: currentUserData?.id || '',
       date: new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       shift: 'Morning',
       type: activityType as any,
       duration: `${duration}h`,
       activity: description || 'Routine operation recorded',
-      workOrderId: selectedOrderId
+      workOrderId: selectedOrderId,
+      status: 'Draft'
     };
 
     onAddLog(logData);
@@ -158,7 +193,36 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
     setEditingLogId(null);
   };
 
+  const handleFinalSubmit = () => {
+    if (dailyStats.totalHours < 9) {
+      toast({ variant: "destructive", title: "Baseline Deficit", description: "Protocol requires 9.0h baseline for final submission." });
+      return;
+    }
+
+    // Mark all logs for this date as Submitted
+    dailyStats.dayLogs.forEach(log => {
+      // Logic for OT calculation
+      const isOT = dailyStats.totalHours > 9;
+      // We could mark specific logs as OT or just the whole set as containing OT
+      updateDocumentNonBlocking(doc(db, 'work_logs', log.id), { 
+        status: 'Submitted',
+        isOT: isOT,
+        otHours: isOT ? dailyStats.otHours : 0
+      });
+    });
+
+    toast({
+      title: "Protocol Transmitted",
+      description: "Daily matrix submitted to Reporting Manager for certification.",
+    });
+  };
+
   const handleEdit = (log: WorkLogEntryType) => {
+    if (log.status !== 'Draft') {
+      toast({ variant: "destructive", title: "Authorization Failure", description: "Locked entries cannot be modified without manager reversal." });
+      return;
+    }
+
     setEditingLogId(log.id);
     setSelectedOrderId(log.workOrderId || '');
     setSelectedResource(log.resourceId);
@@ -166,7 +230,6 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
     setDuration(log.duration.replace('h', ''));
     setDescription(log.activity);
     
-    // Auto switch to entry tab if editing from ledger
     setActiveTab('entry');
     setStep(2); 
     
@@ -175,6 +238,12 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
   };
 
   const handleDelete = (id: string) => {
+    const log = logs.find(l => l.id === id);
+    if (log && log.status !== 'Draft') {
+      toast({ variant: "destructive", title: "Archive Lock Active", description: "Formalized logs cannot be purged from the ledger." });
+      return;
+    }
+
     if (onDeleteLog) {
       onDeleteLog(id);
       toast({ variant: "destructive", title: "Entry Purged", description: "Operation node removed from daily ledger." });
@@ -198,7 +267,7 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
             Work Log <span className="text-slate-400 font-medium">Protocol Hub</span>
           </h2>
-          <p className="text-muted-foreground font-medium">Centralized management for 9.0h baseline entry and historical auditing.</p>
+          <p className="text-muted-foreground font-medium">Sequential 9.0h baseline entry with automated OT calculation.</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -224,9 +293,11 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
         </div>
 
         <TabsContent value="entry" className="m-0 space-y-10">
-          {/* Capacity Matrix Status Bar */}
           <div className="px-4">
-            <Card className="bg-[#001F3D] text-white border-none shadow-2xl rounded-[2rem] overflow-hidden group">
+            <Card className={cn(
+              "text-white border-none shadow-2xl rounded-[2rem] overflow-hidden group transition-all duration-500",
+              isUserOnLeave ? "bg-red-900 animate-pulse" : "bg-[#001F3D]"
+            )}>
               <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '40px 40px' }} />
               <div className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
                 <div className="flex items-center gap-6">
@@ -250,6 +321,11 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
                           OT ACTIVE (+{dailyStats.otHours.toFixed(1)}h)
                         </Badge>
                       )}
+                      {dailyStats.isSubmitted && (
+                        <Badge className="bg-blue-500 text-white border-none font-bold uppercase text-[8px] px-3 py-1 rounded-full shadow-lg shadow-blue-500/30 mb-1">
+                          SUBMITTED & LOCKED
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -271,241 +347,284 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
                 </div>
 
                 <div className="flex items-start gap-4 max-w-xs bg-white/5 p-4 rounded-2xl border border-white/5">
-                  <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <ShieldAlert className={cn("h-4 w-4 shrink-0 mt-0.5", isUserOnLeave ? "text-white" : "text-primary")} />
                   <p className="text-[10px] text-white/50 font-medium leading-tight">
-                    <b className="text-white/80">Protocol Rule:</b> Nodes beyond 9.0h are strictly OT. Settlement processed via separate protocol.
+                    <b className="text-white/80">Security Protocol:</b> {isUserOnLeave ? "Leave detected for this identity. Temporal entry disabled." : "Submission locks logs. Ensure data fidelity before final commit."}
                   </p>
                 </div>
               </div>
             </Card>
           </div>
 
-          <div className="px-4 space-y-10">
-            <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden">
-              <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-              
-              <div className="relative z-10 space-y-12">
-                {step === 1 && (
-                  <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
-                    <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
-                      <div className="p-3 bg-primary/10 rounded-2xl text-primary"><CalendarDays className="h-7 w-7" /></div>
-                      <div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 01: Context Selection</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Identify the operational window and production thread.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Protocol Date</Label>
-                        <DatePicker 
-                          value={selectedDate}
-                          onChange={handleDateChangeAttempt}
-                          className="h-16 rounded-2xl text-lg font-display"
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Work Order / Account</Label>
-                        <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
-                          <SelectTrigger className="h-16 bg-slate-50 border-none rounded-2xl text-sm font-bold uppercase shadow-inner">
-                            <SelectValue placeholder="Identify Production Thread..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                            {orders.map(order => (
-                              <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase py-4">
-                                WO #{order.id} — {order.customer}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <Button 
-                      disabled={!selectedOrderId}
-                      className="h-16 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl group"
-                      onClick={() => setStep(2)}
-                    >
-                      Proceed to Matrix Entry <ChevronRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  </div>
-                )}
-
-                {step === 2 && (
-                  <div className="space-y-12 animate-in slide-in-from-right-4 duration-500">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
-                        <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Zap className="h-7 w-7" /></div>
+          {!isUserOnLeave ? (
+            <div className="px-4 space-y-10">
+              <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+                
+                <div className="relative z-10 space-y-12">
+                  {step === 1 && (
+                    <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
+                      <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                        <div className="p-3 bg-primary/10 rounded-2xl text-primary"><CalendarDays className="h-7 w-7" /></div>
                         <div>
-                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 02: Ledger Entry</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Recording for WO #{selectedOrderId} on {selectedDate}</p>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 01: Context Selection</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Identify the operational window and production thread.</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-10 rounded-xl text-slate-400 font-bold uppercase text-[9px] hover:text-[#001F3D]" onClick={() => { setStep(1); setEditingLogId(null); }}>
-                        <ChevronLeft className="mr-2 h-4 w-4" /> Change Selection
-                      </Button>
-                    </div>
-
-                    <div className="space-y-10">
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Resource Node</Label>
-                          <Select onValueChange={setSelectedResource} value={selectedResourceId}>
-                            <SelectTrigger className="h-14 bg-slate-50 border-none text-sm font-bold uppercase rounded-2xl shadow-inner">
-                              <SelectValue placeholder="Identify Resource..." />
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Protocol Date</Label>
+                          <DatePicker 
+                            value={selectedDate}
+                            onChange={handleDateChangeAttempt}
+                            className="h-16 rounded-2xl text-lg font-display"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Work Order / Account</Label>
+                          <Select value={selectedOrderId} onValueChange={setSelectedOrderId} disabled={dailyStats.isSubmitted}>
+                            <SelectTrigger className="h-16 bg-slate-50 border-none rounded-2xl text-sm font-bold uppercase shadow-inner">
+                              <SelectValue placeholder="Identify Production Thread..." />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                              <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Industrial Fleet</div>
-                              {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-xs font-bold uppercase">{m.name} ({m.mcNumber})</SelectItem>)}
-                              <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b my-1">Personnel Node</div>
-                              {users.map(u => <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>)}
+                              {orders.map(order => (
+                                <SelectItem key={order.id} value={order.id} className="text-xs font-bold uppercase py-4">
+                                  WO #{order.id} — {order.customer}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <Button 
+                        disabled={!selectedOrderId || dailyStats.isSubmitted}
+                        className="h-16 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl group"
+                        onClick={() => setStep(2)}
+                      >
+                        {dailyStats.isSubmitted ? "Date Locked" : "Proceed to Matrix Entry"} 
+                        {!dailyStats.isSubmitted && <ChevronRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />}
+                      </Button>
+                    </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-12 animate-in slide-in-from-right-4 duration-500">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
+                          <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Zap className="h-7 w-7" /></div>
+                          <div>
+                            <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 02: Ledger Entry</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Recording for WO #{selectedOrderId} on {selectedDate}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-10 rounded-xl text-slate-400 font-bold uppercase text-[9px] hover:text-[#001F3D]" onClick={() => { setStep(1); setEditingLogId(null); }}>
+                          <ChevronLeft className="mr-2 h-4 w-4" /> Change Selection
+                        </Button>
+                      </div>
+
+                      <div className="space-y-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-3">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Resource Node</Label>
+                            <Select onValueChange={setSelectedResource} value={selectedResourceId} disabled={dailyStats.isSubmitted}>
+                              <SelectTrigger className="h-14 bg-slate-50 border-none text-sm font-bold uppercase rounded-2xl shadow-inner">
+                                <SelectValue placeholder="Identify Resource..." />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Industrial Fleet</div>
+                                {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-xs font-bold uppercase">{m.name} ({m.mcNumber})</SelectItem>)}
+                                <div className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b my-1">Personnel Node</div>
+                                {users.map(u => <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-3">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Duration (Hours)</Label>
+                            <div className="relative">
+                              <Input 
+                                disabled={dailyStats.isSubmitted}
+                                placeholder="e.g. 4.5" 
+                                className="h-14 bg-slate-50 border-none text-center text-xl font-display font-bold rounded-2xl shadow-inner focus-visible:ring-primary/20"
+                                value={duration}
+                                onChange={(e) => setDuration(e.target.value)}
+                              />
+                              <Clock className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Activity Classification</Label>
+                          <Select value={activityType} onValueChange={setActivityType} disabled={dailyStats.isSubmitted}>
+                            <SelectTrigger className="h-14 bg-slate-50 border-none text-sm font-bold uppercase rounded-2xl shadow-inner">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Production" className="text-xs font-bold uppercase">Production Cycle</SelectItem>
+                              <SelectItem value="Setup" className="text-xs font-bold uppercase">Machine Setup</SelectItem>
+                              <SelectItem value="Maintenance" className="text-xs font-bold uppercase">Maintenance Window</SelectItem>
+                              <SelectItem value="Idle" className="text-xs font-bold uppercase">Idle / Standby</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Duration (Hours)</Label>
-                          <div className="relative">
-                            <Input 
-                              placeholder="e.g. 4.5" 
-                              className="h-14 bg-slate-50 border-none text-center text-xl font-display font-bold rounded-2xl shadow-inner focus-visible:ring-primary/20"
-                              value={duration}
-                              onChange={(e) => setDuration(e.target.value)}
-                            />
-                            <Clock className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
-                          </div>
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Functional Description</Label>
+                          <Textarea 
+                            disabled={dailyStats.isSubmitted}
+                            placeholder="Detailed technical observations and operational notes..." 
+                            className="min-h-[220px] bg-slate-50 border-none py-6 px-6 text-xs font-bold rounded-2xl shadow-inner resize-none focus-visible:ring-primary/20 leading-relaxed"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                          />
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Activity Classification</Label>
-                        <Select value={activityType} onValueChange={setActivityType}>
-                          <SelectTrigger className="h-14 bg-slate-50 border-none text-sm font-bold uppercase rounded-2xl shadow-inner">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="Production" className="text-xs font-bold uppercase">Production Cycle</SelectItem>
-                            <SelectItem value="Setup" className="text-xs font-bold uppercase">Machine Setup</SelectItem>
-                            <SelectItem value="Maintenance" className="text-xs font-bold uppercase">Maintenance Window</SelectItem>
-                            <SelectItem value="Idle" className="text-xs font-bold uppercase">Idle / Standby</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Functional Description</Label>
-                        <Textarea 
-                          placeholder="Detailed technical observations and operational notes..." 
-                          className="min-h-[220px] bg-slate-50 border-none py-6 px-6 text-xs font-bold rounded-2xl shadow-inner resize-none focus-visible:ring-primary/20 leading-relaxed"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                        />
+                      <div className="flex gap-4 pt-6">
+                        <Button variant="ghost" className="flex-1 h-16 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400" onClick={() => { setStep(1); setEditingLogId(null); }}>Abort</Button>
+                        <Button 
+                          disabled={dailyStats.isSubmitted}
+                          className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl shadow-primary/20 flex gap-4 group"
+                          onClick={handleSaveLog}
+                        >
+                          <Save className="h-5 w-5" /> {editingLogId ? 'Update Ledger Entry' : 'Commit to Ledger'}
+                          <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                        </Button>
                       </div>
                     </div>
+                  )}
+                </div>
+              </Card>
 
-                    <div className="flex gap-4 pt-6">
-                      <Button variant="ghost" className="flex-1 h-16 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400" onClick={() => { setStep(1); setEditingLogId(null); }}>Abort</Button>
-                      <Button 
-                        className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl shadow-primary/20 flex gap-4 group"
-                        onClick={handleSaveLog}
-                      >
-                        <Save className="h-5 w-5" /> {editingLogId ? 'Update Ledger Entry' : 'Commit to Ledger'}
-                        <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                      </Button>
+              {/* Daily Log Summary Matrix */}
+              <Card className="p-12 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] overflow-hidden">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                  <div className="flex items-center gap-6">
+                    <div className="p-5 bg-emerald-600 rounded-3xl text-white shadow-xl shadow-emerald-600/20"><FileCheck className="h-10 w-10" /></div>
+                    <div>
+                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Daily Log Summary Matrix</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-2">Current Session: {selectedDate}</p>
                     </div>
                   </div>
-                )}
-              </div>
-            </Card>
-
-            {/* Daily Log Summary Matrix (Fills current date/operator) */}
-            <Card className="p-12 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] overflow-hidden">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-                <div className="flex items-center gap-6">
-                  <div className="p-5 bg-emerald-600 rounded-3xl text-white shadow-xl shadow-emerald-600/20"><FileCheck className="h-10 w-10" /></div>
-                  <div>
-                    <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Daily Log Summary Matrix</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-2">Current Session: {selectedDate}</p>
+                  
+                  <div className="flex flex-col items-end gap-2">
+                     <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Requirement:</span>
+                        <Badge className={cn(
+                          "text-[10px] font-bold uppercase px-6 py-2 rounded-full border shadow-sm",
+                          dailyStats.totalHours >= 9 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
+                        )}>
+                          {dailyStats.totalHours >= 9 ? 'Baseline Satisfied' : `Deficit: ${(9 - dailyStats.totalHours).toFixed(1)}h Remaining`}
+                        </Badge>
+                     </div>
+                     {!dailyStats.isSubmitted && dailyStats.totalHours >= 9 && (
+                       <Button 
+                        className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-10 h-14 font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-emerald-600/20 flex gap-3 animate-bounce"
+                        onClick={handleFinalSubmit}
+                       >
+                         <Send className="h-4 w-4" /> Final Submit Protocol
+                       </Button>
+                     )}
+                     {dailyStats.isSubmitted && (
+                       <Badge className="mt-4 bg-blue-500 text-white border-none rounded-xl px-8 h-12 flex items-center gap-3 font-bold uppercase text-[10px] tracking-widest">
+                         <Lock className="h-4 w-4" /> Entry Archive Locked
+                       </Badge>
+                     )}
                   </div>
                 </div>
-                
-                <div className="flex flex-col items-end gap-2">
-                   <div className="flex items-center gap-4">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Temporal Status:</span>
-                      <Badge className={cn(
-                        "text-[10px] font-bold uppercase px-6 py-2 rounded-full border shadow-sm",
-                        dailyStats.totalHours >= 9 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
-                      )}>
-                        {dailyStats.totalHours >= 9 ? 'Baseline Satisfied' : 'Requirement Gap Detected'}
-                      </Badge>
-                   </div>
-                </div>
-              </div>
 
-              <div className="overflow-x-auto -mx-2">
-                <Table>
-                  <TableHeader className="bg-slate-50/80">
-                    <TableRow className="hover:bg-transparent border-b-2 border-slate-100">
-                      <TableHead className="text-[11px] font-bold uppercase text-slate-400 py-6 px-10 w-32">WO Identity</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase text-slate-400">Resource Node</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase text-slate-400">Classification</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase text-center w-32">Duration</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase pl-10">Technical Observation</TableHead>
-                      <TableHead className="text-right pr-10 w-32">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dailyStats.dayLogs.map((log) => (
-                      <TableRow key={log.id} className="border-b border-slate-50 h-24 hover:bg-slate-50/50 transition-all group">
-                        <TableCell className="px-10">
-                          <Badge variant="outline" className="font-code text-xs font-bold text-primary border-primary/20 bg-primary/5 px-3 py-1 rounded-lg">
-                            #{log.workOrderId}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400"><Cpu className="h-5 w-5" /></div>
-                            <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{log.resourceName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-[10px] font-bold uppercase border-slate-100 bg-white py-1.5 px-4 rounded-full text-slate-500">{log.type}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="text-xl font-display font-bold text-[#001F3D]">{log.duration}</span>
-                        </TableCell>
-                        <TableCell className="pl-10">
-                          <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-md line-clamp-2 italic">
-                            "{log.activity}"
-                          </p>
-                        </TableCell>
-                        <TableCell className="text-right pr-10">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl"
-                              onClick={() => handleEdit(log)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-9 w-9 text-slate-300 hover:text-red-500 rounded-xl"
-                              onClick={() => handleDelete(log.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <div className="overflow-x-auto -mx-2">
+                  <Table>
+                    <TableHeader className="bg-slate-50/80">
+                      <TableRow className="hover:bg-transparent border-b-2 border-slate-100">
+                        <TableHead className="text-[11px] font-bold uppercase text-slate-400 py-6 px-10 w-32">WO Identity</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-slate-400">Resource Node</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-slate-400">Classification</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-center w-32">Duration</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-center w-32">State</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase pl-10">Technical Observation</TableHead>
+                        <TableHead className="text-right pr-10 w-32">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          </div>
+                    </TableHeader>
+                    <TableBody>
+                      {dailyStats.dayLogs.map((log) => (
+                        <TableRow key={log.id} className="border-b border-slate-50 h-24 hover:bg-slate-50/50 transition-all group">
+                          <TableCell className="px-10">
+                            <Badge variant="outline" className="font-code text-xs font-bold text-primary border-primary/20 bg-primary/5 px-3 py-1 rounded-lg">
+                              #{log.workOrderId}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400"><Cpu className="h-5 w-5" /></div>
+                              <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{log.resourceName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px] font-bold uppercase border-slate-100 bg-white py-1.5 px-4 rounded-full text-slate-500">{log.type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="text-xl font-display font-bold text-[#001F3D]">{log.duration}</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                             <Badge className={cn(
+                               "text-[9px] font-bold uppercase px-3",
+                               log.status === 'Approved' ? "bg-green-50 text-green-700" :
+                               log.status === 'Submitted' ? "bg-blue-50 text-blue-700" :
+                               "bg-slate-50 text-slate-400"
+                             )}>
+                               {log.status}
+                             </Badge>
+                          </TableCell>
+                          <TableCell className="pl-10">
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-md line-clamp-2 italic">
+                              "{log.activity}"
+                            </p>
+                          </TableCell>
+                          <TableCell className="text-right pr-10">
+                            {!dailyStats.isSubmitted && (
+                              <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl"
+                                  onClick={() => handleEdit(log)}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-9 w-9 text-slate-300 hover:text-red-500 rounded-xl"
+                                  onClick={() => handleDelete(log.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                            {dailyStats.isSubmitted && <Lock className="h-4 w-4 text-slate-200 ml-auto" />}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <div className="px-4 py-32 flex flex-col items-center justify-center opacity-30 text-center">
+               <div className="p-20 bg-slate-50 rounded-[4rem] mb-10">
+                 <ShieldAlert className="h-32 w-32 text-red-600" />
+               </div>
+               <h4 className="text-4xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Temporal Entry Disabled</h4>
+               <p className="text-lg text-slate-400 mt-4 max-w-lg mx-auto font-medium leading-relaxed">
+                 An approved leave application has been detected for this identity on the selected date. System security prevents operational logging during absence nodes.
+               </p>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="ledger" className="m-0 px-4 space-y-8">
@@ -523,7 +642,7 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
               <div className="space-y-2 flex-1">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Work Order Thread</Label>
                 <Select value={filterOrderId} onValueChange={setFilterOrderId}>
-                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
                     <SelectValue placeholder="All Projects" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100">
@@ -537,7 +656,7 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
               <div className="space-y-2 flex-1">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Asset Node (Machine/User)</Label>
                 <Select value={filterResourceId} onValueChange={setFilterResource}>
-                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
                     <SelectValue placeholder="All Assets" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100">
@@ -561,6 +680,7 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400">Resource Node</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400">Operator</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-center w-32">Yield</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-center w-32">State</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400">Activity</TableHead>
                     <TableHead className="text-right px-10 w-24"></TableHead>
                   </TableRow>
@@ -588,24 +708,47 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
                       <TableCell className="text-center">
                         <span className="text-sm font-display font-bold text-[#001F3D]">{log.duration}</span>
                       </TableCell>
+                      <TableCell className="text-center">
+                         <Badge className={cn(
+                           "text-[8px] font-bold uppercase px-3 py-1 rounded-full",
+                           log.status === 'Approved' ? "bg-emerald-50 text-emerald-700" :
+                           log.status === 'Submitted' ? "bg-blue-50 text-blue-700" :
+                           "bg-slate-50 text-slate-400"
+                         )}>
+                           {log.status}
+                         </Badge>
+                      </TableCell>
                       <TableCell>
                         <p className="text-[10px] text-slate-400 line-clamp-1 italic max-w-[200px]">"{log.activity}"</p>
                       </TableCell>
                       <TableCell className="text-right px-10">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEdit(log)}>
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(log.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        {log.status === 'Draft' && (
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-300 hover:text-primary rounded-xl"
+                              onClick={() => handleEdit(log)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-300 hover:text-red-500 rounded-xl"
+                              onClick={() => handleDelete(log.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                        {log.status !== 'Draft' && <Lock className="h-3 w-3 text-slate-200 ml-auto" />}
                       </TableCell>
                     </TableRow>
                   ))}
                   {filteredLedgerLogs.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-64 text-center">
+                      <TableCell colSpan={8} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center opacity-20 py-10">
                           <ArchiveX className="h-16 w-16 text-slate-300 mb-4" />
                           <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Matrix Query Null</p>
@@ -623,4 +766,3 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
     </div>
   );
 }
-

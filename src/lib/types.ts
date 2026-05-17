@@ -57,7 +57,8 @@ export type ViewType =
   | 'production-planner'
   | 'agile'
   | 'training'
-  | 'manpower';
+  | 'manpower'
+  | 'salary';
 
 export interface SubTask {
   id: string;
@@ -171,12 +172,18 @@ export interface WorkLogEntry {
   resourceId: string;
   resourceName: string;
   operator: string;
+  operatorId: string;
   date: string;
   shift: 'Morning' | 'Evening' | 'Night';
   activity: string;
   duration: string;
   type: 'Production' | 'Maintenance' | 'Idle' | 'Setup';
   workOrderId?: string;
+  status: 'Draft' | 'Submitted' | 'Approved';
+  approvedBy?: string;
+  approvedAt?: string;
+  isOT?: boolean;
+  otHours?: number;
 }
 
 export interface InventoryItem {
@@ -196,6 +203,17 @@ export interface UserLeaveBalance {
   annual: number;
   sick: number;
   casual: number;
+}
+
+export interface SalaryStructure {
+  basePay: number;
+  hra: number;
+  conveyance: number;
+  specialAllowance: number;
+  otRate: number;
+  panNumber: string;
+  bankAccount: string;
+  ifscCode: string;
 }
 
 export interface UISettings {
@@ -226,6 +244,7 @@ export interface SystemUser {
   shift?: 'Morning' | 'Evening' | 'Night';
   efficiency?: number;
   leaveBalance?: UserLeaveBalance;
+  salary?: SalaryStructure;
   uiSettings?: UISettings;
 }
 
@@ -298,4 +317,15 @@ export interface TrainingAssignment {
   completionDate?: string;
   status: 'Assigned' | 'In-Progress' | 'Completed' | 'Overdue' | 'Failed';
   score?: number;
+}
+
+export interface UserLeave {
+  id: string;
+  userId: string;
+  userName: string;
+  type: 'Annual' | 'Sick' | 'Casual';
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
 }

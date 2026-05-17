@@ -138,9 +138,6 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
     setStep(1); // Reset to first step for next entry cycle
   };
 
-  const darkInputClasses = "bg-slate-50 border-none h-12 focus-visible:ring-primary/20 text-sm font-bold rounded-xl shadow-inner";
-  const darkSelectClasses = "bg-slate-50 border-none h-12 focus:ring-primary/20 text-sm font-bold rounded-xl shadow-inner";
-
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 pb-20 max-w-[1400px] mx-auto">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-4">
@@ -165,9 +162,65 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
         </div>
       </header>
 
+      {/* Relocated Capacity Matrix - Horizontal Bar (The Green Box Area) */}
+      <div className="px-4">
+        <Card className="bg-[#001F3D] text-white border-none shadow-2xl rounded-[2rem] overflow-hidden group">
+          <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+          <div className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+            <div className="flex items-center gap-6">
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-white/40 uppercase tracking-[0.4em]">Capacity Matrix</p>
+                <h4 className="text-xl font-display font-bold uppercase tracking-tight leading-none flex items-center gap-3">
+                  {operator}
+                  <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold uppercase px-3 py-1">LIVE_SYNC</Badge>
+                </h4>
+              </div>
+              <div className="h-10 w-px bg-white/10 hidden md:block" />
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Cumulative Yield</p>
+                <div className="flex items-end gap-2">
+                  <p className="text-3xl font-display font-bold tracking-tighter">
+                    {dailyStats.totalHours.toFixed(1)} 
+                    <span className="text-lg text-white/20 ml-2">/ 9.0h</span>
+                  </p>
+                  {dailyStats.isOT && (
+                    <Badge className="bg-emerald-500 text-white border-none font-bold uppercase text-[8px] px-3 py-1 rounded-full animate-pulse shadow-lg shadow-emerald-500/30 mb-1">
+                      OT ACTIVE (+{dailyStats.otHours.toFixed(1)}h)
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 max-w-md w-full space-y-3">
+              <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-[0.3em] text-white/20">
+                <span>Baseline Mandate Progress</span>
+                <span>{((dailyStats.totalHours / 9) * 100).toFixed(0)}% Utilized</span>
+              </div>
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden p-[1px] shadow-inner">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all duration-1000",
+                    dailyStats.totalHours >= 9 ? "bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]" : "bg-primary"
+                  )}
+                  style={{ width: `${Math.min((dailyStats.totalHours / 9) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 max-w-xs bg-white/5 p-4 rounded-2xl border border-white/5">
+              <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-[10px] text-white/50 font-medium leading-tight">
+                <b className="text-white/80">Protocol Rule:</b> Nodes beyond 9.0h are strictly OT. Settlement processed via separate protocol.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4">
-        <div className="lg:col-span-8 space-y-10">
-          {/* Step-by-Step Selection Matrix */}
+        {/* Main Entry Matrix - Expanded to Full Width */}
+        <div className="lg:col-span-12 space-y-10">
           <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             
@@ -305,7 +358,6 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
             </div>
           </Card>
 
-          {/* Large Scale Summary Matrix */}
           <Card className="p-12 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] overflow-hidden">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
               <div className="flex items-center gap-6">
@@ -387,7 +439,7 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
               <div className="flex items-start gap-6 max-w-lg bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
                 <div className={cn(
                   "p-3 rounded-2xl text-white shadow-lg",
-                  dailyStats.totalHours < 9 ? "bg-red-500 shadow-red-500/20" : "bg-emerald-500 shadow-emerald-500/20"
+                  dailyStats.totalHours < 9 ? "bg-red-50 shadow-red-500/20" : "bg-emerald-50 shadow-emerald-500/20"
                 )}>
                   {dailyStats.totalHours < 9 ? <AlertTriangle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
                 </div>
@@ -415,77 +467,6 @@ export function WorkLogEntry({ logs, onAddLog, machines, users, orders, currentU
               </Button>
             </div>
           </Card>
-        </div>
-
-        {/* Daily Capacity Node Sidebar */}
-        <div className="lg:col-span-4 space-y-6">
-          <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[3rem] relative overflow-hidden group sticky top-24">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-              <TrendingUp className="h-32 w-32" />
-            </div>
-            
-            <div className="space-y-12 relative z-10">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em]">Capacity Matrix</p>
-                  <h4 className="text-2xl font-display font-bold uppercase tracking-tight leading-none">{operator}</h4>
-                </div>
-                <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold uppercase px-3 py-1">LIVE_SYNC</Badge>
-              </div>
-
-              <div className="space-y-8">
-                <div className="flex justify-between items-end">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Cumulative Yield</p>
-                    <p className="text-6xl font-display font-bold tracking-tighter">
-                      {dailyStats.totalHours.toFixed(1)} 
-                      <span className="text-2xl text-white/20 ml-2">/ 9.0h</span>
-                    </p>
-                  </div>
-                  {dailyStats.isOT && (
-                    <div className="flex flex-col items-end gap-2">
-                      <Badge className="bg-emerald-500 text-white border-none font-bold uppercase text-[9px] px-4 py-2 rounded-full animate-pulse shadow-lg shadow-emerald-500/30">
-                        OT ACTIVE (+{dailyStats.otHours.toFixed(1)}h)
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="h-3 bg-white/5 rounded-full overflow-hidden p-[1px] shadow-inner">
-                    <div 
-                      className={cn(
-                        "h-full rounded-full transition-all duration-1000",
-                        dailyStats.totalHours >= 9 ? "bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.6)]" : "bg-primary"
-                      )}
-                      style={{ width: `${Math.min((dailyStats.totalHours / 9) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-[0.3em] text-white/20">
-                    <span>Baseline Mandate</span>
-                    <span>{((dailyStats.totalHours / 9) * 100).toFixed(0)}% Utilized</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-4 shadow-inner">
-                <div className="flex items-start gap-4">
-                  <AlertTriangle className="h-5 w-5 text-primary shrink-0 mt-1" />
-                  <p className="text-[11px] text-white/50 font-medium leading-relaxed">
-                    <b className="text-white/80">Compliance Rule:</b> Entry nodes committed beyond 9.0h are strictly classified as Overtime (OT). Financial settlement for OT nodes is processed as a separate transaction protocol.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-          
-          <div className="p-8 bg-slate-50/80 border border-slate-100 rounded-[2.5rem] flex items-center gap-6 animate-in slide-in-from-right-4 duration-1000">
-             <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-primary"><Clock className="h-6 w-6" /></div>
-             <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Auto-Archive Protocol</p>
-                <p className="text-[11px] font-bold text-[#001F3D] leading-snug mt-1">Logs are automatically hashed and committed to the master ledger upon final submission.</p>
-             </div>
-          </div>
         </div>
       </div>
     </div>

@@ -8,7 +8,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO, isValid } from 'date-fns';
-import { ChevronLeft, Save, Plus, Trash2, Calendar as CalendarIcon, DollarSign, User, Building2, Hash, CreditCard, Target, Clock, ShieldCheck } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  Save, 
+  Plus, 
+  Trash2, 
+  Calendar as CalendarIcon, 
+  DollarSign, 
+  User, 
+  Building2, 
+  Hash, 
+  CreditCard, 
+  Target, 
+  Clock, 
+  ShieldCheck 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -184,6 +198,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <DatePicker 
                   value={startDateStr}
                   onChange={setStartDateStr}
+                  placeholder="SELECT A DATE"
                   className="h-12"
                 />
               </div>
@@ -195,6 +210,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <DatePicker 
                   value={endDateStr}
                   onChange={setEndDateStr}
+                  placeholder="SELECT A DATE"
                   className="h-12"
                 />
               </div>

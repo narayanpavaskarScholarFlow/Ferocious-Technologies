@@ -39,12 +39,12 @@ export function DatePicker({ value, onChange, placeholder = "Select a date", cla
           variant={"outline"}
           disabled={disabled}
           className={cn(
-            "w-full justify-between text-left font-normal h-10 px-3 bg-slate-50 border-slate-200 rounded-xl hover:bg-slate-100 transition-all",
+            "w-full justify-between text-left font-normal h-12 px-4 bg-slate-50 border-slate-200 rounded-2xl hover:bg-slate-100 transition-all",
             !dateValue && "text-muted-foreground",
             className
           )}
         >
-          <span className="font-bold text-xs uppercase tracking-wider">
+          <span className="font-bold text-xs uppercase tracking-widest">
             {dateValue ? format(dateValue, "PPP") : placeholder}
           </span>
           <CalendarIcon className="h-4 w-4 text-slate-400" />

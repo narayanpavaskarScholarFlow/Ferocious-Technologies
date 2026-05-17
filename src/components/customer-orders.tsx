@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useRef } from 'react';
@@ -23,7 +22,8 @@ import {
   Edit2,
   Check,
   Printer,
-  XCircle
+  XCircle,
+  Users
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -188,21 +188,21 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
     <div className="space-y-8 animate-in fade-in duration-1000">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-accent font-bold text-[9px] uppercase tracking-[0.3em]">
-            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-red" />
-            Commercial Operations
+          <div className="flex items-center gap-2 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
+            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Master Identity Directory
           </div>
           <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
-            CRM & <span className="text-slate-400 font-medium">Pipeline</span>
+            Customer <span className="text-slate-400 font-medium">Identity</span>
           </h2>
-          <p className="text-xs text-muted-foreground font-medium">Lifecycle management for industrial accounts and active contracts.</p>
+          <p className="text-xs text-muted-foreground font-medium">Lifecycle management for industrial accounts and legal identities.</p>
         </div>
         
         <div className="flex items-center gap-4">
           <div className="relative w-72 group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
-              placeholder="Filter Ledger Records..." 
+              placeholder="Filter Identities..." 
               className="h-11 pl-10 rounded-xl bg-slate-100 border-none text-[11px] font-bold uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-primary/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -217,7 +217,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
             }}
             className="bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
           >
-            <UserPlus className="mr-3 h-4 w-4" /> Register New Account
+            <UserPlus className="mr-3 h-4 w-4" /> Register New Identity
           </Button>
         </div>
       </header>
@@ -226,12 +226,12 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
         <Card className="lg:col-span-12 overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
           <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <h3 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">Active Accounts Ledger</h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Total Pipeline Valuation: ₹ 0.00</p>
+              <h3 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">Active Identity Ledger</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Total Verified Nodes: {filteredCustomers.length}</p>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm">
-                <Printer className="h-3.5 w-3.5 text-slate-400" /> Print Out
+                <Printer className="h-3.5 w-3.5 text-slate-400" /> Export Matrix
               </Button>
               <div className="h-8 w-px bg-slate-200 mx-2" />
               <div className="flex items-center gap-3">
@@ -241,8 +241,8 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                     <SelectValue placeholder="All States" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100">
-                    <SelectItem value="Active" className="text-[10px] font-bold uppercase">Active Pipeline</SelectItem>
-                    <SelectItem value="Closed" className="text-[10px] font-bold uppercase">Closed Contracts</SelectItem>
+                    <SelectItem value="Active" className="text-[10px] font-bold uppercase">Active Identity</SelectItem>
+                    <SelectItem value="Closed" className="text-[10px] font-bold uppercase">Archived Nodes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -258,7 +258,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   </TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 w-20">Seq.</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Identity</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Type of Com</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Node Location</TableHead>
@@ -341,8 +341,8 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                         <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
                           <Building2 className="h-16 w-16 text-slate-300" />
                         </div>
-                        <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Ledger Matrix Offline</p>
-                        <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No active pipeline records detected. Register a new account to initialize commercial telemetry.</p>
+                        <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Identity Matrix Offline</p>
+                        <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No verified identities detected. Register a new account to initialize industrial telemetry.</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -355,8 +355,8 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
 
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
-          <DialogTitle className="sr-only">Account Onboarding Protocol</DialogTitle>
-          <DialogDescription className="sr-only">Sequence for initializing or updating commercial identities in the ERP directory.</DialogDescription>
+          <DialogTitle className="sr-only">Identity Onboarding Protocol</DialogTitle>
+          <DialogDescription className="sr-only">Sequence for initializing or updating legal identities in the ERP directory.</DialogDescription>
           
           <div className="flex flex-col md:flex-row h-[600px]">
             {/* Sidebar Protocol Map */}
@@ -368,8 +368,8 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 </div>
                 <div className="space-y-10 hidden md:block">
                   {[
-                    { s: 1, label: editingCustomerId ? 'Update Identity' : 'Entity Identity', desc: 'NAME & GST' },
-                    { s: 2, label: 'Liaison Setup', desc: 'CONTACT NODES' },
+                    { s: 1, label: editingCustomerId ? 'Update Identity' : 'Legal Identity', desc: 'NAME & GST' },
+                    { s: 2, label: 'Liaison Nodes', desc: 'CONTACT POINTS' },
                     { s: 3, label: 'Logistics Matrix', desc: 'ADDRESS_SYNC' },
                   ].map((item) => (
                     <button 
@@ -398,7 +398,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 </div>
               </div>
               <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.4em] hidden md:block">
-                CRM_ONBOARD_SYS_V2.4
+                IDENTITY_SYNC_SYS_V2.4
               </div>
             </div>
 
@@ -408,7 +408,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 <div className="flex items-center gap-4">
                   <div className="h-1 w-10 bg-red-500 rounded-full" />
                   <div>
-                    <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingCustomerId ? 'Update Protocol' : 'Account Protocol'}</h3>
+                    <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingCustomerId ? 'Update Protocol' : 'Identity Protocol'}</h3>
                     <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Master Data Synchronization Sequence</p>
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   <div ref={sectionRefs.step1} className="space-y-8" onFocus={() => setActiveStep(1)}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Customer Identity Name</Label>
                         <div className="relative">
                           <Input 
                             placeholder="Legal Account Identity" 
@@ -448,19 +448,19 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   <div ref={sectionRefs.step2} className="space-y-8" onFocus={() => setActiveStep(2)}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Person</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Liaison</Label>
                         <div className="relative">
                           <Input 
-                            placeholder="Liaison Officer Name" 
+                            placeholder="Authorized Signatory / Liaison" 
                             className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
                             value={newCustomer.contactPerson}
                             onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                           />
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary" />
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Number</Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Node (Phone)</Label>
                         <div className="relative">
                           <Input 
                             placeholder="+91 (000) 000-0000" 
@@ -477,10 +477,10 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   {/* Step 3: Logistics */}
                   <div ref={sectionRefs.step3} className="space-y-8" onFocus={() => setActiveStep(3)}>
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Business Address</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Address</Label>
                       <div className="relative">
                         <Input 
-                          placeholder="Full Node Location / Operational Base" 
+                          placeholder="Operational Base / Node Location" 
                           className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
                           value={newCustomer.address}
                           onChange={(e) => handleInputChange('address', e.target.value)}
@@ -505,7 +505,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   className="flex-[2] h-14 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-red-600/30 flex gap-3 group"
                   onClick={handleAddCustomer}
                 >
-                  {editingCustomerId ? 'Synchronize Identity' : 'Commit to Master Ledger'}
+                  {editingCustomerId ? 'Synchronize Identity' : 'Commit to Matrix'}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>

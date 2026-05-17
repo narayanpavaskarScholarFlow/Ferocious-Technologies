@@ -25,7 +25,10 @@ import {
   GraduationCap,
   ChevronRight,
   ChevronLeft,
-  Briefcase
+  Briefcase,
+  Contact,
+  Building2,
+  Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -54,6 +57,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Visual Gantt' },
       { id: 'operations' as ViewType, icon: Layers, label: 'Spreadsheet' },
       { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality Hub' },
+      { id: 'customer-orders' as ViewType, icon: Contact, label: 'Customer Identity' },
       { id: 'inventory' as ViewType, icon: Boxes, label: 'Stock Ledger' },
       { id: 'billing' as ViewType, icon: CreditCard, label: 'Financial Hub' },
       { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Daily Logs' },

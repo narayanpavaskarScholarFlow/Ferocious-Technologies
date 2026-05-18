@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,18 +39,14 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
-  const handleLogin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    
-    // Only perform validation if explicitly triggered
+  const handleLogin = () => {
+    // Validation is only triggered when this function is explicitly called by the user
     if (!username.trim() || !password.trim()) {
-      if (e) { // Only show toast if it was a real submission attempt
-        toast({
-          variant: "destructive",
-          title: "Protocol Interrupted",
-          description: "Credentials required for identity verification."
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Protocol Interrupted",
+        description: "Credentials required for identity verification."
+      });
       return;
     }
 
@@ -87,6 +83,12 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
     }, 1200);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
   const handleResetRequest = (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail) return;
@@ -104,18 +106,18 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center p-6 relative overflow-hidden font-body">
-      {/* Dynamic Industrial Background Matrix */}
-      <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] animate-pulse" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-accent/5 rounded-full blur-[150px] animate-pulse" />
+      {/* Dynamic Industrial Background Matrix - pointer-events-none to prevent click interference */}
+      <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-accent/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
 
       <div className="w-full max-w-[520px] z-10 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
         <div className="flex flex-col items-center text-center gap-6">
           <div className="relative group">
-            <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             <div className="p-7 bg-[#0A0F18] rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] border border-white/5 relative group cursor-pointer active:scale-95 transition-all">
-              <Zap className="h-14 w-14 text-white fill-white transition-transform duration-700 group-hover:rotate-12" />
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-4 border-[#0A0F18] animate-pulse" />
+              <Zap className="h-14 w-14 text-white fill-white transition-transform duration-700 group-hover:rotate-12 pointer-events-none" />
+              <div className="absolute -top-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-4 border-[#0A0F18] animate-pulse pointer-events-none" />
             </div>
           </div>
           <div className="space-y-2">
@@ -127,10 +129,10 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
         </div>
 
         <Card className="p-12 bg-white border-none shadow-[0_64px_128px_-24px_rgba(0,0,0,0.15)] rounded-[3.5rem] relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
           
           {view === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-8">
+            <div className="space-y-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
@@ -144,12 +146,14 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Network Identifier</Label>
                   <div className="relative group/input">
                     <Input 
+                      autoFocus
                       placeholder="Username, ID or Email" 
                       className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
+                      onKeyDown={handleKeyDown}
                     />
-                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary pointer-events-none" />
                   </div>
                 </div>
 
@@ -171,12 +175,13 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                       className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={handleKeyDown}
                     />
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary" />
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary pointer-events-none" />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-20"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -185,15 +190,16 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
               </div>
 
               <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-start gap-4">
-                <Terminal className="h-4 w-4 text-slate-400 mt-0.5" />
+                <Terminal className="h-4 w-4 text-slate-400 mt-0.5 pointer-events-none" />
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
                   Encryption Layer: SHA-256 Synchronized. Identity nodes are monitored for unauthorized access patterns.
                 </p>
               </div>
 
               <Button 
-                type="submit" 
+                type="button" 
                 disabled={isLoading}
+                onClick={handleLogin}
                 className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.4em] text-[11px] shadow-2xl shadow-primary/20 transition-all duration-500 group overflow-hidden"
               >
                 {isLoading ? (
@@ -204,13 +210,13 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                     <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </Button>
-            </form>
+            </div>
           ) : (
             <form onSubmit={handleResetRequest} className="space-y-10 animate-in slide-in-from-right-4 duration-500">
               <div className="flex items-center gap-5 mb-2">
-                <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Mail className="h-6 w-6" /></div>
+                <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Mail className="h-6 w-6 pointer-events-none" /></div>
                 <div>
                   <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight leading-none">Protocol Reset</h3>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Security Token Recovery</p>
@@ -227,7 +233,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                     />
-                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary" />
+                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary pointer-events-none" />
                   </div>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-relaxed px-2 font-bold uppercase tracking-widest text-center">
@@ -256,7 +262,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
           )}
         </Card>
 
-        <div className="flex items-center justify-center gap-10 opacity-30">
+        <div className="flex items-center justify-center gap-10 opacity-30 pointer-events-none">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-slate-600" />
             <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.4em]">SSL_MATRIX_ACTIVE</span>

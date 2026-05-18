@@ -500,7 +500,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Network Identifier (Login ID)</Label>
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Identity Login ID (Username)</Label>
                             <div className="relative">
                               <Input 
                                 placeholder="unique_alias" 
@@ -638,7 +638,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-20"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>

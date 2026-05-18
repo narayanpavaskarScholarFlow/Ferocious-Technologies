@@ -50,7 +50,9 @@ import {
   RefreshCw,
   Hash,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Network,
+  Phone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -165,6 +167,12 @@ export function ProfileSettings({
     if (users.length === 0) return null;
     return users.find(u => u.id === selectedUserForMatrix) || null;
   }, [users, selectedUserForMatrix]);
+
+  const reportingManagerData = useMemo(() => {
+    if (!currentUserData?.reportingManager || !users) return null;
+    // Find manager by name or by ID
+    return users.find(u => u.name === currentUserData.reportingManager || u.id === currentUserData.reportingManager);
+  }, [currentUserData?.reportingManager, users]);
 
   useEffect(() => {
     if (currentUserMatrix) {
@@ -303,40 +311,77 @@ export function ProfileSettings({
         <TabsContent value="profile" className="m-0 space-y-8 print:m-0 print:space-y-0">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block">
             <div className="lg:col-span-4 space-y-6 print:w-full print:flex print:justify-center">
-              <Card className="p-0 bg-slate-900 border-slate-800 shadow-2xl rounded-[var(--radius)] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1">
-                <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
-                  <div className="relative z-10">
-                    <h1 className="text-xl font-display font-bold tracking-tighter text-white">BHARAT<span className="text-primary">AXIS</span></h1>
-                    <p className="text-[7px] font-bold text-white/40 uppercase tracking-[0.4em]">Integrated Control Network</p>
+              <div className="space-y-6 w-full">
+                <Card className="p-0 bg-slate-900 border-slate-800 shadow-2xl rounded-[var(--radius)] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1">
+                  <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
+                    <div className="relative z-10">
+                      <h1 className="text-xl font-display font-bold tracking-tighter text-white">BHARAT<span className="text-primary">AXIS</span></h1>
+                      <p className="text-[7px] font-bold text-white/40 uppercase tracking-[0.4em]">Integrated Control Network</p>
+                    </div>
+                    <QrCode className="h-8 w-8 text-white/20 relative z-10" />
                   </div>
-                  <QrCode className="h-8 w-8 text-white/20 relative z-10" />
-                </div>
-                <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
-                  <div className="relative group">
-                    <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center relative">
-                      {profileData.image ? <img src={profileData.image} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                        <Camera className="h-8 w-8 text-white" />
+                  <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
+                    <div className="relative group">
+                      <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center relative">
+                        {profileData.image ? <img src={profileData.image} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                          <Camera className="h-8 w-8 text-white" />
+                        </div>
+                        <input 
+                          type="file" 
+                          className="absolute inset-0 opacity-0 cursor-pointer" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                        />
                       </div>
-                      <input 
-                        type="file" 
-                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                      />
+                      <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-slate-900">
+                        <Camera className="h-4 w-4" />
+                      </div>
                     </div>
-                    <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-slate-900">
-                      <Camera className="h-4 w-4" />
+                    
+                    <div className="space-y-1 relative z-10">
+                      <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{profileData.firstName} {profileData.lastName}</h3>
+                      <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{currentUserData?.role || 'Plant Controller'}</p>
+                      <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{profileData.username}</Badge>
                     </div>
+                  </div>
+                </Card>
+
+                {/* Reporting Manager Protocol Section */}
+                <Card className="p-6 bg-white border-slate-200 shadow-xl rounded-[var(--radius)] overflow-hidden">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-primary/5 rounded-lg text-primary"><Network className="h-4 w-4" /></div>
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting Protocol</h4>
                   </div>
                   
-                  <div className="space-y-1 relative z-10">
-                    <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{profileData.firstName} {profileData.lastName}</h3>
-                    <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{currentUserData?.role || 'Plant Controller'}</p>
-                    <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{profileData.username}</Badge>
-                  </div>
-                </div>
-              </Card>
+                  {reportingManagerData ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] flex items-center justify-center text-white font-bold text-xs">
+                          {reportingManagerData.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Supervisor Node</p>
+                          <p className="text-sm font-bold text-[#001F3D] uppercase">{reportingManagerData.name}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary"><Phone className="h-4 w-4" /></div>
+                        <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Verified Contact</p>
+                          <p className="text-sm font-bold text-primary font-code">{reportingManagerData.phone || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 flex flex-col items-center justify-center text-center opacity-40">
+                      <ShieldAlert className="h-8 w-8 text-slate-300 mb-2" />
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No Supervisor Node Linked</p>
+                    </div>
+                  )}
+                </Card>
+              </div>
             </div>
             
             <div className="lg:col-span-8 space-y-8">

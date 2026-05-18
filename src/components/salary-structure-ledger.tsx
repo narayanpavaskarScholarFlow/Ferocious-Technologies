@@ -32,6 +32,13 @@ import {
   DialogTitle, 
   DialogDescription,
 } from '@/components/ui/dialog';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -175,7 +182,7 @@ export function SalaryStructureLedger({ users, onSaveUser }: SalaryStructureLedg
                 <TableCell className="text-right px-10">
                   <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                     <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-primary" onClick={() => handleEdit(user)}><Edit3 className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl border-slate-200 font-bold text-[8px] uppercase tracking-widest gap-2" onClick={() => handleGenerateSlip(user)}><Plus className="h-3 w-3" /> Gen Slip</Button>
+                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl border-slate-200 font-bold text-[8px] uppercase tracking-widest gap-2" onClick={() => handleGenerateSlip(user)}><Plus className="h-3.5 w-3.5" /> Gen Slip</Button>
                   </div>
                 </TableCell>
               </TableRow>

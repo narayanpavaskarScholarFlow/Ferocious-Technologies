@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -853,8 +854,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
         <DialogContent className="max-w-[850px] bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden flex flex-col max-h-[90vh] print:shadow-none print:rounded-none">
-          <DialogTitle className="sr-only">Billing Record Matrix Preview</DialogTitle>
-          <DialogDescription className="sr-only">Print-ready visualization of the selected financial or logistical document.</DialogDescription>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Billing Record Matrix Preview</DialogTitle>
+            <DialogDescription>Print-ready visualization of the selected financial or logistical document.</DialogDescription>
+          </DialogHeader>
           <div className="p-10 overflow-y-auto hide-scrollbar print:p-0 flex-1">
             <div id="print-document" className="space-y-8">
               <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-6">

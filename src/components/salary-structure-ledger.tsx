@@ -178,6 +178,10 @@ export function SalaryStructureLedger({ users, onSaveUser }: SalaryStructureLedg
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Personnel Salary Protocol</DialogTitle>
+            <DialogDescription>Modify financial configuration for workforce identity.</DialogDescription>
+          </DialogHeader>
           <div className="flex flex-col md:flex-row min-h-[600px]">
             <div className="w-full md:w-80 bg-[#001F3D] p-12 text-white flex flex-col justify-between relative overflow-hidden">
               <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />

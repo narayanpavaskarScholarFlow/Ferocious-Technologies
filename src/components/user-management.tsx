@@ -121,7 +121,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Full credentials (User name, First/Last Name, Email, and Password) are required."
+        description: "Full credentials (User name, First/Last Name, and Password) are required."
       });
       return;
     }
@@ -474,7 +474,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                           onChange={handleImageUpload}
                         />
                         <label 
-                          for="onboard-photo-upload"
+                          htmlFor="onboard-photo-upload"
                           className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform"
                         >
                           <Camera className="h-4 w-4" />
@@ -493,13 +493,16 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">User name</Label>
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">User name / Login ID</Label>
                             <div className="relative">
                               <Input 
                                 placeholder="unique_alias" 
                                 className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
                                 value={formData.username}
-                                onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s/g, '')})}
+                                onChange={(e) => {
+                                  const val = e.target.value.toLowerCase().replace(/\s/g, '');
+                                  setFormData(prev => ({ ...prev, username: val, email: val }));
+                                }}
                               />
                               <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                             </div>
@@ -527,7 +530,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Contact number</Label>
                             <div className="relative">
@@ -539,15 +542,6 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                               />
                               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                             </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Mail ID</Label>
-                            <Input 
-                              placeholder="name@toolroom.tech" 
-                              className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
-                              value={formData.email}
-                              onChange={(e) => setFormData({...formData, email: e.target.value})}
-                            />
                           </div>
                         </div>
                       </div>

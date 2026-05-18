@@ -67,6 +67,12 @@ const DEPARTMENTS = [
   "Quality"
 ];
 
+const REPORTING_MANAGERS = [
+  "Master Admin",
+  "Manager",
+  "Supervisor"
+];
+
 interface UserManagementProps {
   users: SystemUser[];
   onSaveUser: (user: SystemUser) => void;
@@ -468,7 +474,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                           onChange={handleImageUpload}
                         />
                         <label 
-                          htmlFor="onboard-photo-upload"
+                          for="onboard-photo-upload"
                           className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform"
                         >
                           <Camera className="h-4 w-4" />
@@ -554,7 +560,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                     <div className="flex items-center gap-3">
                       <div className="h-1 w-8 bg-red-500 rounded-full" />
                       <div>
-                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">02. Role Setup</h3>
+                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">{editingUser ? 'Update' : '02. Role Setup'}</h3>
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Organizational Placement</p>
                       </div>
                     </div>
@@ -589,15 +595,20 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Reporting manager</Label>
-                        <div className="relative">
-                          <Input 
-                            placeholder="Identify supervisor node..." 
-                            className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
-                            value={formData.reportingManager}
-                            onChange={(e) => setFormData({...formData, reportingManager: e.target.value})}
-                          />
-                          <Network className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                        </div>
+                        <Select 
+                          value={formData.reportingManager} 
+                          onValueChange={(val) => setFormData({...formData, reportingManager: val})}
+                        >
+                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl pl-10 relative focus:ring-primary/20">
+                            <Network className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                            <SelectValue placeholder="Identify supervisor node..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl shadow-2xl">
+                            {REPORTING_MANAGERS.map(manager => (
+                              <SelectItem key={manager} value={manager} className="text-xs font-bold uppercase">{manager}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>

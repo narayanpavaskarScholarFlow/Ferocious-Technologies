@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const [resetEmail, setResetEmail] = useState('');
 
   const handleLogin = () => {
-    // Protocol requirement: Master Admin / admin123
+    // Strict manual trigger only
     if (!username.trim() || !password.trim()) {
       toast({
         variant: "destructive",
@@ -106,12 +106,12 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center p-6 relative overflow-hidden font-body">
-      {/* Background Matrix layers with pointer-events-none */}
-      <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-accent/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
+      {/* Background Matrix layers - guaranteed no-block */}
+      <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] animate-pulse pointer-events-none z-0" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-accent/5 rounded-full blur-[150px] animate-pulse pointer-events-none z-0" />
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
 
-      <div className="w-full max-w-[520px] z-10 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
+      <div className="w-full max-w-[520px] z-50 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
         <div className="flex flex-col items-center text-center gap-6">
           <div className="relative group">
             <div className="p-7 bg-[#0A0F18] rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] border border-white/5 relative">
@@ -127,7 +127,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
           </div>
         </div>
 
-        <Card className="p-12 bg-white border-none shadow-[0_64px_128px_-24px_rgba(0,0,0,0.15)] rounded-[3.5rem] relative overflow-hidden">
+        <Card className="p-12 bg-white border-none shadow-[0_64px_128px_-24px_rgba(0,0,0,0.15)] rounded-[3.5rem] relative overflow-hidden z-50">
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
           
           {view === 'login' ? (
@@ -143,17 +143,17 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
               <div className="space-y-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Network Identifier</Label>
-                  <div className="relative group/input">
+                  <div className="relative group/input z-50">
                     <Input 
                       autoFocus
                       name="username"
                       placeholder="Username, ID or Email" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
+                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300 relative z-50"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       onKeyDown={handleKeyDown}
                     />
-                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none z-[60]" />
                   </div>
                 </div>
 
@@ -163,27 +163,27 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                     <button 
                       type="button"
                       onClick={() => setView('reset')}
-                      className="text-[10px] font-bold uppercase text-primary hover:text-primary/80 transition-colors tracking-widest"
+                      className="text-[10px] font-bold uppercase text-primary hover:text-primary/80 transition-colors tracking-widest relative z-50"
                     >
                       Reset Token?
                     </button>
                   </div>
-                  <div className="relative group/input">
+                  <div className="relative group/input z-50">
                     <Input 
                       name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
+                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300 relative z-50"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={handleKeyDown}
                     />
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none" />
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none z-[60]" />
                     <button
                       type="button"
                       tabIndex={-1}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-20"
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-[70]"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -202,7 +202,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                 type="button" 
                 disabled={isLoading}
                 onClick={handleLogin}
-                className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.4em] text-[11px] shadow-2xl shadow-primary/20 transition-all duration-300 group overflow-hidden"
+                className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.4em] text-[11px] shadow-2xl shadow-primary/20 transition-all duration-300 group overflow-hidden relative z-50"
               >
                 {isLoading ? (
                   <RefreshCw className="h-6 w-6 animate-spin" />
@@ -215,7 +215,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
+            <div className="space-y-10 animate-in slide-in-from-right-4 duration-500 z-50">
               <div className="flex items-center gap-5 mb-2">
                 <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Mail className="h-6 w-6 pointer-events-none" /></div>
                 <div>
@@ -227,14 +227,14 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
               <div className="space-y-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Registered Node Email</Label>
-                  <div className="relative group/input">
+                  <div className="relative group/input z-50">
                     <Input 
                       placeholder="e.g. admin@bharataxis.tech" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner"
+                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner relative z-50"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                     />
-                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none" />
+                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none z-[60]" />
                   </div>
                 </div>
               </div>
@@ -244,7 +244,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   type="button"
                   variant="ghost"
                   onClick={() => setView('login')}
-                  className="flex-1 h-16 text-slate-400 hover:text-[#001F3D] rounded-2xl text-[10px] font-bold uppercase tracking-widest"
+                  className="flex-1 h-16 text-slate-400 hover:text-[#001F3D] rounded-2xl text-[10px] font-bold uppercase tracking-widest relative z-50"
                 >
                   Abort
                 </Button>
@@ -252,7 +252,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   type="button"
                   disabled={isLoading || !resetEmail}
                   onClick={handleResetRequest}
-                  className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20"
+                  className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 relative z-50"
                 >
                   Request Key
                 </Button>
@@ -261,7 +261,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
           )}
         </Card>
 
-        <div className="flex items-center justify-center gap-10 opacity-30 pointer-events-none">
+        <div className="flex items-center justify-center gap-10 opacity-30 pointer-events-none z-50">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-slate-600" />
             <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.4em]">SSL_MATRIX_ACTIVE</span>

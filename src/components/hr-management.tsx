@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -12,7 +11,8 @@ import {
   Briefcase,
   ShieldCheck,
   Banknote,
-  UserCheck
+  UserCheck,
+  LayoutGrid
 } from 'lucide-react';
 import { SystemUser, Training, TrainingAssignment, WorkLogEntry } from '@/lib/types';
 import { ManpowerUtilization } from '@/components/manpower-utilization';
@@ -57,8 +57,7 @@ export function HRManagement({
     return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
   }, [currentUser, currentUserData]);
 
-  // Land regular users on 'leaves' instead of 'overview'
-  const [activeTab, setActiveTab] = useState(isAuthorized ? 'overview' : 'leaves');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
   const { data: logsData } = useCollection<WorkLogEntry>(logsQuery);
@@ -78,18 +77,28 @@ export function HRManagement({
     return logs.filter(l => l.status === 'Submitted').length;
   }, [logs]);
 
+  if (!isAuthorized) {
+    return (
+      <div className="h-[500px] flex flex-col items-center justify-center opacity-30 text-center">
+         <ShieldCheck className="h-20 w-20 mb-6 text-slate-300" />
+         <h3 className="text-xl font-display font-bold uppercase text-[#001F3D]">Restricted Access</h3>
+         <p className="text-xs text-slate-400 mt-2">Administrative Command Center is gated for HR & Admin nodes only.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.2em]">
             <Briefcase className="h-4 w-4" />
-            Human Capital Command
+            Human Capital Command Center
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
             {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400 font-medium">{title.split(' ').slice(-1)}</span>
           </h2>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Unified management of industrial workforce, payroll protocols, and operational readiness.</p>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Global workforce governance and payroll matrix.</p>
         </div>
         
         <div className="flex items-center gap-6">
@@ -110,32 +119,24 @@ export function HRManagement({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
           <TabsTrigger value="overview" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <Users className="h-3.5 w-3.5 mr-2" /> Workforce
+            <Users className="h-3.5 w-3.5 mr-2" /> Workforce Matrix
           </TabsTrigger>
           
-          {isAuthorized && (
-            <TabsTrigger value="approvals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
-              <UserCheck className="h-3.5 w-3.5 mr-2" /> Log Approvals
-              {pendingApprovals > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white animate-pulse">
-                  {pendingApprovals}
-                </span>
-              )}
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="approvals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
+            <UserCheck className="h-3.5 w-3.5 mr-2" /> Log Approvals
+            {pendingApprovals > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white animate-pulse">
+                {pendingApprovals}
+              </span>
+            )}
+          </TabsTrigger>
 
-          {isAuthorized && (
-            <TabsTrigger value="salary" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-              <Banknote className="h-3.5 w-3.5 mr-2" /> Salary Structure
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="salary" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+            <Banknote className="h-3.5 w-3.5 mr-2" /> Salary Structure
+          </TabsTrigger>
 
           <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
             <GraduationCap className="h-3.5 w-3.5 mr-2" /> Training Matrix
-          </TabsTrigger>
-
-          <TabsTrigger value="leaves" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <CalendarDays className="h-3.5 w-3.5 mr-2" /> Leaves & Holidays
           </TabsTrigger>
         </TabsList>
 
@@ -148,24 +149,20 @@ export function HRManagement({
           />
         </TabsContent>
 
-        {isAuthorized && (
-          <TabsContent value="approvals" className="m-0">
+        <TabsContent value="approvals" className="m-0">
              <LogApprovalMatrix 
                logs={logs}
                users={users}
                currentUser={currentUser}
              />
-          </TabsContent>
-        )}
+        </TabsContent>
 
-        {isAuthorized && (
-          <TabsContent value="salary" className="m-0">
-            <SalaryStructureLedger 
-              users={users}
-              onSaveUser={onSaveUser}
-            />
-          </TabsContent>
-        )}
+        <TabsContent value="salary" className="m-0">
+          <SalaryStructureLedger 
+            users={users}
+            onSaveUser={onSaveUser}
+          />
+        </TabsContent>
 
         <TabsContent value="training" className="m-0">
           <TrainingManagement 
@@ -176,19 +173,10 @@ export function HRManagement({
             onDeleteTraining={onDeleteTraining}
             onSaveAssignment={onSaveAssignment}
             onDeleteAssignment={onDeleteAssignment}
-          />
-        </TabsContent>
-
-        <TabsContent value="leaves" className="m-0">
-           <ManpowerUtilization 
-            users={users} 
-            onSaveUser={onSaveUser} 
-            currentUser={currentUser}
-            initialSubTab="apply"
+            isFullControl={true}
           />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-

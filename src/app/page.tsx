@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
 import { MachineUtilization } from '@/components/machine-utilization';
 import { HRManagement } from '@/components/hr-management';
+import { PersonnelPortal } from '@/components/personnel-portal';
 import { CustomerOrders } from '@/components/customer-orders';
 import { WeeklyPlan } from '@/components/weekly-plan';
 import { OperationsStatus } from '@/components/operations-status';
@@ -93,6 +94,9 @@ function IndustrialERPInternal() {
   const trainingsQuery = useMemoFirebase(() => collection(db, 'trainings'), [db]);
   const assignmentsQuery = useMemoFirebase(() => collection(db, 'training_assignments'), [db]);
   const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
+  const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
+  const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
+  const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -106,6 +110,9 @@ function IndustrialERPInternal() {
   const { data: trainingsData } = useCollection<Training>(trainingsQuery);
   const { data: assignmentsData } = useCollection<TrainingAssignment>(assignmentsQuery);
   const { data: reportsData } = useCollection<QualityReport>(reportsQuery);
+  const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
+  const { data: annualData } = useCollection<any>(annualQuery);
+  const { data: slipsData } = useCollection<SalarySlip>(slipsQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -119,6 +126,9 @@ function IndustrialERPInternal() {
   const trainings = trainingsData || [];
   const assignments = assignmentsData || [];
   const reports = reportsData || [];
+  const leaves = leavesData || [];
+  const annualLeaves = annualData || [];
+  const slips = slipsData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -135,109 +145,27 @@ function IndustrialERPInternal() {
     document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
     document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
     
-    const densityMap = {
-      compact: '0.5rem',
-      standard: '1rem',
-      comfortable: '1.5rem'
-    };
+    const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
     document.documentElement.style.setProperty('--table-cell-padding', densityMap[targetSettings.tableDensity]);
   }, [currentUserData?.uiSettings]);
 
-  // Password Policy Logic
-  useEffect(() => {
-    if (!currentUserData || !isLoggedIn) return;
-
-    const lastChange = currentUserData.lastPasswordChange ? parseISO(currentUserData.lastPasswordChange) : new Date(0);
-    const daysSinceChange = differenceInDays(new Date(), lastChange);
-
-    if (daysSinceChange >= 45) {
-      setIsPasswordChangeOpen(true);
-    } else if (daysSinceChange >= 40) {
-      toast({
-        title: "Security Warning",
-        description: `Your login key will expire in ${45 - daysSinceChange} days.`,
-        variant: "destructive",
-      });
-    }
-  }, [currentUserData, isLoggedIn, toast]);
-
-  const handleForcePasswordChange = () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast({
-        title: "Security Protocol Failure",
-        description: "Password must be at least 6 characters.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (currentUserData) {
-      setDocumentNonBlocking(doc(db, 'users', currentUserData.id), {
-        ...currentUserData,
-        lastPasswordChange: new Date().toISOString()
-      }, { merge: true });
-      
-      setIsPasswordChangeOpen(false);
-      setNewPassword('');
-      toast({
-        title: "Security Updated",
-        description: "Credentials synchronized."
-      });
-    }
-  };
-
   const permissions = useMemo(() => {
     const isMasterAdmin = currentUser === 'Master Admin';
-    const isPlantController = currentUserData?.role === 'Plant Controller';
+    const isHR = currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
 
-    if (isMasterAdmin || isPlantController) {
+    if (isMasterAdmin || isHR) {
       const clearance: Record<string, PermissionLevel> = {
-        overview: 'full',
-        agile: 'full',
-        orders: 'full',
-        sqcdp: 'full',
-        operations: 'full',
-        'machine-utilization': 'full',
-        hr: 'full',
-        manpower: 'full',
-        'customer-orders': 'full',
-        'weekly-plan': 'full',
-        vendor: 'full',
-        'order-details': 'full',
-        billing: 'full',
-        'work-log': 'full',
-        inventory: 'full',
-        quality: 'full',
-        settings: 'full',
-        gantt: 'full',
-        'smart-quote': 'full',
-        'quality-review': 'full',
-        'quality-release': 'full',
-        'quality-report-delete': 'full',
-        'order-create': 'full',
-        'billing-quotation': 'full',
-        'billing-invoice': 'full',
-        'billing-proforma': 'full',
-        'billing-inward': 'full',
-        'billing-outward': 'full',
-        'billing-create': 'full',
-        'billing-delete': 'full',
-        'vendor-onboard': 'full',
-        'maintenance': 'full',
-        'hr-planning': 'full',
-        'holiday-matrix': 'full',
-        'production-planner': 'full',
-        training: 'full'
+        overview: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
+        'machine-utilization': 'full', hr: 'full', 'my-portal': 'full', 'customer-orders': 'full',
+        'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
+        'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
+        'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full'
       };
 
       if (isMasterAdmin) {
         clearance.users = 'full';
         clearance.matrix = 'full';
-      } else {
-        clearance.users = 'none';
-        clearance.matrix = 'none';
       }
-
       return clearance;
     }
     return currentUserData?.permissions || {};
@@ -245,19 +173,38 @@ function IndustrialERPInternal() {
 
   const hasAccess = useCallback((view: string): boolean => {
     if (currentUser === 'Master Admin') return true;
-    if (currentUserData?.role === 'Plant Controller') {
-      if (view === 'users' || view === 'matrix') return false;
-      return true;
-    }
-    if (view === 'settings') return true;
-    if (view === 'hr') return hasAccess('manpower') || hasAccess('training');
+    if (view === 'my-portal' || view === 'settings') return true;
+    
     const level = permissions[view];
     return level && level !== 'none';
-  }, [permissions, currentUser, currentUserData]);
+  }, [permissions, currentUser]);
 
-  const [globalSearch, setGlobalSearch] = useState('');
-  const [settingsActiveTab, setSettingsActiveTab] = useState('profile');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('bharat_axis_user');
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    setCurrentView('overview');
+  }, []);
+
+  const handleViewChange = (view: ViewType) => {
+    if (!hasAccess(view)) return;
+    setCurrentView(view);
+  };
+
+  const handleLogin = (user: string) => {
+    localStorage.setItem('bharat_axis_user', user);
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+  };
+
+  const handleSaveUser = (user: SystemUser) => {
+    setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
+  };
+
+  const handleSaveTraining = (training: Training) => setDocumentNonBlocking(doc(db, 'trainings', training.id), training, { merge: true });
+  const handleDeleteTraining = (id: string) => deleteDocumentNonBlocking(doc(db, 'trainings', id));
+  const handleSaveAssignment = (asg: TrainingAssignment) => setDocumentNonBlocking(doc(db, 'training_assignments', asg.id), asg, { merge: true });
+  const handleDeleteAssignment = (id: string) => deleteDocumentNonBlocking(doc(db, 'training_assignments', id));
 
   useEffect(() => {
     setMounted(true);
@@ -268,556 +215,77 @@ function IndustrialERPInternal() {
     }
   }, []);
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('bharat_axis_user');
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setCurrentView('overview');
-  }, []);
-
-  const handleSearchChange = (val: string) => {
-    setGlobalSearch(val);
-    const isOrderPattern = val.length >= 5 && /^\d+$/.test(val);
-    if (isOrderPattern && orders?.find(o => o.id === val) && hasAccess('operations')) {
-      setActiveWorkOrderId(val);
-      setCurrentView('operations');
-    }
-  };
-
-  const handleNavigateToOperations = (orderId: string) => {
-    if (!hasAccess('operations')) return;
-    setActiveWorkOrderId(orderId);
-    setCurrentView('operations');
-  };
-
-  const handleNavigateToOrderDetails = (orderId: string | null) => {
-    const permKey = orderId ? 'orders' : 'order-create';
-    if (!hasAccess(permKey)) return;
-    setActiveWorkOrderId(orderId);
-    setCurrentView('order-details');
-  };
-
-  const handleViewChange = (view: ViewType) => {
-    setIsMobileMenuOpen(false);
-    if (!hasAccess(view)) return;
-    
-    if (view === 'users') {
-      setCurrentView('settings');
-      setSettingsActiveTab('access');
-    } else {
-      setCurrentView(view);
-      if (view === 'settings') setSettingsActiveTab('profile');
-    }
-  };
-
-  const handleLogin = (user: string) => {
-    localStorage.setItem('bharat_axis_user', user);
-    setCurrentUser(user);
-    setIsLoggedIn(true);
-  };
-
-  const handleSaveOrder = (order: Order) => {
-    setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
-    setCurrentView('orders');
-  };
-
-  const handleSaveMachine = (machine: Machine) => {
-    setDocumentNonBlocking(doc(db, 'machines', machine.id), machine, { merge: true });
-  };
-
-  const handleSaveCustomer = (customer: Customer) => {
-    setDocumentNonBlocking(doc(db, 'customers', customer.id), customer, { merge: true });
-  };
-
-  const handleSaveUser = (user: SystemUser) => {
-    setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
-  };
-
-  const handleSaveVendor = (vendor: Vendor) => {
-    setDocumentNonBlocking(doc(db, 'vendors', vendor.id), vendor, { merge: true });
-  };
-
-  const handleSaveInventoryItem = (item: InventoryItem) => {
-    setDocumentNonBlocking(doc(db, 'inventory', item.id), item, { merge: true });
-  };
-
-  const recalculateOrderExpenses = useCallback((orderId: string, additionalLog?: WorkLogEntryType, additionalBilling?: BillingRecord) => {
-    if (!orderId) return;
-
-    const inwardRecords = billing.filter(r => r.type === 'inward' && r.orderId === orderId);
-    if (additionalBilling && additionalBilling.type === 'inward' && additionalBilling.orderId === orderId && !inwardRecords.find(r => r.id === additionalBilling.id)) {
-      inwardRecords.push(additionalBilling);
-    }
-
-    const relevantLogs = logs.filter(l => l.workOrderId === orderId);
-    if (additionalLog && additionalLog.workOrderId === orderId && !relevantLogs.find(l => l.id === additionalLog.id)) {
-      relevantLogs.push(additionalLog);
-    }
-
-    const billingTotal = inwardRecords.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
-    const logsTotal = relevantLogs.reduce((acc, log) => {
-      const machine = machines.find(m => m.id === log.resourceId);
-      if (machine) {
-        const hours = parseFloat(log.duration.replace('h', '')) || 0;
-        return acc + (hours * machine.costPerHour);
-      }
-      return acc;
-    }, 0);
-
-    const grandTotal = billingTotal + logsTotal;
-    
-    setDocumentNonBlocking(doc(db, 'orders', orderId), {
-      amountSpent: `₹ ${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
-    }, { merge: true });
-  }, [billing, logs, machines, db]);
-
-  const handleSaveBillingRecord = (record: BillingRecord) => {
-    setDocumentNonBlocking(doc(db, 'billing', record.id), record, { merge: true });
-    if (record.type === 'inward' && record.orderId) {
-      recalculateOrderExpenses(record.orderId, undefined, record);
-    }
-  };
-
-  const handleSaveWorkLog = (log: WorkLogEntryType) => {
-    setDocumentNonBlocking(doc(db, 'work_logs', log.id), log, { merge: true });
-    if (log.workOrderId) {
-      recalculateOrderExpenses(log.workOrderId, log);
-    }
-  };
-
-  const handleDeleteWorkLog = (id: string) => {
-    const log = logs.find(l => l.id === id);
-    deleteDocumentNonBlocking(doc(db, 'work_logs', id));
-    if (log?.workOrderId) {
-      setTimeout(() => recalculateOrderExpenses(log.workOrderId!), 100);
-    }
-  };
-
-  const handleDeleteBillingRecord = (id: string) => {
-    const record = billing.find(r => r.id === id);
-    deleteDocumentNonBlocking(doc(db, 'billing', id));
-    if (record?.type === 'inward' && record.orderId) {
-      setTimeout(() => recalculateOrderExpenses(record.orderId!), 100);
-    }
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    deleteDocumentNonBlocking(doc(db, 'users', userId));
-  };
-
-  const handleSaveBatch = (batch: ProductionBatch) => {
-    setDocumentNonBlocking(doc(db, 'production_batches', batch.id), batch, { merge: true });
-  };
-
-  const handleDeleteBatch = (id: string) => {
-    deleteDocumentNonBlocking(doc(db, 'production_batches', id));
-  };
-
-  const handleSaveTraining = (training: Training) => {
-    setDocumentNonBlocking(doc(db, 'trainings', training.id), training, { merge: true });
-  };
-
-  const handleDeleteTraining = (id: string) => {
-    deleteDocumentNonBlocking(doc(db, 'trainings', id));
-  };
-
-  const handleSaveAssignment = (asg: TrainingAssignment) => {
-    setDocumentNonBlocking(doc(db, 'training_assignments', asg.id), asg, { merge: true });
-    
-    if (asg.status === 'Completed') {
-      const user = usersData.find(u => u.id === asg.userId);
-      const training = trainings.find(t => t.id === asg.trainingId);
-      if (user && training) {
-        const currentEff = user.efficiency || 70;
-        const newEff = Math.min(currentEff + (training.impactScore * 0.5), 100);
-        handleSaveUser({ ...user, efficiency: newEff });
-      }
-    }
-  };
-
-  const handleDeleteAssignment = (id: string) => {
-    deleteDocumentNonBlocking(doc(db, 'training_assignments', id));
-  };
-
-  const handleUpdateUISettings = (settings: UISettings) => {
-    if (currentUserData) {
-      handleSaveUser({
-        ...currentUserData,
-        uiSettings: settings
-      });
-    } else if (currentUser === 'Master Admin') {
-       setUISettings(settings);
-       document.documentElement.style.setProperty('--base-font-size', `${settings.fontSize}px`);
-       document.documentElement.style.setProperty('--radius', `${settings.borderRadius}rem`);
-       document.documentElement.style.setProperty('--primary', settings.primaryColor);
-       const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
-       document.documentElement.style.setProperty('--table-cell-padding', densityMap[settings.tableDensity]);
-    }
-  };
-
-  const handleUpdateStatusFromQC = (orderId: string, operation: string, status: string) => {
-    const order = orders.find(o => o.id === orderId);
-    if (!order || !order.routing) return;
-
-    const updatedRouting = order.routing.map(op => 
-      op.name === operation ? { ...op, status } : op
-    );
-
-    const activeOps = updatedRouting.filter(op => op.status !== 'NA');
-    const completedTasksCount = updatedRouting.reduce((acc, op) => {
-      if (op.status === 'NA') return acc;
-      if (op.subTasks && op.subTasks.length > 0) {
-        return acc + (op.subTasks.filter(s => s.status === 'Completed').length / op.subTasks.length);
-      }
-      return acc + (op.status === 'Completed' ? 1 : op.status === 'WIP' ? 0.5 : 0);
-    }, 0);
-
-    const progress = activeOps.length > 0 ? Math.round((completedTasksCount / activeOps.length) * 100) : 0;
-
-    setDocumentNonBlocking(doc(db, 'orders', orderId), {
-      routing: updatedRouting,
-      progress: progress,
-      status: progress === 100 ? 'Completed' : 'Pending'
-    }, { merge: true });
-  };
-
-  const getSectionTitle = (view: ViewType, defaultTitle: string) => {
-    return uiSettings.customTitles?.[view] || defaultTitle;
-  };
-
-  if (!mounted) return <div className="min-h-screen bg-slate-50" />;
+  if (!mounted) return null;
 
   if (!isLoggedIn) {
-    return (
-      <>
-        <LoginScreen onLogin={handleLogin} users={usersData} />
-        <Toaster />
-      </>
-    );
+    return <><LoginScreen onLogin={handleLogin} users={usersData} /><Toaster /></>;
   }
 
   const isSlimSidebar = uiSettings.sidebarMode === 'slim';
 
   return (
     <div className={cn(
-      "flex min-h-screen bg-slate-50/50 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block print:bg-white",
+      "flex min-h-screen bg-slate-50/50 text-slate-900 font-body overflow-hidden print:h-auto print:block print:bg-white",
       uiSettings.labelCase === 'uppercase' ? "labels-uppercase" : "labels-capitalize"
     )}>
-      <div className={cn(
-        "hidden lg:block print:hidden transition-all duration-500",
-        isSlimSidebar ? "w-20" : "w-64"
-      )}>
+      <div className={cn("hidden lg:block print:hidden transition-all duration-500", isSlimSidebar ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 
           onViewChange={handleViewChange} 
           permissions={permissions} 
           isSlim={isSlimSidebar}
           customTitles={uiSettings.customTitles}
+          userRole={currentUserData?.role || (currentUser === 'Master Admin' ? 'Master Admin' : 'User')}
         />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible print:block">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:block">
         <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
           <div className="flex items-center gap-6">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9 rounded-lg">
-                  <Menu className="h-5 w-5 text-slate-600" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-20 bg-[#001F3D]">
-                <SidebarNav 
-                  currentView={currentView} 
-                  onViewChange={handleViewChange} 
-                  permissions={permissions} 
-                  isSlim={true}
-                  customTitles={uiSettings.customTitles}
-                />
-              </SheetContent>
-            </Sheet>
-
-            <div className="flex flex-col">
-              <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
-                BHARAT<span className="text-primary">AXIS</span>
-              </h1>
-            </div>
+            <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
+              BHARAT<span className="text-primary">AXIS</span>
+            </h1>
           </div>
-
-          <div className="flex items-center gap-6">
-            <div className="relative w-64 group hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <Input 
-                placeholder="Global Search..." 
-                className="h-9 pl-9 rounded-lg bg-slate-50 border-slate-200 text-xs focus-visible:ring-1"
-                value={globalSearch}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors relative">
-                <Bell className="h-4 w-4 text-slate-600" />
-                <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-red-500 rounded-full" />
-              </button>
-              
-              <div className="h-6 w-px bg-slate-200" />
-              
-              <DropdownMenu>
+          <div className="flex items-center gap-4">
+             <div className="text-right hidden md:block">
+                <p className="text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'User'}</p>
+             </div>
+             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-3 cursor-pointer">
-                    <div className="text-right hidden md:block">
-                      <p className="text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">{currentUserData?.role || 'User'}</p>
-                    </div>
-                    <Avatar className="h-8 w-8 border border-slate-200">
+                   <Avatar className="h-8 w-8 border cursor-pointer hover:ring-2 ring-primary/20">
                       <AvatarImage src={currentUserData?.image} />
-                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">SA</AvatarFallback>
-                    </Avatar>
-                  </div>
+                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">BA</AvatarFallback>
+                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl border-slate-200">
-                  <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-lg h-9 px-3 text-xs font-medium gap-2">
-                    <User className="h-3.5 w-3.5" /> Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="rounded-lg h-9 px-3 text-xs font-medium gap-2 text-red-600">
-                    <LogOut className="h-3.5 w-3.5" /> Log Out
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl">
+                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-lg h-9 text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile</DropdownMenuItem>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={handleLogout} className="rounded-lg h-9 text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Log Out</DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+             </DropdownMenu>
           </div>
         </header>
 
-        <main className={cn(
-          "flex-1 overflow-y-auto w-full print:overflow-visible print:p-0 print:max-w-none print:m-0 print:block",
-          currentView === 'gantt' || currentView === 'agile' ? "p-0" : "p-6",
-          uiSettings.headerAlignment === 'center' ? "text-center-headers" : ""
-        )}>
-          <div className={cn(
-            "animate-in fade-in slide-in-from-bottom-2 duration-500 print:animate-none print:block",
-            (currentView === 'gantt' || currentView === 'agile') && "h-full"
-          )}>
-            {currentView === 'overview' && (
-              <ShopFloorOverview 
-                orders={orders}
-                onNavigateToOrders={() => handleViewChange('orders')}
-                onNavigateToMachine={() => handleViewChange('machine-utilization')}
-                onNavigateToInventory={() => handleViewChange('inventory')}
-                onNavigateToBilling={() => handleViewChange('billing')}
-                title={getSectionTitle('overview', 'Command Matrix')}
-              />
-            )}
-            {currentView === 'agile' && <AgileBoard orders={orders} title={getSectionTitle('agile', 'Flow Matrix')} />}
-            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} title={getSectionTitle('smart-quote', 'AI Quoting')} />}
-            {currentView === 'production-planner' && (
-              <ProductionPlanner 
-                batches={batches}
-                orders={orders}
-                machines={machines}
-                users={usersData}
-                onSaveBatch={handleSaveBatch}
-                onDeleteBatch={handleDeleteBatch}
-                title={getSectionTitle('production-planner', 'Mass Production')}
-              />
-            )}
-            {currentView === 'orders' && (
-              <ShopFloorOrders 
-                orders={orders}
-                billing={billing}
-                logs={logs}
-                machines={machines}
-                onNavigateToOperations={handleNavigateToOperations} 
-                onNavigateToOrderDetails={handleNavigateToOrderDetails}
-                title={getSectionTitle('orders', 'Master Orders')}
-              />
-            )}
-            {currentView === 'billing' && (
-              <BillingManagement 
-                customers={customers} 
-                vendors={vendors} 
-                records={billing}
-                orders={orders}
-                users={usersData}
-                onSaveRecord={handleSaveBillingRecord}
-                onDeleteRecord={handleDeleteBillingRecord}
-                title={getSectionTitle('billing', 'Financial Hub')}
-              />
-            )}
-            {currentView === 'inventory' && (
-              <InventoryManagement 
-                items={inventory}
-                onSaveItem={handleSaveInventoryItem}
-                title={getSectionTitle('inventory', 'Stock Ledger')}
-              />
-            )}
-            {currentView === 'hr' && (
-              <HRManagement 
-                users={usersData}
-                trainings={trainings}
-                assignments={assignments}
-                onSaveUser={handleSaveUser}
-                onSaveTraining={handleSaveTraining}
-                onDeleteTraining={handleDeleteTraining}
-                onSaveAssignment={handleSaveAssignment}
-                onDeleteAssignment={handleDeleteAssignment}
-                currentUser={currentUser}
-                title={getSectionTitle('hr', 'HR Command')}
-              />
-            )}
-            {currentView === 'work-log' && (
-              <WorkLogEntry 
-                logs={logs} 
-                machines={machines}
-                users={usersData}
-                orders={orders}
-                currentUser={currentUser}
-                onAddLog={handleSaveWorkLog} 
-                onDeleteLog={handleDeleteWorkLog}
-                title={getSectionTitle('work-log', 'Work Log Hub')}
-              />
-            )}
-            {currentView === 'sqcdp' && (
-              <ShopFloorSQCDP 
-                orders={orders}
-                reports={reports}
-                logs={logs}
-                users={usersData}
-                assignments={assignments}
-                title={getSectionTitle('sqcdp', 'Performance Board')}
-              />
-            )}
-            {currentView === 'machine-utilization' && (
-              <MachineUtilization 
-                machines={machines}
-                orders={orders}
-                onSaveMachine={handleSaveMachine}
-                title={getSectionTitle('machine-utilization', 'Asset Fleet')}
-              />
-            )}
-            {currentView === 'customer-orders' && (
-              <CustomerOrders 
-                customers={customers} 
-                onSaveCustomer={handleSaveCustomer} 
-                title={getSectionTitle('customer-orders', 'Customer Identity')}
-              />
-            )}
-            {currentView === 'weekly-plan' && (
-              <WeeklyPlan 
-                logs={logs} 
-                onNavigateToGantt={() => handleViewChange('gantt')}
-                title={getSectionTitle('weekly-plan', 'Master Schedule')}
-              />
-            )}
-            {currentView === 'vendor' && (
-              <VendorManagement 
-                vendors={vendors}
-                onSaveVendor={handleSaveVendor}
-                title={getSectionTitle('vendor', 'Supply Chain')}
-              />
-            )}
-            {currentView === 'settings' && (
-              <ProfileSettings 
-                activeTab={settingsActiveTab} 
-                onTabChange={setSettingsActiveTab} 
-                onLogout={handleLogout}
-                currentUser={currentUser}
-                users={usersData}
-                onSaveUser={handleSaveUser}
-                onDeleteUser={handleDeleteUser}
-                uiSettings={uiSettings}
-                onUpdateUISettings={handleUpdateUISettings}
-                currentUserData={currentUserData}
-                title={getSectionTitle('settings', 'Control Center')}
-              />
-            )}
-            {currentView === 'gantt' && (
-              <ProductionGantt 
-                orders={orders}
-                searchTerm={globalSearch}
-                onNavigateToSchedule={() => handleViewChange('weekly-plan')}
-                onNavigateToOperations={handleNavigateToOperations}
-                title={getSectionTitle('gantt', 'Visual Timeline')}
-              />
-            )}
-            {currentView === 'quality' && (
-              <QualityManagement 
-                orders={orders}
-                users={usersData}
-                vendors={vendors}
-                onUpdateStatus={handleUpdateStatusFromQC} 
-                permissions={permissions}
-                title={getSectionTitle('quality', 'Quality Hub')}
-              />
-            )}
-            {currentView === 'order-details' && (
-              <OrderDetails 
-                orderId={activeWorkOrderId} 
-                onBack={() => handleViewChange('orders')} 
-                customers={customers}
-                staff={usersData}
-                onSave={handleSaveOrder}
-                orders={orders}
-              />
-            )}
-            {currentView === 'operations' && (
-              <OperationsStatus 
-                initialOrderId={activeWorkOrderId} 
-                onOrderIdChange={setActiveWorkOrderId} 
-                onNavigateToVendor={() => handleViewChange('vendor')}
-                onStatusChange={(o, op, s) => {}}
-                orders={orders}
-                users={usersData}
-                vendors={vendors}
-                machines={machines}
-              />
-            )}
+        <main className="flex-1 overflow-y-auto w-full p-6 print:p-0">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
+            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} />}
+            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} />}
+            {currentView === 'agile' && <AgileBoard orders={orders} />}
+            {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} />}
+            {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
+            {currentView === 'billing' && <BillingManagement customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
+            {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
+            {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
+            {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} />}
+            {currentView === 'gantt' && <ProductionGantt orders={orders} />}
+            {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
           </div>
         </main>
       </div>
-
-      <Dialog open={isPasswordChangeOpen} onOpenChange={() => {}}>
-        <DialogContent className="max-w-md p-6">
-          <DialogHeader>
-            <DialogTitle>Security Rotation Required</DialogTitle>
-            <DialogDescription>Your security token has exceeded the 45-day window.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>New Security Token</Label>
-              <Input 
-                type="password"
-                className="h-10"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleForcePasswordChange} className="w-full h-10 bg-[#001F3D]">Update Node</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Toaster />
-
-      <style jsx global>{`
-        :root {
-          --card-shadow: ${uiSettings.cardShadow === 'none' ? 'none' : uiSettings.cardShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' : '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'};
-        }
-        .premium-card, .glass-panel, .bg-white.border-slate-200 {
-          box-shadow: var(--card-shadow) !important;
-        }
-        .labels-uppercase label, .labels-uppercase .text-[9px].font-bold.uppercase {
-          text-transform: uppercase !important;
-        }
-        .labels-capitalize label, .labels-capitalize .text-[9px].font-bold.uppercase {
-          text-transform: capitalize !important;
-        }
-        .text-center-headers h2, .text-center-headers h3, .text-center-headers .font-display {
-          text-align: center !important;
-          width: 100%;
-        }
-      `}</style>
     </div>
   );
 }

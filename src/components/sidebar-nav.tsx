@@ -28,7 +28,8 @@ import {
   Briefcase,
   Contact,
   Building2,
-  Package
+  Package,
+  UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -39,9 +40,10 @@ interface SidebarNavProps {
   permissions?: Record<string, PermissionLevel>;
   isSlim?: boolean;
   customTitles?: Record<string, string>;
+  userRole?: string;
 }
 
-export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {} }: SidebarNavProps) {
+export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {}, userRole }: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,9 +51,12 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
   }, []);
 
   const menuItems = useMemo(() => {
+    const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || userRole === 'Master Admin';
+
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
-      { id: 'hr' as ViewType, icon: Users, label: customTitles['hr'] || 'HR Command' },
+      { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'Personnel Portal' },
+      { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command', restricted: true },
       { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: customTitles['orders'] || 'Master Orders' },
       { id: 'production-planner' as ViewType, icon: Factory, label: customTitles['production-planner'] || 'Mass Production' },
@@ -70,15 +75,14 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     ];
 
     return items.filter(item => {
-      if (item.id === 'hr') {
-        const manpowerLevel = permissions['manpower'];
-        const trainingLevel = permissions['training'];
-        return (manpowerLevel && manpowerLevel !== 'none') || (trainingLevel && trainingLevel !== 'none');
-      }
+      // Role-based filtering
+      if (item.restricted && !isHRAdmin) return false;
+      if (item.id === 'my-portal') return true;
+
       const level = permissions[item.id];
       return level && level !== 'none';
     });
-  }, [permissions, customTitles]);
+  }, [permissions, customTitles, userRole]);
 
   if (!mounted) {
     return <div className={cn("bg-[#001F3D] h-screen", isSlim ? "w-20" : "w-64")} />;
@@ -97,7 +101,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
         onClick={() => onViewChange('overview')}
       >
         <Zap className="h-6 w-6 text-white fill-white transition-transform group-hover:rotate-12 shrink-0" />
-        {!isSlim && <span className="text-white font-headline font-bold text-sm tracking-tight">BHARAT AXIS</span>}
+        {!isSlim && <span className="text-white font-headline font-bold text-sm tracking-tight uppercase">BHARAT AXIS</span>}
       </div>
 
       <div className="flex-1 flex flex-col gap-1 w-full mt-4">

@@ -42,6 +42,7 @@ export type ViewType =
   | 'operations' 
   | 'machine-utilization' 
   | 'hr' 
+  | 'my-portal'
   | 'customer-orders' 
   | 'weekly-plan' 
   | 'users'
@@ -205,6 +206,16 @@ export interface UserLeaveBalance {
   casual: number;
 }
 
+export interface SalarySlip {
+  id: string;
+  userId: string;
+  month: string;
+  year: number;
+  generatedDate: string;
+  netPay: number;
+  status: 'Published' | 'Pending';
+}
+
 export interface SalaryStructure {
   basePay: number;
   hra: number;
@@ -332,4 +343,6 @@ export interface UserLeave {
   endDate: string;
   reason: string;
   status: 'Pending' | 'Approved' | 'Rejected';
+  isPlannedMatrix?: boolean;
+  plannedMonth?: string;
 }

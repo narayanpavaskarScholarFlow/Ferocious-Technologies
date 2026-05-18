@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,13 +29,9 @@ import {
   Info,
   CalendarCheck,
   Wallet,
-  Save,
-  RefreshCw,
   Shield,
-  UserCircle,
-  Briefcase,
-  Network,
-  Camera
+  RefreshCw,
+  LayoutGrid
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -55,7 +52,9 @@ const JOB_TITLES = [
   "VMC Programmer",
   "VMC Operator",
   "Tool Maker",
-  "Senior Tool Maker"
+  "Senior Tool Maker",
+  "HR",
+  "HR Manager"
 ];
 
 const DEPARTMENTS = [
@@ -83,8 +82,8 @@ export interface AnnualLeaveEntry {
   year: number;
   reason: string;
   status: 'Planned' | 'Approved';
-  startDate: string; // ISO date
-  endDate: string;   // ISO date
+  startDate: string; 
+  endDate: string;
 }
 
 interface ManpowerUtilizationProps {
@@ -104,7 +103,13 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
   const [step, setStep] = useState(1);
   const [isUpdatingBalance, setIsUpdatingBalance] = useState<string | null>(null);
   
-  const isMasterAdmin = currentUser === 'Master Admin';
+  const currentUserData = useMemo(() => {
+    return users.find(u => u.name === currentUser || u.email === currentUser);
+  }, [users, currentUser]);
+
+  const isAuthorized = useMemo(() => {
+    return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
+  }, [currentUser, currentUserData]);
 
   const [newAnnual, setNewAnnual] = useState({
     description: '',
@@ -129,6 +134,7 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
   const annualLeaves = annualLeavesRaw || [];
 
   const handleEditStaff = (user: SystemUser) => {
+    if (!isAuthorized) return;
     setEditingUserId(user.id);
     setNewStaff({
       name: user.name,
@@ -141,56 +147,8 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     setIsAddStaffOpen(true);
   };
 
-  const handleNavigateToApply = (userId: string) => {
-    setSelectedUserIdForLeave(userId);
-    setActiveTab('apply');
-  };
-
-  const handleNavigateToBalance = (userId: string) => {
-    setSelectedUserIdForLeave(userId);
-    setActiveTab('balance');
-  };
-
-  const handleAddStaff = () => {
-    if (!newStaff.name.trim() || !newStaff.role || !newStaff.dept) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Full identity, role, and department assignment required."
-      });
-      return;
-    }
-
-    const member: SystemUser = {
-      id: editingUserId || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: newStaff.name.trim(),
-      email: newStaff.email || `${newStaff.name.toLowerCase().replace(' ', '.')}@bharataxis.tech`,
-      role: newStaff.role,
-      dept: newStaff.dept,
-      status: editingUserId ? (users.find(u => u.id === editingUserId)?.status || 'active') : 'active',
-      shift: newStaff.shift,
-      efficiency: editingUserId ? (users.find(u => u.id === editingUserId)?.efficiency || 0) : 0,
-      permissions: editingUserId ? (users.find(u => u.id === editingUserId)?.permissions || { overview: 'read' }) : { overview: 'read' },
-      lastLogin: editingUserId ? (users.find(u => u.id === editingUserId)?.lastLogin || 'Never') : 'Never',
-      phone: '',
-      reportingManager: '',
-      image: '',
-      leaveBalance: editingUserId ? (users.find(u => u.id === editingUserId)?.leaveBalance || { annual: 12, sick: 6, casual: 8 }) : { annual: 12, sick: 6, casual: 8 }
-    };
-
-    onSaveUser(member);
-    toast({
-      title: editingUserId ? "Identity Synchronized" : "Resource Synchronized",
-      description: `${member.name} has been updated in the master resource pool.`
-    });
-
-    setIsAddStaffOpen(false);
-    setEditingUserId(null);
-    setStep(1);
-    setNewStaff({ name: '', role: '', dept: '', shift: 'Morning', email: '' });
-  };
-
   const handleUpdateBalance = (userId: string, field: 'annual' | 'sick' | 'casual', value: string) => {
+    if (!isAuthorized) return;
     const user = users.find(u => u.id === userId);
     if (!user) return;
 
@@ -218,6 +176,7 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
   };
 
   const handleAddAnnualLeave = () => {
+    if (!isAuthorized) return;
     if (!newAnnual.description || !newAnnual.startDate || !newAnnual.endDate) {
       toast({
         variant: "destructive",
@@ -252,6 +211,7 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
   };
 
   const handleDeleteAnnual = (id: string) => {
+    if (!isAuthorized) return;
     deleteDocumentNonBlocking(doc(db, 'annual_leaves', id));
     toast({
       title: "Plan Removed",
@@ -260,190 +220,83 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     });
   };
 
-  const safeUsers = users || [];
-
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
-            <Users className="h-4 w-4" />
+          <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.2em]">
+            <LayoutGrid className="h-4 w-4" />
             Human Resources & Ops
           </div>
-          <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900 uppercase">
+          <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
             Resource <span className="text-slate-400 font-medium">Management</span>
           </h2>
-          <p className="text-muted-foreground font-medium">Coordinate manpower availability, leave planning, and shift efficiency.</p>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Coordinate manpower availability, leave planning, and shift efficiency.</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 h-10 px-6 font-bold text-[10px] uppercase tracking-widest rounded-full">
-            Available Resources: {safeUsers.length}
+            Available Resources: {users.length}
           </Badge>
         </div>
-      </header>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm">
-          <TabsTrigger value="overview" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            Operational Overview
-          </TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            Leave Balance
-          </TabsTrigger>
-          <TabsTrigger value="apply" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            Apply Leave
-          </TabsTrigger>
-          <TabsTrigger value="planned" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            Planned Leave
-          </TabsTrigger>
-          <TabsTrigger value="annual" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-            Annual Holiday Matrix
-          </TabsTrigger>
+        <TabsList className="bg-slate-100 p-1 rounded-full mb-10 h-12 inline-flex border border-slate-200">
+          <TabsTrigger value="overview" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Operational Overview</TabsTrigger>
+          <TabsTrigger value="balance" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Leave Balance</TabsTrigger>
+          <TabsTrigger value="apply" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Apply Leave</TabsTrigger>
+          <TabsTrigger value="planned" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Planned Leave</TabsTrigger>
+          <TabsTrigger value="annual" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Annual Holiday Matrix</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-8 m-0">
-          {safeUsers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {safeUsers.map((member) => (
-                <Card key={member.id} className="p-8 border-slate-200/60 shadow-xl bg-white hover:border-primary/50 transition-all rounded-[2rem] group relative overflow-hidden flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-                    <Users className="h-20 w-20" />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-5">
-                        <div className="relative">
-                          <Avatar className="h-14 w-14 border-4 border-slate-50 shadow-sm">
-                            <AvatarImage src={member.image || `https://picsum.photos/seed/${member.id}/100/100`} />
-                            <AvatarFallback className="bg-primary/5 text-primary font-bold text-lg">{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                          </Avatar>
-                          <div className={cn(
-                            "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm",
-                            member.status === 'online' || member.status === 'active' ? "bg-emerald-500" : "bg-slate-300"
-                          )} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{member.name}</p>
-                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{member.role} • {member.dept}</p>
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {users.map((member) => (
+              <Card key={member.id} className="p-8 border-slate-200 shadow-xl bg-white hover:border-primary/50 transition-all rounded-[2rem] group relative overflow-hidden flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-5">
+                      <div className="relative">
+                        <Avatar className="h-14 w-14 border-4 border-slate-50 shadow-sm">
+                          <AvatarImage src={member.image} />
+                          <AvatarFallback className="bg-primary/5 text-primary font-bold text-lg">{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className={cn(
+                          "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm",
+                          member.status === 'online' || member.status === 'active' ? "bg-emerald-500" : "bg-slate-300"
+                        )} />
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-10 w-10 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
-                        onClick={() => handleEditStaff(member)}
-                      >
+                      <div>
+                        <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{member.name}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{member.role} • {member.dept}</p>
+                      </div>
+                    </div>
+                    {isAuthorized && (
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-300 hover:text-primary rounded-xl" onClick={() => handleEditStaff(member)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-50 mb-6">
-                      <div className="space-y-1">
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Shift</p>
-                        <p className="text-[10px] font-bold text-slate-700">{member.shift || 'Morning'}</p>
-                      </div>
-                      <div className="space-y-1 text-center">
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Balance</p>
-                        <p className="text-[10px] font-bold text-primary">
-                          {(member.leaveBalance?.annual || 0) + (member.leaveBalance?.sick || 0) + (member.leaveBalance?.casual || 0)} Days
-                        </p>
-                      </div>
-                      <div className="text-right space-y-1">
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-                        <Badge 
-                          variant="outline" 
-                          className={cn(
-                            "text-[8px] font-bold uppercase py-0 px-2 rounded-full border",
-                            member.status === 'active' || member.status === 'online' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                            member.status === 'break' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-slate-50 text-slate-400 border-slate-100'
-                          )}
-                        >
-                          {member.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 border-slate-200 shadow-sm"
-                      onClick={() => handleNavigateToBalance(member.id)}
-                    >
-                      <Wallet className="h-3 w-3" /> Balance
-                    </Button>
-                    <Button 
-                      className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white shadow-lg shadow-primary/10"
-                      onClick={() => handleNavigateToApply(member.id)}
-                    >
-                      <CalendarCheck className="h-3 w-3" /> Apply Leave
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="h-96 flex flex-col items-center justify-center opacity-30 text-center">
-              <div className="p-8 bg-slate-50 rounded-full mb-6">
-                <UserX className="h-16 w-16 text-slate-300" />
-              </div>
-              <p className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">Resource Pool Offline</p>
-              <p className="text-[10px] text-slate-400 mt-2 max-w-xs mx-auto">No personnel data detected in the master directory.</p>
-            </div>
-          )}
-
-          <Card className="p-10 border-slate-200/60 shadow-2xl bg-white rounded-[2.5rem]">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-10 border-l-4 border-primary pl-4">Resource Skill Matrix</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-              {[
-                { label: 'Milling', value: safeUsers.filter(s => s.dept === 'VMC Milling').length * 20 },
-                { label: 'Turning', value: safeUsers.filter(s => s.dept === 'CNC Turning').length * 20 },
-                { label: 'Quality Assurance', value: safeUsers.filter(s => s.dept === 'Quality').length * 20 },
-                { label: 'Logistics Node', value: safeUsers.filter(s => s.dept === 'Market').length * 20 },
-              ].map((skill) => (
-                <div key={skill.label} className="space-y-4">
-                  <div className="flex justify-between items-center px-1">
-                    <p className="text-[10px] font-bold uppercase text-slate-600 tracking-widest">{skill.label}</p>
-                    <span className="text-[10px] font-code font-bold text-primary">{Math.min(skill.value, 100)}%</span>
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner p-[1px]">
-                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${Math.min(skill.value, 100)}%` }} />
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </Card>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 border-slate-200" onClick={() => setActiveTab('balance')}>
+                    <Wallet className="h-3 w-3" /> Balance
+                  </Button>
+                  <Button className="flex-1 rounded-xl h-10 font-bold text-[9px] uppercase tracking-widest gap-2 bg-[#001F3D] hover:bg-black text-white" onClick={() => setActiveTab('apply')}>
+                    <CalendarCheck className="h-3 w-3" /> Apply Leave
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
-        <TabsContent value="balance" className="m-0 space-y-8">
-          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
+        <TabsContent value="balance" className="m-0">
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <ClipboardList className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="text-sm font-bold uppercase text-slate-500 tracking-wider">Resource Leave Ledger</h3>
-                  {selectedUserIdForLeave && (
-                    <p className="text-[10px] font-bold text-primary uppercase mt-1">Focus Identity: {safeUsers.find(u => u.id === selectedUserIdForLeave)?.name}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {isMasterAdmin && (
-                  <Badge className="bg-red-50 text-red-600 border-red-100 font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px] flex gap-2">
-                    <Shield className="h-3 w-3" /> Full Matrix Control Active
-                  </Badge>
-                )}
-                {selectedUserIdForLeave && (
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedUserIdForLeave(null)} className="text-[9px] font-bold uppercase text-slate-400 hover:text-red-500">
-                    Clear Focus
-                  </Button>
-                )}
-                <div className="relative w-64 group">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                  <Input placeholder="Filter resource ID..." className="pl-10 h-10 bg-white border-slate-200 text-xs rounded-xl shadow-sm" />
-                </div>
+                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-wider">Leave Ledger Matrix</h3>
               </div>
             </div>
             <Table>
@@ -453,170 +306,67 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Annual (PL)</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Sick (SL)</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Casual (CL)</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-center text-primary px-10">Total Credited</TableHead>
-                  <TableHead className="w-20"></TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center text-primary px-10">Total Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {safeUsers
-                  .filter(u => !selectedUserIdForLeave || u.id === selectedUserIdForLeave)
-                  .map((user) => {
-                    const balance = user.leaveBalance || { annual: 12, sick: 6, casual: 8 };
-                    const total = balance.annual + balance.sick + balance.casual;
-                    
-                    return (
-                      <TableRow key={user.id} className={cn(
-                        "h-20 border-slate-50 hover:bg-slate-50/30 transition-colors",
-                        selectedUserIdForLeave === user.id && "bg-primary/[0.02]"
-                      )}>
-                        <TableCell className="px-10">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-sm text-[#001F3D] uppercase tracking-tight">{user.name}</span>
-                            <span className="text-[9px] text-slate-400 font-code font-bold uppercase tracking-tighter mt-0.5">{user.id}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center font-code text-xs font-bold text-slate-600">
-                          {isMasterAdmin ? (
-                            <Input 
-                              type="number"
-                              className="w-16 h-8 bg-slate-50 border-none rounded text-center mx-auto"
-                              defaultValue={balance.annual}
-                              onBlur={(e) => handleUpdateBalance(user.id, 'annual', e.target.value)}
-                            />
-                          ) : (
-                            `${balance.annual} d`
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center font-code text-xs font-bold text-slate-600">
-                          {isMasterAdmin ? (
-                            <Input 
-                              type="number"
-                              className="w-16 h-8 bg-slate-50 border-none rounded text-center mx-auto"
-                              defaultValue={balance.sick}
-                              onBlur={(e) => handleUpdateBalance(user.id, 'sick', e.target.value)}
-                            />
-                          ) : (
-                            `${balance.sick} d`
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center font-code text-xs font-bold text-slate-600">
-                          {isMasterAdmin ? (
-                            <Input 
-                              type="number"
-                              className="w-16 h-8 bg-slate-50 border-none rounded text-center mx-auto"
-                              defaultValue={balance.casual}
-                              onBlur={(e) => handleUpdateBalance(user.id, 'casual', e.target.value)}
-                            />
-                          ) : (
-                            `${balance.casual} d`
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center font-code text-sm text-primary font-bold px-10">
-                          <div className="flex items-center justify-center gap-2">
-                            {isUpdatingBalance === user.id ? <RefreshCw className="h-3 w-3 animate-spin text-slate-300" /> : null}
-                            {total} DAYS
-                          </div>
-                        </TableCell>
-                        <TableCell className="pr-10">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 rounded-lg text-[9px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5"
-                            onClick={() => handleNavigateToApply(user.id)}
-                          >
-                            Apply
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                {safeUsers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-slate-400 font-code text-[10px] italic uppercase tracking-widest">_NO_RESOURCE_DATA_FOUND_</TableCell>
-                  </TableRow>
-                )}
+                {users.map((user) => {
+                  const balance = user.leaveBalance || { annual: 12, sick: 6, casual: 8 };
+                  return (
+                    <TableRow key={user.id} className="h-20 border-slate-50 hover:bg-slate-50/30 transition-colors">
+                      <TableCell className="px-10">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-[#001F3D] uppercase tracking-tight">{user.name}</span>
+                          <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-0.5">{user.id}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center font-code text-xs font-bold">
+                        {isAuthorized ? (
+                          <Input type="number" className="w-16 h-8 mx-auto text-center border-none bg-slate-50" defaultValue={balance.annual} onBlur={(e) => handleUpdateBalance(user.id, 'annual', e.target.value)} />
+                        ) : `${balance.annual} d`}
+                      </TableCell>
+                      <TableCell className="text-center font-code text-xs font-bold">
+                        {isAuthorized ? (
+                          <Input type="number" className="w-16 h-8 mx-auto text-center border-none bg-slate-50" defaultValue={balance.sick} onBlur={(e) => handleUpdateBalance(user.id, 'sick', e.target.value)} />
+                        ) : `${balance.sick} d`}
+                      </TableCell>
+                      <TableCell className="text-center font-code text-xs font-bold">
+                        {isAuthorized ? (
+                          <Input type="number" className="w-16 h-8 mx-auto text-center border-none bg-slate-50" defaultValue={balance.casual} onBlur={(e) => handleUpdateBalance(user.id, 'casual', e.target.value)} />
+                        ) : `${balance.casual} d`}
+                      </TableCell>
+                      <TableCell className="text-center font-code text-sm text-primary font-bold px-10">
+                        {balance.annual + balance.sick + balance.casual} DAYS
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </Card>
         </TabsContent>
 
         <TabsContent value="apply" className="m-0 max-w-2xl mx-auto">
-          <Card className="p-12 bg-white border-slate-200/60 shadow-2xl rounded-[3rem] space-y-10 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-            
-            <div className="space-y-8 relative z-10">
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-2 border-l-4 border-primary pl-6">
-                  <h3 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Request Leave</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protocol Initiation Sequence</p>
-                </div>
-                {selectedUserIdForLeave && (
-                  <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px]">ID_LOCKED</Badge>
-                )}
+          <Card className="p-12 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-10">
+            <div className="flex flex-col gap-2 border-l-4 border-primary pl-6">
+              <h3 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Request Leave</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protocol Initiation Sequence</p>
+            </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Leave Type</Label>
+                <Select><SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl"><SelectValue placeholder="Select type..." /></SelectTrigger></Select>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2.5">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Leave Type</Label>
-                  <Select>
-                    <SelectTrigger className="h-14 bg-slate-50 border-none rounded-2xl text-xs font-bold shadow-inner">
-                      <SelectValue placeholder="Select classification..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="Annual" className="text-xs font-bold uppercase">Annual Leave (PL)</SelectItem>
-                      <SelectItem value="Sick" className="text-xs font-bold uppercase">Sick Leave (SL)</SelectItem>
-                      <SelectItem value="Casual" className="text-xs font-bold uppercase">Casual Leave (CL)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2.5">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Resource Node</Label>
-                  <Select 
-                    value={selectedUserIdForLeave || undefined} 
-                    onValueChange={setSelectedUserIdForLeave}
-                  >
-                    <SelectTrigger className={cn(
-                      "h-14 border-none rounded-2xl text-xs font-bold shadow-inner",
-                      selectedUserIdForLeave ? "bg-primary/5 text-primary" : "bg-slate-50"
-                    )}>
-                      <SelectValue placeholder="Identify user..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {safeUsers.map(u => (
-                        <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2.5">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Window Start</Label>
-                  <DatePicker onChange={() => {}} className="h-14 bg-slate-50 border-none rounded-2xl text-xs shadow-inner" />
-                </div>
-                <div className="space-y-2.5">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Window End</Label>
-                  <DatePicker onChange={() => {}} className="h-14 bg-slate-50 border-none rounded-2xl text-xs shadow-inner" />
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Rational / Description</Label>
-                <Input placeholder="Enter brief technical reason for absence..." className="h-20 bg-slate-50 border-none rounded-2xl text-xs font-bold shadow-inner" />
-              </div>
-
-              <div className="flex gap-4">
-                <Button 
-                  variant="ghost" 
-                  className="flex-1 h-16 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] text-slate-400"
-                  onClick={() => { setSelectedUserIdForLeave(null); setActiveTab('overview'); }}
-                >
-                  Abort Protocol
-                </Button>
-                <Button className="flex-[2] h-16 bg-[#001F3D] hover:bg-black text-white rounded-[1.5rem] font-bold text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-primary/20 flex gap-3 group">
-                  Submit Leave Application 
-                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Resource Node</Label>
+                <Select disabled value={currentUserData?.id}><SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl"><SelectValue /></SelectTrigger></Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Start Date</Label><DatePicker onChange={()=>{}} className="h-12" /></div>
+              <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">End Date</Label><DatePicker onChange={()=>{}} className="h-12" /></div>
+            </div>
+            <Button className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold text-[11px] uppercase tracking-[0.3em] shadow-2xl">Submit Leave Application</Button>
           </Card>
         </TabsContent>
 
@@ -629,25 +379,22 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
         </TabsContent>
 
         <TabsContent value="annual" className="m-0 space-y-8">
-          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[2rem]">
-            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[#001F3D] rounded-xl shadow-lg shadow-primary/20">
-                  <CalendarDays className="h-6 w-6 text-white" />
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
+            <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="flex items-center gap-5">
+                <div className="p-4 bg-[#001F3D] rounded-2xl shadow-xl shadow-blue-900/10">
+                  <CalendarDays className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Plant Holiday Matrix</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">General Capacity Availability Ledger</p>
+                  <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Plant Holiday Matrix</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic">Regional Transport Availability Ledger</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <Button 
-                  onClick={() => setIsAddAnnualOpen(true)}
-                  className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20 transition-all"
-                >
+              {isAuthorized && (
+                <Button onClick={() => setIsAddAnnualOpen(true)} className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-3 h-12 px-10 font-bold text-[10px] uppercase tracking-widest shadow-2xl transition-all">
                   <Plus className="h-4 w-4" /> Add Matrix Entry
                 </Button>
-              </div>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -657,64 +404,38 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Holiday / Event Description</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Month & Year</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Specific Dates</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Rational / Reason</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
-                    <TableHead className="text-right px-10"></TableHead>
+                    <TableHead className="text-right px-10 w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {annualLeaves && annualLeaves.length > 0 ? annualLeaves.map((plan) => (
-                    <TableRow key={plan.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group transition-colors">
+                  {annualLeaves.map((plan) => (
+                    <TableRow key={plan.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
                       <TableCell className="px-10">
-                        <div className="flex items-center gap-4">
-                          <div className="h-9 w-9 rounded-lg bg-primary/5 flex items-center justify-center font-bold text-primary text-[10px] border border-primary/10 uppercase">
-                            <Info className="h-4 w-4" />
-                          </div>
-                          <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{plan.description}</span>
-                        </div>
+                        <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{plan.description}</span>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 border-slate-200 text-slate-500">
                           {plan.month} {plan.year}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2 font-code text-xs font-bold text-slate-600">
-                          <Clock className="h-3 w-3 text-slate-300" /> {plan.startDate} to {plan.endDate}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-xs text-slate-500 italic line-clamp-1">{plan.reason || 'N/A'}</p>
+                      <TableCell className="text-center font-code text-xs font-bold text-slate-600">
+                        {plan.startDate} to {plan.endDate}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-[9px] font-bold uppercase px-3">
+                        <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-[9px] font-bold uppercase px-4 py-1.5 rounded-full">
                           {plan.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right px-10">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-slate-200 hover:text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
-                          onClick={() => handleDeleteAnnual(plan.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isAuthorized && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteAnnual(plan.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
-                  )) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-80 text-center">
-                        <div className="flex flex-col items-center justify-center opacity-30 py-10">
-                          <div className="p-8 bg-slate-50 rounded-[2rem] mb-6">
-                            <CalendarDays className="h-16 w-16 text-slate-300" />
-                          </div>
-                          <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Planning Ledger Offline</p>
-                          <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto font-medium">No annual holiday plans detected.</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -725,242 +446,18 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
       <Dialog open={isAddAnnualOpen} onOpenChange={setIsAddAnnualOpen}>
         <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
           <DialogHeader className="space-y-4 mb-8">
-            <div className="p-4 bg-primary/10 rounded-2xl w-fit">
-              <CalendarDays className="h-8 w-8 text-primary" />
-            </div>
+            <div className="p-4 bg-primary/10 rounded-2xl w-fit"><CalendarDays className="h-8 w-8 text-primary" /></div>
             <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Holiday Matrix Entry</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Execute planning protocol for plant-wide holiday allocation.</DialogDescription>
           </DialogHeader>
-
           <div className="space-y-8">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Holiday / Event Description</Label>
-              <Input 
-                placeholder="e.g. Ganesh Chaturthi / Annual Maintenance Shutdown" 
-                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
-                value={newAnnual.description}
-                onChange={(e) => setNewAnnual({...newAnnual, description: e.target.value})}
-              />
-            </div>
-
+            <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Description</Label><Input placeholder="e.g. Diwali Break" className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold" value={newAnnual.description} onChange={(e)=>setNewAnnual({...newAnnual, description: e.target.value})} /></div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Start Date</Label>
-                <DatePicker 
-                  value={newAnnual.startDate}
-                  onChange={(val) => setNewAnnual({...newAnnual, startDate: val})}
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs shadow-inner"
-                />
-              </div>
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">End Date</Label>
-                <DatePicker 
-                  value={newAnnual.endDate}
-                  onChange={(val) => setNewAnnual({...newAnnual, endDate: val})}
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs shadow-inner"
-                />
-              </div>
+              <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Start Date</Label><DatePicker value={newAnnual.startDate} onChange={(val)=>setNewAnnual({...newAnnual, startDate: val})} className="h-12 bg-slate-50 border-none rounded-xl" /></div>
+              <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">End Date</Label><DatePicker value={newAnnual.endDate} onChange={(val)=>setNewAnnual({...newAnnual, endDate: val})} className="h-12 bg-slate-50 border-none rounded-xl" /></div>
             </div>
-
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Rationale / Notes</Label>
-              <Input 
-                placeholder="Brief reason for holiday window..." 
-                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner"
-                value={newAnnual.reason}
-                onChange={(e) => setNewAnnual({...newAnnual, reason: e.target.value})}
-              />
-            </div>
-
             <div className="flex gap-4 pt-6">
-              <Button 
-                variant="ghost" 
-                className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400"
-                onClick={() => setIsAddAnnualOpen(false)}
-              >
-                Abort Protocol
-              </Button>
-              <Button 
-                className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20"
-                onClick={handleAddAnnualLeave}
-              >
-                Commit to Ledger
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isAddStaffOpen} onOpenChange={(open) => {
-        setIsAddStaffOpen(open);
-        if (!open) setEditingUserId(null);
-      }}>
-        <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
-          <DialogTitle className="sr-only">{editingUserId ? 'Edit Personnel Identity' : 'Personnel Registration Protocol'}</DialogTitle>
-          <DialogDescription className="sr-only">Update or register human resources for operational tracking and scheduling.</DialogDescription>
-          
-          <div className="flex h-[600px]">
-            <div className="w-72 bg-slate-900 p-10 border-r border-slate-800 flex flex-col justify-between">
-              <div className="space-y-10">
-                <div className="p-4 bg-primary rounded-2xl w-fit shadow-xl shadow-primary/20 relative">
-                  {editingUserId ? <Edit2 className="h-7 w-7 text-white" /> : <UserPlus className="h-7 w-7 text-white" />}
-                  <div className={cn("absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-slate-900 animate-pulse", editingUserId ? "bg-accent" : "bg-emerald-500")} />
-                </div>
-                <div className="space-y-8">
-                  {[
-                    { s: 1, label: editingUserId ? 'Modify Identity' : 'Identify Resource', desc: 'NAME & PERSONAL' },
-                    { s: 2, label: 'Redeployment', desc: 'DEPT & SHIFT' },
-                  ].map((item) => (
-                    <div key={item.s} className="flex gap-5 group relative">
-                      {item.s < 2 && (
-                        <div className={cn(
-                          "absolute left-3 top-8 w-[1px] h-10 transition-colors",
-                          step > item.s ? "bg-emerald-500" : "bg-slate-700"
-                        )} />
-                      )}
-                      <div className={cn(
-                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10",
-                        step === item.s ? "bg-white border-white text-slate-900 scale-125 shadow-lg shadow-white/20" : 
-                        step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-slate-800 border-slate-700 text-slate-500"
-                      )}>
-                        {step > item.s ? <Check className="h-3 w-3" /> : item.s}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className={cn(
-                          "text-[11px] font-bold transition-colors duration-500 leading-none",
-                          step === item.s ? "text-white" : "text-slate-500"
-                        )}>{item.label}</span>
-                        <span className="text-[9px] text-slate-600 uppercase font-bold tracking-[0.15em] mt-1.5">{item.desc}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="text-[9px] font-bold text-slate-700 uppercase tracking-[0.3em]">
-                {editingUserId ? 'RESOURCE_MOD_V2.4' : 'RESOURCE_REG_V2.4'}
-              </div>
-            </div>
-
-            <div className="flex-1 p-12 flex flex-col justify-between overflow-hidden bg-white">
-              <div className="space-y-10 flex-grow overflow-hidden flex flex-col">
-                {step === 1 && (
-                  <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                    <div className="flex items-center gap-3">
-                      <div className="h-1 w-8 bg-primary rounded-full" />
-                      <div>
-                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">01. {editingUserId ? 'Update' : 'Identity'}</h3>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Resource Registration Base</p>
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Personnel Full Name</Label>
-                        <Input 
-                          placeholder="e.g. John Operator" 
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl shadow-inner focus-visible:ring-primary/20"
-                          value={newStaff.name}
-                          onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Email Address</Label>
-                        <Input 
-                          placeholder="e.g. john@bharataxis.tech" 
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl shadow-inner focus-visible:ring-primary/20"
-                          value={newStaff.email}
-                          onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Role</Label>
-                        <Select value={newStaff.role} onValueChange={(val) => setNewStaff({...newStaff, role: val})}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl shadow-inner focus:ring-primary/20">
-                            <SelectValue placeholder="Select designation..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl">
-                            {JOB_TITLES.map(title => (
-                              <SelectItem key={title} value={title} className="text-xs font-bold uppercase">{title}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {step === 2 && (
-                  <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                    <div className="flex items-center gap-3">
-                      <div className="h-1 w-8 bg-primary rounded-full" />
-                      <div>
-                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">02. {editingUserId ? 'Re-Allocation' : 'Deployment'}</h3>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Operational Allocation</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
-                        <Select value={newStaff.dept} onValueChange={(val) => setNewStaff({...newStaff, dept: val})}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl shadow-inner focus:ring-primary/20">
-                            <SelectValue placeholder="Select dept..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl">
-                            {DEPARTMENTS.map(dept => (
-                              <SelectItem key={dept} value={dept} className="text-xs font-bold uppercase">{dept}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Primary Shift</Label>
-                        <Select value={newStaff.shift} onValueChange={(val) => setNewStaff({...newStaff, shift: val as any})}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl shadow-inner focus:ring-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl">
-                            <SelectItem value="Morning" className="text-xs font-bold uppercase">Morning Shift</SelectItem>
-                            <SelectItem value="Evening" className="text-xs font-bold uppercase">Evening Shift</SelectItem>
-                            <SelectItem value="Night" className="text-xs font-bold uppercase">Night Shift</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-10 border-t border-slate-100">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setStep(s => s - 1)} 
-                  disabled={step === 1}
-                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-[#001F3D] px-0"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" /> Protocol Back
-                </Button>
-                <div className="flex items-center gap-4">
-                  <Button 
-                    variant="ghost"
-                    onClick={() => {
-                      setIsAddStaffOpen(false);
-                      setEditingUserId(null);
-                    }}
-                    className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400"
-                  >
-                    Abort
-                  </Button>
-                  <Button 
-                    onClick={step === 2 ? handleAddStaff : () => setStep(s => s + 1)}
-                    className={cn(
-                      "rounded-xl px-10 h-12 font-bold text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 flex gap-3",
-                      step === 2 ? "bg-primary hover:bg-[#002d4f] shadow-primary/30" : "bg-[#001F3D] hover:bg-black shadow-primary/20"
-                    )}
-                  >
-                    {step === 2 ? (editingUserId ? 'Synchronize Identity' : 'Commit & Finalize') : 'Execute Next Step'}
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase text-[10px] text-slate-400" onClick={()=>setIsAddAnnualOpen(false)}>Abort</Button>
+              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[10px] shadow-xl" onClick={handleAddAnnualLeave}>Commit to Ledger</Button>
             </div>
           </div>
         </DialogContent>

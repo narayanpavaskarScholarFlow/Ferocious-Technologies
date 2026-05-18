@@ -623,11 +623,10 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
                           />
-                          <Key className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 pointer-events-none" />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -665,7 +664,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                     onClick={step === 3 ? handleRegisterUser : nextStep}
                     className={cn(
                       "rounded-xl px-10 h-12 font-bold text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 flex gap-3",
-                      step === 3 ? "bg-red-600 hover:bg-red-700 shadow-red-600/30" : "bg-[#001F3D] hover:bg-[#002d4f] shadow-primary/30"
+                      step === 3 ? "bg-red-600 hover:bg-red-700 shadow-red-600/30" : "bg-[#001F3D] hover:bg-black shadow-primary/20"
                     )}
                   >
                     {step === 3 ? (editingUser ? 'Save Changes' : 'Commit & Finalize') : 'Execute Next Step'}

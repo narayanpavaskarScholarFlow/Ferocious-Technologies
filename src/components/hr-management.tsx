@@ -32,6 +32,7 @@ interface HRManagementProps {
   onSaveAssignment: (assignment: TrainingAssignment) => void;
   onDeleteAssignment: (id: string) => void;
   currentUser: string | null;
+  title?: string;
 }
 
 export function HRManagement({ 
@@ -43,14 +44,10 @@ export function HRManagement({
   onDeleteTraining, 
   onSaveAssignment, 
   onDeleteAssignment,
-  currentUser 
+  currentUser,
+  title = 'HR Command'
 }: HRManagementProps) {
   const db = useFirestore();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
-  const { data: logsData } = useCollection<WorkLogEntry>(logsQuery);
-  const logs = logsData || [];
 
   const currentUserData = useMemo(() => {
     return users.find(u => u.name === currentUser || u.email === currentUser);
@@ -59,6 +56,13 @@ export function HRManagement({
   const isAuthorized = useMemo(() => {
     return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
   }, [currentUser, currentUserData]);
+
+  // Land regular users on 'leaves' instead of 'overview'
+  const [activeTab, setActiveTab] = useState(isAuthorized ? 'overview' : 'leaves');
+
+  const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
+  const { data: logsData } = useCollection<WorkLogEntry>(logsQuery);
+  const logs = logsData || [];
 
   const stats = useMemo(() => {
     const totalUsers = users.length;
@@ -83,7 +87,7 @@ export function HRManagement({
             Human Capital Command
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
-            HR <span className="text-slate-400 font-medium">Command Hub</span>
+            {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400 font-medium">{title.split(' ').slice(-1)}</span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Unified management of industrial workforce, payroll protocols, and operational readiness.</p>
         </div>
@@ -108,24 +112,30 @@ export function HRManagement({
           <TabsTrigger value="overview" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
             <Users className="h-3.5 w-3.5 mr-2" /> Workforce
           </TabsTrigger>
-          <TabsTrigger value="approvals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
-            <UserCheck className="h-3.5 w-3.5 mr-2" /> Log Approvals
-            {pendingApprovals > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white animate-pulse">
-                {pendingApprovals}
-              </span>
-            )}
-          </TabsTrigger>
+          
+          {isAuthorized && (
+            <TabsTrigger value="approvals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
+              <UserCheck className="h-3.5 w-3.5 mr-2" /> Log Approvals
+              {pendingApprovals > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white animate-pulse">
+                  {pendingApprovals}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
+
           {isAuthorized && (
             <TabsTrigger value="salary" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
               <Banknote className="h-3.5 w-3.5 mr-2" /> Salary Structure
             </TabsTrigger>
           )}
+
           <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
             <GraduationCap className="h-3.5 w-3.5 mr-2" /> Training Matrix
           </TabsTrigger>
+
           <TabsTrigger value="leaves" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <CalendarDays className="h-3.5 w-3.5 mr-2" /> Leaves
+            <CalendarDays className="h-3.5 w-3.5 mr-2" /> Leaves & Holidays
           </TabsTrigger>
         </TabsList>
 
@@ -134,16 +144,19 @@ export function HRManagement({
             users={users} 
             onSaveUser={onSaveUser} 
             currentUser={currentUser}
+            initialSubTab="overview"
           />
         </TabsContent>
 
-        <TabsContent value="approvals" className="m-0">
-           <LogApprovalMatrix 
-             logs={logs}
-             users={users}
-             currentUser={currentUser}
-           />
-        </TabsContent>
+        {isAuthorized && (
+          <TabsContent value="approvals" className="m-0">
+             <LogApprovalMatrix 
+               logs={logs}
+               users={users}
+               currentUser={currentUser}
+             />
+          </TabsContent>
+        )}
 
         {isAuthorized && (
           <TabsContent value="salary" className="m-0">
@@ -166,21 +179,16 @@ export function HRManagement({
           />
         </TabsContent>
 
-        <TabsContent value="leaves" className="m-0 space-y-8">
-           <div className="p-8 bg-primary/5 border border-primary/10 rounded-[2rem] flex items-center gap-6">
-             <div className="p-3 bg-primary rounded-xl text-white shadow-lg"><ShieldCheck className="h-6 w-6" /></div>
-             <div>
-               <p className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">HR Protocol Active</p>
-               <p className="text-xs text-slate-600 font-medium leading-relaxed">The Leave Ledger and Application matrix are now unified within the Command Hub.</p>
-             </div>
-           </div>
+        <TabsContent value="leaves" className="m-0">
            <ManpowerUtilization 
             users={users} 
             onSaveUser={onSaveUser} 
             currentUser={currentUser}
+            initialSubTab="apply"
           />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
+

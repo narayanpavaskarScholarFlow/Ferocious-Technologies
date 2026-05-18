@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SystemUser } from '@/lib/types';
+import { SystemUser, UserLeave } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Users, 
@@ -31,7 +31,9 @@ import {
   Wallet,
   Shield,
   RefreshCw,
-  LayoutGrid
+  LayoutGrid,
+  Send,
+  AlertCircle
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -45,29 +47,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { DatePicker } from '@/components/ui/date-picker';
-
-const JOB_TITLES = [
-  "Manager",
-  "Supervisor",
-  "VMC Programmer",
-  "VMC Operator",
-  "Tool Maker",
-  "Senior Tool Maker",
-  "HR",
-  "HR Manager"
-];
-
-const DEPARTMENTS = [
-  "Admin",
-  "Account",
-  "Market",
-  "Design",
-  "Tool Room",
-  "VMC Milling",
-  "CNC Turning",
-  "Assembly",
-  "Quality"
-];
+import { Textarea } from '@/components/ui/textarea';
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -90,18 +70,15 @@ interface ManpowerUtilizationProps {
   users: SystemUser[];
   onSaveUser: (user: SystemUser) => void;
   currentUser?: string | null;
+  initialSubTab?: string;
 }
 
-export function ManpowerUtilization({ users, onSaveUser, currentUser }: ManpowerUtilizationProps) {
+export function ManpowerUtilization({ users, onSaveUser, currentUser, initialSubTab = 'overview' }: ManpowerUtilizationProps) {
   const db = useFirestore();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialSubTab);
   const [isAddAnnualOpen, setIsAddAnnualOpen] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [selectedUserIdForLeave, setSelectedUserIdForLeave] = useState<string | null>(null);
-  const [step, setStep] = useState(1);
-  const [isUpdatingBalance, setIsUpdatingBalance] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
   
   const currentUserData = useMemo(() => {
     return users.find(u => u.name === currentUser || u.email === currentUser);
@@ -111,6 +88,15 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
   }, [currentUser, currentUserData]);
 
+  // Leave Application Form State
+  const [leaveForm, setLeaveForm] = useState({
+    type: 'Annual' as any,
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+
+  // Annual Holiday State
   const [newAnnual, setNewAnnual] = useState({
     description: '',
     month: MONTHS[new Date().getMonth()],
@@ -121,31 +107,18 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     endDate: ''
   });
 
-  const [newStaff, setNewStaff] = useState({
-    name: '',
-    role: '',
-    dept: '',
-    shift: 'Morning' as any,
-    email: ''
-  });
-
   const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
   const { data: annualLeavesRaw } = useCollection<AnnualLeaveEntry>(annualQuery);
   const annualLeaves = annualLeavesRaw || [];
 
-  const handleEditStaff = (user: SystemUser) => {
-    if (!isAuthorized) return;
-    setEditingUserId(user.id);
-    setNewStaff({
-      name: user.name,
-      role: user.role,
-      dept: user.dept,
-      shift: user.shift || 'Morning',
-      email: user.email
-    });
-    setStep(1);
-    setIsAddStaffOpen(true);
-  };
+  const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
+  const { data: allLeavesData } = useCollection<UserLeave>(leavesQuery);
+  const allLeaves = allLeavesData || [];
+
+  const myLeaves = useMemo(() => {
+    if (!currentUserData) return [];
+    return allLeaves.filter(l => l.userId === currentUserData.id);
+  }, [allLeaves, currentUserData]);
 
   const handleUpdateBalance = (userId: string, field: 'annual' | 'sick' | 'casual', value: string) => {
     if (!isAuthorized) return;
@@ -163,26 +136,47 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
       }
     };
 
-    setIsUpdatingBalance(userId);
     onSaveUser(updatedUser);
-    
+    toast({
+      title: "Balance Adjusted",
+      description: `Leave credit for ${user.name} has been modified.`
+    });
+  };
+
+  const handleApplyLeave = async () => {
+    if (!currentUserData) return;
+    if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
+      toast({ variant: "destructive", title: "Protocol Interrupted", description: "All fields are mandatory for leave application." });
+      return;
+    }
+
+    setIsApplying(true);
+    const leaveId = `LVE-${Date.now()}`;
+    const leave: UserLeave = {
+      id: leaveId,
+      userId: currentUserData.id,
+      userName: currentUserData.name,
+      type: leaveForm.type,
+      startDate: leaveForm.startDate,
+      endDate: leaveForm.endDate,
+      reason: leaveForm.reason,
+      status: 'Pending'
+    };
+
+    setDocumentNonBlocking(doc(db, 'leaves', leaveId), leave, { merge: true });
+
     setTimeout(() => {
-      setIsUpdatingBalance(null);
-      toast({
-        title: "Balance Adjusted",
-        description: `Leave credit for ${user.name} has been modified.`
-      });
-    }, 500);
+      setIsApplying(false);
+      toast({ title: "Application Transmitted", description: "Your leave request node has been added to the HR queue." });
+      setLeaveForm({ type: 'Annual', startDate: '', endDate: '', reason: '' });
+      setActiveTab('planned');
+    }, 800);
   };
 
   const handleAddAnnualLeave = () => {
     if (!isAuthorized) return;
     if (!newAnnual.description || !newAnnual.startDate || !newAnnual.endDate) {
-      toast({
-        variant: "destructive",
-        title: "Protocol Interrupted",
-        description: "Holiday description and specific start/end dates are required."
-      });
+      toast({ variant: "destructive", title: "Protocol Interrupted", description: "Holiday description and dates are required." });
       return;
     }
 
@@ -200,12 +194,7 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     };
 
     setDocumentNonBlocking(doc(db, 'annual_leaves', entryId), entry, { merge: true });
-    
-    toast({
-      title: "Plan Synchronized",
-      description: `Company holiday "${entry.description}" has been committed to the ledger.`
-    });
-
+    toast({ title: "Plan Synchronized", description: `Company holiday committed to the matrix.` });
     setIsAddAnnualOpen(false);
     setNewAnnual({ description: '', month: MONTHS[new Date().getMonth()], dates: '', reason: '', year: new Date().getFullYear(), startDate: '', endDate: '' });
   };
@@ -213,69 +202,36 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
   const handleDeleteAnnual = (id: string) => {
     if (!isAuthorized) return;
     deleteDocumentNonBlocking(doc(db, 'annual_leaves', id));
-    toast({
-      title: "Plan Removed",
-      description: "The holiday record has been purged from the directory.",
-      variant: "destructive"
-    });
+    toast({ title: "Plan Removed", description: "Record purged from matrix.", variant: "destructive" });
   };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.2em]">
-            <LayoutGrid className="h-4 w-4" />
-            Human Resources & Ops
-          </div>
-          <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
-            Resource <span className="text-slate-400 font-medium">Management</span>
-          </h2>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Coordinate manpower availability, leave planning, and shift efficiency.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 h-10 px-6 font-bold text-[10px] uppercase tracking-widest rounded-full">
-            Available Resources: {users.length}
-          </Badge>
-        </div>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-100 p-1 rounded-full mb-10 h-12 inline-flex border border-slate-200">
-          <TabsTrigger value="overview" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Operational Overview</TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Leave Balance</TabsTrigger>
-          <TabsTrigger value="apply" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Apply Leave</TabsTrigger>
-          <TabsTrigger value="planned" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Planned Leave</TabsTrigger>
-          <TabsTrigger value="annual" className="rounded-full px-8 h-10 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Annual Holiday Matrix</TabsTrigger>
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm">
+          <TabsTrigger value="overview" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Workforce Matrix</TabsTrigger>
+          <TabsTrigger value="balance" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Leave Balance</TabsTrigger>
+          <TabsTrigger value="apply" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Apply Leave</TabsTrigger>
+          <TabsTrigger value="planned" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Planned Leave</TabsTrigger>
+          <TabsTrigger value="annual" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] data-[state=active]:shadow-sm transition-all">Plant Holidays</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-8 m-0">
+        <TabsContent value="overview" className="m-0 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {users.map((member) => (
               <Card key={member.id} className="p-8 border-slate-200 shadow-xl bg-white hover:border-primary/50 transition-all rounded-[2rem] group relative overflow-hidden flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-5">
-                      <div className="relative">
-                        <Avatar className="h-14 w-14 border-4 border-slate-50 shadow-sm">
-                          <AvatarImage src={member.image} />
-                          <AvatarFallback className="bg-primary/5 text-primary font-bold text-lg">{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div className={cn(
-                          "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm",
-                          member.status === 'online' || member.status === 'active' ? "bg-emerald-500" : "bg-slate-300"
-                        )} />
-                      </div>
+                      <Avatar className="h-14 w-14 border-4 border-slate-50 shadow-sm">
+                        <AvatarImage src={member.image} />
+                        <AvatarFallback className="bg-primary/5 text-primary font-bold text-lg">{member.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{member.name}</p>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{member.role} • {member.dept}</p>
                       </div>
                     </div>
-                    {isAuthorized && (
-                      <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-300 hover:text-primary rounded-xl" onClick={() => handleEditStaff(member)}>
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -296,28 +252,29 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <ClipboardList className="h-5 w-5 text-primary" />
-                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-wider">Leave Ledger Matrix</h3>
+                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-wider">Resource Leave Matrix</h3>
               </div>
             </div>
             <Table>
               <TableHeader className="bg-white">
                 <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Resource Identity</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Personnel Node</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Annual (PL)</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Sick (SL)</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Casual (CL)</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-center text-primary px-10">Total Balance</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center text-primary px-10">Net Credit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => {
                   const balance = user.leaveBalance || { annual: 12, sick: 6, casual: 8 };
+                  const isSelf = user.id === currentUserData?.id;
                   return (
-                    <TableRow key={user.id} className="h-20 border-slate-50 hover:bg-slate-50/30 transition-colors">
+                    <TableRow key={user.id} className={cn("h-20 border-slate-50 hover:bg-slate-50/30 transition-colors", isSelf && "bg-primary/5")}>
                       <TableCell className="px-10">
                         <div className="flex flex-col">
                           <span className="font-bold text-sm text-[#001F3D] uppercase tracking-tight">{user.name}</span>
-                          <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-0.5">{user.id}</span>
+                          <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-0.5">{user.id} {isSelf && "(YOU)"}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-code text-xs font-bold">
@@ -346,35 +303,128 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
           </Card>
         </TabsContent>
 
-        <TabsContent value="apply" className="m-0 max-w-2xl mx-auto">
-          <Card className="p-12 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-10">
+        <TabsContent value="apply" className="m-0 max-w-3xl mx-auto">
+          <Card className="p-12 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5"><CalendarCheck className="h-24 w-24" /></div>
             <div className="flex flex-col gap-2 border-l-4 border-primary pl-6">
               <h3 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Request Leave</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protocol Initiation Sequence</p>
             </div>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Leave Type</Label>
-                <Select><SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl"><SelectValue placeholder="Select type..." /></SelectTrigger></Select>
+            
+            <div className="space-y-8 relative z-10">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Leave Classification</Label>
+                  <Select value={leaveForm.type} onValueChange={(val) => setLeaveForm({...leaveForm, type: val})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100">
+                      <SelectItem value="Annual" className="text-xs font-bold uppercase">Annual Leave (PL)</SelectItem>
+                      <SelectItem value="Sick" className="text-xs font-bold uppercase">Sick Leave (SL)</SelectItem>
+                      <SelectItem value="Casual" className="text-xs font-bold uppercase">Casual Leave (CL)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Identity Node</Label>
+                  <div className="h-12 bg-slate-100/50 rounded-xl flex items-center px-4 gap-3">
+                    <User className="h-4 w-4 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500 uppercase">{currentUserData?.name || 'Loading Node...'}</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Resource Node</Label>
-                <Select disabled value={currentUserData?.id}><SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl"><SelectValue /></SelectTrigger></Select>
+
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Start Date</Label>
+                  <DatePicker value={leaveForm.startDate} onChange={(val) => setLeaveForm({...leaveForm, startDate: val})} className="h-12" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">End Date</Label>
+                  <DatePicker value={leaveForm.endDate} onChange={(val) => setLeaveForm({...leaveForm, endDate: val})} className="h-12" />
+                </div>
               </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Reason for Absence</Label>
+                <Textarea 
+                  placeholder="Provide technical reason for protocol request..." 
+                  className="min-h-[120px] bg-slate-50 border-none rounded-2xl p-6 text-xs font-medium resize-none shadow-inner"
+                  value={leaveForm.reason}
+                  onChange={(e) => setLeaveForm({...leaveForm, reason: e.target.value})}
+                />
+              </div>
+
+              <Button 
+                disabled={isApplying}
+                className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold text-[11px] uppercase tracking-[0.3em] shadow-2xl flex gap-3 group"
+                onClick={handleApplyLeave}
+              >
+                {isApplying ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                Submit Leave Application
+                <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Button>
             </div>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Start Date</Label><DatePicker onChange={()=>{}} className="h-12" /></div>
-              <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">End Date</Label><DatePicker onChange={()=>{}} className="h-12" /></div>
-            </div>
-            <Button className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold text-[11px] uppercase tracking-[0.3em] shadow-2xl">Submit Leave Application</Button>
           </Card>
         </TabsContent>
 
-        <TabsContent value="planned" className="m-0">
-          <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-2xl text-center opacity-40">
-            <CalendarCheck className="h-12 w-12 mb-4" />
-            <p className="text-xs font-bold uppercase tracking-widest text-[#001F3D]">Individual Leave Consumption Logs</p>
-            <p className="text-[10px] text-slate-400 mt-2">Historical audit trail of user absences and approved windows.</p>
+        <TabsContent value="planned" className="m-0 space-y-8">
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
+            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <CalendarDays className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-wider">My Absence Ledger</h3>
+              </div>
+              <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[10px] font-bold px-4 h-9 uppercase tracking-widest">
+                {myLeaves.length} Protocol Entries
+              </Badge>
+            </div>
+            <Table>
+              <TableHeader className="bg-white">
+                <TableRow className="hover:bg-transparent border-slate-100">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Application ID</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Window</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Reason</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myLeaves.map((l) => (
+                  <TableRow key={l.id} className="h-20 border-slate-50 hover:bg-slate-50/30 transition-colors">
+                    <TableCell className="px-10 font-code text-xs font-bold text-slate-400">{l.id}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px] font-bold uppercase bg-slate-50 text-slate-500 border-slate-200">{l.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center font-code text-[10px] font-bold text-slate-600">
+                      {l.startDate} TO {l.endDate}
+                    </TableCell>
+                    <TableCell className="text-[10px] font-medium text-slate-500 italic max-w-[200px] truncate">"{l.reason}"</TableCell>
+                    <TableCell className="text-center">
+                      <Badge className={cn(
+                        "text-[9px] font-bold uppercase px-3 rounded-full",
+                        l.status === 'Approved' ? "bg-green-50 text-green-700" :
+                        l.status === 'Rejected' ? "bg-red-50 text-red-700" :
+                        "bg-blue-50 text-blue-700"
+                      )}>
+                        {l.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {myLeaves.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-20 py-10">
+                        <ArchiveX className="h-12 w-12 text-slate-300 mb-4" />
+                        <p className="text-xs font-bold uppercase tracking-widest">No Absence Protocols Logged</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
 
@@ -465,3 +515,4 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser }: Manpower
     </div>
   );
 }
+

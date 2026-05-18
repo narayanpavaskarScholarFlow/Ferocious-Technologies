@@ -164,15 +164,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     ];
   }, [qcEntries, reviewPendingReports]);
 
-  // Logic to check if all components are released for a specific order's QC operation
   const isQCReadyForCompletion = (order: Order, op: RoutingOperation, newlyReleasedReportId?: string) => {
     const orderReports = allReports.filter(r => r.workOrderId === order.id);
     const subTasks = op.subTasks || [];
     
-    // If no components (sub-tasks) are defined in QC routing, we allow manual completion as fallback
     if (subTasks.length === 0) return true;
 
-    // Check if every component defined in the QC sub-tasks has a corresponding released report
     return subTasks.every(st => {
       const report = orderReports.find(r => r.drawingName === st.name);
       const isReleased = (report && report.status === 'Released') || (report && report.id === newlyReleasedReportId);
@@ -414,14 +411,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const finalApproval = () => {
     if (!activeReportId) return;
     
-    // 1. Finalize the individual component report
     updateDocumentNonBlocking(doc(db, 'quality_reports', activeReportId), {
       status: 'Released',
       releasedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
 
-    // 2. Automated status logic: If all components released, set QC status to Completed
     if (selectedOrder && selectedOp) {
       if (isQCReadyForCompletion(selectedOrder, selectedOp, activeReportId)) {
         handleStatusUpdate(selectedOrder, selectedOp.id, 'Completed');
@@ -843,7 +838,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               
               <TabsContent value="customer" className="m-0 flex-1 overflow-hidden flex flex-col">
                 <div className="space-y-6 mb-8 shrink-0">
-                  {/* Integrated Blueprint Display */}
                   <div className="bg-slate-50/50 border border-slate-200 rounded-3xl p-6 flex flex-col gap-4">
                     <div className="flex justify-between items-center px-1">
                       <div className="flex items-center gap-3">
@@ -1064,8 +1058,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
             </div>
           </div>
           <Card className={cn("bg-white border border-slate-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] p-12 space-y-10 transition-all duration-700 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:block", (currentStep === 'review' || currentStep === 'approval') && hasFailures ? "ring-8 ring-red-500/10 border-red-200" : "")}>
-            <DialogTitle className="sr-only">Compliance Report Protocol</DialogTitle>
-            <DialogDescription className="sr-only">Final visualization and verification of dimensional compliance data.</DialogDescription>
             <div className="flex justify-between items-start border-b-2 border-[#001F3D] pb-10 print:pb-6">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -1087,7 +1079,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
             </div>
 
-            {/* Integrated Blueprint Display in Final Report */}
             {activePreviewReport?.drawingFile && (
               <div className="space-y-4">
                 <h3 className="text-xs font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-4">Technical Blueprint Identification</h3>
@@ -1223,21 +1214,19 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       {/* High-Fidelity Fullscreen Fit-to-Screen Viewer */}
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
         <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col transition-all duration-500">
-          <DialogTitle className="sr-only">High-Fidelity Matrix Viewer</DialogTitle>
-          <DialogDescription className="sr-only">Full-screen fit-to-screen protocol for technical blueprint inspection.</DialogDescription>
           <div className="relative w-full h-full flex flex-col">
-            <div className="p-4 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between shrink-0 z-50">
+            <DialogHeader className="p-4 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between shrink-0 z-50">
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-primary/20 rounded-lg text-primary shadow-lg shadow-primary/10"><Maximize2 className="h-5 w-5" /></div>
                 <div>
-                  <h3 className="text-lg font-display font-bold text-white uppercase tracking-tight">Full-Scale Matrix Viewer</h3>
-                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Protocol Identification: {manualComponentName}</p>
+                  <DialogTitle className="text-lg font-display font-bold text-white uppercase tracking-tight">Full-Scale Matrix Viewer</DialogTitle>
+                  <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Protocol Identification: {manualComponentName}</DialogDescription>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setIsZoomDialogOpen(false)} className="h-12 w-12 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all">
                 <X className="h-7 w-7" />
               </Button>
-            </div>
+            </DialogHeader>
             <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden group">
               {pendingDrawingFile && (
                 <img 

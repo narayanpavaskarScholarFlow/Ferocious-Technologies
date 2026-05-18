@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,13 @@ import {
   ListTodo,
   Contact,
   TableProperties,
-  QrCode
+  QrCode,
+  Camera,
+  Lock,
+  Eye,
+  EyeOff,
+  Save,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -112,47 +118,90 @@ export function ProfileSettings({
   const { toast } = useToast();
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
   const [selectedModuleForConfig, setSelectedModuleForConfig] = useState<ViewType | ''>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isMasterAdmin = currentUser === 'Master Admin';
 
-  useEffect(() => {
-    if (users.length > 0 && !selectedUserForMatrix) {
-      setSelectedUserForMatrix(users[0].id);
-    }
-  }, [users, selectedUserForMatrix]);
-
-  const activeAdmin = useMemo(() => {
-    return users.find(u => u.name === currentUser || u.email?.includes(String(currentUser).toLowerCase())) || null;
-  }, [users, currentUser]);
-
-  const [adminUsername, setAdminUsername] = useState('');
-  const [adminFirstName, setAdminFirstName] = useState('');
-  const [adminLastName, setAdminLastName] = useState('');
-  const [adminRole, setAdminRole] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminId, setAdminId] = useState('');
-  const [adminImage, setAdminImage] = useState<string | undefined>();
+  const [profileData, setProfileData] = useState({
+    username: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    id: '',
+    password: '',
+    image: undefined as string | undefined
+  });
 
   useEffect(() => {
-    if (activeAdmin) {
-      setAdminUsername(activeAdmin.username || '');
-      setAdminFirstName(activeAdmin.firstName || '');
-      setAdminLastName(activeAdmin.lastName || '');
-      setAdminRole(activeAdmin.role);
-      setAdminEmail(activeAdmin.email);
-      setAdminId(activeAdmin.id);
-      setAdminImage(activeAdmin.image);
-    } else {
-      setAdminUsername('admin');
-      setAdminFirstName('Master');
-      setAdminLastName('Admin');
-      setAdminRole('Plant Controller');
-      setAdminEmail(currentUser === 'Master Admin' ? 'admin@bharataxis.tech' : '');
-      setAdminDept('Admin');
-      setAdminId('ID_PR_0001');
-      setAdminImage(undefined);
+    if (currentUserData) {
+      setProfileData({
+        username: currentUserData.username || '',
+        firstName: currentUserData.firstName || '',
+        lastName: currentUserData.lastName || '',
+        email: currentUserData.email || '',
+        id: currentUserData.id || '',
+        password: currentUserData.password || '',
+        image: currentUserData.image
+      });
+    } else if (currentUser === 'Master Admin') {
+      setProfileData({
+        username: 'admin',
+        firstName: 'Master',
+        lastName: 'Admin',
+        email: 'admin@bharataxis.tech',
+        id: 'ID_PR_0001',
+        password: 'admin123',
+        image: undefined
+      });
     }
-  }, [activeAdmin, currentUser]);
+  }, [currentUserData, currentUser]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileData(prev => ({ ...prev, image: reader.result as string }));
+        toast({ title: "Identity Visual Cached", description: "Identity photo loaded. Save profile to synchronize." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!currentUserData && currentUser !== 'Master Admin') return;
+
+    setIsSaving(true);
+    
+    const updatedUser: SystemUser = {
+      ...(currentUserData || {
+        id: profileData.id,
+        role: 'Plant Controller',
+        dept: 'Admin',
+        status: 'online',
+        lastLogin: new Date().toISOString(),
+        permissions: { overview: 'full' }
+      } as any),
+      username: profileData.username,
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      name: `${profileData.firstName} ${profileData.lastName}`.trim(),
+      email: profileData.email,
+      password: profileData.password,
+      image: profileData.image
+    };
+
+    onSaveUser(updatedUser);
+
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: "Profile Synchronized",
+        description: "Your industrial identity nodes have been updated across the master ledger."
+      });
+    }, 800);
+  };
 
   const currentUserMatrix = useMemo(() => {
     if (users.length === 0) return null;
@@ -236,31 +285,136 @@ export function ProfileSettings({
                   <QrCode className="h-8 w-8 text-white/20 relative z-10" />
                 </div>
                 <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
-                  <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center">
-                    {adminImage ? <img src={adminImage} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
+                  <div className="relative group">
+                    <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center relative">
+                      {profileData.image ? <img src={profileData.image} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                        <Camera className="h-8 w-8 text-white" />
+                      </div>
+                      <input 
+                        type="file" 
+                        className="absolute inset-0 opacity-0 cursor-pointer" 
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-slate-900">
+                      <Camera className="h-4 w-4" />
+                    </div>
                   </div>
+                  
                   <div className="space-y-1 relative z-10">
-                    <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminFirstName} {adminLastName}</h3>
-                    <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{adminRole}</p>
-                    <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{adminUsername}</Badge>
+                    <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{profileData.firstName} {profileData.lastName}</h3>
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{currentUserData?.role || 'Plant Controller'}</p>
+                    <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{profileData.username}</Badge>
                   </div>
                 </div>
               </Card>
             </div>
-            <div className="lg:col-span-8">
+            
+            <div className="lg:col-span-8 space-y-8">
               <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[var(--radius)]">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">Identity Matrix</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-2">
-                     <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Employee ID</Label>
-                     <Input value={adminId} readOnly className="bg-slate-50 border-none rounded-xl font-bold" />
-                   </div>
-                   <div className="space-y-2">
-                     <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Email Address</Label>
-                     <Input value={adminEmail} readOnly className="bg-slate-50 border-none rounded-xl font-bold" />
-                   </div>
+                <div className="flex items-center gap-3 mb-10 border-l-4 border-primary pl-6">
+                  <UserCircle className="h-6 w-6 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Matrix</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Foundational Personnel Node</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">Employee ID (Locked)</Label>
+                    <div className="relative">
+                      <Input value={profileData.id} readOnly className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-400 pl-10" />
+                      <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">User Name (Network Alias)</Label>
+                    <div className="relative group">
+                      <Input 
+                        value={profileData.username} 
+                        onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))}
+                        className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10 focus-visible:ring-primary/20" 
+                      />
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">First Name</Label>
+                    <Input 
+                      value={profileData.firstName} 
+                      onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="h-12 bg-slate-50 border-none rounded-xl font-bold text-slate-700 focus-visible:ring-primary/20" 
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">Last Name</Label>
+                    <Input 
+                      value={profileData.lastName} 
+                      onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="h-12 bg-slate-50 border-none rounded-xl font-bold text-slate-700 focus-visible:ring-primary/20" 
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">Network Identifier (Login ID)</Label>
+                    <div className="relative group">
+                      <Input 
+                        value={profileData.email} 
+                        onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                        className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10 focus-visible:ring-primary/20" 
+                      />
+                      <Contact className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">Security Token (Password)</Label>
+                    <div className="relative group">
+                      <Input 
+                        type={showPassword ? "text" : "password"}
+                        value={profileData.password} 
+                        onChange={(e) => setProfileData(prev => ({ ...prev, password: e.target.value }))}
+                        className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10 pr-12 focus-visible:ring-primary/20" 
+                      />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-10 mt-10 border-t border-slate-100 flex justify-end">
+                  <Button 
+                    disabled={isSaving}
+                    onClick={handleSaveProfile}
+                    className="h-14 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[11px] shadow-2xl shadow-primary/20 flex gap-4 group"
+                  >
+                    {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Synchronize Profile Protocol
+                  </Button>
                 </div>
               </Card>
+
+              <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-start gap-4">
+                <ShieldCheck className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Security Protocol v2.4</p>
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Identity nodes modified here will propagate across the **Agile Kanban**, **Master Plan**, and **Work Log** modules in real-time. Password changes strictly mandate a browser session refresh.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>

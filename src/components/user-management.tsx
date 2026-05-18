@@ -29,7 +29,8 @@ import {
   Fingerprint,
   Share2,
   Mail,
-  Lock
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -104,12 +105,16 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   const nextStep = () => setStep(s => Math.min(s + 1, 3));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
+  const updateField = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image: reader.result as string }));
+        updateField('image', reader.result as string);
         toast({ title: "Visual Matrix Cached", description: "Identity photo initialized for onboarding." });
       };
       reader.readAsDataURL(file);
@@ -117,7 +122,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
   };
 
   const handleRegisterUser = () => {
-    if (!formData.firstName || !formData.lastName || !formData.username || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.username || !formData.password) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -127,6 +132,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     }
 
     const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+    const finalEmail = formData.username; // Explicit sync for registration
 
     if (editingUser) {
       const updatedUser: SystemUser = {
@@ -135,7 +141,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         firstName: formData.firstName,
         lastName: formData.lastName,
         name: fullName,
-        email: formData.email,
+        email: finalEmail,
         password: formData.password,
         phone: formData.phone || '',
         role: formData.jobTitle || editingUser.role,
@@ -157,7 +163,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         firstName: formData.firstName,
         lastName: formData.lastName,
         name: fullName,
-        email: formData.email,
+        email: finalEmail,
         password: formData.password,
         phone: formData.phone || '',
         role: formData.jobTitle || 'Standard Operator',
@@ -171,17 +177,17 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
 
       onSaveUser(newUser);
 
-      // Call Genkit AI flow to simulate credential dispatch via email
+      // Call Genkit AI flow to simulate credential dispatch
       sendCredentials({
         name: fullName,
-        email: formData.email,
+        email: finalEmail,
         role: newUser.role,
         temporaryPassword: formData.password
       }).then(res => {
         if (res.success) {
           toast({
             title: "Credentials Dispatched",
-            description: `Login protocols transmitted to ${formData.email}.`,
+            description: `Login protocols transmitted to ${finalEmail}.`,
           });
         }
       });
@@ -200,7 +206,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     setEditingUser(user);
     setFormData({
       id: user.id,
-      username: user.username || '',
+      username: user.username || user.email || '',
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email,
@@ -393,21 +399,22 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
         </Card>
       </div>
 
-      <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
+      <Dialog open={isWizardOpen} onOpenChange={(open) => {
+        setIsWizardOpen(open);
+        if (!open) resetWizard();
+      }}>
         <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem]">
-          <DialogTitle className="sr-only">
-            {editingUser ? 'Edit User Identity Protocol' : 'New User Onboarding Protocol'}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Sequence for registering or modifying administrative and operator identities within the Command Matrix.
-          </DialogDescription>
+          <DialogHeader className="sr-only">
+            <DialogTitle>{editingUser ? 'Edit User Identity Protocol' : 'New User Onboarding Protocol'}</DialogTitle>
+            <DialogDescription>Identity registration matrix.</DialogDescription>
+          </DialogHeader>
           
           <div className="flex h-[600px]">
-            <div className="w-72 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
+            <div className="w-72 bg-slate-900 p-10 border-r border-slate-800 flex flex-col justify-between">
               <div className="space-y-10">
-                <div className="p-4 bg-[#001F3D] rounded-2xl w-fit shadow-xl shadow-primary/20 relative">
+                <div className="p-4 bg-primary rounded-2xl w-fit shadow-xl shadow-primary/20 relative">
                   {editingUser ? <Shield className="h-7 w-7 text-white" /> : <UserPlus className="h-7 w-7 text-white" />}
-                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
                 </div>
                 <div className="space-y-8">
                   {[
@@ -419,28 +426,28 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       {item.s < 3 && (
                         <div className={cn(
                           "absolute left-3 top-8 w-[1px] h-10 transition-colors",
-                          step > item.s ? "bg-emerald-500" : "bg-slate-200"
+                          step > item.s ? "bg-emerald-500" : "bg-slate-700"
                         )} />
                       )}
                       <div className={cn(
                         "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-500 z-10",
-                        step === item.s ? "bg-[#001F3D] border-[#001F3D] text-white scale-125 shadow-lg shadow-primary/30" : 
-                        step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-400"
+                        step === item.s ? "bg-white border-white text-slate-900 scale-125 shadow-lg shadow-white/20" : 
+                        step > item.s ? "bg-emerald-500 border-emerald-500 text-white" : "bg-slate-800 border-slate-700 text-slate-500"
                       )}>
                         {step > item.s ? <Check className="h-3 w-3" /> : item.s}
                       </div>
                       <div className="flex flex-col">
                         <span className={cn(
                           "text-[11px] font-bold transition-colors duration-500 leading-none",
-                          step === item.s ? "text-[#001F3D]" : "text-slate-400"
+                          step === item.s ? "text-white" : "text-slate-500"
                         )}>{item.label}</span>
-                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-[0.15em] mt-1.5">{item.desc}</span>
+                        <span className="text-[9px] text-slate-600 uppercase font-bold tracking-[0.15em] mt-1.5">{item.desc}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">
+              <div className="text-[9px] font-bold text-slate-700 uppercase tracking-[0.3em]">
                 ERP_AUTO_ONBOARD_V2.4
               </div>
             </div>
@@ -489,7 +496,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                               placeholder="e.g. ID_PR_001" 
                               className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
                               value={formData.id}
-                              onChange={(e) => setFormData({...formData, id: e.target.value})}
+                              onChange={(e) => updateField('id', e.target.value)}
                             />
                           </div>
                           <div className="space-y-2">
@@ -516,7 +523,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                               placeholder="John" 
                               className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
                               value={formData.firstName}
-                              onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                              onChange={(e) => updateField('firstName', e.target.value)}
                             />
                           </div>
                           <div className="space-y-2">
@@ -525,7 +532,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                               placeholder="Operator" 
                               className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
                               value={formData.lastName}
-                              onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                              onChange={(e) => updateField('lastName', e.target.value)}
                             />
                           </div>
                         </div>
@@ -538,7 +545,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                                 placeholder="+91 00000 00000" 
                                 className="h-12 bg-slate-50 border-none text-xs rounded-xl pl-10 focus-visible:ring-primary/20"
                                 value={formData.phone}
-                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                onChange={(e) => updateField('phone', e.target.value)}
                               />
                               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                             </div>
@@ -562,7 +569,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Role</Label>
-                          <Select value={formData.jobTitle} onValueChange={(val) => setFormData({...formData, jobTitle: val})}>
+                          <Select value={formData.jobTitle} onValueChange={(val) => updateField('jobTitle', val)}>
                             <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus:ring-primary/20">
                               <SelectValue placeholder="Select role..." />
                             </SelectTrigger>
@@ -575,7 +582,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
-                          <Select value={formData.deptCode} onValueChange={(val) => setFormData({...formData, deptCode: val})}>
+                          <Select value={formData.deptCode} onValueChange={(val) => updateField('deptCode', val)}>
                             <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus:ring-primary/20">
                               <SelectValue placeholder="Select dept..." />
                             </SelectTrigger>
@@ -591,7 +598,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Reporting manager</Label>
                         <Select 
                           value={formData.reportingManager} 
-                          onValueChange={(val) => setFormData({...formData, reportingManager: val})}
+                          onValueChange={(val) => updateField('reportingManager', val)}
                         >
                           <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl pl-10 relative focus:ring-primary/20">
                             <Network className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
@@ -626,7 +633,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             placeholder="e.g. Pass_1234" 
                             className="h-12 bg-slate-50 border-none text-xs rounded-xl pr-14 focus-visible:ring-primary/20"
                             value={formData.password}
-                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            onChange={(e) => updateField('password', e.target.value)}
                           />
                           <button
                             type="button"

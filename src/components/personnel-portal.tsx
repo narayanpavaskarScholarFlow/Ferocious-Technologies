@@ -46,6 +46,7 @@ import { useFirestore, setDocumentNonBlocking, useMemoFirebase, useCollection } 
 import { doc, collection } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PersonnelPortalProps {
   currentUser: SystemUser | null;
@@ -162,24 +163,26 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
       </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
-          <TabsTrigger value="dashboard" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Overview</TabsTrigger>
-          {isReportingManager && (
-            <TabsTrigger value="team" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
-              <Users className="h-3.5 w-3.5 mr-2" /> My Team Matrix
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all relative">
-            My Training Matrix
-            {myAssignments.filter(a => a.status !== 'Completed').length > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] border-2 border-white animate-pulse">
-                {myAssignments.filter(a => a.status !== 'Completed').length}
-              </span>
+        <div className="px-4">
+          <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
+            <TabsTrigger value="dashboard" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Overview</TabsTrigger>
+            {isReportingManager && (
+              <TabsTrigger value="team" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
+                <Users className="h-3.5 w-3.5 mr-2" /> My Team Matrix
+              </TabsTrigger>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="leaves" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Leaves & Holidays</TabsTrigger>
-          <TabsTrigger value="slips" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Salary Slips</TabsTrigger>
-        </TabsList>
+            <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all relative">
+              My Training Matrix
+              {myAssignments.filter(a => a.status !== 'Completed').length > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] border-2 border-white animate-pulse">
+                  {myAssignments.filter(a => a.status !== 'Completed').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="leaves" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Leaves & Holidays</TabsTrigger>
+            <TabsTrigger value="slips" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Salary Slips</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="dashboard" className="m-0 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -332,7 +335,7 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
         </TabsContent>
 
         <TabsContent value="leaves" className="m-0 space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
             <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
               <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest mb-8 border-l-4 border-primary pl-4">Apply for Absence Protocol</h3>
               <div className="space-y-6">
@@ -409,43 +412,45 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
         </TabsContent>
 
         <TabsContent value="slips" className="m-0 space-y-8">
-           <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
-              <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                 <div className="flex items-center gap-3">
-                    <Banknote className="h-5 w-5 text-primary" />
-                    <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest">Salary Settlement Matrix</h3>
-                 </div>
-              </div>
-              <Table>
-                 <TableHeader className="bg-white">
-                    <TableRow className="hover:bg-transparent">
-                       <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Period Node</TableHead>
-                       <TableHead className="font-bold text-[10px] uppercase text-slate-400">Release Date</TableHead>
-                       <TableHead className="font-bold text-[10px] uppercase text-center">Net Settlement</TableHead>
-                       <TableHead className="text-right px-10">Archive</TableHead>
-                    </TableRow>
-                 </TableHeader>
-                 <TableBody>
-                    {mySlips.map((slip) => (
-                       <TableRow key={slip.id} className="h-20 border-slate-50 hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="px-10">
-                             <span className="text-sm font-bold text-[#001F3D] uppercase">{slip.month} {slip.year}</span>
-                          </TableCell>
-                          <TableCell className="text-[10px] font-bold text-slate-400 font-code">{slip.generatedDate}</TableCell>
-                          <TableCell className="text-center font-display font-bold text-primary">₹ {slip.netPay.toLocaleString()}</TableCell>
-                          <TableCell className="text-right px-10">
-                             <Button variant="outline" size="sm" className="h-9 rounded-xl border-slate-200 font-bold text-[9px] uppercase tracking-widest gap-2 hover:bg-[#001F3D] hover:text-white" onClick={() => toast({title: "Archive Dispatch", description: "Official slip downloaded."})}>
-                                <Download className="h-3.5 w-3.5" /> Download PDF
-                             </Button>
-                          </TableCell>
-                       </TableRow>
-                    ))}
-                    {mySlips.length === 0 && (
-                      <TableRow><TableCell colSpan={4} className="h-40 text-center opacity-20 text-xs font-bold uppercase tracking-widest">No Settlement Logs Discovered</TableCell></TableRow>
-                    )}
-                 </TableBody>
-              </Table>
-           </Card>
+           <div className="px-4">
+             <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
+                <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                      <Banknote className="h-5 w-5 text-primary" />
+                      <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest">Salary Settlement Matrix</h3>
+                   </div>
+                </div>
+                <Table>
+                   <TableHeader className="bg-white">
+                      <TableRow className="hover:bg-transparent">
+                         <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Period Node</TableHead>
+                         <TableHead className="font-bold text-[10px] uppercase text-slate-400">Release Date</TableHead>
+                         <TableHead className="font-bold text-[10px] uppercase text-center">Net Settlement</TableHead>
+                         <TableHead className="text-right px-10">Archive</TableHead>
+                      </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                      {mySlips.map((slip) => (
+                         <TableRow key={slip.id} className="h-20 border-slate-50 hover:bg-slate-50/30 transition-colors">
+                            <TableCell className="px-10">
+                               <span className="text-sm font-bold text-[#001F3D] uppercase">{slip.month} {slip.year}</span>
+                            </TableCell>
+                            <TableCell className="text-[10px] font-bold text-slate-400 font-code">{slip.generatedDate}</TableCell>
+                            <TableCell className="text-center font-display font-bold text-primary">₹ {slip.netPay.toLocaleString()}</TableCell>
+                            <TableCell className="text-right px-10">
+                               <Button variant="outline" size="sm" className="h-9 rounded-xl border-slate-200 font-bold text-[9px] uppercase tracking-widest gap-2 hover:bg-[#001F3D] hover:text-white" onClick={() => toast({title: "Archive Dispatch", description: "Official slip downloaded."})}>
+                                  <Download className="h-3.5 w-3.5" /> Download PDF
+                               </Button>
+                            </TableCell>
+                         </TableRow>
+                      ))}
+                      {mySlips.length === 0 && (
+                        <TableRow><TableCell colSpan={4} className="h-40 text-center opacity-20 text-xs font-bold uppercase tracking-widest">No Settlement Logs Discovered</TableCell></TableRow>
+                      )}
+                   </TableBody>
+                </Table>
+             </Card>
+           </div>
         </TabsContent>
       </Tabs>
 
@@ -528,7 +533,7 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Minimum 80% score required for protocol certification.</p>
                           </div>
                           {quizScore !== null && (
-                            <Badge className={cn("text-xl font-display font-bold py-2 px-6 rounded-2xl", quizScore >= 80 ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
+                            <Badge className={cn("text-xl font-display font-bold py-2 px-6 rounded-2xl", quizScore >= 80 ? "bg-emerald-50 text-white" : "bg-red-50 text-white")}>
                                {quizScore}%
                             </Badge>
                           )}

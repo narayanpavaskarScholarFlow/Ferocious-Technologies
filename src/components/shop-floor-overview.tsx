@@ -32,6 +32,7 @@ interface ShopFloorOverviewProps {
   onNavigateToMachine?: () => void;
   onNavigateToInventory?: () => void;
   onNavigateToBilling?: () => void;
+  title?: string;
 }
 
 export function ShopFloorOverview({ 
@@ -39,7 +40,8 @@ export function ShopFloorOverview({
   onNavigateToOrders, 
   onNavigateToMachine, 
   onNavigateToInventory, 
-  onNavigateToBilling 
+  onNavigateToBilling,
+  title = 'Command Matrix'
 }: ShopFloorOverviewProps) {
   
   const kpiData = [
@@ -67,7 +69,7 @@ export function ShopFloorOverview({
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
         <div className="flex flex-col">
           <h2 className="text-3xl font-headline font-bold tracking-tight text-[#001F3D]">
-            Command <span className="text-slate-400">Matrix</span>
+            {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400">{title.split(' ').slice(-1)}</span>
           </h2>
           <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest mt-1">MASTER_CTRL_ALPHA_READY</p>
         </div>

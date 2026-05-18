@@ -46,9 +46,10 @@ interface ProductionPlannerProps {
   users: SystemUser[];
   onSaveBatch: (batch: ProductionBatch) => void;
   onDeleteBatch: (id: string) => void;
+  title?: string;
 }
 
-export function ProductionPlanner({ batches, orders, machines, users, onSaveBatch, onDeleteBatch }: ProductionPlannerProps) {
+export function ProductionPlanner({ batches, orders, machines, users, onSaveBatch, onDeleteBatch, title = 'Mass Production' }: ProductionPlannerProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -164,7 +165,7 @@ export function ProductionPlanner({ batches, orders, machines, users, onSaveBatc
             High-Volume Production Matrix
           </div>
           <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
-            Planning & <span className="text-slate-400 font-medium">Tracking</span>
+            {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400 font-medium">{title.split(' ').slice(-1)}</span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium">Batch lifecycle management and high-fidelity yield telemetry.</p>
         </div>

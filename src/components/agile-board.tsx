@@ -30,11 +30,12 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AgileBoardProps {
   orders: Order[];
+  title?: string;
 }
 
 type ColumnType = 'Backlog' | 'Operational' | 'Blocked' | 'Certified';
 
-export function AgileBoard({ orders }: AgileBoardProps) {
+export function AgileBoard({ orders, title = 'Flow Matrix' }: AgileBoardProps) {
   const db = useFirestore();
   const { toast } = useToast();
 
@@ -86,7 +87,7 @@ export function AgileBoard({ orders }: AgileBoardProps) {
             Agile Project Flow
           </div>
           <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
-            Flow <span className="text-slate-400 font-medium">Matrix</span>
+            {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400 font-medium">{title.split(' ').slice(-1)}</span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium">Real-time Kanban visualization of production threads.</p>
         </div>

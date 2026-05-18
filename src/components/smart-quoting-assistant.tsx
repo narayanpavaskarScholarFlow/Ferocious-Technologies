@@ -32,6 +32,7 @@ import { Machine } from '@/lib/types';
 
 interface SmartQuotingAssistantProps {
   machines: Machine[];
+  title?: string;
 }
 
 const INITIAL_OPERATIONS = [
@@ -48,7 +49,7 @@ const STANDARD_COLOR_CODES = [
   { color: '#f97316', name: 'Orange', op: 'Turning' },
 ];
 
-export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) {
+export function SmartQuotingAssistant({ machines, title = 'AI Smart Quoting' }: SmartQuotingAssistantProps) {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [fileUploaded, setFileUploaded] = useState(false);
@@ -140,7 +141,7 @@ export function SmartQuotingAssistant({ machines }: SmartQuotingAssistantProps) 
             AI Intelligence Gateway
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D]">
-            Smart Quoting <span className="text-slate-400 font-medium">Assistant</span>
+            {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400 font-medium">{title.split(' ').slice(-1)}</span>
           </h2>
           <p className="text-muted-foreground font-medium">Predictive cost estimation and material analysis from STEP/IGS metadata.</p>
         </div>

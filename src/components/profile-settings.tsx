@@ -68,7 +68,10 @@ import {
   Box,
   AlignLeft,
   AlignCenter,
-  CaseSensitive
+  CaseSensitive,
+  Settings2,
+  ListTodo,
+  Contact
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -87,43 +90,26 @@ const THEME_COLORS = [
   { name: 'Stealth Grey', value: '215 25% 27%', color: 'bg-[#334155]' },
 ];
 
-const ACCESS_NODES = [
-  { id: 'overview', label: 'Command Matrix (Dashboard)', category: 'Strategic Hub', icon: LayoutGrid },
-  { id: 'agile', label: 'Agile Kanban Flow (Task Matrix)', category: 'Strategic Hub', icon: Kanban },
-  { id: 'smart-quote', label: 'AI Smart Quoting (Gemini)', category: 'Strategic Hub', icon: BrainCircuit },
-  { id: 'sqcdp', label: 'SQCDP Performance Metrics', category: 'Strategic Hub', icon: LineChart },
-  { id: 'orders', label: 'Production Master Ledger', category: 'Production Control', icon: ShoppingCart },
-  { id: 'production-planner', label: 'High-Volume Production Matrix: Planning & Tracking', category: 'Production Control', icon: Factory },
-  { id: 'order-create', label: 'Production: New Order Protocol', category: 'Production Control', icon: Plus },
-  { id: 'gantt', label: 'Visual Timeline (Gantt)', category: 'Production Control', icon: LayoutGrid },
+const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }[] = [
+  { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
+  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
+  { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: BrainCircuit },
+  { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: LineChart },
+  { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: ShoppingCart },
+  { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Factory },
+  { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: LayoutGrid },
   { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
-  { id: 'weekly-plan', label: 'Master Production Schedule', category: 'Production Control', icon: Calendar },
-  { id: 'work-log', label: 'Daily Operator Work Logs', category: 'Production Control', icon: ClipboardList },
-  { id: 'quality', label: 'Quality Inspection Pipeline', category: 'Quality & Compliance', icon: ShieldCheck },
-  { id: 'training', label: 'Training & Skill Matrix', category: 'Quality & Compliance', icon: GraduationCap },
-  { id: 'quality-review', label: 'Final Compliance Review (Tab Access)', category: 'Quality & Compliance', icon: Unlock },
-  { id: 'quality-release', label: 'Final Quality Release (Authority)', category: 'Quality & Compliance', icon: FileCheck },
-  { id: 'quality-report-delete', label: 'Quality: Delete Compliance Report Protocol', category: 'Quality & Compliance', icon: Trash2 },
-  { id: 'customer-orders', label: 'Customer Identity Matrix', category: 'Commercial Operations', icon: Package },
-  { id: 'inventory-add', label: 'Inventory: Add Item to Ledger', category: 'Commercial Operations', icon: Plus },
-  { id: 'billing', label: 'Financial Hub (Master Ledger)', category: 'Commercial Operations', icon: CreditCard },
-  { id: 'billing-quotation', label: 'Finance: Quotation Protocol', category: 'Commercial Operations', icon: FileText },
-  { id: 'billing-invoice', label: 'Finance: Invoice Protocol', category: 'Commercial Operations', icon: FileText },
-  { id: 'billing-proforma', label: 'Finance: Proforma Protocol', category: 'Commercial Operations', icon: FileText },
-  { id: 'billing-inward', label: 'Logistics: Inward Protocol', category: 'Commercial Operations', icon: ArrowDownLeft },
-  { id: 'billing-outward', label: 'Logistics: Outward Protocol', category: 'Commercial Operations', icon: ArrowUpRight },
-  { id: 'billing-create', label: 'Finance: Create New Record', category: 'Commercial Operations', icon: Plus },
-  { id: 'billing-delete', label: 'Finance: Record Deletion Protocol', category: 'Commercial Operations', icon: Trash2 },
-  { id: 'vendor', label: 'Supply Chain & Vendor Directory', category: 'Commercial Operations', icon: Truck },
-  { id: 'vendor-onboard', label: 'Supply: Onboard New Partner', category: 'Commercial Operations', icon: UserPlus },
-  { id: 'machine-utilization', label: 'Industrial Asset Telemetry', category: 'Resources & Assets', icon: Cpu },
-  { id: 'maintenance', label: 'Asset Maintenance Ledger', category: 'Resources & Assets', icon: Activity },
-  { id: 'manpower', label: 'Personnel & Skill Matrix', category: 'Resources & Assets', icon: Users },
-  { id: 'hr-planning', label: 'Leave Allocation Matrix', category: 'Resources & Assets', icon: Calendar },
-  { id: 'holiday-matrix', label: 'HR: Annual Holiday Matrix', category: 'Resources & Assets', icon: CalendarDays },
-  { id: 'users', label: 'System Identity Management', category: 'System Governance', icon: UserPlus },
-  { id: 'matrix', label: 'Access Control Matrix', category: 'System Governance', icon: Unlock },
-  { id: 'settings', label: 'Global System Configuration', category: 'System Governance', icon: Settings },
+  { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Control', icon: Calendar },
+  { id: 'work-log', label: 'Work Log Hub', category: 'Production Control', icon: ClipboardList },
+  { id: 'quality', label: 'Quality Hub', category: 'Quality & Compliance', icon: ShieldCheck },
+  { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: GraduationCap },
+  { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
+  { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Boxes },
+  { id: 'billing', label: 'Financial Hub', category: 'Commercial Operations', icon: CreditCard },
+  { id: 'vendor', label: 'Supply Chain', category: 'Commercial Operations', icon: Truck },
+  { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Cpu },
+  { id: 'hr', label: 'HR Command', category: 'Resources & Assets', icon: Users },
+  { id: 'settings', label: 'Control Center', category: 'System Governance', icon: Settings },
 ];
 
 interface ProfileSettingsProps {
@@ -156,19 +142,10 @@ export function ProfileSettings({
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
+  const [selectedModuleForConfig, setSelectedModuleForConfig] = useState<ViewType | ''>('');
 
   const isHighLevelAdmin = currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller';
-
-  const groupedPermissions = useMemo(() => {
-    const groups: Record<string, typeof ACCESS_NODES> = {};
-    ACCESS_NODES.forEach(node => {
-      if (!groups[node.category]) groups[node.category] = [];
-      groups[node.category].push(node);
-    });
-    return groups;
-  }, []);
 
   useEffect(() => {
     if (users.length > 0 && !selectedUserForMatrix) {
@@ -225,64 +202,6 @@ export function ProfileSettings({
     return found || users[0];
   }, [users, selectedUserForMatrix]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAdminImage(reader.result as string);
-        toast({ title: "Visual Identity Matrix Updated", description: "Identity image cached for synchronization." });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSaveAdminProfile = () => {
-    setIsSaving(true);
-    const fullName = `${adminFirstName} ${adminLastName}`.trim();
-    const profileToSave: SystemUser = activeAdmin ? {
-      ...activeAdmin,
-      username: adminUsername,
-      firstName: adminFirstName,
-      lastName: adminLastName,
-      name: fullName,
-      role: adminRole,
-      email: adminEmail,
-      password: adminPassword,
-      phone: adminPhone || '',
-      dept: adminDept,
-      image: adminImage || '',
-      reportingManager: adminReportingManager || ''
-    } : {
-      id: adminId || `ADMIN-${Date.now()}`,
-      username: adminUsername || 'admin',
-      firstName: adminFirstName,
-      lastName: adminLastName,
-      name: fullName,
-      email: adminEmail || `${adminUsername.toLowerCase()}@bharataxis.tech`,
-      password: adminPassword || 'admin123',
-      phone: adminPhone || '',
-      role: adminRole,
-      dept: adminDept || 'Admin',
-      image: adminImage || '',
-      reportingManager: adminReportingManager || '',
-      permissions: { overview: 'full' },
-      lastLogin: new Date().toISOString(),
-      lastPasswordChange: new Date().toISOString(),
-      status: 'online'
-    };
-
-    onSaveUser(profileToSave);
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsEditing(false);
-      toast({
-        title: "Identity Synchronized",
-        description: `Master metadata for ${fullName} has been committed to the ledger.`
-      });
-    }, 800);
-  };
-
   const handleUpdatePermission = (userId: string, pageId: string, level: PermissionLevel) => {
     const userToUpdate = users.find(u => u.id === userId);
     if (!userToUpdate) return;
@@ -305,6 +224,10 @@ export function ProfileSettings({
       }
     });
   };
+
+  const selectedModuleData = useMemo(() => {
+    return ACCESS_NODES.find(n => n.id === selectedModuleForConfig);
+  }, [selectedModuleForConfig]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -441,7 +364,7 @@ export function ProfileSettings({
             <Tabs defaultValue="architecture">
               <TabsList className="bg-slate-100 p-1 rounded-full mb-10 h-11 inline-flex border border-slate-200 w-fit">
                 <TabsTrigger value="architecture" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Architecture</TabsTrigger>
-                <TabsTrigger value="titles" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Module Titles</TabsTrigger>
+                <TabsTrigger value="modules" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Module Customizer</TabsTrigger>
               </TabsList>
 
               <TabsContent value="architecture" className="m-0 space-y-16">
@@ -507,31 +430,76 @@ export function ProfileSettings({
                 </div>
               </TabsContent>
 
-              <TabsContent value="titles" className="m-0">
-                <ScrollArea className="h-[500px] pr-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10">
-                    {ACCESS_NODES.filter(n => !n.id.includes('-')).map((node) => (
-                      <div key={node.id} className="p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100 flex flex-col gap-4 group hover:border-primary/20 transition-all">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                             <node.icon className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
-                             <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">{node.id}</span>
+              <TabsContent value="modules" className="m-0 space-y-10">
+                <div className="p-8 bg-slate-50/50 rounded-3xl border border-slate-100 shadow-inner max-w-2xl">
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                        <Settings2 className="h-3.5 w-3.5 text-primary" /> Target Module Selection
+                      </Label>
+                      <Select value={selectedModuleForConfig} onValueChange={(val: any) => setSelectedModuleForConfig(val)}>
+                        <SelectTrigger className="h-14 bg-white border-none rounded-2xl text-xs font-bold uppercase shadow-sm">
+                          <SelectValue placeholder="Identify Module to Customize..." />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                          {ACCESS_NODES.map(node => (
+                            <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase">
+                              <div className="flex items-center gap-3">
+                                <node.icon className="h-3.5 w-3.5 text-slate-400" />
+                                {node.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[9px] text-slate-400 font-medium italic mt-2 ml-1">Select a tab from the list to initialize specific page configuration.</p>
+                    </div>
+
+                    {selectedModuleData && (
+                      <div className="pt-10 space-y-8 animate-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg">
+                            <selectedModuleData.icon className="h-6 w-6" />
                           </div>
-                          <Badge variant="outline" className="text-[8px] border-slate-200 text-slate-300 uppercase">{node.category}</Badge>
+                          <div>
+                            <h4 className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">Configuration Matrix: {selectedModuleData.label}</h4>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{selectedModuleData.category}</p>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500">Custom Section Title</Label>
-                          <Input 
-                            placeholder={node.label} 
-                            className="h-12 bg-white border-none rounded-xl text-xs font-bold shadow-sm"
-                            value={uiSettings.customTitles?.[node.id] || ''}
-                            onChange={(e) => updateTitle(node.id, e.target.value)}
-                          />
+
+                        <div className="space-y-4 bg-white p-8 rounded-[1.5rem] border border-slate-200 shadow-xl">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Custom Section Title</Label>
+                            <div className="relative">
+                              <Input 
+                                placeholder={selectedModuleData.label} 
+                                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner pl-10"
+                                value={uiSettings.customTitles?.[selectedModuleForConfig] || ''}
+                                onChange={(e) => updateTitle(selectedModuleForConfig, e.target.value)}
+                              />
+                              <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                            </div>
+                            <p className="text-[8px] text-slate-400 uppercase tracking-widest mt-2 px-1">This title will reflect in headers and navigation labels.</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                          <Zap className="h-4 w-4 text-primary" />
+                          <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Real-time synchronization active for this node.</p>
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
-                </ScrollArea>
+                </div>
+                {!selectedModuleForConfig && (
+                  <div className="py-20 flex flex-col items-center justify-center opacity-30 text-center">
+                    <div className="p-10 bg-slate-100 rounded-full mb-8">
+                      <ListTodo className="h-16 w-16 text-slate-300" />
+                    </div>
+                    <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Registry Idle</h4>
+                    <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium leading-relaxed">Identify a functional module from the selection matrix above to begin granular architectural customization.</p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </Card>

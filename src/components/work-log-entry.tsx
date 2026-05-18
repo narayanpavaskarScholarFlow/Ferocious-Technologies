@@ -37,7 +37,8 @@ import {
   Search,
   X,
   ShieldAlert,
-  Send
+  Send,
+  UserCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +47,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
+import { LogApprovalMatrix } from '@/components/log-approval-matrix';
 
 interface WorkLogEntryProps {
   logs: WorkLogEntryType[];
@@ -84,8 +86,29 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
   const leaves = leavesData || [];
 
   const currentUserData = useMemo(() => {
-    return users.find(u => u.name === currentUser);
+    return users.find(u => u.name === currentUser || u.email === currentUser);
   }, [users, currentUser]);
+
+  const isHRAdmin = useMemo(() => {
+    return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
+  }, [currentUser, currentUserData]);
+
+  const isReportingManager = useMemo(() => {
+    if (!currentUser) return false;
+    return users.some(u => u.reportingManager === currentUser);
+  }, [users, currentUser]);
+
+  const isAuthorizedToApprove = isHRAdmin || isReportingManager;
+
+  const pendingApprovalsCount = useMemo(() => {
+    return logs.filter(l => {
+      const isSubmitted = l.status === 'Submitted';
+      if (!isSubmitted) return false;
+      if (isHRAdmin) return true;
+      const operatorUser = users.find(u => u.id === l.operatorId || u.name === l.operator);
+      return operatorUser?.reportingManager === currentUser;
+    }).length;
+  }, [logs, isHRAdmin, users, currentUser]);
 
   useEffect(() => {
     if (currentUser && !operator) {
@@ -139,11 +162,6 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
   }, [logs, filterDate, filterOrderId, filterResourceId]);
 
   const handleDateChangeAttempt = (newDate: string) => {
-    // If current user has unsaved/unsubmitted logs for the current selected date, 
-    // we could prevent switching if we wanted strict linear entry. 
-    // However, the user specifically mentioned "with out entering the present day or last date entry it will not move to next date entry".
-    // We check if the previous logs are submitted.
-    
     setSelectedDate(newDate);
     setStep(1);
   };
@@ -199,11 +217,8 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
       return;
     }
 
-    // Mark all logs for this date as Submitted
     dailyStats.dayLogs.forEach(log => {
-      // Logic for OT calculation
       const isOT = dailyStats.totalHours > 9;
-      // We could mark specific logs as OT or just the whole set as containing OT
       updateDocumentNonBlocking(doc(db, 'work_logs', log.id), { 
         status: 'Submitted',
         isOT: isOT,
@@ -289,6 +304,16 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
             <TabsTrigger value="ledger" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
               <History className="h-3.5 w-3.5 mr-2" /> Historical Matrix
             </TabsTrigger>
+            {isAuthorizedToApprove && (
+              <TabsTrigger value="approvals" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
+                <UserCheck className="h-3.5 w-3.5 mr-2" /> Certifications
+                {pendingApprovalsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white animate-pulse">
+                    {pendingApprovalsCount}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -761,6 +786,14 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
               </Table>
             </div>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="approvals" className="m-0 px-4">
+          <LogApprovalMatrix 
+            logs={logs}
+            users={users}
+            currentUser={currentUser}
+          />
         </TabsContent>
       </Tabs>
     </div>

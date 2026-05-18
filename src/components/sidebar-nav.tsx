@@ -78,15 +78,14 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     ];
 
     return items.filter(item => {
-      // Master Admin bypass: Sees EVERYTHING including Portal and HR Command
+      // Master Admin bypass: Sees EVERYTHING
       if (isMasterAdmin) return true;
 
-      // Role-based filtering for HR Command
-      // Reporting Managers also need to see HR for Log Approvals
-      if (item.id === 'hr') return isHRAdmin || isReportingManager;
-      
       // Portal is always visible for personal use
       if (item.id === 'my-portal') return true;
+
+      // HR hub is strictly for HR admins (Approvals moved to Work Logs)
+      if (item.id === 'hr') return isHRAdmin;
 
       // Check specific permissions for others
       const level = permissions[item.id];

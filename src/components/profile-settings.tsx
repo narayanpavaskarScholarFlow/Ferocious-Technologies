@@ -48,7 +48,8 @@ import {
   Eye,
   EyeOff,
   Save,
-  RefreshCw
+  RefreshCw,
+  Hash
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -577,7 +578,7 @@ export function ProfileSettings({
                         <SelectTrigger className="h-14 bg-white border-none rounded-2xl text-xs font-bold uppercase shadow-sm">
                           <SelectValue placeholder="Identify Module to Customize..." />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                        <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                           {ACCESS_NODES.map(node => (
                             <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase">
                               <div className="flex items-center gap-3">

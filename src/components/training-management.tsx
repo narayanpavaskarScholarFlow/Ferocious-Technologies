@@ -25,7 +25,9 @@ import {
   Trash2,
   Settings2,
   Target,
-  Download
+  Download,
+  Briefcase,
+  FileText
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -39,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Training, TrainingAssignment, SystemUser } from '@/lib/types';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TrainingManagementProps {
   trainings: Training[];
@@ -64,7 +67,6 @@ export function TrainingManagement({
   targetUserId
 }: TrainingManagementProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState(isFullControl ? 'assignments' : 'my-list');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddTrainingOpen, setIsAddTrainingOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -248,8 +250,89 @@ export function TrainingManagement({
           </Table>
         </div>
       </Card>
-      
-      {/* Forms and Dialogs maintained from previous implementation for fullControl */}
+
+      {/* Add Training to Registry Dialog */}
+      <Dialog open={isAddTrainingOpen} onOpenChange={setIsAddTrainingOpen}>
+        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2rem] p-10">
+          <DialogHeader className="mb-6">
+            <div className="p-3 bg-primary/10 rounded-xl w-fit mb-4"><BookOpen className="h-6 w-6 text-primary" /></div>
+            <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase">Curriculum Registry</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">Define a new technical or compliance training module.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Training Title</Label>
+              <Input placeholder="e.g. CNC Safety Protocol" className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold" value={newTraining.title} onChange={(e) => setNewTraining({...newTraining, title: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[9px] uppercase font-bold text-slate-400">Department</Label>
+                <Select value={newTraining.department} onValueChange={(val) => setNewTraining({...newTraining, department: val})}>
+                  <SelectTrigger className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold uppercase"><SelectValue placeholder="Select Dept" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {["Admin", "Market", "Design", "Tool Room", "VMC Milling", "CNC Turning", "Assembly", "Quality"].map(d => (
+                      <SelectItem key={d} value={d} className="text-xs font-bold uppercase">{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] uppercase font-bold text-slate-400">Duration (Hours)</Label>
+                <Input type="number" className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold" value={newTraining.durationHours} onChange={(e) => setNewTraining({...newTraining, durationHours: Number(e.target.value)})} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Functional Description</Label>
+              <Textarea placeholder="Core learning objectives..." className="bg-slate-50 border-none rounded-xl min-h-[100px] text-xs font-medium" value={newTraining.description} onChange={(e) => setNewTraining({...newTraining, description: e.target.value})} />
+            </div>
+            <Button className="w-full h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl uppercase font-bold text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCreateTraining}>
+              <Plus className="h-4 w-4" /> Add to Curriculum
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deploy Training (Assignment) Dialog */}
+      <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
+        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2rem] p-10">
+          <DialogHeader className="mb-6">
+            <div className="p-3 bg-primary/10 rounded-xl w-fit mb-4"><Target className="h-6 w-6 text-primary" /></div>
+            <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase">Deploy Training</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">Assign a curriculum node to a personnel identity.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Identity Selection</Label>
+              <Select value={newAssignment.userId} onValueChange={(val) => setNewAssignment({...newAssignment, userId: val})}>
+                <SelectTrigger className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold uppercase"><SelectValue placeholder="Identify Personnel..." /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name} ({u.role})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Curriculum Module</Label>
+              <Select value={newAssignment.trainingId} onValueChange={(val) => setNewAssignment({...newAssignment, trainingId: val})}>
+                <SelectTrigger className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold uppercase"><SelectValue placeholder="Select Module..." /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {trainings.map(t => (
+                    <SelectItem key={t.id} value={t.id} className="text-xs font-bold uppercase">{t.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[9px] uppercase font-bold text-slate-400">Target Deadline</Label>
+              <DatePicker value={newAssignment.targetDate} onChange={(val) => setNewAssignment({...newAssignment, targetDate: val})} className="h-12 rounded-xl" />
+            </div>
+            <Button className="w-full h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl uppercase font-bold text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleAssignTraining}>
+              <Plus className="h-4 w-4" /> Deploy Task Node
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

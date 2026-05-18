@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -59,7 +58,11 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   tableDensity: 'compact',
   borderRadius: 1,
   primaryColor: '243 75% 59%',
-  sidebarMode: 'slim'
+  sidebarMode: 'slim',
+  cardShadow: 'xl',
+  labelCase: 'uppercase',
+  headerAlignment: 'left',
+  customTitles: {}
 };
 
 function IndustrialERPInternal() {
@@ -338,31 +341,21 @@ function IndustrialERPInternal() {
     setDocumentNonBlocking(doc(db, 'inventory', item.id), item, { merge: true });
   };
 
-  /**
-   * Automated Expense Recalculation Node
-   * Sums all inward billing records + all machine utilization costs from work logs.
-   */
   const recalculateOrderExpenses = useCallback((orderId: string, additionalLog?: WorkLogEntryType, additionalBilling?: BillingRecord) => {
     if (!orderId) return;
 
-    // Filter relevant inward billing records from state
     const inwardRecords = billing.filter(r => r.type === 'inward' && r.orderId === orderId);
-    // Include the record currently being saved if not already in state
     if (additionalBilling && additionalBilling.type === 'inward' && additionalBilling.orderId === orderId && !inwardRecords.find(r => r.id === additionalBilling.id)) {
       inwardRecords.push(additionalBilling);
     }
 
-    // Filter relevant work logs from state
     const relevantLogs = logs.filter(l => l.workOrderId === orderId);
-    // Include the log currently being saved if not already in state
     if (additionalLog && additionalLog.workOrderId === orderId && !relevantLogs.find(l => l.id === additionalLog.id)) {
       relevantLogs.push(additionalLog);
     }
 
-    // Calculate total from billing (material/external costs)
     const billingTotal = inwardRecords.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
-    // Calculate total from logs (internal machine runtime costs)
     const logsTotal = relevantLogs.reduce((acc, log) => {
       const machine = machines.find(m => m.id === log.resourceId);
       if (machine) {
@@ -397,7 +390,6 @@ function IndustrialERPInternal() {
     const log = logs.find(l => l.id === id);
     deleteDocumentNonBlocking(doc(db, 'work_logs', id));
     if (log?.workOrderId) {
-      // Small delay to allow firestore removal to reflect if possible, but recalculate works on latest snapshot via onSnapshot
       setTimeout(() => recalculateOrderExpenses(log.workOrderId!), 100);
     }
   };
@@ -406,8 +398,6 @@ function IndustrialERPInternal() {
     const record = billing.find(r => r.id === id);
     deleteDocumentNonBlocking(doc(db, 'billing', id));
     if (record?.type === 'inward' && record.orderId) {
-      // Small delay to ensure state reflects removal in recalculation if possible, 
-      // or rely on next refresh. For non-blocking, we just re-run.
       setTimeout(() => recalculateOrderExpenses(record.orderId!), 100);
     }
   };
@@ -435,7 +425,6 @@ function IndustrialERPInternal() {
   const handleSaveAssignment = (asg: TrainingAssignment) => {
     setDocumentNonBlocking(doc(db, 'training_assignments', asg.id), asg, { merge: true });
     
-    // Performance Impact Logic
     if (asg.status === 'Completed') {
       const user = usersData.find(u => u.id === asg.userId);
       const training = trainings.find(t => t.id === asg.trainingId);
@@ -458,7 +447,6 @@ function IndustrialERPInternal() {
         uiSettings: settings
       });
     } else if (currentUser === 'Master Admin') {
-       // For Master Admin if no user profile exists, apply locally
        setUISettings(settings);
        document.documentElement.style.setProperty('--base-font-size', `${settings.fontSize}px`);
        document.documentElement.style.setProperty('--radius', `${settings.borderRadius}rem`);
@@ -494,6 +482,10 @@ function IndustrialERPInternal() {
     }, { merge: true });
   };
 
+  const getSectionTitle = (view: ViewType, defaultTitle: string) => {
+    return uiSettings.customTitles?.[view] || defaultTitle;
+  };
+
   if (!mounted) return <div className="min-h-screen bg-slate-50" />;
 
   if (!isLoggedIn) {
@@ -508,7 +500,10 @@ function IndustrialERPInternal() {
   const isSlimSidebar = uiSettings.sidebarMode === 'slim';
 
   return (
-    <div className="flex min-h-screen bg-slate-50/50 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block print:bg-white">
+    <div className={cn(
+      "flex min-h-screen bg-slate-50/50 text-slate-900 font-body overflow-hidden print:h-auto print:overflow-visible print:block print:bg-white",
+      uiSettings.labelCase === 'uppercase' ? "labels-uppercase" : "labels-capitalize"
+    )}>
       <div className={cn(
         "hidden lg:block print:hidden transition-all duration-500",
         isSlimSidebar ? "w-20" : "w-64"
@@ -518,6 +513,7 @@ function IndustrialERPInternal() {
           onViewChange={handleViewChange} 
           permissions={permissions} 
           isSlim={isSlimSidebar}
+          customTitles={uiSettings.customTitles}
         />
       </div>
 
@@ -536,6 +532,7 @@ function IndustrialERPInternal() {
                   onViewChange={handleViewChange} 
                   permissions={permissions} 
                   isSlim={true}
+                  customTitles={uiSettings.customTitles}
                 />
               </SheetContent>
             </Sheet>
@@ -595,7 +592,8 @@ function IndustrialERPInternal() {
 
         <main className={cn(
           "flex-1 overflow-y-auto w-full print:overflow-visible print:p-0 print:max-w-none print:m-0 print:block",
-          currentView === 'gantt' || currentView === 'agile' ? "p-0" : "p-6"
+          currentView === 'gantt' || currentView === 'agile' ? "p-0" : "p-6",
+          uiSettings.headerAlignment === 'center' ? "text-center-headers" : ""
         )}>
           <div className={cn(
             "animate-in fade-in slide-in-from-bottom-2 duration-500 print:animate-none print:block",
@@ -608,10 +606,11 @@ function IndustrialERPInternal() {
                 onNavigateToMachine={() => handleViewChange('machine-utilization')}
                 onNavigateToInventory={() => handleViewChange('inventory')}
                 onNavigateToBilling={() => handleViewChange('billing')}
+                title={getSectionTitle('overview', 'Command Matrix')}
               />
             )}
-            {currentView === 'agile' && <AgileBoard orders={orders} />}
-            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
+            {currentView === 'agile' && <AgileBoard orders={orders} title={getSectionTitle('agile', 'Flow Matrix')} />}
+            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} title={getSectionTitle('smart-quote', 'AI Quoting')} />}
             {currentView === 'production-planner' && (
               <ProductionPlanner 
                 batches={batches}
@@ -620,6 +619,7 @@ function IndustrialERPInternal() {
                 users={usersData}
                 onSaveBatch={handleSaveBatch}
                 onDeleteBatch={handleDeleteBatch}
+                title={getSectionTitle('production-planner', 'Mass Production')}
               />
             )}
             {currentView === 'orders' && (
@@ -630,6 +630,7 @@ function IndustrialERPInternal() {
                 machines={machines}
                 onNavigateToOperations={handleNavigateToOperations} 
                 onNavigateToOrderDetails={handleNavigateToOrderDetails}
+                title={getSectionTitle('orders', 'Master Orders')}
               />
             )}
             {currentView === 'billing' && (
@@ -641,12 +642,14 @@ function IndustrialERPInternal() {
                 users={usersData}
                 onSaveRecord={handleSaveBillingRecord}
                 onDeleteRecord={handleDeleteBillingRecord}
+                title={getSectionTitle('billing', 'Financial Hub')}
               />
             )}
             {currentView === 'inventory' && (
               <InventoryManagement 
                 items={inventory}
                 onSaveItem={handleSaveInventoryItem}
+                title={getSectionTitle('inventory', 'Stock Ledger')}
               />
             )}
             {currentView === 'hr' && (
@@ -660,6 +663,7 @@ function IndustrialERPInternal() {
                 onSaveAssignment={handleSaveAssignment}
                 onDeleteAssignment={handleDeleteAssignment}
                 currentUser={currentUser}
+                title={getSectionTitle('hr', 'HR Command')}
               />
             )}
             {currentView === 'work-log' && (
@@ -671,6 +675,7 @@ function IndustrialERPInternal() {
                 currentUser={currentUser}
                 onAddLog={handleSaveWorkLog} 
                 onDeleteLog={handleDeleteWorkLog}
+                title={getSectionTitle('work-log', 'Work Log Hub')}
               />
             )}
             {currentView === 'sqcdp' && (
@@ -680,6 +685,7 @@ function IndustrialERPInternal() {
                 logs={logs}
                 users={usersData}
                 assignments={assignments}
+                title={getSectionTitle('sqcdp', 'Performance Board')}
               />
             )}
             {currentView === 'machine-utilization' && (
@@ -687,24 +693,28 @@ function IndustrialERPInternal() {
                 machines={machines}
                 orders={orders}
                 onSaveMachine={handleSaveMachine}
+                title={getSectionTitle('machine-utilization', 'Asset Fleet')}
               />
             )}
             {currentView === 'customer-orders' && (
               <CustomerOrders 
                 customers={customers} 
                 onSaveCustomer={handleSaveCustomer} 
+                title={getSectionTitle('customer-orders', 'Customer Identity')}
               />
             )}
             {currentView === 'weekly-plan' && (
               <WeeklyPlan 
                 logs={logs} 
                 onNavigateToGantt={() => handleViewChange('gantt')}
+                title={getSectionTitle('weekly-plan', 'Master Schedule')}
               />
             )}
             {currentView === 'vendor' && (
               <VendorManagement 
                 vendors={vendors}
                 onSaveVendor={handleSaveVendor}
+                title={getSectionTitle('vendor', 'Supply Chain')}
               />
             )}
             {currentView === 'settings' && (
@@ -719,6 +729,7 @@ function IndustrialERPInternal() {
                 uiSettings={uiSettings}
                 onUpdateUISettings={handleUpdateUISettings}
                 currentUserData={currentUserData}
+                title={getSectionTitle('settings', 'Control Center')}
               />
             )}
             {currentView === 'gantt' && (
@@ -727,6 +738,7 @@ function IndustrialERPInternal() {
                 searchTerm={globalSearch}
                 onNavigateToSchedule={() => handleViewChange('weekly-plan')}
                 onNavigateToOperations={handleNavigateToOperations}
+                title={getSectionTitle('gantt', 'Visual Timeline')}
               />
             )}
             {currentView === 'quality' && (
@@ -736,6 +748,7 @@ function IndustrialERPInternal() {
                 vendors={vendors}
                 onUpdateStatus={handleUpdateStatusFromQC} 
                 permissions={permissions}
+                title={getSectionTitle('quality', 'Quality Hub')}
               />
             )}
             {currentView === 'order-details' && (
@@ -786,6 +799,25 @@ function IndustrialERPInternal() {
       </Dialog>
 
       <Toaster />
+
+      <style jsx global>{`
+        :root {
+          --card-shadow: ${uiSettings.cardShadow === 'none' ? 'none' : uiSettings.cardShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' : '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'};
+        }
+        .premium-card, .glass-panel, .bg-white.border-slate-200 {
+          box-shadow: var(--card-shadow) !important;
+        }
+        .labels-uppercase label, .labels-uppercase .text-[9px].font-bold.uppercase {
+          text-transform: uppercase !important;
+        }
+        .labels-capitalize label, .labels-capitalize .text-[9px].font-bold.uppercase {
+          text-transform: capitalize !important;
+        }
+        .text-center-headers h2, .text-center-headers h3, .text-center-headers .font-display {
+          text-align: center !important;
+          width: 100%;
+        }
+      `}</style>
     </div>
   );
 }

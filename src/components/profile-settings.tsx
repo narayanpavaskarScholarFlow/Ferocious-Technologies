@@ -64,11 +64,15 @@ import {
   GraduationCap,
   Palette,
   PanelLeft,
-  MousePointer2
+  MousePointer2,
+  Box,
+  AlignLeft,
+  AlignCenter,
+  CaseSensitive
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
-import { SystemUser, PermissionLevel, UISettings } from '@/lib/types';
+import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
@@ -133,6 +137,7 @@ interface ProfileSettingsProps {
   uiSettings: UISettings;
   onUpdateUISettings: (settings: UISettings) => void;
   currentUserData: SystemUser | null;
+  title?: string;
 }
 
 export function ProfileSettings({ 
@@ -145,7 +150,8 @@ export function ProfileSettings({
   onDeleteUser,
   uiSettings,
   onUpdateUISettings,
-  currentUserData
+  currentUserData,
+  title = 'Control Center'
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -155,7 +161,6 @@ export function ProfileSettings({
 
   const isHighLevelAdmin = currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller';
 
-  // Categories for Matrix
   const groupedPermissions = useMemo(() => {
     const groups: Record<string, typeof ACCESS_NODES> = {};
     ACCESS_NODES.forEach(node => {
@@ -165,7 +170,6 @@ export function ProfileSettings({
     return groups;
   }, []);
 
-  // Sync selected user for matrix on load
   useEffect(() => {
     if (users.length > 0 && !selectedUserForMatrix) {
       setSelectedUserForMatrix(users[0].id);
@@ -235,9 +239,7 @@ export function ProfileSettings({
 
   const handleSaveAdminProfile = () => {
     setIsSaving(true);
-    
     const fullName = `${adminFirstName} ${adminLastName}`.trim();
-    
     const profileToSave: SystemUser = activeAdmin ? {
       ...activeAdmin,
       username: adminUsername,
@@ -271,7 +273,6 @@ export function ProfileSettings({
     };
 
     onSaveUser(profileToSave);
-
     setTimeout(() => {
       setIsSaving(false);
       setIsEditing(false);
@@ -285,7 +286,6 @@ export function ProfileSettings({
   const handleUpdatePermission = (userId: string, pageId: string, level: PermissionLevel) => {
     const userToUpdate = users.find(u => u.id === userId);
     if (!userToUpdate) return;
-
     onSaveUser({
       ...userToUpdate,
       permissions: {
@@ -293,15 +293,17 @@ export function ProfileSettings({
         [pageId]: level
       }
     });
-
-    toast({
-      title: "Permission Matrix Updated",
-      description: `Access level for ${pageId} committed to security ledger.`,
-    });
+    toast({ title: "Permission Matrix Updated", description: `Access level for ${pageId} committed to security ledger.` });
   };
 
-  const handlePhysicalPrint = () => {
-    window.print();
+  const updateTitle = (view: string, title: string) => {
+    onUpdateUISettings({
+      ...uiSettings,
+      customTitles: {
+        ...(uiSettings.customTitles || {}),
+        [view]: title
+      }
+    });
   };
 
   return (
@@ -313,7 +315,7 @@ export function ProfileSettings({
             System Governance
           </div>
           <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
-            Control Center <span className="text-slate-400 font-medium">& Settings</span>
+            {title} <span className="text-slate-400 font-medium">& Settings</span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium">Manage root identity and system-wide access protocols.</p>
         </div>
@@ -336,7 +338,7 @@ export function ProfileSettings({
           )}
           {isHighLevelAdmin && (
             <TabsTrigger value="config" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-              <Monitor className="h-3.5 w-3.5 mr-2" /> Visual Command Hub
+              <Monitor className="h-3.5 w-3.5 mr-2" /> Global UI Command
             </TabsTrigger>
           )}
         </TabsList>
@@ -344,549 +346,196 @@ export function ProfileSettings({
         <TabsContent value="profile" className="m-0 space-y-8 print:m-0 print:space-y-0">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block">
             <div className="lg:col-span-4 space-y-6 print:w-full print:flex print:justify-center">
-              <div id="id-card-printable" className="relative group/id print:w-[350px]">
-                <Card className="p-0 bg-slate-900 border-slate-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] rounded-[var(--radius)] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 print:shadow-none print:rotate-0 print:scale-100 print:rounded-none print:border-2 print:border-slate-200">
-                  <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent" />
-                    <div className="relative z-10">
-                      <h1 className="text-xl font-display font-bold tracking-tighter text-white">BHARAT<span className="text-primary">AXIS</span></h1>
-                      <p className="text-[7px] font-bold text-white/40 uppercase tracking-[0.4em]">Integrated Control Network</p>
-                    </div>
-                    <QrCode className="h-8 w-8 text-white/20 relative z-10" />
+              <Card className="p-0 bg-slate-900 border-slate-800 shadow-2xl rounded-[var(--radius)] overflow-hidden flex flex-col transition-all duration-500 hover:scale-[1.02] hover:-rotate-1">
+                <div className="bg-[#001F3D] p-6 flex justify-between items-center border-b border-white/5 relative">
+                  <div className="relative z-10">
+                    <h1 className="text-xl font-display font-bold tracking-tighter text-white">BHARAT<span className="text-primary">AXIS</span></h1>
+                    <p className="text-[7px] font-bold text-white/40 uppercase tracking-[0.4em]">Integrated Control Network</p>
                   </div>
-
-                  <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
-                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-                    
-                    <div className="relative group/photo">
-                      <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center">
-                        {adminImage ? (
-                          <img src={adminImage} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 opacity-30 text-white">
-                            <UserCircle className="h-12 w-12" />
-                            <span className="text-[8px] font-bold uppercase tracking-widest">No Matrix Data</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <input 
-                        type="file" 
-                        id="id-photo-upload" 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                      />
-                      <label 
-                        htmlFor="id-photo-upload"
-                        className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform print:hidden"
-                      >
-                        <Camera className="h-4 w-4" />
-                      </label>
-                    </div>
-
-                    <div className="space-y-1 relative z-10">
-                      <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminFirstName} {adminLastName}</h3>
-                      <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{adminRole}</p>
-                      <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{adminUsername}</Badge>
-                    </div>
-
-                    <div className="w-full grid grid-cols-2 gap-4 mt-4 relative z-10">
-                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
-                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Employee Node</p>
-                        <p className="text-11px font-code font-bold text-white print:text-slate-900">{adminId || 'ID_PR_0001'}</p>
-                      </div>
-                      <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-left print:bg-slate-50 print:border-slate-200">
-                        <p className="text-[7px] text-white/30 uppercase font-bold mb-1 tracking-widest print:text-slate-400">Plant Section</p>
-                        <p className="text-11px font-bold text-white uppercase truncate print:text-slate-900">{adminDept || 'General'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-950 p-4 border-t border-white/5 text-center flex flex-col items-center print:bg-slate-100">
-                    <div className="h-1 w-12 bg-white/10 rounded-full mb-3 print:bg-slate-300" />
-                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse print:text-slate-400">Security Clearance Active</p>
-                  </div>
-                </Card>
-                
-                <div className="flex gap-2 mt-6 print:hidden">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 bg-white border-slate-200 text-slate-400 hover:text-primary rounded-xl h-11 text-[9px] font-bold uppercase tracking-widest gap-2 shadow-sm"
-                    onClick={handlePhysicalPrint}
-                  >
-                    <Printer className="h-3.5 w-3.5" /> Physical ID Print
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-[9px] uppercase tracking-widest h-11 rounded-xl gap-2 px-4"
-                    onClick={onLogout}
-                  >
-                    <LogOut className="h-3.5 w-3.5" /> Log Out
-                  </Button>
+                  <QrCode className="h-8 w-8 text-white/20 relative z-10" />
                 </div>
-              </div>
+                <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
+                  <div className="relative group/photo">
+                    <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center">
+                      {adminImage ? <img src={adminImage} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
+                    </div>
+                  </div>
+                  <div className="space-y-1 relative z-10">
+                    <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminFirstName} {adminLastName}</h3>
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-[0.25em]">{adminRole}</p>
+                    <Badge variant="outline" className="font-code text-[8px] bg-white/5 border-white/10 text-white/40 px-2 py-0">@{adminUsername}</Badge>
+                  </div>
+                </div>
+              </Card>
             </div>
-
-            <div className="lg:col-span-8 space-y-6 print:hidden">
-              <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[var(--radius)] space-y-10">
-                <div className="space-y-10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
-                      <User className="h-5 w-5 text-primary" />
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Master Identity Matrix</h3>
-                    </div>
-                    {isEditing ? (
-                      <div className="flex gap-3">
-                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-lg px-4 font-bold text-[10px] uppercase h-9">Cancel</Button>
-                        <Button 
-                          size="sm"
-                          onClick={handleSaveAdminProfile}
-                          disabled={isSaving}
-                          className="bg-[#001F3D] hover:bg-black text-white rounded-lg px-6 font-bold text-[10px] uppercase tracking-widest h-9 flex gap-2"
-                        >
-                          {isSaving ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                          Commit Protocol
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setIsEditing(true)}
-                        className="border-slate-200 text-slate-600 hover:text-primary rounded-lg px-6 font-bold text-[10px] uppercase tracking-widest h-9 flex gap-2"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                        Modify Matrix Entry
-                      </Button>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Fingerprint className="h-3 w-3 text-primary" /> Employee Identity (ID)
-                      </Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminId} 
-                          onChange={(e) => setAdminId(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminId || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">User name</Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminUsername} 
-                          onChange={(e) => setAdminUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] font-code">@{adminUsername || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">First Name</Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminFirstName} 
-                          onChange={(e) => setAdminFirstName(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminFirstName || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Last Name</Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminLastName} 
-                          onChange={(e) => setAdminLastName(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminLastName || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Phone className="h-3 w-3 text-primary" /> Contact Synchronization Node
-                      </Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminPhone} 
-                          onChange={(e) => setAdminPhone(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminPhone || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Mail ID</Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminEmail} 
-                          onChange={(e) => setAdminEmail(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D]">{adminEmail || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Key className="h-3 w-3 text-primary" /> Security Key (Password)
-                      </Label>
-                      {isEditing ? (
-                        <div className="relative">
-                          <Input 
-                            type={showPassword ? "text" : "password"}
-                            value={adminPassword} 
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner pr-12" 
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500"
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D]">••••••••</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Plant Department</Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminDept} 
-                          onChange={(e) => setAdminDept(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminDept || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Briefcase className="h-3 w-3 text-primary" /> Functional Role
-                      </Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminRole} 
-                          onChange={(e) => setAdminRole(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminRole || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                        <Network className="h-3 w-3 text-primary" /> Command Lead (Reporting Manager)
-                      </Label>
-                      {isEditing ? (
-                        <Input 
-                          value={adminReportingManager} 
-                          onChange={(e) => setAdminReportingManager(e.target.value)}
-                          className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20 shadow-inner" 
-                        />
-                      ) : (
-                        <div className="h-12 flex items-center px-4 bg-slate-50/50 rounded-xl text-xs font-bold text-[#001F3D] uppercase">{adminReportingManager || 'NOT_SET'}</div>
-                      )}
-                    </div>
-                  </div>
+            <div className="lg:col-span-8">
+              <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[var(--radius)]">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">Identity Matrix</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-2">
+                     <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Employee ID</Label>
+                     <Input value={adminId} readOnly className="bg-slate-50 border-none rounded-xl" />
+                   </div>
+                   <div className="space-y-2">
+                     <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Email Address</Label>
+                     <Input value={adminEmail} readOnly className="bg-slate-50 border-none rounded-xl" />
+                   </div>
                 </div>
               </Card>
             </div>
           </div>
         </TabsContent>
 
-        {currentUser === 'Master Admin' && (
-          <TabsContent value="access" className="m-0 print:hidden">
-            <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
-          </TabsContent>
-        )}
+        <TabsContent value="access" className="m-0 print:hidden">
+          <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
+        </TabsContent>
 
-        {currentUser === 'Master Admin' && (
-          <TabsContent value="matrix" className="m-0 print:hidden">
-            <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[var(--radius)]">
-              <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Hierarchical Security Assignment Ledger</p>
-                </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Identity:</span>
-                  <Select value={currentUserMatrix?.id || ''} onValueChange={setSelectedUserForMatrix}>
-                    <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold text-[#001F3D]">
-                      <SelectValue placeholder="Select User..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-100">
-                      {users.map(u => (
-                        <SelectItem key={u.id} value={u.id} className="text-xs font-bold uppercase">{u.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <TabsContent value="matrix" className="m-0 print:hidden">
+          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[var(--radius)]">
+            <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div>
+                <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
               </div>
-              
-              <div className="p-10">
-                {currentUserMatrix ? (
+              <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
+                <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl text-xs font-bold">
+                  <SelectValue placeholder="Select User..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-10">
+              {currentUserMatrix && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {ACCESS_NODES.map(node => (
+                    <div key={node.id} className="p-6 bg-slate-50 rounded-2xl flex flex-col gap-4">
+                      <span className="text-[10px] font-bold uppercase text-slate-700">{node.label}</span>
+                      <Select value={currentUserMatrix.permissions?.[node.id] || 'none'} onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, node.id, val as any)}>
+                        <SelectTrigger className="h-10 bg-white border-slate-200 rounded-xl text-[9px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Access</SelectItem>
+                          <SelectItem value="read">Read Only</SelectItem>
+                          <SelectItem value="edit">Edit Access</SelectItem>
+                          <SelectItem value="full">Full Command</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="config" className="m-0 print:hidden space-y-8">
+          <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[var(--radius)]">
+            <div className="flex items-center gap-4 mb-12 border-l-4 border-primary pl-6">
+              <Monitor className="h-8 w-8 text-primary" />
+              <div>
+                <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Global UI Command Matrix</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">High-Granularity Architectural Controls</p>
+              </div>
+            </div>
+
+            <Tabs defaultValue="architecture">
+              <TabsList className="bg-slate-100 p-1 rounded-full mb-10 h-11 inline-flex border border-slate-200 w-fit">
+                <TabsTrigger value="architecture" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Architecture</TabsTrigger>
+                <TabsTrigger value="titles" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Module Titles</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="architecture" className="m-0 space-y-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                   <div className="space-y-12">
-                    <div className="flex items-center justify-between px-4 py-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg overflow-hidden border border-white/10">
-                          {currentUserMatrix.image ? (
-                            <img src={currentUserMatrix.image} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            currentUserMatrix.name ? currentUserMatrix.name.charAt(0) : '?'
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{currentUserMatrix.name}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{currentUserMatrix.role} • {currentUserMatrix.dept}</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-widest px-4 py-1.5 rounded-full text-[9px]">PROTOCOL_ACTIVE</Badge>
-                    </div>
-
-                    <div className="space-y-16">
-                      {Object.entries(groupedPermissions).map(([category, nodes]) => (
-                        <div key={category} className="space-y-8">
-                          <div className="flex items-center gap-4">
-                            <div className="h-px bg-slate-100 flex-1" />
-                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] px-4 whitespace-nowrap">{category}</h4>
-                            <div className="h-px bg-slate-100 flex-1" />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {nodes.map(node => {
-                              const currentLevel = (currentUserMatrix.permissions && currentUserMatrix.permissions[node.id]) || 'none';
-                              const Icon = node.icon;
-                              
-                              return (
-                                <div key={node.id} className="group p-6 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-6 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/5">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                      <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-primary/5 transition-colors">
-                                        <Icon className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors" />
-                                      </div>
-                                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-tight">{node.label}</span>
-                                    </div>
-                                    <div className={cn(
-                                      "h-2 w-2 rounded-full",
-                                      currentLevel === 'full' ? "bg-accent animate-pulse" : 
-                                      currentLevel === 'edit' ? "bg-primary" : 
-                                      currentLevel === 'read' ? "bg-emerald-500" : "bg-slate-200"
-                                    )} />
-                                  </div>
-
-                                  <Select 
-                                    value={currentLevel} 
-                                    onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, node.id, val as PermissionLevel)}
-                                  >
-                                    <SelectTrigger className={cn(
-                                      "h-11 border-none text-[10px] font-bold uppercase rounded-xl transition-all shadow-inner",
-                                      currentLevel === 'full' ? "bg-accent/10 text-accent" :
-                                      currentLevel === 'edit' ? "bg-primary/10 text-primary" :
-                                      currentLevel === 'read' ? "bg-emerald-50 text-emerald-600" :
-                                      "bg-slate-50 text-slate-400"
-                                    )}>
-                                      <SelectValue placeholder="Access Level" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                                      <SelectItem value="none" className="text-[10px] font-bold uppercase">No Access</SelectItem>
-                                      <SelectItem value="read" className="text-[10px] font-bold uppercase">View Only</SelectItem>
-                                      <SelectItem value="edit" className="text-[10px] font-bold uppercase">Modify/Edit</SelectItem>
-                                      <SelectItem value="full" className="text-[10px] font-bold uppercase">Full command</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-32 opacity-30 text-center">
-                    <div className="p-10 bg-slate-50 rounded-full mb-8">
-                      <Shield className="h-20 w-20 text-slate-300" />
-                    </div>
-                    <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Synchronization Required</h4>
-                    <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium">Select a verified user identity from the directory above to initialize the hierarchical access matrix.</p>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
-        )}
-
-        {isHighLevelAdmin && (
-          <TabsContent value="config" className="m-0 print:hidden space-y-8">
-            <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[var(--radius)]">
-              <div className="flex items-center gap-4 mb-10 border-l-4 border-primary pl-4">
-                <Monitor className="h-6 w-6 text-primary" />
-                <div>
-                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Visual Command Configuration</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">High-Level Architectural Scaling & Theming Matrix</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="space-y-12">
-                  {/* Theme Color Control */}
-                  <div className="space-y-6">
-                    <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                      <Palette className="h-4 w-4" /> Primary Accent Protocol
-                    </Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {THEME_COLORS.map((theme) => (
-                        <button
-                          key={theme.name}
-                          onClick={() => onUpdateUISettings({ ...uiSettings, primaryColor: theme.value })}
-                          className={cn(
-                            "group p-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-2",
-                            uiSettings.primaryColor === theme.value 
-                              ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" 
-                              : "border-slate-100 hover:border-slate-200 bg-white"
-                          )}
-                        >
-                          <div className={cn("h-8 w-8 rounded-full shadow-inner", theme.color)} />
-                          <span className={cn(
-                            "text-[8px] font-bold uppercase tracking-tighter",
-                            uiSettings.primaryColor === theme.value ? "text-primary" : "text-slate-400"
-                          )}>{theme.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Sidebar Layout Control */}
-                  <div className="space-y-6">
-                    <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                      <PanelLeft className="h-4 w-4" /> Navigation Matrix Protocol
-                    </Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => onUpdateUISettings({ ...uiSettings, sidebarMode: 'slim' })}
-                        className={cn(
-                          "p-4 rounded-2xl border-2 transition-all flex flex-col gap-3",
-                          uiSettings.sidebarMode === 'slim' ? "border-primary bg-primary/5" : "border-slate-100"
-                        )}
-                      >
-                        <div className="h-10 w-full bg-slate-100 rounded-lg flex items-center px-3 gap-2">
-                          <div className="h-4 w-4 bg-slate-300 rounded" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold uppercase text-slate-700">Slim Matrix</p>
-                          <p className="text-[8px] text-slate-400 uppercase tracking-tighter">Maximize Real Estate</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => onUpdateUISettings({ ...uiSettings, sidebarMode: 'full' })}
-                        className={cn(
-                          "p-4 rounded-2xl border-2 transition-all flex flex-col gap-3",
-                          uiSettings.sidebarMode === 'full' ? "border-primary bg-primary/5" : "border-slate-100"
-                        )}
-                      >
-                        <div className="h-10 w-full bg-slate-100 rounded-lg flex items-center px-3 gap-2">
-                          <div className="h-4 w-4 bg-slate-300 rounded" />
-                          <div className="h-2 w-16 bg-slate-300 rounded" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-bold uppercase text-slate-700">Command List</p>
-                          <p className="text-[8px] text-slate-400 uppercase tracking-tighter">Enhanced Readability</p>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-12">
-                  <div className="space-y-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 shadow-inner">
                     <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                        <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                          <Type className="h-4 w-4" /> Global Typographic Scale
-                        </Label>
-                        <Badge variant="outline" className="font-code text-primary bg-white">{uiSettings.fontSize}px</Badge>
-                      </div>
-                      <div className="px-2">
-                        <Slider 
-                          min={11} 
-                          max={16} 
-                          step={1} 
-                          value={[uiSettings.fontSize]} 
-                          onValueChange={(val) => onUpdateUISettings({ ...uiSettings, fontSize: val[0] })}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                        <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                          <Maximize className="h-4 w-4" /> Architectural Corner Radius
-                        </Label>
-                        <Badge variant="outline" className="font-code text-primary bg-white">{uiSettings.borderRadius}rem</Badge>
-                      </div>
-                      <div className="px-2">
-                        <Slider 
-                          min={0} 
-                          max={3} 
-                          step={0.1} 
-                          value={[uiSettings.borderRadius]} 
-                          onValueChange={(val) => onUpdateUISettings({ ...uiSettings, borderRadius: val[0] })}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <Label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                        <TableProperties className="h-4 w-4" /> Matrix Interaction Density
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <Palette className="h-4 w-4" /> Primary Accent Protocol
                       </Label>
                       <div className="grid grid-cols-3 gap-3">
-                        {(['compact', 'standard', 'comfortable'] as const).map((density) => (
-                          <Button
-                            key={density}
-                            variant={uiSettings.tableDensity === density ? 'default' : 'outline'}
-                            className={cn(
-                              "h-14 rounded-xl font-bold uppercase text-[9px] tracking-widest border-slate-200",
-                              uiSettings.tableDensity === density ? "bg-[#001F3D] text-white" : "text-slate-400 hover:text-[#001F3D]"
-                            )}
-                            onClick={() => onUpdateUISettings({ ...uiSettings, tableDensity: density })}
-                          >
-                            {density}
-                          </Button>
+                        {THEME_COLORS.map((theme) => (
+                          <button key={theme.name} onClick={() => onUpdateUISettings({ ...uiSettings, primaryColor: theme.value })} className={cn("p-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-2", uiSettings.primaryColor === theme.value ? "border-primary bg-primary/5 shadow-lg" : "border-slate-100 hover:border-slate-200 bg-white")}>
+                            <div className={cn("h-8 w-8 rounded-full", theme.color)} />
+                            <span className="text-[8px] font-bold uppercase tracking-tighter">{theme.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <Box className="h-4 w-4" /> Box Elevation (Shadows)
+                      </Label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {(['none', 'sm', 'xl'] as const).map((s) => (
+                          <Button key={s} variant={uiSettings.cardShadow === s ? 'default' : 'outline'} className="h-12 rounded-xl font-bold uppercase text-[9px] tracking-widest" onClick={() => onUpdateUISettings({ ...uiSettings, cardShadow: s })}>{s === 'xl' ? 'Premium' : s === 'sm' ? 'Elevated' : 'Flat'}</Button>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl flex gap-4 items-start animate-pulse">
-                    <div className="p-2 bg-primary/10 rounded-lg text-primary shadow-sm"><ShieldCheck className="h-4 w-4" /></div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Protocol Sync Nominal</p>
-                      <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                        Visual DNA changes are being injected into the global CSS matrix in real-time. Settings persist across identity nodes.
-                      </p>
+                  <div className="space-y-12">
+                    <div className="space-y-6 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 shadow-inner">
+                      <div className="space-y-8">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Typographic Scale</Label><Badge variant="outline" className="font-code text-primary bg-white">{uiSettings.fontSize}px</Badge></div>
+                          <Slider min={11} max={16} step={1} value={[uiSettings.fontSize]} onValueChange={(val) => onUpdateUISettings({ ...uiSettings, fontSize: val[0] })} />
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Corner Radius</Label><Badge variant="outline" className="font-code text-primary bg-white">{uiSettings.borderRadius}rem</Badge></div>
+                          <Slider min={0} max={3} step={0.1} value={[uiSettings.borderRadius]} onValueChange={(val) => onUpdateUISettings({ ...uiSettings, borderRadius: val[0] })} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2"><CaseSensitive className="h-4 w-4" /> Labeling Style</Label>
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                          <button onClick={() => onUpdateUISettings({ ...uiSettings, labelCase: 'uppercase' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.labelCase === 'uppercase' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>UPPER</button>
+                          <button onClick={() => onUpdateUISettings({ ...uiSettings, labelCase: 'capitalize' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.labelCase === 'capitalize' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>Lower</button>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2"><AlignCenter className="h-4 w-4" /> Header Align</Label>
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                          <button onClick={() => onUpdateUISettings({ ...uiSettings, headerAlignment: 'left' })} className={cn("flex-1 h-9 rounded-lg flex items-center justify-center transition-all", uiSettings.headerAlignment === 'left' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}><AlignLeft className="h-4 w-4" /></button>
+                          <button onClick={() => onUpdateUISettings({ ...uiSettings, headerAlignment: 'center' })} className={cn("flex-1 h-9 rounded-lg flex items-center justify-center transition-all", uiSettings.headerAlignment === 'center' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}><AlignCenter className="h-4 w-4" /></button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          </TabsContent>
-        )}
+              </TabsContent>
+
+              <TabsContent value="titles" className="m-0">
+                <ScrollArea className="h-[500px] pr-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10">
+                    {ACCESS_NODES.filter(n => !n.id.includes('-')).map((node) => (
+                      <div key={node.id} className="p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100 flex flex-col gap-4 group hover:border-primary/20 transition-all">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                             <node.icon className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
+                             <span className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">{node.id}</span>
+                          </div>
+                          <Badge variant="outline" className="text-[8px] border-slate-200 text-slate-300 uppercase">{node.category}</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500">Custom Section Title</Label>
+                          <Input 
+                            placeholder={node.label} 
+                            className="h-12 bg-white border-none rounded-xl text-xs font-bold shadow-sm"
+                            value={uiSettings.customTitles?.[node.id] || ''}
+                            onChange={(e) => updateTitle(node.id, e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

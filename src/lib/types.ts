@@ -222,6 +222,10 @@ export interface UISettings {
   borderRadius: number;
   primaryColor: string; // HSL string "243 75% 59%"
   sidebarMode: 'slim' | 'full';
+  cardShadow: 'none' | 'sm' | 'xl';
+  labelCase: 'uppercase' | 'capitalize';
+  headerAlignment: 'left' | 'center';
+  customTitles: Record<string, string>;
 }
 
 export interface SystemUser {

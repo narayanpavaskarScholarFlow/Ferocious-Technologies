@@ -38,9 +38,10 @@ interface SidebarNavProps {
   onViewChange: (view: ViewType) => void;
   permissions?: Record<string, PermissionLevel>;
   isSlim?: boolean;
+  customTitles?: Record<string, string>;
 }
 
-export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true }: SidebarNavProps) {
+export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {} }: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,27 +50,26 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
 
   const menuItems = useMemo(() => {
     const items = [
-      { id: 'overview' as ViewType, icon: LayoutDashboard, label: 'Command Matrix' },
-      { id: 'hr' as ViewType, icon: Users, label: 'HR Command' },
-      { id: 'agile' as ViewType, icon: Kanban, label: 'Agile Kanban' },
-      { id: 'orders' as ViewType, icon: ShoppingCart, label: 'Master Orders' },
-      { id: 'production-planner' as ViewType, icon: Factory, label: 'Mass Production' },
-      { id: 'gantt' as ViewType, icon: LayoutGrid, label: 'Visual Gantt' },
-      { id: 'operations' as ViewType, icon: Layers, label: 'Spreadsheet' },
-      { id: 'quality' as ViewType, icon: ShieldCheck, label: 'Quality Hub' },
-      { id: 'customer-orders' as ViewType, icon: Contact, label: 'Customer Identity' },
-      { id: 'inventory' as ViewType, icon: Boxes, label: 'Stock Ledger' },
-      { id: 'billing' as ViewType, icon: CreditCard, label: 'Financial Hub' },
-      { id: 'work-log' as ViewType, icon: ClipboardList, label: 'Daily Logs' },
-      { id: 'machine-utilization' as ViewType, icon: Cpu, label: 'Asset Fleet' },
-      { id: 'sqcdp' as ViewType, icon: LineChart, label: 'Performance' },
-      { id: 'vendor' as ViewType, icon: Truck, label: 'Supply Chain' },
-      { id: 'weekly-plan' as ViewType, icon: Calendar, label: 'Master Plan' },
-      { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: 'AI Quoting' },
+      { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
+      { id: 'hr' as ViewType, icon: Users, label: customTitles['hr'] || 'HR Command' },
+      { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
+      { id: 'orders' as ViewType, icon: ShoppingCart, label: customTitles['orders'] || 'Master Orders' },
+      { id: 'production-planner' as ViewType, icon: Factory, label: customTitles['production-planner'] || 'Mass Production' },
+      { id: 'gantt' as ViewType, icon: LayoutGrid, label: customTitles['gantt'] || 'Visual Gantt' },
+      { id: 'operations' as ViewType, icon: Layers, label: customTitles['operations'] || 'Spreadsheet' },
+      { id: 'quality' as ViewType, icon: ShieldCheck, label: customTitles['quality'] || 'Quality Hub' },
+      { id: 'customer-orders' as ViewType, icon: Contact, label: customTitles['customer-orders'] || 'Customer Identity' },
+      { id: 'inventory' as ViewType, icon: Boxes, label: customTitles['inventory'] || 'Stock Ledger' },
+      { id: 'billing' as ViewType, icon: CreditCard, label: customTitles['billing'] || 'Financial Hub' },
+      { id: 'work-log' as ViewType, icon: ClipboardList, label: customTitles['work-log'] || 'Daily Logs' },
+      { id: 'machine-utilization' as ViewType, icon: Cpu, label: customTitles['machine-utilization'] || 'Asset Fleet' },
+      { id: 'sqcdp' as ViewType, icon: LineChart, label: customTitles['sqcdp'] || 'Performance' },
+      { id: 'vendor' as ViewType, icon: Truck, label: customTitles['vendor'] || 'Supply Chain' },
+      { id: 'weekly-plan' as ViewType, icon: Calendar, label: customTitles['weekly-plan'] || 'Master Plan' },
+      { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: customTitles['smart-quote'] || 'AI Quoting' },
     ];
 
     return items.filter(item => {
-      // For HR, check both manpower and training permissions
       if (item.id === 'hr') {
         const manpowerLevel = permissions['manpower'];
         const trainingLevel = permissions['training'];
@@ -78,7 +78,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       const level = permissions[item.id];
       return level && level !== 'none';
     });
-  }, [permissions]);
+  }, [permissions, customTitles]);
 
   if (!mounted) {
     return <div className={cn("bg-[#001F3D] h-screen", isSlim ? "w-20" : "w-64")} />;

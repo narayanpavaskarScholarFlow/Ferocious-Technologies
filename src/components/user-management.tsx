@@ -26,7 +26,10 @@ import {
   Upload,
   UserCircle,
   Hash,
-  Fingerprint
+  Fingerprint,
+  Share2,
+  Mail,
+  Lock
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -215,6 +218,22 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     });
   };
 
+  const handleShareCredentials = (user: SystemUser) => {
+    sendCredentials({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      temporaryPassword: user.password || '---'
+    }).then(res => {
+      if (res.success) {
+        toast({
+          title: "Identity Re-Transmitted",
+          description: `Security protocols for ${user.name} sent to ${user.email}.`,
+        });
+      }
+    });
+  };
+
   const resetWizard = () => {
     setStep(1);
     setEditingUser(null);
@@ -250,64 +269,89 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <Card className="lg:col-span-12 overflow-hidden border-slate-200/60 bg-white shadow-xl rounded-2xl min-h-[500px] flex flex-col">
-          <div className="bg-slate-50/50 border-b border-slate-100">
+          <div className="bg-slate-50/50">
             <div className="flex items-center gap-2 p-5 border-b border-slate-100">
               <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse-red" />
               <span className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">Live Identity Ledger</span>
             </div>
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8">User Identity</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">User name</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Functional Role</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Last Session</TableHead>
+                <TableRow className="hover:bg-transparent bg-white">
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8 border-r border-slate-100">User Identity</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">User name</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Functional Role</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Last Session</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">User login ID</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Pass</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="flex-1">
+              <TableBody className="bg-white">
                 {users.length > 0 ? users.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-slate-50/50 h-20 border-slate-50 group">
-                    <TableCell className="px-8">
+                  <TableRow key={user.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-100 group">
+                    <TableCell className="px-8 border-r border-slate-50">
                       <div className="flex items-center gap-4">
                         <div className="relative">
-                          <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200 overflow-hidden">
+                          <div className="h-11 w-11 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200 overflow-hidden">
                             {user.image ? (
                               <img src={user.image} alt="" className="h-full w-full object-cover" />
                             ) : (
-                              user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'
+                              <span className="text-sm">{user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}</span>
                             )}
                           </div>
-                          {user.status === 'online' && (
-                            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
-                          )}
+                          <div className={cn(
+                            "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white shadow-sm",
+                            user.status === 'online' || user.status === 'active' ? "bg-green-500" : "bg-slate-300"
+                          )} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[11px] font-bold text-[#001F3D]">{user.name}</span>
-                          <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter">ID: {user.id}</span>
+                          <span className="text-[12px] font-bold text-[#001F3D]">{user.name}</span>
+                          <span className="text-[9px] text-slate-400 font-code uppercase tracking-tighter mt-1">ID: {user.id}</span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-code text-[10px] bg-slate-50 text-slate-500 border-slate-200">
+                    <TableCell className="border-r border-slate-50">
+                      <Badge variant="outline" className="font-code text-[10px] bg-slate-50 text-slate-500 border-slate-200 px-3">
                         @{user.username || 'not_set'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border-r border-slate-50">
                       <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">{user.role}</span>
-                        <span className="text-[9px] text-slate-400 font-medium uppercase">{user.dept}</span>
+                        <span className="text-[9px] text-slate-400 font-medium uppercase mt-0.5">{user.dept}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className="text-[10px] font-code text-slate-400">{user.lastLogin}</span>
+                    <TableCell className="border-r border-slate-50">
+                      <span className="text-[10px] font-code text-slate-400 break-all max-w-[120px] inline-block">{user.lastLogin}</span>
+                    </TableCell>
+                    <TableCell className="border-r border-slate-50">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3 text-slate-300" />
+                        <span className="text-[10px] font-medium text-slate-600 truncate max-w-[150px]">{user.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="border-r border-slate-50">
+                      <div className="flex items-center gap-2 group/pass">
+                        <Lock className="h-3 w-3 text-slate-300" />
+                        <span className="text-[10px] font-code font-bold text-slate-700 blur-[2px] group-hover/pass:blur-none transition-all">{user.password || '---'}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right px-8">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                          <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-400 hover:text-primary"
+                          className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
+                          title="Share Credentials"
+                          onClick={() => handleShareCredentials(user)}
+                         >
+                           <Share2 className="h-3.5 w-3.5" />
+                         </Button>
+                         <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
+                          title="Edit Node"
                           onClick={() => handleEditUser(user)}
                          >
                            <Edit2 className="h-3.5 w-3.5" />
@@ -315,7 +359,8 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                          <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-400 hover:text-red-500"
+                          className="h-8 w-8 text-slate-400 hover:text-red-500 rounded-lg"
+                          title="Delete Node"
                           onClick={() => handleDeleteUser(user.id)}
                          >
                            <Trash2 className="h-3.5 w-3.5" />
@@ -325,7 +370,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-[400px] text-center">
+                    <TableCell colSpan={7} className="h-[400px] text-center bg-white">
                       <div className="flex flex-col items-center justify-center opacity-30 py-10">
                         <div className="p-6 bg-slate-50 rounded-full mb-6">
                           <UserX className="h-12 w-12 text-slate-300" />
@@ -518,7 +563,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Role</Label>
                           <Select value={formData.jobTitle} onValueChange={(val) => setFormData({...formData, jobTitle: val})}>
-                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
+                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus:ring-primary/20">
                               <SelectValue placeholder="Select role..." />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl shadow-2xl">
@@ -531,7 +576,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                         <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Department</Label>
                           <Select value={formData.deptCode} onValueChange={(val) => setFormData({...formData, deptCode: val})}>
-                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs rounded-xl focus:ring-primary/20">
+                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus:ring-primary/20">
                               <SelectValue placeholder="Select dept..." />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl shadow-2xl">

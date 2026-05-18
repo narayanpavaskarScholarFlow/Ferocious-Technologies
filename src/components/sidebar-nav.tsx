@@ -55,8 +55,8 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
 
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
-      { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'Personnel Portal' },
-      { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command', restricted: true },
+      { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'My Personnel Portal' },
+      { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub', restricted: true },
       { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: customTitles['orders'] || 'Master Orders' },
       { id: 'production-planner' as ViewType, icon: Factory, label: customTitles['production-planner'] || 'Mass Production' },
@@ -75,10 +75,13 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     ];
 
     return items.filter(item => {
-      // Role-based filtering
-      if (item.restricted && !isHRAdmin) return false;
+      // Role-based filtering for HR Command
+      if (item.id === 'hr') return isHRAdmin;
+      
+      // Portal is always visible for personal use
       if (item.id === 'my-portal') return true;
 
+      // Check specific permissions for others
       const level = permissions[item.id];
       return level && level !== 'none';
     });

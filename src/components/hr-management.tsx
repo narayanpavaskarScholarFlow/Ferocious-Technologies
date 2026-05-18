@@ -45,7 +45,7 @@ export function HRManagement({
   onSaveAssignment, 
   onDeleteAssignment,
   currentUser,
-  title = 'HR Command'
+  title = 'HR Command Hub'
 }: HRManagementProps) {
   const db = useFirestore();
 
@@ -136,7 +136,7 @@ export function HRManagement({
           </TabsTrigger>
 
           <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <GraduationCap className="h-3.5 w-3.5 mr-2" /> Training Matrix
+            <GraduationCap className="h-3.5 w-3.5 mr-2" /> Global Training Registry
           </TabsTrigger>
         </TabsList>
 

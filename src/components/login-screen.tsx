@@ -39,14 +39,18 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) {
-      toast({
-        variant: "destructive",
-        title: "Protocol Interrupted",
-        description: "Credentials required for identity verification."
-      });
+  const handleLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    // Only perform validation if explicitly triggered
+    if (!username.trim() || !password.trim()) {
+      if (e) { // Only show toast if it was a real submission attempt
+        toast({
+          variant: "destructive",
+          title: "Protocol Interrupted",
+          description: "Credentials required for identity verification."
+        });
+      }
       return;
     }
 
@@ -141,7 +145,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   <div className="relative group/input">
                     <Input 
                       placeholder="Username, ID or Email" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 transition-all shadow-inner placeholder:text-slate-300"
+                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                     />
@@ -164,7 +168,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                     <Input 
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 transition-all shadow-inner placeholder:text-slate-300"
+                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />

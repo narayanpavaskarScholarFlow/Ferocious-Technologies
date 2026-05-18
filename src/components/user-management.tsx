@@ -126,22 +126,22 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Full credentials (User name, First/Last Name, and Password) are required."
+        description: "Full credentials (Network Identifier, First/Last Name, and Security Key) are required."
       });
       return;
     }
 
     const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-    const finalEmail = formData.username; // Explicit sync for registration
+    const finalIdentifier = formData.username.toLowerCase().replace(/\s/g, '');
 
     if (editingUser) {
       const updatedUser: SystemUser = {
         ...editingUser,
-        username: formData.username,
+        username: finalIdentifier,
         firstName: formData.firstName,
         lastName: formData.lastName,
         name: fullName,
-        email: finalEmail,
+        email: finalIdentifier,
         password: formData.password,
         phone: formData.phone || '',
         role: formData.jobTitle || editingUser.role,
@@ -159,11 +159,11 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     } else {
       const newUser: SystemUser = {
         id: formData.id || `USER-${Math.floor(1000 + Math.random() * 9000)}`,
-        username: formData.username,
+        username: finalIdentifier,
         firstName: formData.firstName,
         lastName: formData.lastName,
         name: fullName,
-        email: finalEmail,
+        email: finalIdentifier,
         password: formData.password,
         phone: formData.phone || '',
         role: formData.jobTitle || 'Standard Operator',
@@ -180,14 +180,14 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
       // Call Genkit AI flow to simulate credential dispatch
       sendCredentials({
         name: fullName,
-        email: finalEmail,
+        email: finalIdentifier,
         role: newUser.role,
         temporaryPassword: formData.password
       }).then(res => {
         if (res.success) {
           toast({
             title: "Credentials Dispatched",
-            description: `Login protocols transmitted to ${finalEmail}.`,
+            description: `Login protocols transmitted to ${finalIdentifier}.`,
           });
         }
       });
@@ -500,7 +500,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">User name / Login ID</Label>
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Network Identifier (Login ID)</Label>
                             <div className="relative">
                               <Input 
                                 placeholder="unique_alias" 

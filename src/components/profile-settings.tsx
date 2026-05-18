@@ -6,15 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   User, 
   Shield, 
   Settings, 
-  Save, 
-  LogOut, 
-  CheckCircle2, 
   Users, 
   ShieldCheck, 
   LayoutGrid, 
@@ -27,57 +23,31 @@ import {
   Package, 
   Truck, 
   Calendar,
-  ChevronRight,
   Monitor,
   Edit3,
   Unlock,
   UserCircle,
-  Trash2,
-  UserPlus,
   BrainCircuit,
   Cpu,
-  FileCheck,
   Zap,
-  Activity,
-  Plus,
-  FileText,
-  ArrowDownLeft,
-  ArrowUpRight,
-  CalendarDays,
-  Phone,
-  Briefcase,
-  Network,
-  Fingerprint,
-  Camera,
-  Upload,
-  Printer,
-  QrCode,
-  Eye,
-  EyeOff,
-  RefreshCw,
   Factory,
-  Key,
-  Kanban,
-  Type,
-  Maximize,
-  TableProperties,
   GraduationCap,
   Palette,
   PanelLeft,
-  MousePointer2,
   Box,
   AlignLeft,
   AlignCenter,
   CaseSensitive,
   Settings2,
   ListTodo,
-  Contact
+  Contact,
+  TableProperties,
+  QrCode
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
@@ -92,7 +62,7 @@ const THEME_COLORS = [
 
 const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }[] = [
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
-  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
+  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Contact },
   { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: LineChart },
   { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: ShoppingCart },
@@ -140,12 +110,10 @@ export function ProfileSettings({
   title = 'Control Center'
 }: ProfileSettingsProps) {
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
   const [selectedModuleForConfig, setSelectedModuleForConfig] = useState<ViewType | ''>('');
 
-  const isHighLevelAdmin = currentUser === 'Master Admin' || currentUserData?.role === 'Plant Controller';
+  const isMasterAdmin = currentUser === 'Master Admin';
 
   useEffect(() => {
     if (users.length > 0 && !selectedUserForMatrix) {
@@ -162,11 +130,7 @@ export function ProfileSettings({
   const [adminLastName, setAdminLastName] = useState('');
   const [adminRole, setAdminRole] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminPhone, setAdminPhone] = useState('');
-  const [adminDept, setAdminDept] = useState('');
   const [adminId, setAdminId] = useState('');
-  const [adminReportingManager, setAdminReportingManager] = useState('');
   const [adminImage, setAdminImage] = useState<string | undefined>();
 
   useEffect(() => {
@@ -176,11 +140,7 @@ export function ProfileSettings({
       setAdminLastName(activeAdmin.lastName || '');
       setAdminRole(activeAdmin.role);
       setAdminEmail(activeAdmin.email);
-      setAdminPassword(activeAdmin.password || '');
-      setAdminPhone(activeAdmin.phone || '');
-      setAdminDept(activeAdmin.dept);
       setAdminId(activeAdmin.id);
-      setAdminReportingManager(activeAdmin.reportingManager || '');
       setAdminImage(activeAdmin.image);
     } else {
       setAdminUsername('admin');
@@ -188,10 +148,8 @@ export function ProfileSettings({
       setAdminLastName('Admin');
       setAdminRole('Plant Controller');
       setAdminEmail(currentUser === 'Master Admin' ? 'admin@bharataxis.tech' : '');
-      setAdminPassword(currentUser === 'Master Admin' ? 'admin123' : '');
       setAdminDept('Admin');
       setAdminId('ID_PR_0001');
-      setAdminReportingManager('Self / Board');
       setAdminImage(undefined);
     }
   }, [activeAdmin, currentUser]);
@@ -249,17 +207,17 @@ export function ProfileSettings({
           <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
             <UserCircle className="h-3.5 w-3.5 mr-2" /> User Profile
           </TabsTrigger>
-          {currentUser === 'Master Admin' && (
+          {isMasterAdmin && (
             <TabsTrigger value="access" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
               <Users className="h-3.5 w-3.5 mr-2" /> User Directory
             </TabsTrigger>
           )}
-          {currentUser === 'Master Admin' && (
+          {isMasterAdmin && (
             <TabsTrigger value="matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
               <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
             </TabsTrigger>
           )}
-          {isHighLevelAdmin && (
+          {isMasterAdmin && (
             <TabsTrigger value="config" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
               <Monitor className="h-3.5 w-3.5 mr-2" /> Global UI Command
             </TabsTrigger>
@@ -278,10 +236,8 @@ export function ProfileSettings({
                   <QrCode className="h-8 w-8 text-white/20 relative z-10" />
                 </div>
                 <div className="p-8 flex-1 flex flex-col items-center text-center gap-6 relative">
-                  <div className="relative group/photo">
-                    <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center">
-                      {adminImage ? <img src={adminImage} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
-                    </div>
+                  <div className="h-32 w-32 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl bg-slate-800 flex items-center justify-center">
+                    {adminImage ? <img src={adminImage} alt="" className="h-full w-full object-cover" /> : <UserCircle className="h-12 w-12 text-white/30" />}
                   </div>
                   <div className="space-y-1 relative z-10">
                     <h3 className="text-xl font-display font-bold text-white tracking-tight uppercase">{adminFirstName} {adminLastName}</h3>
@@ -297,11 +253,11 @@ export function ProfileSettings({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div className="space-y-2">
                      <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Employee ID</Label>
-                     <Input value={adminId} readOnly className="bg-slate-50 border-none rounded-xl" />
+                     <Input value={adminId} readOnly className="bg-slate-50 border-none rounded-xl font-bold" />
                    </div>
                    <div className="space-y-2">
                      <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Email Address</Label>
-                     <Input value={adminEmail} readOnly className="bg-slate-50 border-none rounded-xl" />
+                     <Input value={adminEmail} readOnly className="bg-slate-50 border-none rounded-xl font-bold" />
                    </div>
                 </div>
               </Card>
@@ -357,7 +313,7 @@ export function ProfileSettings({
               <Monitor className="h-8 w-8 text-primary" />
               <div>
                 <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Global UI Command Matrix</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">High-Granularity Architectural Controls</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Master Admin Architecture Node</p>
               </div>
             </div>
 
@@ -380,6 +336,24 @@ export function ProfileSettings({
                             <div className={cn("h-8 w-8 rounded-full", theme.color)} />
                             <span className="text-[8px] font-bold uppercase tracking-tighter">{theme.name}</span>
                           </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <TableProperties className="h-4 w-4" /> Table Interaction Density
+                      </Label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {(['compact', 'standard', 'comfortable'] as const).map((d) => (
+                          <Button 
+                            key={d} 
+                            variant={uiSettings.tableDensity === d ? 'default' : 'outline'} 
+                            className="h-12 rounded-xl font-bold uppercase text-[9px] tracking-widest" 
+                            onClick={() => onUpdateUISettings({ ...uiSettings, tableDensity: d })}
+                          >
+                            {d}
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -424,6 +398,14 @@ export function ProfileSettings({
                           <button onClick={() => onUpdateUISettings({ ...uiSettings, headerAlignment: 'left' })} className={cn("flex-1 h-9 rounded-lg flex items-center justify-center transition-all", uiSettings.headerAlignment === 'left' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}><AlignLeft className="h-4 w-4" /></button>
                           <button onClick={() => onUpdateUISettings({ ...uiSettings, headerAlignment: 'center' })} className={cn("flex-1 h-9 rounded-lg flex items-center justify-center transition-all", uiSettings.headerAlignment === 'center' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}><AlignCenter className="h-4 w-4" /></button>
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2"><PanelLeft className="h-4 w-4" /> Navigation Architecture</Label>
+                      <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                        <button onClick={() => onUpdateUISettings({ ...uiSettings, sidebarMode: 'full' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.sidebarMode === 'full' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>Expanded</button>
+                        <button onClick={() => onUpdateUISettings({ ...uiSettings, sidebarMode: 'slim' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.sidebarMode === 'slim' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>Slim (Icons)</button>
                       </div>
                     </div>
                   </div>
@@ -491,15 +473,6 @@ export function ProfileSettings({
                     )}
                   </div>
                 </div>
-                {!selectedModuleForConfig && (
-                  <div className="py-20 flex flex-col items-center justify-center opacity-30 text-center">
-                    <div className="p-10 bg-slate-100 rounded-full mb-8">
-                      <ListTodo className="h-16 w-16 text-slate-300" />
-                    </div>
-                    <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Registry Idle</h4>
-                    <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium leading-relaxed">Identify a functional module from the selection matrix above to begin granular architectural customization.</p>
-                  </div>
-                )}
               </TabsContent>
             </Tabs>
           </Card>

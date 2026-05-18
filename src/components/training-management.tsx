@@ -27,7 +27,10 @@ import {
   Target,
   Download,
   Briefcase,
-  FileText
+  FileText,
+  Youtube,
+  Link as LinkIcon,
+  HelpCircle
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -39,7 +42,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Training, TrainingAssignment, SystemUser } from '@/lib/types';
+import { Training, TrainingAssignment, SystemUser, QuizQuestion } from '@/lib/types';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -72,8 +75,24 @@ export function TrainingManagement({
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
   // Form States
-  const [newTraining, setNewTraining] = useState({
-    title: '', description: '', department: '', durationHours: 0, impactScore: 5
+  const [newTraining, setNewTraining] = useState<{
+    title: string;
+    description: string;
+    department: string;
+    durationHours: number;
+    impactScore: number;
+    materialsUrl: string;
+    videoUrl: string;
+    quiz: QuizQuestion[];
+  }>({
+    title: '', 
+    description: '', 
+    department: '', 
+    durationHours: 0, 
+    impactScore: 5,
+    materialsUrl: '',
+    videoUrl: '',
+    quiz: []
   });
 
   const [newAssignment, setNewAssignment] = useState({
@@ -96,16 +115,41 @@ export function TrainingManagement({
     return { total, completed, overdue, avgScore: avgScore.toFixed(1) };
   }, [filteredAssignments]);
 
+  const handleAddQuestion = () => {
+    const id = `Q-${Date.now()}`;
+    setNewTraining(prev => ({
+      ...prev,
+      quiz: [...prev.quiz, { id, question: '', options: ['', '', '', ''], correctAnswer: '' }]
+    }));
+  };
+
+  const updateQuestion = (idx: number, field: keyof QuizQuestion, value: any) => {
+    const quiz = [...newTraining.quiz];
+    quiz[idx] = { ...quiz[idx], [field]: value };
+    setNewTraining(prev => ({ ...prev, quiz }));
+  };
+
+  const updateOption = (qIdx: number, oIdx: number, value: string) => {
+    const quiz = [...newTraining.quiz];
+    const options = [...quiz[qIdx].options];
+    options[oIdx] = value;
+    quiz[qIdx] = { ...quiz[qIdx], options };
+    setNewTraining(prev => ({ ...prev, quiz }));
+  };
+
   const handleCreateTraining = () => {
     if (!newTraining.title || !newTraining.department) {
       toast({ variant: "destructive", title: "Protocol Interrupted", description: "Title and Department are required." });
       return;
     }
-    const training: Training = { id: `TRN-${Math.floor(1000 + Math.random() * 9000)}`, ...newTraining };
+    const training: Training = { 
+      id: `TRN-${Math.floor(1000 + Math.random() * 9000)}`, 
+      ...newTraining 
+    };
     onSaveTraining(training);
     toast({ title: "Curriculum Synchronized", description: `${training.title} added to registry.` });
     setIsAddTrainingOpen(false);
-    setNewTraining({ title: '', description: '', department: '', durationHours: 0, impactScore: 5 });
+    setNewTraining({ title: '', description: '', department: '', durationHours: 0, impactScore: 5, materialsUrl: '', videoUrl: '', quiz: [] });
   };
 
   const handleAssignTraining = () => {
@@ -134,10 +178,6 @@ export function TrainingManagement({
     if (status === 'Completed') updated.completionDate = new Date().toISOString().split('T')[0];
     onSaveAssignment(updated);
     toast({ title: "Ledger Synchronized", description: `Assignment state moved to ${status}.` });
-  };
-
-  const downloadCertificate = (asg: TrainingAssignment) => {
-    toast({ title: "Certificate Dispatch", description: `Official certification for ${asg.trainingTitle} downloaded.` });
   };
 
   return (
@@ -237,7 +277,7 @@ export function TrainingManagement({
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     {asg.status === 'Completed' ? (
-                       <Button variant="ghost" size="sm" className="h-9 px-4 text-[9px] font-bold uppercase gap-2 hover:text-primary" onClick={() => downloadCertificate(asg)}>
+                       <Button variant="ghost" size="sm" className="h-9 px-4 text-[9px] font-bold uppercase gap-2 hover:text-primary" onClick={() => toast({title: "Certificate Dispatch", description: "Official certification downloaded."})}>
                           <Download className="h-3.5 w-3.5" /> Certificate
                        </Button>
                     ) : isFullControl ? (
@@ -251,54 +291,126 @@ export function TrainingManagement({
         </div>
       </Card>
 
-      {/* Add Training to Registry Dialog */}
       <Dialog open={isAddTrainingOpen} onOpenChange={setIsAddTrainingOpen}>
-        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2rem] p-10">
-          <DialogHeader className="mb-6">
-            <div className="p-3 bg-primary/10 rounded-xl w-fit mb-4"><BookOpen className="h-6 w-6 text-primary" /></div>
-            <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase">Curriculum Registry</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Define a new technical or compliance training module.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[9px] uppercase font-bold text-slate-400">Training Title</Label>
-              <Input placeholder="e.g. CNC Safety Protocol" className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold" value={newTraining.title} onChange={(e) => setNewTraining({...newTraining, title: e.target.value})} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[9px] uppercase font-bold text-slate-400">Department</Label>
-                <Select value={newTraining.department} onValueChange={(val) => setNewTraining({...newTraining, department: val})}>
-                  <SelectTrigger className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold uppercase"><SelectValue placeholder="Select Dept" /></SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {["Admin", "Market", "Design", "Tool Room", "VMC Milling", "CNC Turning", "Assembly", "Quality"].map(d => (
-                      <SelectItem key={d} value={d} className="text-xs font-bold uppercase">{d}</SelectItem>
+        <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden flex flex-col max-h-[90vh]">
+          <ScrollArea className="flex-1">
+            <div className="p-10 space-y-10">
+              <DialogHeader className="mb-6">
+                <div className="p-3 bg-primary/10 rounded-xl w-fit mb-4"><BookOpen className="h-6 w-6 text-primary" /></div>
+                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Curriculum Registry</DialogTitle>
+                <DialogDescription className="text-xs text-slate-400 font-medium">Define a new technical or compliance training module with materials and assessments.</DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[9px] uppercase font-bold text-slate-400">Training Title</Label>
+                    <Input placeholder="e.g. CNC Safety Protocol" className="bg-slate-50 border-none h-12 text-xs font-bold rounded-xl" value={newTraining.title} onChange={(e) => setNewTraining({...newTraining, title: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[9px] uppercase font-bold text-slate-400">Department</Label>
+                    <Select value={newTraining.department} onValueChange={(val) => setNewTraining({...newTraining, department: val})}>
+                      <SelectTrigger className="bg-slate-50 border-none h-12 text-xs font-bold uppercase rounded-xl"><SelectValue placeholder="Select Dept" /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {["Admin", "Market", "Design", "Tool Room", "VMC Milling", "CNC Turning", "Assembly", "Quality"].map(d => (
+                          <SelectItem key={d} value={d} className="text-xs font-bold uppercase">{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-2">
+                      <LinkIcon className="h-3 w-3" /> Study Materials (URL)
+                    </Label>
+                    <Input placeholder="Link to PDF/Manual..." className="bg-slate-50 border-none h-12 text-xs font-bold rounded-xl" value={newTraining.materialsUrl} onChange={(e) => setNewTraining({...newTraining, materialsUrl: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[9px] uppercase font-bold text-slate-400 flex items-center gap-2">
+                      <Youtube className="h-3 w-3" /> Video Tutorial (URL)
+                    </Label>
+                    <Input placeholder="YouTube/Internal Video..." className="bg-slate-50 border-none h-12 text-xs font-bold rounded-xl" value={newTraining.videoUrl} onChange={(e) => setNewTraining({...newTraining, videoUrl: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400">Core Objectives</Label>
+                  <Textarea placeholder="Study goals..." className="bg-slate-50 border-none min-h-[80px] text-xs font-medium rounded-xl" value={newTraining.description} onChange={(e) => setNewTraining({...newTraining, description: e.target.value})} />
+                </div>
+
+                <div className="space-y-6 pt-6 border-t">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-[10px] uppercase font-bold text-primary flex items-center gap-2 tracking-widest">
+                      <HelpCircle className="h-4 w-4" /> Assessment Matrix
+                    </Label>
+                    <Button variant="ghost" size="sm" onClick={handleAddQuestion} className="h-8 text-[9px] font-bold uppercase tracking-widest gap-2 text-primary hover:bg-primary/5">
+                      <Plus className="h-3 w-3" /> Append Question
+                    </Button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {newTraining.quiz.map((q, qIdx) => (
+                      <div key={q.id} className="p-6 bg-slate-50 rounded-2xl space-y-4 border border-slate-100">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Q{qIdx + 1}</span>
+                          <Input 
+                            placeholder="Type question text..." 
+                            className="bg-white border-none h-10 text-xs font-bold rounded-lg flex-1"
+                            value={q.question}
+                            onChange={(e) => updateQuestion(qIdx, 'question', e.target.value)}
+                          />
+                          <Button variant="ghost" size="icon" onClick={() => setNewTraining(prev => ({...prev, quiz: prev.quiz.filter((_, i) => i !== qIdx)}))} className="h-8 w-8 text-slate-300 hover:text-red-500">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {q.options.map((opt, oIdx) => (
+                            <div key={oIdx} className="relative">
+                              <Input 
+                                placeholder={`Option ${oIdx + 1}`} 
+                                className={cn(
+                                  "bg-white border-2 h-10 text-[10px] font-bold rounded-lg pl-8",
+                                  q.correctAnswer === opt && opt !== '' ? "border-emerald-200" : "border-transparent"
+                                )}
+                                value={opt}
+                                onChange={(e) => updateOption(qIdx, oIdx, e.target.value)}
+                              />
+                              <button 
+                                onClick={() => updateQuestion(qIdx, 'correctAnswer', opt)}
+                                className={cn(
+                                  "absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 rounded-full border-2",
+                                  q.correctAnswer === opt && opt !== '' ? "bg-emerald-500 border-emerald-500" : "border-slate-200"
+                                )}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[9px] uppercase font-bold text-slate-400">Duration (Hours)</Label>
-                <Input type="number" className="bg-slate-50 border-none rounded-xl h-12 text-xs font-bold" value={newTraining.durationHours} onChange={(e) => setNewTraining({...newTraining, durationHours: Number(e.target.value)})} />
+                    {newTraining.quiz.length === 0 && (
+                      <p className="text-center text-[10px] text-slate-400 py-6 uppercase font-bold italic">No assessment nodes defined</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[9px] uppercase font-bold text-slate-400">Functional Description</Label>
-              <Textarea placeholder="Core learning objectives..." className="bg-slate-50 border-none rounded-xl min-h-[100px] text-xs font-medium" value={newTraining.description} onChange={(e) => setNewTraining({...newTraining, description: e.target.value})} />
-            </div>
-            <Button className="w-full h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl uppercase font-bold text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCreateTraining}>
-              <Plus className="h-4 w-4" /> Add to Curriculum
+          </ScrollArea>
+          <div className="p-6 border-t bg-slate-50/50 flex gap-4">
+            <Button variant="ghost" className="flex-1 h-14 rounded-2xl uppercase font-bold text-[10px]" onClick={() => setIsAddTrainingOpen(false)}>Abort</Button>
+            <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl uppercase font-bold text-[10px] shadow-xl flex gap-3" onClick={handleCreateTraining}>
+              <Plus className="h-4 w-4" /> Commit to Registry
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Deploy Training (Assignment) Dialog */}
       <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
         <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2rem] p-10">
           <DialogHeader className="mb-6">
             <div className="p-3 bg-primary/10 rounded-xl w-fit mb-4"><Target className="h-6 w-6 text-primary" /></div>
             <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase">Deploy Training</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Assign a curriculum node to a personnel identity.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="space-y-2">
@@ -336,3 +448,9 @@ export function TrainingManagement({
     </div>
   );
 }
+
+const X = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);

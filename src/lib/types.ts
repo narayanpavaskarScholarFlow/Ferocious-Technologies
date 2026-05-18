@@ -312,6 +312,13 @@ export interface ProductionBatch {
   lastSync: string;
 }
 
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+}
+
 export interface Training {
   id: string;
   title: string;
@@ -319,6 +326,9 @@ export interface Training {
   department: string;
   durationHours: number;
   impactScore: number; // How much it affects efficiency (0-10)
+  materialsUrl?: string;
+  videoUrl?: string;
+  quiz?: QuizQuestion[];
 }
 
 export interface TrainingAssignment {

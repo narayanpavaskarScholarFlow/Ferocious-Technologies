@@ -47,6 +47,7 @@ import { SystemUser, PermissionLevel } from '@/lib/types';
 import { sendCredentials } from '@/ai/flows/send-credentials-flow';
 
 const JOB_TITLES = [
+  "HR",
   "Manager",
   "Supervisor",
   "VMC Programmer",

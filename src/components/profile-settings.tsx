@@ -48,7 +48,9 @@ import {
   EyeOff,
   Save,
   RefreshCw,
-  Hash
+  Hash,
+  ChevronRight,
+  ShieldAlert
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/user-management';
@@ -117,9 +119,11 @@ export function ProfileSettings({
 }: ProfileSettingsProps) {
   const { toast } = useToast();
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
+  const [stagedPermissions, setStagedPermissions] = useState<Record<string, PermissionLevel>>({});
   const [selectedModuleForConfig, setSelectedModuleForConfig] = useState<ViewType | ''>('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMatrixSaving, setIsMatrixSaving] = useState(false);
 
   const isMasterAdmin = currentUser === 'Master Admin';
 
@@ -156,6 +160,19 @@ export function ProfileSettings({
       });
     }
   }, [currentUserData, currentUser]);
+
+  const currentUserMatrix = useMemo(() => {
+    if (users.length === 0) return null;
+    return users.find(u => u.id === selectedUserForMatrix) || null;
+  }, [users, selectedUserForMatrix]);
+
+  useEffect(() => {
+    if (currentUserMatrix) {
+      setStagedPermissions(currentUserMatrix.permissions || {});
+    } else {
+      setStagedPermissions({});
+    }
+  }, [currentUserMatrix?.id]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -203,23 +220,33 @@ export function ProfileSettings({
     }, 800);
   };
 
-  const currentUserMatrix = useMemo(() => {
-    if (users.length === 0) return null;
-    const found = users.find(u => u.id === selectedUserForMatrix);
-    return found || users[0];
-  }, [users, selectedUserForMatrix]);
+  const handleUpdateStagedPermission = (pageId: string, level: PermissionLevel) => {
+    setStagedPermissions(prev => ({
+      ...prev,
+      [pageId]: level
+    }));
+  };
 
-  const handleUpdatePermission = (userId: string, pageId: string, level: PermissionLevel) => {
-    const userToUpdate = users.find(u => u.id === userId);
-    if (!userToUpdate) return;
+  const handleSaveMatrix = () => {
+    if (!currentUserMatrix) {
+      toast({ variant: "destructive", title: "Target Missing", description: "Please select a user identity to synchronize." });
+      return;
+    }
+
+    setIsMatrixSaving(true);
+    
     onSaveUser({
-      ...userToUpdate,
-      permissions: {
-        ...(userToUpdate.permissions || {}),
-        [pageId]: level
-      }
+      ...currentUserMatrix,
+      permissions: stagedPermissions
     });
-    toast({ title: "Permission Matrix Updated", description: `Access level for ${pageId} committed to security ledger.` });
+
+    setTimeout(() => {
+      setIsMatrixSaving(false);
+      toast({
+        title: "Access Matrix Synchronized",
+        description: `Security protocols for ${currentUserMatrix.name} have been committed to the ledger.`
+      });
+    }, 800);
   };
 
   const updateTitle = (view: string, title: string) => {
@@ -426,38 +453,96 @@ export function ProfileSettings({
         <TabsContent value="matrix" className="m-0 print:hidden">
           <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-[var(--radius)]">
             <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div>
-                <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary rounded-xl text-white shadow-lg"><Unlock className="h-6 w-6" /></div>
+                <div>
+                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Hierarchical Security Ledger</p>
+                </div>
               </div>
-              <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
-                <SelectTrigger className="w-[240px] h-11 bg-white border-slate-200 rounded-xl text-xs font-bold">
-                  <SelectValue placeholder="Select User..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-end gap-1">
+                  <Select value={selectedUserForMatrix || ''} onValueChange={setSelectedUserForMatrix}>
+                    <SelectTrigger className="w-[280px] h-11 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm">
+                      <SelectValue placeholder="Identify Target Node..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                      {users.map(u => (
+                        <SelectItem key={u.id} value={u.id} className="text-[10px] font-bold uppercase py-3">
+                          <div className="flex flex-col">
+                            <span>{u.name}</span>
+                            <span className="text-[8px] text-slate-400 mt-0.5">ID: {u.id} • {u.role}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  disabled={isMatrixSaving || !selectedUserForMatrix}
+                  onClick={handleSaveMatrix}
+                  className="h-11 px-8 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-red-600/20 flex gap-3 group"
+                >
+                  {isMatrixSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save Matrix Protocol
+                </Button>
+              </div>
             </div>
+            
             <div className="p-10">
-              {currentUserMatrix && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {currentUserMatrix ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                   {ACCESS_NODES.map(node => (
-                    <div key={node.id} className="p-6 bg-slate-50 rounded-2xl flex flex-col gap-4">
-                      <span className="text-[10px] font-bold uppercase text-slate-700">{node.label}</span>
-                      <Select value={currentUserMatrix.permissions?.[node.id] || 'none'} onValueChange={(val) => handleUpdatePermission(currentUserMatrix.id, node.id, val as any)}>
-                        <SelectTrigger className="h-10 bg-white border-slate-200 rounded-xl text-[9px] font-bold uppercase"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Access</SelectItem>
-                          <SelectItem value="read">Read Only</SelectItem>
-                          <SelectItem value="edit">Edit Access</SelectItem>
-                          <SelectItem value="full">Full Command</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div key={node.id} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex flex-col gap-6 group hover:border-primary/20 transition-all shadow-inner">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-white rounded-xl shadow-sm text-slate-400 group-hover:text-primary transition-colors">
+                          <node.icon className="h-4 w-4" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase text-slate-600 tracking-widest">{node.label}</span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Grant Access Level</Label>
+                        <Select 
+                          value={stagedPermissions[node.id] || 'none'} 
+                          onValueChange={(val) => handleUpdateStagedPermission(node.id, val as any)}
+                        >
+                          <SelectTrigger className="h-10 bg-white border-none rounded-xl text-[9px] font-bold uppercase shadow-sm focus:ring-primary/20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                            <SelectItem value="none" className="text-[9px] font-bold uppercase text-slate-400">No Access (Locked)</SelectItem>
+                            <SelectItem value="read" className="text-[9px] font-bold uppercase text-blue-600">Read Only (Tele)</SelectItem>
+                            <SelectItem value="edit" className="text-[9px] font-bold uppercase text-amber-600">Edit Access (Mod)</SelectItem>
+                            <SelectItem value="full" className="text-[9px] font-bold uppercase text-emerald-600">Full Command (Root)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="h-[400px] flex flex-col items-center justify-center opacity-30 text-center">
+                  <div className="p-10 bg-slate-50 rounded-full mb-8">
+                    <ShieldAlert className="h-20 w-20 text-slate-300" />
+                  </div>
+                  <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Node Required</h4>
+                  <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity from the directory to initialize the security matrix synchronization.</p>
+                </div>
               )}
             </div>
+            
+            {selectedUserForMatrix && (
+              <div className="px-10 pb-10">
+                <div className="p-6 bg-amber-50/50 border border-amber-100 rounded-3xl flex items-center gap-4">
+                  <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
+                  <p className="text-[10px] text-amber-700 font-bold uppercase tracking-widest leading-relaxed">
+                    Staging Active: Permission nodes modified here will not affect the operational ledger until the "Save Matrix Protocol" sequence is executed.
+                  </p>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
 

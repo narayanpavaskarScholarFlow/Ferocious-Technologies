@@ -33,7 +33,9 @@ import {
   RefreshCw,
   LayoutGrid,
   Send,
-  AlertCircle
+  AlertCircle,
+  User,
+  ArchiveX
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -404,7 +406,7 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser, initialSub
                     <TableCell className="text-center">
                       <Badge className={cn(
                         "text-[9px] font-bold uppercase px-3 rounded-full",
-                        l.status === 'Approved' ? "bg-green-50 text-green-700" :
+                        l.status === 'Approved' ? "bg-emerald-50 text-emerald-700" :
                         l.status === 'Rejected' ? "bg-red-50 text-red-700" :
                         "bg-blue-50 text-blue-700"
                       )}>
@@ -515,4 +517,3 @@ export function ManpowerUtilization({ users, onSaveUser, currentUser, initialSub
     </div>
   );
 }
-

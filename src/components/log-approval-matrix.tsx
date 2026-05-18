@@ -38,17 +38,30 @@ export function LogApprovalMatrix({ logs, users, currentUser }: LogApprovalMatri
   const [searchTerm, setSearchTerm] = useState('');
 
   const currentUserData = useMemo(() => {
-    return users.find(u => u.name === currentUser);
+    return users.find(u => u.name === currentUser || u.email === currentUser);
   }, [users, currentUser]);
+
+  const isHRAdmin = useMemo(() => {
+    return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
+  }, [currentUser, currentUserData]);
 
   const submittedLogs = useMemo(() => {
     return logs.filter(l => {
+      const isSubmitted = l.status === 'Submitted';
+      if (!isSubmitted) return false;
+
       const matchesSearch = l.operator.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            l.workOrderId?.includes(searchTerm);
-      const isManager = currentUser === 'Master Admin' || users.find(u => u.id === l.operatorId)?.reportingManager === currentUser;
-      return l.status === 'Submitted' && matchesSearch && (currentUser === 'Master Admin' || isManager);
+      if (!matchesSearch) return false;
+
+      // Master Admin and HR see everything
+      if (isHRAdmin) return true;
+
+      // Reporting managers see only their subordinates' logs
+      const operatorUser = users.find(u => u.id === l.operatorId || u.name === l.operator);
+      return operatorUser?.reportingManager === currentUser;
     });
-  }, [logs, searchTerm, currentUser, users]);
+  }, [logs, searchTerm, currentUser, users, isHRAdmin]);
 
   const handleApprove = (log: WorkLogEntry) => {
     updateDocumentNonBlocking(doc(db, 'work_logs', log.id), {

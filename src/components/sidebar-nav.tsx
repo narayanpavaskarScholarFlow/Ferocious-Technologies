@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -41,9 +42,10 @@ interface SidebarNavProps {
   isSlim?: boolean;
   customTitles?: Record<string, string>;
   userRole?: string;
+  isReportingManager?: boolean;
 }
 
-export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {}, userRole }: SidebarNavProps) {
+export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {}, userRole, isReportingManager }: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -80,7 +82,8 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       if (isMasterAdmin) return true;
 
       // Role-based filtering for HR Command
-      if (item.id === 'hr') return isHRAdmin;
+      // Reporting Managers also need to see HR for Log Approvals
+      if (item.id === 'hr') return isHRAdmin || isReportingManager;
       
       // Portal is always visible for personal use
       if (item.id === 'my-portal') return true;
@@ -89,7 +92,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       const level = permissions[item.id];
       return level && level !== 'none';
     });
-  }, [permissions, customTitles, userRole]);
+  }, [permissions, customTitles, userRole, isReportingManager]);
 
   if (!mounted) {
     return <div className={cn("bg-[#001F3D] h-screen", isSlim ? "w-20" : "w-64")} />;

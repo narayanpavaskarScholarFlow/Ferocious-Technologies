@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -149,6 +150,11 @@ function IndustrialERPInternal() {
     document.documentElement.style.setProperty('--table-cell-padding', densityMap[targetSettings.tableDensity]);
   }, [currentUserData?.uiSettings]);
 
+  const isReportingManager = useMemo(() => {
+    if (!currentUser) return false;
+    return usersData.some(u => u.reportingManager === currentUser);
+  }, [usersData, currentUser]);
+
   const permissions = useMemo(() => {
     const isMasterAdmin = currentUser === 'Master Admin';
     const isHR = currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
@@ -168,8 +174,15 @@ function IndustrialERPInternal() {
       }
       return clearance;
     }
-    return currentUserData?.permissions || {};
-  }, [currentUser, currentUserData]);
+    
+    const basePermissions = currentUserData?.permissions || {};
+    // If they are a reporting manager, they MUST see HR for approvals
+    if (isReportingManager) {
+      basePermissions.hr = 'read';
+    }
+    
+    return basePermissions;
+  }, [currentUser, currentUserData, isReportingManager]);
 
   const hasAccess = useCallback((view: string): boolean => {
     if (currentUser === 'Master Admin') return true;
@@ -236,6 +249,7 @@ function IndustrialERPInternal() {
           isSlim={isSlimSidebar}
           customTitles={uiSettings.customTitles}
           userRole={currentUser === 'Master Admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
+          isReportingManager={isReportingManager}
         />
       </div>
 
@@ -271,7 +285,7 @@ function IndustrialERPInternal() {
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} />}
-            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} />}
+            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}

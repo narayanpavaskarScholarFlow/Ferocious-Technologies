@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -32,6 +33,7 @@ interface HRManagementProps {
   onSaveAssignment: (assignment: TrainingAssignment) => void;
   onDeleteAssignment: (id: string) => void;
   currentUser: string | null;
+  isReportingManager?: boolean;
   title?: string;
 }
 
@@ -45,6 +47,7 @@ export function HRManagement({
   onSaveAssignment, 
   onDeleteAssignment,
   currentUser,
+  isReportingManager,
   title = 'HR Command Hub'
 }: HRManagementProps) {
   const db = useFirestore();
@@ -53,11 +56,14 @@ export function HRManagement({
     return users.find(u => u.name === currentUser || u.email === currentUser);
   }, [users, currentUser]);
 
-  const isAuthorized = useMemo(() => {
+  const isHRAdmin = useMemo(() => {
     return currentUser === 'Master Admin' || currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
   }, [currentUser, currentUserData]);
 
-  const [activeTab, setActiveTab] = useState('overview');
+  // If they are not HR Admin and not a reporting manager, they shouldn't be here.
+  const isAuthorized = isHRAdmin || isReportingManager;
+
+  const [activeTab, setActiveTab] = useState(isHRAdmin ? 'overview' : 'approvals');
 
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
   const { data: logsData } = useCollection<WorkLogEntry>(logsQuery);
@@ -74,15 +80,23 @@ export function HRManagement({
   }, [users]);
 
   const pendingApprovals = useMemo(() => {
-    return logs.filter(l => l.status === 'Submitted').length;
-  }, [logs]);
+    return logs.filter(l => {
+      const isSubmitted = l.status === 'Submitted';
+      if (!isSubmitted) return false;
+      
+      if (isHRAdmin) return true;
+      
+      const operatorUser = users.find(u => u.id === l.operatorId || u.name === l.operator);
+      return operatorUser?.reportingManager === currentUser;
+    }).length;
+  }, [logs, isHRAdmin, users, currentUser]);
 
   if (!isAuthorized) {
     return (
       <div className="h-[500px] flex flex-col items-center justify-center opacity-30 text-center">
          <ShieldCheck className="h-20 w-20 mb-6 text-slate-300" />
          <h3 className="text-xl font-display font-bold uppercase text-[#001F3D]">Restricted Access</h3>
-         <p className="text-xs text-slate-400 mt-2">Administrative Command Center is gated for HR & Admin nodes only.</p>
+         <p className="text-xs text-slate-400 mt-2">Administrative Command Center is gated for authorized personnel nodes only.</p>
       </div>
     );
   }
@@ -101,26 +115,30 @@ export function HRManagement({
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Global workforce governance and payroll matrix.</p>
         </div>
         
-        <div className="flex items-center gap-6">
-          <Card className="flex items-center gap-8 px-8 py-4 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-blue-900/5">
-            <div className="text-center">
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Efficiency Index</p>
-              <p className="text-2xl font-display font-bold text-primary">{stats.avgEfficiency}%</p>
-            </div>
-            <div className="h-10 w-px bg-slate-100" />
-            <div className="text-center">
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Personnel</p>
-              <p className="text-2xl font-display font-bold text-[#001F3D]">{stats.activeUsers}/{stats.totalUsers}</p>
-            </div>
-          </Card>
-        </div>
+        {isHRAdmin && (
+          <div className="flex items-center gap-6">
+            <Card className="flex items-center gap-8 px-8 py-4 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-blue-900/5">
+              <div className="text-center">
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Efficiency Index</p>
+                <p className="text-2xl font-display font-bold text-primary">{stats.avgEfficiency}%</p>
+              </div>
+              <div className="h-10 w-px bg-slate-100" />
+              <div className="text-center">
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Personnel</p>
+                <p className="text-2xl font-display font-bold text-[#001F3D]">{stats.activeUsers}/{stats.totalUsers}</p>
+              </div>
+            </Card>
+          </div>
+        )}
       </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
-          <TabsTrigger value="overview" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <Users className="h-3.5 w-3.5 mr-2" /> Workforce Matrix
-          </TabsTrigger>
+          {isHRAdmin && (
+            <TabsTrigger value="overview" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+              <Users className="h-3.5 w-3.5 mr-2" /> Workforce Matrix
+            </TabsTrigger>
+          )}
           
           <TabsTrigger value="approvals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all relative">
             <UserCheck className="h-3.5 w-3.5 mr-2" /> Log Approvals
@@ -131,22 +149,28 @@ export function HRManagement({
             )}
           </TabsTrigger>
 
-          <TabsTrigger value="salary" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <Banknote className="h-3.5 w-3.5 mr-2" /> Salary Structure
-          </TabsTrigger>
+          {isHRAdmin && (
+            <>
+              <TabsTrigger value="salary" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+                <Banknote className="h-3.5 w-3.5 mr-2" /> Salary Structure
+              </TabsTrigger>
 
-          <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <GraduationCap className="h-3.5 w-3.5 mr-2" /> Global Training Registry
-          </TabsTrigger>
+              <TabsTrigger value="training" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+                <GraduationCap className="h-3.5 w-3.5 mr-2" /> Global Training Registry
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="m-0">
-          <ManpowerUtilization 
-            users={users} 
-            onSaveUser={onSaveUser} 
-            currentUser={currentUser}
-            initialSubTab="overview"
-          />
+          {isHRAdmin && (
+            <ManpowerUtilization 
+              users={users} 
+              onSaveUser={onSaveUser} 
+              currentUser={currentUser}
+              initialSubTab="overview"
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="approvals" className="m-0">
@@ -158,23 +182,27 @@ export function HRManagement({
         </TabsContent>
 
         <TabsContent value="salary" className="m-0">
-          <SalaryStructureLedger 
-            users={users}
-            onSaveUser={onSaveUser}
-          />
+          {isHRAdmin && (
+            <SalaryStructureLedger 
+              users={users}
+              onSaveUser={onSaveUser}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="training" className="m-0">
-          <TrainingManagement 
-            trainings={trainings}
-            assignments={assignments}
-            users={users}
-            onSaveTraining={onSaveTraining}
-            onDeleteTraining={onDeleteTraining}
-            onSaveAssignment={onSaveAssignment}
-            onDeleteAssignment={onDeleteAssignment}
-            isFullControl={true}
-          />
+          {isHRAdmin && (
+            <TrainingManagement 
+              trainings={trainings}
+              assignments={assignments}
+              users={users}
+              onSaveTraining={onSaveTraining}
+              onDeleteTraining={onDeleteTraining}
+              onSaveAssignment={onSaveAssignment}
+              onDeleteAssignment={onDeleteAssignment}
+              isFullControl={true}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

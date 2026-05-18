@@ -93,9 +93,6 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
 ];
 
 interface ProfileSettingsProps {
-  activeTab?: string;
-  onTabChange?: (tab: string) => void;
-  onLogout?: () => void;
   currentUser: string | null;
   users: SystemUser[];
   onSaveUser: (user: SystemUser) => void;
@@ -107,9 +104,6 @@ interface ProfileSettingsProps {
 }
 
 export function ProfileSettings({ 
-  activeTab = 'profile', 
-  onTabChange, 
-  onLogout,
   currentUser,
   users,
   onSaveUser,
@@ -120,6 +114,7 @@ export function ProfileSettings({
   title = 'Control Center'
 }: ProfileSettingsProps) {
   const { toast } = useToast();
+  const [internalTab, setInternalTab] = useState('profile');
   const [selectedUserForMatrix, setSelectedUserForMatrix] = useState<string | null>(null);
   const [stagedPermissions, setStagedPermissions] = useState<Record<string, PermissionLevel>>({});
   const [selectedModuleForConfig, setSelectedModuleForConfig] = useState<ViewType | ''>('');
@@ -142,7 +137,7 @@ export function ProfileSettings({
   useEffect(() => {
     if (currentUserData) {
       setProfileData({
-        username: currentUserData.username || '',
+        username: currentUserData.username || currentUserData.email || '',
         firstName: currentUserData.firstName || '',
         lastName: currentUserData.lastName || '',
         email: currentUserData.email || '',
@@ -170,7 +165,6 @@ export function ProfileSettings({
 
   const reportingManagerData = useMemo(() => {
     if (!currentUserData?.reportingManager || !users) return null;
-    // Find manager by name or by ID
     return users.find(u => u.name === currentUserData.reportingManager || u.id === currentUserData.reportingManager);
   }, [currentUserData?.reportingManager, users]);
 
@@ -212,7 +206,7 @@ export function ProfileSettings({
       firstName: profileData.firstName,
       lastName: profileData.lastName,
       name: `${profileData.firstName} ${profileData.lastName}`.trim(),
-      email: profileData.email,
+      email: profileData.username, // Synchronize Login ID with Username
       password: profileData.password,
       image: profileData.image
     };
@@ -286,7 +280,7 @@ export function ProfileSettings({
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full print:block">
+      <Tabs value={internalTab} onValueChange={setInternalTab} className="w-full print:block">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm print:hidden">
           <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
             <UserCircle className="h-3.5 w-3.5 mr-2" /> User Profile
@@ -347,7 +341,6 @@ export function ProfileSettings({
                   </div>
                 </Card>
 
-                {/* Reporting Manager Protocol Section */}
                 <Card className="p-6 bg-white border-slate-200 shadow-xl rounded-[var(--radius)] overflow-hidden">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-primary/5 rounded-lg text-primary"><Network className="h-4 w-4" /></div>
@@ -404,11 +397,14 @@ export function ProfileSettings({
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">User Name (Network Alias)</Label>
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">Network Identifier (Login ID)</Label>
                     <div className="relative group">
                       <Input 
                         value={profileData.username} 
-                        onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, '') }))}
+                        onChange={(e) => {
+                          const val = e.target.value.toLowerCase().replace(/\s/g, '');
+                          setProfileData(prev => ({ ...prev, username: val, email: val }));
+                        }}
                         className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10 focus-visible:ring-primary/20" 
                       />
                       <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
@@ -434,14 +430,14 @@ export function ProfileSettings({
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">Network Identifier (Login ID)</Label>
+                    <Label className="text-[9px] font-bold uppercase tracking-widest text-slate-500 ml-1">System Email (Sync)</Label>
                     <div className="relative group">
                       <Input 
                         value={profileData.email} 
-                        onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                        className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10 focus-visible:ring-primary/20" 
+                        readOnly
+                        className="h-12 bg-slate-100 border-none rounded-xl font-bold font-code text-slate-400 pl-10 cursor-not-allowed" 
                       />
-                      <Contact className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                      <Contact className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
                     </div>
                   </div>
 
@@ -477,16 +473,6 @@ export function ProfileSettings({
                   </Button>
                 </div>
               </Card>
-
-              <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-start gap-4">
-                <ShieldCheck className="h-6 w-6 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Security Protocol v2.4</p>
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Identity nodes modified here will propagate across the **Agile Kanban**, **Master Plan**, and **Work Log** modules in real-time. Password changes strictly mandate a browser session refresh.
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </TabsContent>
@@ -577,17 +563,6 @@ export function ProfileSettings({
                 </div>
               )}
             </div>
-            
-            {selectedUserForMatrix && (
-              <div className="px-10 pb-10">
-                <div className="p-6 bg-amber-50/50 border border-amber-100 rounded-3xl flex items-center gap-4">
-                  <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
-                  <p className="text-[10px] text-amber-700 font-bold uppercase tracking-widest leading-relaxed">
-                    Staging Active: Permission nodes modified here will not affect the operational ledger until the "Save Matrix Protocol" sequence is executed.
-                  </p>
-                </div>
-              </div>
-            )}
           </Card>
         </TabsContent>
 

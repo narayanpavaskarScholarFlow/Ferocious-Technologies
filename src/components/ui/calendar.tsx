@@ -42,12 +42,12 @@ function Calendar({
         ),
         month_grid: "w-full border-collapse",
         weekdays: "flex border-b border-slate-50 pb-1",
-        weekday: "text-[#001F3D]/40 w-8 font-bold text-[10px] uppercase text-center tracking-tighter",
+        weekday: "text-[#001F3D]/40 w-6 font-bold text-[10px] uppercase text-center tracking-tighter",
         week: "flex w-full mt-0.5",
         day: "p-0",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-8 w-8 p-0 font-bold text-[11px] aria-selected:opacity-100 hover:bg-blue-50 text-[#001F3D] rounded-lg transition-all"
+          "h-8 w-6 p-0 font-bold text-[11px] aria-selected:opacity-100 hover:bg-blue-50 text-[#001F3D] rounded-lg transition-all"
         ),
         selected: "bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white shadow-md shadow-blue-600/20",
         today: "border-2 border-blue-600/30 text-blue-600 font-black",

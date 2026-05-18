@@ -11,7 +11,7 @@ import {z} from 'genkit';
 
 const SendCredentialsInputSchema = z.object({
   name: z.string().describe('The full name of the user.'),
-  email: z.string().email().describe('The registered email address.'),
+  email: z.string().describe('The registered network identifier or email address.'),
   role: z.string().describe('The assigned functional role.'),
   temporaryPassword: z.string().describe('The system-generated temporary password.'),
 });
@@ -39,7 +39,7 @@ Your task is to compose a professional welcome email for a new identity being on
 Recipient Details:
 - Full Name: {{name}}
 - Designated Role: {{role}}
-- Login Identifier (Email): {{email}}
+- Login Identifier: {{email}}
 - Temporary Security Token: {{temporaryPassword}}
 
 Email Protocol:

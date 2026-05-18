@@ -51,12 +51,13 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
   }, []);
 
   const menuItems = useMemo(() => {
-    const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || userRole === 'Master Admin';
+    const isMasterAdmin = userRole === 'Master Admin';
+    const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || isMasterAdmin;
 
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
       { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'My Personnel Portal' },
-      { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub', restricted: true },
+      { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub' },
       { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: customTitles['orders'] || 'Master Orders' },
       { id: 'production-planner' as ViewType, icon: Factory, label: customTitles['production-planner'] || 'Mass Production' },
@@ -75,6 +76,9 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     ];
 
     return items.filter(item => {
+      // Master Admin bypass: Sees EVERYTHING including Portal and HR Command
+      if (isMasterAdmin) return true;
+
       // Role-based filtering for HR Command
       if (item.id === 'hr') return isHRAdmin;
       

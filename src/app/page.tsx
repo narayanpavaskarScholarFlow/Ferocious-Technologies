@@ -235,7 +235,7 @@ function IndustrialERPInternal() {
           permissions={permissions} 
           isSlim={isSlimSidebar}
           customTitles={uiSettings.customTitles}
-          userRole={currentUserData?.role || (currentUser === 'Master Admin' ? 'Master Admin' : 'User')}
+          userRole={currentUser === 'Master Admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
         />
       </div>
 
@@ -249,7 +249,7 @@ function IndustrialERPInternal() {
           <div className="flex items-center gap-4">
              <div className="text-right hidden md:block">
                 <p className="text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
-                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'User'}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || (currentUser === 'Master Admin' ? 'Master Admin' : 'User')}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>

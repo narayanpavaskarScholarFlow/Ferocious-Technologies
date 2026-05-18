@@ -40,7 +40,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const [resetEmail, setResetEmail] = useState('');
 
   const handleLogin = () => {
-    // Validation is only triggered when this function is explicitly called by the user
+    // Protocol requirement: Master Admin / admin123
     if (!username.trim() || !password.trim()) {
       toast({
         variant: "destructive",
@@ -80,7 +80,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
           description: "Unauthorized credentials detected. Security key mismatch."
         });
       }
-    }, 1200);
+    }, 800);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -106,7 +106,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center p-6 relative overflow-hidden font-body">
-      {/* Dynamic Industrial Background Matrix - pointer-events-none to prevent click interference */}
+      {/* Background Matrix layers with pointer-events-none */}
       <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-accent/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
@@ -114,9 +114,8 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
       <div className="w-full max-w-[520px] z-10 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
         <div className="flex flex-col items-center text-center gap-6">
           <div className="relative group">
-            <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            <div className="p-7 bg-[#0A0F18] rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] border border-white/5 relative group cursor-pointer active:scale-95 transition-all">
-              <Zap className="h-14 w-14 text-white fill-white transition-transform duration-700 group-hover:rotate-12 pointer-events-none" />
+            <div className="p-7 bg-[#0A0F18] rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] border border-white/5 relative">
+              <Zap className="h-14 w-14 text-white fill-white pointer-events-none" />
               <div className="absolute -top-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-4 border-[#0A0F18] animate-pulse pointer-events-none" />
             </div>
           </div>
@@ -147,13 +146,14 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   <div className="relative group/input">
                     <Input 
                       autoFocus
+                      name="username"
                       placeholder="Username, ID or Email" 
                       className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       onKeyDown={handleKeyDown}
                     />
-                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary pointer-events-none" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none" />
                   </div>
                 </div>
 
@@ -170,6 +170,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   </div>
                   <div className="relative group/input">
                     <Input 
+                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••" 
                       className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300"
@@ -177,9 +178,10 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={handleKeyDown}
                     />
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary pointer-events-none" />
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none" />
                     <button
                       type="button"
+                      tabIndex={-1}
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-20"
                     >
@@ -192,7 +194,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
               <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-start gap-4">
                 <Terminal className="h-4 w-4 text-slate-400 mt-0.5 pointer-events-none" />
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                  Encryption Layer: SHA-256 Synchronized. Identity nodes are monitored for unauthorized access patterns.
+                  Encryption Layer: SHA-256 Synchronized. Identifier: "Master Admin", Token: "admin123"
                 </p>
               </div>
 
@@ -200,7 +202,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                 type="button" 
                 disabled={isLoading}
                 onClick={handleLogin}
-                className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.4em] text-[11px] shadow-2xl shadow-primary/20 transition-all duration-500 group overflow-hidden"
+                className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.4em] text-[11px] shadow-2xl shadow-primary/20 transition-all duration-300 group overflow-hidden"
               >
                 {isLoading ? (
                   <RefreshCw className="h-6 w-6 animate-spin" />
@@ -210,11 +212,10 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                     <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleResetRequest} className="space-y-10 animate-in slide-in-from-right-4 duration-500">
+            <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
               <div className="flex items-center gap-5 mb-2">
                 <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Mail className="h-6 w-6 pointer-events-none" /></div>
                 <div>
@@ -233,12 +234,9 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                     />
-                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 transition-colors group-focus-within/input:text-primary pointer-events-none" />
+                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none" />
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-relaxed px-2 font-bold uppercase tracking-widest text-center">
-                  Identity verification required. Submit your identifier to receive a temporary temporal key.
-                </p>
               </div>
 
               <div className="flex gap-4">
@@ -251,14 +249,15 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   Abort
                 </Button>
                 <Button 
-                  type="submit"
+                  type="button"
                   disabled={isLoading || !resetEmail}
+                  onClick={handleResetRequest}
                   className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20"
                 >
                   Request Key
                 </Button>
               </div>
-            </form>
+            </div>
           )}
         </Card>
 

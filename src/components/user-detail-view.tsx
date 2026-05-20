@@ -87,6 +87,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
   // Matrix Filter State
   const [matrixSearch, setMatrixSearch] = useState('');
   const [matrixCategoryFilter, setMatrixCategoryFilter] = useState('all');
+  const [selectedMatrixModule, setSelectedMatrixModule] = useState<string>('all');
 
   const targetUser = useMemo(() => {
     return users.find(u => u.id === userId) || null;
@@ -136,9 +137,10 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
     return ACCESS_NODES.filter(node => {
       const matchesSearch = node.label.toLowerCase().includes(matrixSearch.toLowerCase());
       const matchesCategory = matrixCategoryFilter === 'all' || node.category === matrixCategoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesModule = selectedMatrixModule === 'all' || node.id === selectedMatrixModule;
+      return matchesSearch && matchesCategory && matchesModule;
     });
-  }, [matrixSearch, matrixCategoryFilter]);
+  }, [matrixSearch, matrixCategoryFilter, selectedMatrixModule]);
 
   const categories = useMemo(() => {
     const cats = new Set(ACCESS_NODES.map(n => n.category));
@@ -252,7 +254,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                     <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Identifier (Login ID)</Label>
                     <div className="relative">
                       <Input value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase()})} className="h-11 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10" />
-                      <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                      <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                     </div>
                   </div>
 
@@ -299,6 +301,22 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
         <div className="xl:col-span-8 space-y-6">
           {/* Matrix Filter Bar */}
           <Card className="p-4 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col md:flex-row items-center gap-4">
+            <div className="w-full md:w-64">
+              <Select value={selectedMatrixModule} onValueChange={setSelectedMatrixModule}>
+                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-inner">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className="h-3.5 w-3.5 text-slate-400" />
+                    <SelectValue placeholder="Select Module" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                  <SelectItem value="all" className="text-[10px] font-bold uppercase">All Modules</SelectItem>
+                  {ACCESS_NODES.map(node => (
+                    <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase">{node.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="relative flex-1 group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
               <Input 
@@ -324,8 +342,8 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                 </SelectContent>
               </Select>
             </div>
-            {(matrixSearch || matrixCategoryFilter !== 'all') && (
-              <Button variant="ghost" size="icon" onClick={() => { setMatrixSearch(''); setMatrixCategoryFilter('all'); }} className="h-11 w-11 rounded-xl text-slate-400 hover:text-red-500">
+            {(matrixSearch || matrixCategoryFilter !== 'all' || selectedMatrixModule !== 'all') && (
+              <Button variant="ghost" size="icon" onClick={() => { setMatrixSearch(''); setMatrixCategoryFilter('all'); setSelectedMatrixModule('all'); }} className="h-11 w-11 rounded-xl text-slate-400 hover:text-red-500">
                 <X className="h-5 w-5" />
               </Button>
             )}

@@ -60,7 +60,8 @@ export type ViewType =
   | 'agile'
   | 'training'
   | 'manpower'
-  | 'salary';
+  | 'salary'
+  | 'team-matrix';
 
 export interface SubTask {
   id: string;

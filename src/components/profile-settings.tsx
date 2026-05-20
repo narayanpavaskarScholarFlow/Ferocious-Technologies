@@ -74,6 +74,7 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Contact },
   { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: LineChart },
+  { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
   { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: ShoppingCart },
   { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Factory },
   { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: LayoutGrid },

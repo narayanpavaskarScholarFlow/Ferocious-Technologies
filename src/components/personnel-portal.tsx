@@ -35,7 +35,8 @@ import {
   Users,
   Mail,
   Cpu,
-  UserCheck
+  UserCheck,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SystemUser, TrainingAssignment, UserLeave, SalarySlip, Training, QuizQuestion } from '@/lib/types';
@@ -83,7 +84,11 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
     return users.filter(u => u.reportingManager === currentUser.name || u.reportingManager === currentUser.id);
   }, [users, currentUser]);
 
-  const isReportingManager = myTeam.length > 0;
+  const hasTeamAccess = useMemo(() => {
+    if (currentUser?.name === 'Master Admin') return true;
+    const level = currentUser?.permissions?.['team-matrix'];
+    return level && level !== 'none';
+  }, [currentUser]);
 
   const isLateForPlanning = useMemo(() => {
     const today = new Date();
@@ -166,7 +171,7 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
         <div className="px-4">
           <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
             <TabsTrigger value="dashboard" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">Overview</TabsTrigger>
-            {isReportingManager && (
+            {hasTeamAccess && (
               <TabsTrigger value="team" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
                 <Users className="h-3.5 w-3.5 mr-2" /> My Team Matrix
               </TabsTrigger>
@@ -225,10 +230,10 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
           </div>
         </TabsContent>
 
-        {isReportingManager && (
+        {hasTeamAccess && (
           <TabsContent value="team" className="m-0 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myTeam.map((member) => (
+              {myTeam.length > 0 ? myTeam.map((member) => (
                 <Card key={member.id} className="p-8 border-slate-200 shadow-xl bg-white hover:border-primary/50 transition-all rounded-[2rem] group relative overflow-hidden flex flex-col justify-between">
                   <div className="absolute top-0 right-0 p-4">
                     <Badge className={cn(
@@ -278,7 +283,15 @@ export function PersonnelPortal({ currentUser, assignments, leaves, slips, holid
                     </Button>
                   </div>
                 </Card>
-              ))}
+              )) : (
+                <div className="col-span-full py-32 flex flex-col items-center justify-center opacity-30 text-center">
+                   <div className="p-10 bg-slate-50 rounded-[3rem] mb-6">
+                     <ShieldAlert className="h-16 w-16 text-slate-300" />
+                   </div>
+                   <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">No Direct Reports</h4>
+                   <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">This identity is not currently designated as a reporting manager in the master ledger.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
         )}

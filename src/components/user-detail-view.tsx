@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -25,7 +24,8 @@ import {
   EyeOff,
   Hash,
   Fingerprint,
-  ExternalLink
+  ExternalLink,
+  Users
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -37,6 +37,7 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Zap },
   { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: Zap },
   { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: ShieldCheck },
+  { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
   { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: Briefcase },
   { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Briefcase },
   { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: Briefcase },

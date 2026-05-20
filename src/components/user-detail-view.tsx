@@ -32,7 +32,10 @@ import {
   Landmark,
   ArrowUpRight,
   ArrowDownLeft,
-  FileText
+  FileText,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -81,6 +84,10 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Matrix Filter State
+  const [matrixSearch, setMatrixSearch] = useState('');
+  const [matrixCategoryFilter, setMatrixCategoryFilter] = useState('all');
+
   const targetUser = useMemo(() => {
     return users.find(u => u.id === userId) || null;
   }, [userId, users]);
@@ -124,6 +131,19 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
       }
     }));
   };
+
+  const filteredAccessNodes = useMemo(() => {
+    return ACCESS_NODES.filter(node => {
+      const matchesSearch = node.label.toLowerCase().includes(matrixSearch.toLowerCase());
+      const matchesCategory = matrixCategoryFilter === 'all' || node.category === matrixCategoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [matrixSearch, matrixCategoryFilter]);
+
+  const categories = useMemo(() => {
+    const cats = new Set(ACCESS_NODES.map(n => n.category));
+    return Array.from(cats);
+  }, []);
 
   const handleSaveProtocol = () => {
     if (!targetUser) return;
@@ -276,7 +296,41 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
         </div>
 
         {/* Right Column: Access Control Matrix */}
-        <div className="xl:col-span-8 space-y-8">
+        <div className="xl:col-span-8 space-y-6">
+          {/* Matrix Filter Bar */}
+          <Card className="p-4 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col md:flex-row items-center gap-4">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+              <Input 
+                placeholder="Filter matrix by module name..." 
+                className="pl-10 h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest shadow-inner focus-visible:ring-2 focus-visible:ring-primary/20"
+                value={matrixSearch}
+                onChange={(e) => setMatrixSearch(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-64">
+              <Select value={matrixCategoryFilter} onValueChange={setMatrixCategoryFilter}>
+                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-inner">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-3.5 w-3.5 text-slate-400" />
+                    <SelectValue placeholder="Filter Category" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                  <SelectItem value="all" className="text-[10px] font-bold uppercase">All Operational Hubs</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat} className="text-[10px] font-bold uppercase">{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(matrixSearch || matrixCategoryFilter !== 'all') && (
+              <Button variant="ghost" size="icon" onClick={() => { setMatrixSearch(''); setMatrixCategoryFilter('all'); }} className="h-11 w-11 rounded-xl text-slate-400 hover:text-red-500">
+                <X className="h-5 w-5" />
+              </Button>
+            )}
+          </Card>
+
           <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
             <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -290,7 +344,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
             </div>
 
             <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-              {ACCESS_NODES.map(node => (
+              {filteredAccessNodes.map(node => (
                 <div key={node.id} className="p-6 bg-slate-50/50 rounded-[1.5rem] border border-slate-100 flex flex-col gap-6 group hover:border-primary/20 transition-all shadow-inner">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -326,6 +380,12 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                   </div>
                 </div>
               ))}
+              {filteredAccessNodes.length === 0 && (
+                <div className="col-span-full py-20 text-center opacity-20">
+                  <Search className="h-12 w-12 mx-auto mb-4" />
+                  <p className="text-xs font-bold uppercase tracking-widest">No modules found matching filter protocol</p>
+                </div>
+              )}
             </div>
             
             <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">

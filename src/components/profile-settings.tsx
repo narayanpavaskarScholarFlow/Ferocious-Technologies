@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   User, 
   Shield, 
@@ -81,7 +83,7 @@ const THEME_COLORS = [
 
 const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }[] = [
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
-  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Contact },
+  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Zap },
   { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: LineChart },
   { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
@@ -241,7 +243,7 @@ export function ProfileSettings({
       firstName: profileData.firstName,
       lastName: profileData.lastName,
       name: `${profileData.firstName} ${profileData.lastName}`.trim(),
-      email: profileData.username, // Synchronize Login ID with Username
+      email: profileData.username, 
       password: profileData.password,
       image: profileData.image
     };
@@ -599,46 +601,59 @@ export function ProfileSettings({
               </div>
             </div>
             
-            <div className="p-10">
+            <div className="p-0">
               {currentUserMatrix ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {filteredAccessNodes.map(node => (
-                    <div key={node.id} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex flex-col gap-6 group hover:border-primary/20 transition-all shadow-inner">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-white rounded-xl shadow-sm text-slate-400 group-hover:text-primary transition-colors">
-                          <node.icon className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-bold uppercase text-slate-600 tracking-widest leading-none block">{node.label}</span>
-                          <span className="text-[8px] font-bold uppercase text-slate-400 tracking-widest mt-1 block">{node.category}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Grant Access Level</Label>
-                        <Select 
-                          value={stagedPermissions[node.id] || 'none'} 
-                          onValueChange={(val) => handleUpdateStagedPermission(node.id, val as any)}
-                        >
-                          <SelectTrigger className="h-10 bg-white border-none rounded-xl text-[9px] font-bold uppercase shadow-sm focus:ring-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                            <SelectItem value="none" className="text-[9px] font-bold uppercase text-slate-400">No Access (Locked)</SelectItem>
-                            <SelectItem value="read" className="text-[9px] font-bold uppercase text-blue-600">Read Only (Tele)</SelectItem>
-                            <SelectItem value="edit" className="text-[9px] font-bold uppercase text-amber-600">Edit Access (Mod)</SelectItem>
-                            <SelectItem value="full" className="text-[9px] font-bold uppercase text-emerald-600">Full Command (Root)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))}
-                  {filteredAccessNodes.length === 0 && (
-                    <div className="col-span-full py-20 text-center opacity-20">
-                      <Search className="h-12 w-12 mx-auto mb-4" />
-                      <p className="text-xs font-bold uppercase tracking-widest">No modules found matching filter protocol</p>
-                    </div>
-                  )}
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow className="hover:bg-transparent border-b border-slate-200">
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">In Selected Matrix</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">No Access</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">Read Only</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">Only Edit</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">Full Control</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAccessNodes.map(node => (
+                        <TableRow key={node.id} className="h-20 border-b border-slate-100 hover:bg-slate-50/30 transition-all group">
+                          <TableCell className="px-10">
+                            <div className="flex items-center gap-4">
+                              <div className="p-2.5 bg-white rounded-xl shadow-sm text-slate-300 group-hover:text-primary transition-colors border border-slate-100">
+                                <node.icon className="h-4 w-4" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-bold uppercase text-slate-700 tracking-widest leading-none">{node.label}</span>
+                                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{node.category}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell colSpan={4} className="p-0">
+                            <RadioGroup 
+                              value={stagedPermissions[node.id] || 'none'} 
+                              onValueChange={(val) => handleUpdateStagedPermission(node.id, val as PermissionLevel)}
+                              className="flex h-full"
+                            >
+                              <div className="flex-1 flex justify-center items-center border-r border-slate-100/50"><RadioGroupItem value="none" className="h-5 w-5" /></div>
+                              <div className="flex-1 flex justify-center items-center border-r border-slate-100/50"><RadioGroupItem value="read" className="h-5 w-5" /></div>
+                              <div className="flex-1 flex justify-center items-center border-r border-slate-100/50"><RadioGroupItem value="edit" className="h-5 w-5" /></div>
+                              <div className="flex-1 flex justify-center items-center"><RadioGroupItem value="full" className="h-5 w-5" /></div>
+                            </RadioGroup>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filteredAccessNodes.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="py-20 text-center opacity-20">
+                            <div className="flex flex-col items-center">
+                              <Search className="h-12 w-12 mb-4" />
+                              <p className="text-xs font-bold uppercase tracking-widest">No modules found matching filter protocol</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               ) : (
                 <div className="h-[400px] flex flex-col items-center justify-center opacity-30 text-center">
@@ -697,7 +712,7 @@ export function ProfileSettings({
                           />
                         </div>
                       </div>
-                      <p className="text-[8px] text-slate-400 italic">* New orders will follow this protocol. Paddings apply automatically (e.g. {uiSettings.woPrefix || 'WO-'}{(uiSettings.woNextNumber ?? 1001).toString().padStart(4, '0')}).</p>
+                      <p className="text-[8px] text-slate-400 italic">* New orders will follow this protocol. Paddings apply automatically (e.g. {(uiSettings.woPrefix || 'WO-')}{(uiSettings.woNextNumber || 1001).toString().padStart(4, '0')}).</p>
                     </div>
 
                     <div className="space-y-6">

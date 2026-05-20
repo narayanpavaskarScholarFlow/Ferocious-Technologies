@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   ArrowLeft, 
   ShieldCheck, 
@@ -35,7 +37,21 @@ import {
   FileText,
   Search,
   Filter,
-  X
+  X,
+  BrainCircuit,
+  ShoppingCart,
+  Factory,
+  Layers,
+  Calendar,
+  ClipboardList,
+  GraduationCap,
+  Contact,
+  Boxes,
+  Truck,
+  Cpu,
+  Settings,
+  ShieldAlert,
+  LineChart
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -45,19 +61,19 @@ import { cn } from '@/lib/utils';
 const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }[] = [
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Zap },
-  { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: Zap },
+  { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: ShieldCheck },
   { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
-  { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: Briefcase },
-  { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Briefcase },
-  { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: Briefcase },
-  { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Briefcase },
-  { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Control', icon: Briefcase },
-  { id: 'work-log', label: 'Work Log Hub', category: 'Production Control', icon: Briefcase },
+  { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: ShoppingCart },
+  { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Factory },
+  { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: LayoutGrid },
+  { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
+  { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Control', icon: Calendar },
+  { id: 'work-log', label: 'Work Log Hub', category: 'Production Control', icon: ClipboardList },
   { id: 'quality', label: 'Quality Hub', category: 'Quality & Compliance', icon: ShieldCheck },
-  { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: Briefcase },
-  { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Briefcase },
-  { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Briefcase },
+  { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: GraduationCap },
+  { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
+  { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Boxes },
   { id: 'billing', label: 'Financial Hub (Main)', category: 'Commercial Operations', icon: CreditCard },
   { id: 'billing-quotation', label: 'Financial: Quotation', category: 'Commercial Operations', icon: FileText },
   { id: 'billing-invoice', label: 'Financial: Invoice', category: 'Commercial Operations', icon: Receipt },
@@ -65,10 +81,10 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'billing-inward', label: 'Financial: Inward', category: 'Commercial Operations', icon: ArrowDownLeft },
   { id: 'billing-outward', label: 'Financial: Outward', category: 'Commercial Operations', icon: ArrowUpRight },
   { id: 'billing-bank', label: 'Financial: Bank Ledger', category: 'Commercial Operations', icon: Landmark },
-  { id: 'vendor', label: 'Supply Chain', category: 'Commercial Operations', icon: Briefcase },
-  { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Briefcase },
-  { id: 'hr', label: 'HR Command', category: 'Resources & Assets', icon: Briefcase },
-  { id: 'settings', label: 'Control Center', category: 'System Governance', icon: Briefcase },
+  { id: 'vendor', label: 'Supply Chain', category: 'Commercial Operations', icon: Truck },
+  { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Cpu },
+  { id: 'hr', label: 'HR Command', category: 'Resources & Assets', icon: Users },
+  { id: 'settings', label: 'Control Center', category: 'System Governance', icon: Settings },
 ];
 
 interface UserDetailViewProps {
@@ -157,7 +173,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
       lastName: formData.lastName,
       name: `${formData.firstName} ${formData.lastName}`.trim(),
       username: formData.username,
-      email: formData.username, // Synchronize
+      email: formData.username, 
       password: formData.password,
       phone: formData.phone,
       role: formData.role,
@@ -179,7 +195,6 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
 
   const handleVerifyPortal = () => {
     if (targetUser) {
-      // Use window.open to launch a separate verification node in a new tab
       const url = `${window.location.origin}/?verifyUser=${encodeURIComponent(targetUser.name)}`;
       window.open(url, '_blank');
       
@@ -230,7 +245,6 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Identity Data */}
         <div className="xl:col-span-4 space-y-8">
           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#001F3D 1px, transparent 0)', backgroundSize: '40px 40px' }} />
@@ -297,9 +311,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
           </Card>
         </div>
 
-        {/* Right Column: Access Control Matrix */}
         <div className="xl:col-span-8 space-y-6">
-          {/* Matrix Filter Bar */}
           <Card className="p-4 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col md:flex-row items-center gap-4">
             <div className="w-full md:w-64">
               <Select value={selectedMatrixModule} onValueChange={setSelectedMatrixModule}>
@@ -358,52 +370,61 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Audit and assign navigation privileges for this identity.</p>
                 </div>
               </div>
-              <Badge className="bg-emerald-50 text-emerald-700 border-none px-4 h-8 uppercase font-bold text-[9px] tracking-widest">REAL_TIME_PROTOCOLS</Badge>
             </div>
 
-            <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-              {filteredAccessNodes.map(node => (
-                <div key={node.id} className="p-6 bg-slate-50/50 rounded-[1.5rem] border border-slate-100 flex flex-col gap-6 group hover:border-primary/20 transition-all shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2.5 bg-white rounded-xl shadow-sm text-slate-400 group-hover:text-primary transition-colors border border-slate-100">
-                        <node.icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <span className="text-[11px] font-bold uppercase text-slate-700 tracking-widest leading-none">{node.label}</span>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{node.category}</p>
-                      </div>
-                    </div>
-                    {formData.permissions[node.id] && formData.permissions[node.id] !== 'none' && (
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+            <div className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="hover:bg-transparent border-b border-slate-200">
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">In Selected Matrix</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">No Access</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">Read Only</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">Only Edit</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-28">Full Control</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAccessNodes.map(node => (
+                      <TableRow key={node.id} className="h-20 border-b border-slate-100 hover:bg-slate-50/30 transition-all group">
+                        <TableCell className="px-10">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-white rounded-xl shadow-sm text-slate-300 group-hover:text-primary transition-colors border border-slate-100">
+                              <node.icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold uppercase text-slate-700 tracking-widest leading-none">{node.label}</span>
+                              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{node.category}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell colSpan={4} className="p-0">
+                          <RadioGroup 
+                            value={formData.permissions[node.id] || 'none'} 
+                            onValueChange={(val) => handleUpdatePermission(node.id, val as PermissionLevel)}
+                            className="flex h-full"
+                          >
+                            <div className="flex-1 flex justify-center items-center border-r border-slate-100/50"><RadioGroupItem value="none" className="h-5 w-5" /></div>
+                            <div className="flex-1 flex justify-center items-center border-r border-slate-100/50"><RadioGroupItem value="read" className="h-5 w-5" /></div>
+                            <div className="flex-1 flex justify-center items-center border-r border-slate-100/50"><RadioGroupItem value="edit" className="h-5 w-5" /></div>
+                            <div className="flex-1 flex justify-center items-center"><RadioGroupItem value="full" className="h-5 w-5" /></div>
+                          </RadioGroup>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredAccessNodes.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-20 text-center opacity-20">
+                          <div className="flex flex-col items-center">
+                            <Search className="h-12 w-12 mb-4" />
+                            <p className="text-xs font-bold uppercase tracking-widest">No modules found matching filter protocol</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Grant Access Level</Label>
-                    <Select 
-                      value={formData.permissions[node.id] || 'none'} 
-                      onValueChange={(val) => handleUpdatePermission(node.id, val as any)}
-                    >
-                      <SelectTrigger className="h-10 bg-white border-none rounded-xl text-[10px] font-bold uppercase shadow-sm focus:ring-primary/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                        <SelectItem value="none" className="text-[10px] font-bold uppercase text-slate-400">Locked / No Access</SelectItem>
-                        <SelectItem value="read" className="text-[10px] font-bold uppercase text-blue-600">Telemetry (Read Only)</SelectItem>
-                        <SelectItem value="edit" className="text-[10px] font-bold uppercase text-amber-600">Operational (Edit)</SelectItem>
-                        <SelectItem value="full" className="text-[10px] font-bold uppercase text-emerald-600">Root Command (Full)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ))}
-              {filteredAccessNodes.length === 0 && (
-                <div className="col-span-full py-20 text-center opacity-20">
-                  <Search className="h-12 w-12 mx-auto mb-4" />
-                  <p className="text-xs font-bold uppercase tracking-widest">No modules found matching filter protocol</p>
-                </div>
-              )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
             
             <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">

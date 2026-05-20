@@ -55,7 +55,6 @@ import {
   Phone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { UserManagement } from '@/components/user-management';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -286,11 +285,6 @@ export function ProfileSettings({
             <UserCircle className="h-3.5 w-3.5 mr-2" /> User Profile
           </TabsTrigger>
           {isMasterAdmin && (
-            <TabsTrigger value="access" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
-              <Users className="h-3.5 w-3.5 mr-2" /> User Directory
-            </TabsTrigger>
-          )}
-          {isMasterAdmin && (
             <TabsTrigger value="matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
               <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
             </TabsTrigger>
@@ -475,10 +469,6 @@ export function ProfileSettings({
               </Card>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="access" className="m-0 print:hidden">
-          <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />
         </TabsContent>
 
         <TabsContent value="matrix" className="m-0 print:hidden">

@@ -24,6 +24,7 @@ import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { ProductionPlanner } from '@/components/production-planner';
 import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
+import { UserManagement } from '@/components/user-management';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -160,7 +161,7 @@ function IndustrialERPInternal() {
 
     if (isMasterAdmin || isHR) {
       const clearance: Record<string, PermissionLevel> = {
-        overview: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
+        overview: 'full', users: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
         'machine-utilization': 'full', hr: 'full', 'my-portal': 'full', 'customer-orders': 'full',
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
@@ -168,7 +169,6 @@ function IndustrialERPInternal() {
       };
 
       if (isMasterAdmin) {
-        clearance.users = 'full';
         clearance.matrix = 'full';
       }
       return clearance;
@@ -285,6 +285,7 @@ function IndustrialERPInternal() {
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
+            {currentView === 'users' && <UserManagement users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}

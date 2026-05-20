@@ -102,8 +102,6 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
   const [showPassword, setShowPassword] = useState(false);
 
   // Matrix Filter State
-  const [matrixSearch, setMatrixSearch] = useState('');
-  const [matrixCategoryFilter, setMatrixCategoryFilter] = useState('all');
   const [selectedMatrixModule, setSelectedMatrixModule] = useState<string>('all');
 
   const targetUser = useMemo(() => {
@@ -152,23 +150,15 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
 
   const filteredAccessNodes = useMemo(() => {
     return ACCESS_NODES.filter(node => {
-      const matchesSearch = node.label.toLowerCase().includes(matrixSearch.toLowerCase());
-      const matchesCategory = matrixCategoryFilter === 'all' || node.category === matrixCategoryFilter;
-      
       // Hierarchical Selection Logic: If parent 'billing' is selected, show parent + all 'billing-*'
       let matchesModule = selectedMatrixModule === 'all' || node.id === selectedMatrixModule;
       if (selectedMatrixModule === 'billing') {
         matchesModule = node.id === 'billing' || node.id.startsWith('billing-');
       }
 
-      return matchesSearch && matchesCategory && matchesModule;
+      return matchesModule;
     });
-  }, [matrixSearch, matrixCategoryFilter, selectedMatrixModule]);
-
-  const categories = useMemo(() => {
-    const cats = new Set(ACCESS_NODES.map(n => n.category));
-    return Array.from(cats);
-  }, []);
+  }, [selectedMatrixModule]);
 
   const handleSaveProtocol = () => {
     if (!targetUser) return;
@@ -319,28 +309,21 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
         </div>
 
         <div className="xl:col-span-8 space-y-6">
-          <Card className="p-4 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col md:flex-row items-center gap-4">
-            <div className="w-full md:w-64">
+          <Card className="p-6 bg-white border-slate-200 shadow-xl rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="w-full md:w-80">
               <Select value={selectedMatrixModule} onValueChange={setSelectedMatrixModule}>
-                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-inner">
-                  <div className="flex items-center gap-2">
-                    <LayoutGrid className="h-3.5 w-3.5 text-slate-400" />
-                    <SelectValue placeholder="Select Module" />
+                <SelectTrigger className="h-14 bg-slate-50 border-none rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-inner">
+                  <div className="flex items-center gap-3">
+                    <LayoutGrid className="h-4 w-4 text-slate-400" />
+                    <SelectValue placeholder="Select Module Cluster" />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                  <SelectItem value="all" className="text-[10px] font-bold uppercase">All Modules</SelectItem>
-                  {ACCESS_NODES.map(node => (
-                    <SelectItem 
-                      key={node.id} 
-                      value={node.id} 
-                      className={cn(
-                        "text-[10px] font-bold uppercase",
-                        node.id.startsWith('billing-') && "pl-8" // Visual Indentation for hierarchical items
-                      )}
-                    >
+                  <SelectItem value="all" className="text-[10px] font-bold uppercase">All Operational Hubs</SelectItem>
+                  {ACCESS_NODES.filter(n => !n.id.startsWith('billing-') || n.id === 'billing').map(node => (
+                    <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase py-3">
                       <div className="flex items-center gap-3">
-                        <node.icon className={cn("h-3.5 w-3.5", node.id.startsWith('billing-') ? "text-primary/40" : "text-slate-400")} />
+                        <node.icon className="h-4 w-4 text-slate-400" />
                         {node.label}
                       </div>
                     </SelectItem>
@@ -348,49 +331,20 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                 </SelectContent>
               </Select>
             </div>
-            <div className="relative flex-1 group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="Filter matrix by module name..." 
-                className="pl-10 h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest shadow-inner focus-visible:ring-2 focus-visible:ring-primary/20"
-                value={matrixSearch}
-                onChange={(e) => setMatrixSearch(e.target.value)}
-              />
-            </div>
-            <div className="w-full md:w-64">
-              <Select value={matrixCategoryFilter} onValueChange={setMatrixCategoryFilter}>
-                <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-inner">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5 text-slate-400" />
-                    <SelectValue placeholder="Filter Category" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                  <SelectItem value="all" className="text-[10px] font-bold uppercase">All Operational Hubs</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat} className="text-[10px] font-bold uppercase">{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {(matrixSearch || matrixCategoryFilter !== 'all' || selectedMatrixModule !== 'all') && (
-              <Button variant="ghost" size="icon" onClick={() => { setMatrixSearch(''); setMatrixCategoryFilter('all'); setSelectedMatrixModule('all'); }} className="h-11 w-11 rounded-xl text-slate-400 hover:text-red-500">
-                <X className="h-5 w-5" />
+
+            <div className="shrink-0">
+              <Button 
+                disabled={isSaving}
+                onClick={handleSaveProtocol}
+                className="h-14 px-12 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-red-600/30 flex gap-4 group"
+              >
+                {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save Matrix Protocol
               </Button>
-            )}
+            </div>
           </Card>
 
           <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
-            <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg"><Unlock className="h-6 w-6" /></div>
-                <div>
-                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Control Matrix</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Audit and assign navigation privileges for this identity.</p>
-                </div>
-              </div>
-            </div>
-
             <div className="p-0">
               <div className="overflow-x-auto">
                 <Table>
@@ -414,7 +368,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                             <div className="flex flex-col">
                               <span className={cn(
                                 "text-[11px] font-bold uppercase text-slate-700 tracking-widest leading-none",
-                                node.id.startsWith('billing-') && "text-primary/70" // Hierarchical highlighting
+                                node.id.startsWith('billing-') && "text-primary/70"
                               )}>{node.label}</span>
                               <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{node.category}</p>
                             </div>
@@ -434,36 +388,9 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredAccessNodes.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-20 text-center opacity-20">
-                          <div className="flex flex-col items-center">
-                            <Search className="h-12 w-12 mb-4" />
-                            <p className="text-xs font-bold uppercase tracking-widest">No modules found matching filter protocol</p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               </div>
-            </div>
-            
-            <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#001F3D]/5 rounded-lg text-[#001F3D]"><ShieldCheck className="h-5 w-5" /></div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">
-                    Navigation visibility is managed <br />by this centralized matrix node.
-                  </p>
-               </div>
-               <Button 
-                disabled={isSaving}
-                onClick={handleSaveProtocol}
-                className="h-14 px-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold uppercase tracking-[0.3em] text-[10px] shadow-xl shadow-emerald-600/20 flex gap-4"
-               >
-                 {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                 Synchronize Matrix Protocol
-               </Button>
             </div>
           </Card>
         </div>

@@ -586,7 +586,7 @@ export function ProfileSettings({
                         <div className="space-y-2">
                           <Label className="text-[8px] font-bold uppercase text-slate-400">Prefix Series</Label>
                           <Input 
-                            value={uiSettings.woPrefix} 
+                            value={uiSettings.woPrefix || ''} 
                             onChange={(e) => onUpdateUISettings({ ...uiSettings, woPrefix: e.target.value })}
                             className="h-11 bg-white border-none rounded-xl text-xs font-bold uppercase shadow-sm"
                             placeholder="e.g. WO-"
@@ -596,13 +596,13 @@ export function ProfileSettings({
                           <Label className="text-[8px] font-bold uppercase text-slate-400">Next Node Number</Label>
                           <Input 
                             type="number"
-                            value={uiSettings.woNextNumber} 
+                            value={uiSettings.woNextNumber ?? 1001} 
                             onChange={(e) => onUpdateUISettings({ ...uiSettings, woNextNumber: parseInt(e.target.value) || 0 })}
                             className="h-11 bg-white border-none rounded-xl text-xs font-bold shadow-sm"
                           />
                         </div>
                       </div>
-                      <p className="text-[8px] text-slate-400 italic">* New orders will follow this protocol. Paddings apply automatically (e.g. {uiSettings.woPrefix}{uiSettings.woNextNumber.toString().padStart(4, '0')}).</p>
+                      <p className="text-[8px] text-slate-400 italic">* New orders will follow this protocol. Paddings apply automatically (e.g. {uiSettings.woPrefix || 'WO-'}{(uiSettings.woNextNumber ?? 1001).toString().padStart(4, '0')}).</p>
                     </div>
 
                     <div className="space-y-6">

@@ -148,12 +148,12 @@ function IndustrialERPInternal() {
   }, [usersData]);
 
   const globalSequenceSettings = useMemo(() => {
-    return masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
+    return { ...DEFAULT_UI_SETTINGS, ...(masterAdmin?.uiSettings || {}) };
   }, [masterAdmin]);
 
   // Apply UI Settings when changed or on mount
   useEffect(() => {
-    const targetSettings = currentUserData?.uiSettings || DEFAULT_UI_SETTINGS;
+    const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
     setUISettings(targetSettings);
     
     document.documentElement.style.setProperty('--base-font-size', `${targetSettings.fontSize}px`);
@@ -242,7 +242,7 @@ function IndustrialERPInternal() {
     
     if (isNew && masterAdmin) {
       // Increment global sequence in Master Admin document
-      const currentUISettings = masterAdmin.uiSettings || DEFAULT_UI_SETTINGS;
+      const currentUISettings = { ...DEFAULT_UI_SETTINGS, ...(masterAdmin.uiSettings || {}) };
       setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
         uiSettings: {
           ...currentUISettings,

@@ -84,8 +84,8 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       }
     } else {
       // Use configured sequence pattern for new orders
-      const prefix = uiSettings.woPrefix || 'WO-';
-      const seq = uiSettings.woNextNumber || 1001;
+      const prefix = uiSettings?.woPrefix || 'WO-';
+      const seq = uiSettings?.woNextNumber ?? 1001;
       const generatedId = `${prefix}${seq.toString().padStart(4, '0')}`;
       
       setDisplayId(generatedId);

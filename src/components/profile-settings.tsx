@@ -52,7 +52,8 @@ import {
   ChevronRight,
   ShieldAlert,
   Network,
-  Phone
+  Phone,
+  ListOrdered
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -576,6 +577,34 @@ export function ProfileSettings({
               <TabsContent value="architecture" className="m-0 space-y-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                   <div className="space-y-12">
+                    {/* WO ID Sequence Panel */}
+                    <div className="space-y-6 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 shadow-inner">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <ListOrdered className="h-4 w-4 text-primary" /> Work Order ID Sequence Pattern
+                      </Label>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-[8px] font-bold uppercase text-slate-400">Prefix Series</Label>
+                          <Input 
+                            value={uiSettings.woPrefix} 
+                            onChange={(e) => onUpdateUISettings({ ...uiSettings, woPrefix: e.target.value })}
+                            className="h-11 bg-white border-none rounded-xl text-xs font-bold uppercase shadow-sm"
+                            placeholder="e.g. WO-"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[8px] font-bold uppercase text-slate-400">Next Node Number</Label>
+                          <Input 
+                            type="number"
+                            value={uiSettings.woNextNumber} 
+                            onChange={(e) => onUpdateUISettings({ ...uiSettings, woNextNumber: parseInt(e.target.value) || 0 })}
+                            className="h-11 bg-white border-none rounded-xl text-xs font-bold shadow-sm"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-slate-400 italic">* New orders will follow this protocol. Paddings apply automatically (e.g. {uiSettings.woPrefix}{uiSettings.woNextNumber.toString().padStart(4, '0')}).</p>
+                    </div>
+
                     <div className="space-y-6">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
                         <Palette className="h-4 w-4" /> Primary Accent Protocol
@@ -604,17 +633,6 @@ export function ProfileSettings({
                           >
                             {d}
                           </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                        <Box className="h-4 w-4" /> Box Elevation (Shadows)
-                      </Label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {(['none', 'sm', 'xl'] as const).map((s) => (
-                          <Button key={s} variant={uiSettings.cardShadow === s ? 'default' : 'outline'} className="h-12 rounded-xl font-bold uppercase text-[9px] tracking-widest" onClick={() => onUpdateUISettings({ ...uiSettings, cardShadow: s })}>{s === 'xl' ? 'Premium' : s === 'sm' ? 'Elevated' : 'Flat'}</Button>
                         ))}
                       </div>
                     </div>

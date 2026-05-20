@@ -27,7 +27,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Customer, SystemUser as StaffMember, Order } from '@/lib/types';
+import { Customer, SystemUser as StaffMember, Order, UISettings } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -38,9 +38,10 @@ interface OrderDetailsProps {
   staff: StaffMember[];
   onSave: (order: Order) => void;
   orders: Order[];
+  uiSettings: UISettings;
 }
 
-export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders }: OrderDetailsProps) {
+export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders, uiSettings }: OrderDetailsProps) {
   const { toast } = useToast();
   const isNew = !orderId;
   const [displayId, setDisplayId] = useState("");
@@ -82,7 +83,11 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setEndDateStr(parseToISO(existing.endDate));
       }
     } else {
-      const generatedId = `${Math.floor(80000 + Math.random() * 10000)}`;
+      // Use configured sequence pattern for new orders
+      const prefix = uiSettings.woPrefix || 'WO-';
+      const seq = uiSettings.woNextNumber || 1001;
+      const generatedId = `${prefix}${seq.toString().padStart(4, '0')}`;
+      
       setDisplayId(generatedId);
       setCustomer("");
       setLead("");
@@ -94,7 +99,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setTypeOfWork("");
       setTargetBudget("");
     }
-  }, [orderId, orders]);
+  }, [orderId, orders, uiSettings]);
 
   const handleCommitOrder = () => {
     if (!customer || !startDateStr || !endDateStr) {

@@ -239,6 +239,8 @@ export interface UISettings {
   labelCase: 'uppercase' | 'capitalize';
   headerAlignment: 'left' | 'center';
   customTitles: Record<string, string>;
+  woPrefix: string;
+  woNextNumber: number;
 }
 
 export interface SystemUser {

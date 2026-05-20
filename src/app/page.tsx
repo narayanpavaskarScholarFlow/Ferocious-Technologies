@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -66,7 +65,9 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   cardShadow: 'xl',
   labelCase: 'uppercase',
   headerAlignment: 'left',
-  customTitles: {}
+  customTitles: {},
+  woPrefix: 'WO-',
+  woNextNumber: 1001
 };
 
 function IndustrialERPInternal() {
@@ -78,6 +79,7 @@ function IndustrialERPInternal() {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   const [selectedDetailUserId, setSelectedDetailUserId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   
   const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -140,6 +142,15 @@ function IndustrialERPInternal() {
     return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
 
+  // Master Admin Node (for global sequence settings)
+  const masterAdmin = useMemo(() => {
+    return usersData.find(u => u.name === 'Master Admin');
+  }, [usersData]);
+
+  const globalSequenceSettings = useMemo(() => {
+    return masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
+  }, [masterAdmin]);
+
   // Apply UI Settings when changed or on mount
   useEffect(() => {
     const targetSettings = currentUserData?.uiSettings || DEFAULT_UI_SETTINGS;
@@ -159,30 +170,26 @@ function IndustrialERPInternal() {
   }, [usersData, currentUser]);
 
   const permissions = useMemo(() => {
-    const isMasterAdmin = currentUser === 'Master Admin';
+    const isMasterAdminUser = currentUser === 'Master Admin';
     const isHR = currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
 
-    if (isMasterAdmin || isHR) {
+    if (isMasterAdminUser || isHR) {
       const clearance: Record<string, PermissionLevel> = {
         overview: 'full', users: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
         'machine-utilization': 'full', hr: 'full', 'my-portal': 'full', 'customer-orders': 'full',
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
-        'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full'
+        'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full',
+        'team-matrix': 'full'
       };
 
-      if (isMasterAdmin) {
+      if (isMasterAdminUser) {
         clearance.matrix = 'full';
       }
       return clearance;
     }
     
     const basePermissions = currentUserData?.permissions || {};
-    // If they are a reporting manager, they MUST see HR for approvals
-    if (isReportingManager) {
-      basePermissions.hr = 'read';
-    }
-    
     return basePermissions;
   }, [currentUser, currentUserData, isReportingManager]);
 
@@ -224,10 +231,27 @@ function IndustrialERPInternal() {
   };
 
   const handleVerifyPortal = (userName: string) => {
-    // This is now handled via new tab in UserDetailView
-    // This function remains for potential internal simulation needs
     handleLogin(userName);
     setCurrentView('my-portal');
+  };
+
+  const handleSaveOrder = (order: Order) => {
+    const isNew = !orders.find(o => o.id === order.id);
+    
+    setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
+    
+    if (isNew && masterAdmin) {
+      // Increment global sequence in Master Admin document
+      const currentUISettings = masterAdmin.uiSettings || DEFAULT_UI_SETTINGS;
+      setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
+        uiSettings: {
+          ...currentUISettings,
+          woNextNumber: currentUISettings.woNextNumber + 1
+        }
+      }, { merge: true });
+    }
+
+    setCurrentView('orders');
   };
 
   const handleSaveTraining = (training: Training) => setDocumentNonBlocking(doc(db, 'trainings', training.id), training, { merge: true });
@@ -238,7 +262,6 @@ function IndustrialERPInternal() {
   useEffect(() => {
     setMounted(true);
     
-    // Check for verification query param (Simulation Protocol)
     const params = new URLSearchParams(window.location.search);
     const verifyUser = params.get('verifyUser');
     
@@ -247,12 +270,10 @@ function IndustrialERPInternal() {
       setCurrentUser(verifyUser);
       setIsLoggedIn(true);
       setCurrentView('my-portal');
-      // Clean up URL without refresh
       window.history.replaceState({}, '', '/');
       return;
     }
 
-    // Normal session check (Check simulation first, then master)
     const verifiedUser = sessionStorage.getItem('bharat_axis_verify');
     if (verifiedUser) {
       setCurrentUser(verifiedUser);
@@ -329,7 +350,8 @@ function IndustrialERPInternal() {
             {currentView === 'users' && <UserManagement users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} onNavigateToDetail={handleNavigateToUserDetail} />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('users')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
-            {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} />}
+            {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
+            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSequenceSettings} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
             {currentView === 'billing' && <BillingManagement customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}

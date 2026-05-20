@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -41,6 +42,15 @@ interface OrderDetailsProps {
   uiSettings: UISettings;
 }
 
+const WORK_TYPES = [
+  "Mould",
+  "Press tool",
+  "Fixture",
+  "Gauge",
+  "Rework",
+  "Maintenance"
+];
+
 export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders, uiSettings }: OrderDetailsProps) {
   const { toast } = useToast();
   const isNew = !orderId;
@@ -48,7 +58,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [customer, setCustomer] = useState("");
   const [lead, setLead] = useState("");
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
-  const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start'>('Yet to start');
+  const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start' | 'Ready for Delivery' | 'Delivered'>('Yet to start');
   
   const [startDateStr, setStartDateStr] = useState("");
   const [endDateStr, setEndDateStr] = useState("");
@@ -228,12 +238,16 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                   <Hammer className="h-3 w-3" /> Type of Work
                 </Label>
-                <Input 
-                  placeholder="e.g. Mold Manufacturing" 
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold focus-visible:ring-primary/20 shadow-inner"
-                  value={typeOfWork}
-                  onChange={(e) => setTypeOfWork(e.target.value)}
-                />
+                <Select value={typeOfWork} onValueChange={setTypeOfWork}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
+                    <SelectValue placeholder="Identify work type..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                    {WORK_TYPES.map(type => (
+                      <SelectItem key={type} value={type} className="text-xs font-bold uppercase">{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-3">

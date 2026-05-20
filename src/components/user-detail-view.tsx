@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -142,10 +143,13 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
 
   const handleVerifyPortal = () => {
     if (targetUser) {
-      onVerifyPortal(targetUser.name);
+      // Use window.open to launch a separate verification node in a new tab
+      const url = `${window.location.origin}/?verifyUser=${encodeURIComponent(targetUser.name)}`;
+      window.open(url, '_blank');
+      
       toast({
         title: "Simulation Initialized",
-        description: `Redirecting to Personnel Portal for ${targetUser.name}.`
+        description: `Opening separate verification node for ${targetUser.name}.`
       });
     }
   };
@@ -174,10 +178,10 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
           <Button 
             variant="outline"
             onClick={handleVerifyPortal}
-            className="h-12 px-6 rounded-xl font-bold uppercase tracking-[0.3em] text-[10px] border-slate-200 bg-white hover:bg-slate-50 flex gap-3"
+            className="h-12 px-6 rounded-xl font-bold uppercase tracking-[0.3em] text-[10px] border-slate-200 bg-white hover:bg-slate-50 flex gap-3 shadow-sm"
           >
             <UserCircle className="h-4 w-4" />
-            Verify Portal View
+            Verify Portal View (New Tab)
           </Button>
           
           <Button 

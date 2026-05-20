@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -195,6 +196,7 @@ function IndustrialERPInternal() {
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('bharat_axis_user');
+    sessionStorage.removeItem('bharat_axis_verify');
     setIsLoggedIn(false);
     setCurrentUser(null);
     setCurrentView('overview');
@@ -206,6 +208,7 @@ function IndustrialERPInternal() {
   };
 
   const handleLogin = (user: string) => {
+    sessionStorage.removeItem('bharat_axis_verify'); // Clear any simulation
     localStorage.setItem('bharat_axis_user', user);
     setCurrentUser(user);
     setIsLoggedIn(true);
@@ -221,6 +224,8 @@ function IndustrialERPInternal() {
   };
 
   const handleVerifyPortal = (userName: string) => {
+    // This is now handled via new tab in UserDetailView
+    // This function remains for potential internal simulation needs
     handleLogin(userName);
     setCurrentView('my-portal');
   };
@@ -232,6 +237,30 @@ function IndustrialERPInternal() {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Check for verification query param (Simulation Protocol)
+    const params = new URLSearchParams(window.location.search);
+    const verifyUser = params.get('verifyUser');
+    
+    if (verifyUser) {
+      sessionStorage.setItem('bharat_axis_verify', verifyUser);
+      setCurrentUser(verifyUser);
+      setIsLoggedIn(true);
+      setCurrentView('my-portal');
+      // Clean up URL without refresh
+      window.history.replaceState({}, '', '/');
+      return;
+    }
+
+    // Normal session check (Check simulation first, then master)
+    const verifiedUser = sessionStorage.getItem('bharat_axis_verify');
+    if (verifiedUser) {
+      setCurrentUser(verifiedUser);
+      setIsLoggedIn(true);
+      setCurrentView('my-portal');
+      return;
+    }
+
     const savedUser = localStorage.getItem('bharat_axis_user');
     if (savedUser) {
       setCurrentUser(savedUser);
@@ -306,7 +335,7 @@ function IndustrialERPInternal() {
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} />}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} />}
             {currentView === 'gantt' && <ProductionGantt orders={orders} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
           </div>

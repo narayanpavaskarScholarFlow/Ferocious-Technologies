@@ -30,7 +30,9 @@ import {
   Share2,
   Mail,
   Lock,
-  ShieldAlert
+  ShieldAlert,
+  Search,
+  ExternalLink
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -79,14 +81,16 @@ interface UserManagementProps {
   users: SystemUser[];
   onSaveUser: (user: SystemUser) => void;
   onDeleteUser: (userId: string) => void;
+  onNavigateToDetail: (userId: string) => void;
 }
 
-export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManagementProps) {
+export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDetail }: UserManagementProps) {
   const { toast } = useToast();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Wizard Form State
   const [formData, setFormData] = useState({
@@ -102,6 +106,12 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
     password: '',
     image: undefined as string | undefined
   });
+
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const nextStep = () => setStep(s => Math.min(s + 1, 3));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
@@ -268,16 +278,25 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
-      <div className="flex justify-end px-2">
-         <Button 
-          className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-2">
+        <div className="relative w-full md:w-96 group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="Search by name, ID or username..." 
+            className="pl-10 h-11 bg-white border-slate-200 rounded-xl shadow-sm text-xs font-bold uppercase"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Button 
+          className="w-full md:w-auto rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
           onClick={() => {
             resetWizard();
             setIsWizardOpen(true);
           }}
-         >
-           <UserPlus className="h-4 w-4" /> Register New User
-         </Button>
+        >
+          <UserPlus className="h-4 w-4" /> Register New User
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -300,7 +319,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white">
-                {users.length > 0 ? users.map((user) => (
+                {filteredUsers.length > 0 ? filteredUsers.map((user) => (
                   <TableRow key={user.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-100 group">
                     <TableCell className="px-8 border-r border-slate-50">
                       <div className="flex items-center gap-4">
@@ -354,6 +373,15 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                          <Button 
                           variant="ghost" 
                           size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-[#001F3D] rounded-lg"
+                          title="View Profile & Access Matrix"
+                          onClick={() => onNavigateToDetail(user.id)}
+                         >
+                           <ExternalLink className="h-4 w-4" />
+                         </Button>
+                         <Button 
+                          variant="ghost" 
+                          size="icon" 
                           className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
                           title="Share Credentials"
                           onClick={() => handleShareCredentials(user)}
@@ -364,7 +392,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser }: UserManageme
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
-                          title="Edit Node"
+                          title="Quick Edit"
                           onClick={() => handleEditUser(user)}
                          >
                            <Edit2 className="h-3.5 w-3.5" />

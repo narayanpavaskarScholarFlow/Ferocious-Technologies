@@ -25,6 +25,7 @@ import { ProductionPlanner } from '@/components/production-planner';
 import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
 import { UserManagement } from '@/components/user-management';
+import { UserDetailView } from '@/components/user-detail-view';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -75,6 +76,7 @@ function IndustrialERPInternal() {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
+  const [selectedDetailUserId, setSelectedDetailUserId] = useState<string | null>(null);
   
   const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -185,7 +187,7 @@ function IndustrialERPInternal() {
 
   const hasAccess = useCallback((view: string): boolean => {
     if (currentUser === 'Master Admin') return true;
-    if (view === 'my-portal' || view === 'settings') return true;
+    if (view === 'my-portal' || view === 'settings' || view === 'user-detail') return true;
     
     const level = permissions[view];
     return level && level !== 'none';
@@ -211,6 +213,11 @@ function IndustrialERPInternal() {
 
   const handleSaveUser = (user: SystemUser) => {
     setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
+  };
+
+  const handleNavigateToUserDetail = (userId: string) => {
+    setSelectedDetailUserId(userId);
+    setCurrentView('user-detail');
   };
 
   const handleSaveTraining = (training: Training) => setDocumentNonBlocking(doc(db, 'trainings', training.id), training, { merge: true });
@@ -285,7 +292,8 @@ function IndustrialERPInternal() {
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
-            {currentView === 'users' && <UserManagement users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} />}
+            {currentView === 'users' && <UserManagement users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} onNavigateToDetail={handleNavigateToUserDetail} />}
+            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('users')} onSaveUser={handleSaveUser} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}

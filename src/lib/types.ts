@@ -46,6 +46,7 @@ export type ViewType =
   | 'customer-orders' 
   | 'weekly-plan' 
   | 'users'
+  | 'user-detail'
   | 'vendor'
   | 'order-details'
   | 'billing'

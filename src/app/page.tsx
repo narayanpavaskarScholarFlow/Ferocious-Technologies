@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -148,7 +149,13 @@ function IndustrialERPInternal() {
   }, [usersData]);
 
   const globalSequenceSettings = useMemo(() => {
-    return { ...DEFAULT_UI_SETTINGS, ...(masterAdmin?.uiSettings || {}) };
+    const settings = masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
+    return {
+      ...DEFAULT_UI_SETTINGS,
+      ...settings,
+      woPrefix: settings.woPrefix ?? DEFAULT_UI_SETTINGS.woPrefix,
+      woNextNumber: settings.woNextNumber ?? DEFAULT_UI_SETTINGS.woNextNumber
+    };
   }, [masterAdmin]);
 
   // Apply UI Settings when changed or on mount
@@ -175,7 +182,7 @@ function IndustrialERPInternal() {
 
     if (isMasterAdminUser || isHR) {
       const clearance: Record<string, PermissionLevel> = {
-        overview: 'full', users: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
+        overview: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
         'machine-utilization': 'full', hr: 'full', 'my-portal': 'full', 'customer-orders': 'full',
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
@@ -191,6 +198,7 @@ function IndustrialERPInternal() {
 
       if (isMasterAdminUser) {
         clearance.matrix = 'full';
+        clearance.users = 'full';
       }
       return clearance;
     }
@@ -248,11 +256,12 @@ function IndustrialERPInternal() {
     
     if (isNew && masterAdmin) {
       // Increment global sequence in Master Admin document
-      const currentUISettings = { ...DEFAULT_UI_SETTINGS, ...(masterAdmin.uiSettings || {}) };
+      const currentUISettings = masterAdmin.uiSettings || DEFAULT_UI_SETTINGS;
       setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
         uiSettings: {
+          ...DEFAULT_UI_SETTINGS,
           ...currentUISettings,
-          woNextNumber: currentUISettings.woNextNumber + 1
+          woNextNumber: (currentUISettings.woNextNumber || 1001) + 1
         }
       }, { merge: true });
     }
@@ -353,8 +362,7 @@ function IndustrialERPInternal() {
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
-            {currentView === 'users' && <UserManagement users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} onNavigateToDetail={handleNavigateToUserDetail} />}
-            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('users')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}
+            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('settings')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSequenceSettings} />}
@@ -363,7 +371,7 @@ function IndustrialERPInternal() {
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} />}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />}
             {currentView === 'gantt' && <ProductionGantt orders={orders} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
           </div>

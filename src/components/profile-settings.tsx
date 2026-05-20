@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -72,6 +73,7 @@ import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { UserManagement } from './user-management';
 
 const THEME_COLORS = [
   { name: 'Classic Navy', value: '243 75% 59%', color: 'bg-[#6366f1]' },
@@ -86,16 +88,16 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
   { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
-  { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },
+  { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: ShieldCheck },
   { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
-  { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: ShoppingCart },
-  { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Factory },
-  { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: LayoutGrid },
-  { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
-  { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Control', icon: Calendar },
-  { id: 'work-log', label: 'Daily Work Logs', category: 'Production Control', icon: ClipboardList },
-  { id: 'quality', label: 'Quality Hub', category: 'Quality & Compliance', icon: ShieldCheck },
-  { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: GraduationCap },
+  { id: 'orders', label: 'Master Orders', category: 'Production Management', icon: ShoppingCart },
+  { id: 'production-planner', label: 'Mass Production', category: 'Production Management', icon: Factory },
+  { id: 'gantt', label: 'Visual Timeline', category: 'Production Management', icon: LayoutGrid },
+  { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Management', icon: Layers },
+  { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Management', icon: Calendar },
+  { id: 'work-log', label: 'Daily Work Logs', category: 'Production Management', icon: ClipboardList },
+  { id: 'quality', label: 'Quality Hub', category: 'Quality Hub', icon: ShieldCheck },
+  { id: 'training', label: 'Training Matrix', category: 'Quality Hub', icon: GraduationCap },
   { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
   { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Boxes },
   { id: 'billing', label: 'Financial Hub (Main)', category: 'Commercial Operations', icon: CreditCard },
@@ -119,6 +121,7 @@ interface ProfileSettingsProps {
   uiSettings: UISettings;
   onUpdateUISettings: (settings: UISettings) => void;
   currentUserData: SystemUser | null;
+  onNavigateToDetail?: (userId: string) => void;
   title?: string;
 }
 
@@ -130,6 +133,7 @@ export function ProfileSettings({
   uiSettings,
   onUpdateUISettings,
   currentUserData,
+  onNavigateToDetail,
   title = 'Control Center'
 }: ProfileSettingsProps) {
   const { toast } = useToast();
@@ -200,12 +204,10 @@ export function ProfileSettings({
 
   const filteredAccessNodes = useMemo(() => {
     return ACCESS_NODES.filter(node => {
-      // Hierarchical Selection Logic: If parent 'billing' is selected, show parent + all 'billing-*'
       let matchesModule = selectedMatrixModule === 'all' || node.id === selectedMatrixModule;
       if (selectedMatrixModule === 'billing') {
         matchesModule = node.id === 'billing' || node.id.startsWith('billing-');
       }
-
       return matchesModule;
     });
   }, [selectedMatrixModule]);
@@ -319,6 +321,11 @@ export function ProfileSettings({
           <TabsTrigger value="profile" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
             <UserCircle className="h-3.5 w-3.5 mr-2" /> User Profile
           </TabsTrigger>
+          {isMasterAdmin && (
+            <TabsTrigger value="users" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
+              <Users className="h-3.5 w-3.5 mr-2" /> Users Matrix
+            </TabsTrigger>
+          )}
           {isMasterAdmin && (
             <TabsTrigger value="matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">
               <Unlock className="h-3.5 w-3.5 mr-2" /> Access Matrix
@@ -506,6 +513,15 @@ export function ProfileSettings({
           </div>
         </TabsContent>
 
+        <TabsContent value="users" className="m-0 space-y-6">
+          <UserManagement 
+            users={users} 
+            onSaveUser={onSaveUser} 
+            onDeleteUser={onDeleteUser} 
+            onNavigateToDetail={onNavigateToDetail || (() => {})} 
+          />
+        </TabsContent>
+
         <TabsContent value="matrix" className="m-0 print:hidden space-y-6">
           <div className="px-4">
             <Card className="p-6 bg-white border-slate-200 shadow-xl rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
@@ -515,7 +531,7 @@ export function ProfileSettings({
                     <SelectTrigger className="h-14 bg-slate-50 border-none rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-inner">
                       <div className="flex items-center gap-3">
                         <LayoutGrid className="h-4 w-4 text-slate-400" />
-                        <SelectValue placeholder="Select Module Cluster" />
+                        <SelectValue placeholder="Select Module Hub" />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
@@ -623,7 +639,7 @@ export function ProfileSettings({
                     <ShieldAlert className="h-20 w-20 text-slate-300" />
                   </div>
                   <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Node Required</h4>
-                  <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity and operational cluster above to initialize the security matrix.</p>
+                  <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity and operational hub above to initialize the security matrix.</p>
                 </div>
               )}
             </div>
@@ -764,24 +780,21 @@ export function ProfileSettings({
                           <SelectValue placeholder="Identify Module to Customize..." />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                          {ACCESS_NODES.map(node => (
+                          {ACCESS_NODES.filter(node => !node.id.startsWith('billing-') || node.id === 'billing').map(node => (
                             <SelectItem 
                               key={node.id} 
                               value={node.id} 
-                              className={cn(
-                                "text-[10px] font-bold uppercase",
-                                node.id.startsWith('billing-') && "pl-8"
-                              )}
+                              className="text-[10px] font-bold uppercase py-3"
                             >
                               <div className="flex items-center gap-3">
-                                <node.icon className={cn("h-3.5 w-3.5", node.id.startsWith('billing-') ? "text-primary/40" : "text-slate-400")} />
+                                <node.icon className="h-3.5 w-3.5 text-slate-400" />
                                 {node.label}
                               </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-[9px] text-slate-400 font-medium italic mt-2 ml-1">Select a tab from the list to initialize specific page configuration.</p>
+                      <p className="text-[9px] text-slate-400 font-medium italic mt-2 ml-1">Select a primary hub from the list to initialize specific page configuration.</p>
                     </div>
 
                     {selectedModuleData && (

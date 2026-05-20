@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -59,7 +60,6 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
       { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'My Personnel Portal' },
       { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub' },
-      { id: 'users' as ViewType, icon: Users, label: customTitles['users'] || 'Users Matrix' },
       { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
       { id: 'orders' as ViewType, icon: ShoppingCart, label: customTitles['orders'] || 'Master Orders' },
       { id: 'production-planner' as ViewType, icon: Factory, label: customTitles['production-planner'] || 'Mass Production' },
@@ -84,8 +84,8 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       // Portal is always visible for personal use
       if (item.id === 'my-portal') return true;
 
-      // HR hub and Users Matrix is strictly for HR admins
-      if (item.id === 'hr' || item.id === 'users') return isHRAdmin;
+      // HR hub is strictly for HR admins
+      if (item.id === 'hr') return isHRAdmin;
 
       // Check specific permissions for others
       const level = permissions[item.id];

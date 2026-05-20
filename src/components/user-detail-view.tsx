@@ -25,7 +25,14 @@ import {
   Hash,
   Fingerprint,
   ExternalLink,
-  Users
+  Users,
+  CreditCard,
+  Receipt,
+  Building2,
+  Landmark,
+  ArrowUpRight,
+  ArrowDownLeft,
+  FileText
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -48,7 +55,13 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: Briefcase },
   { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Briefcase },
   { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Briefcase },
-  { id: 'billing', label: 'Financial Hub', category: 'Commercial Operations', icon: Briefcase },
+  { id: 'billing', label: 'Financial Hub (Main)', category: 'Commercial Operations', icon: CreditCard },
+  { id: 'billing-quotation', label: 'Financial: Quotation', category: 'Commercial Operations', icon: FileText },
+  { id: 'billing-invoice', label: 'Financial: Invoice', category: 'Commercial Operations', icon: Receipt },
+  { id: 'billing-proforma', label: 'Financial: Proforma', category: 'Commercial Operations', icon: Building2 },
+  { id: 'billing-inward', label: 'Financial: Inward', category: 'Commercial Operations', icon: ArrowDownLeft },
+  { id: 'billing-outward', label: 'Financial: Outward', category: 'Commercial Operations', icon: ArrowUpRight },
+  { id: 'billing-bank', label: 'Financial: Bank Ledger', category: 'Commercial Operations', icon: Landmark },
   { id: 'vendor', label: 'Supply Chain', category: 'Commercial Operations', icon: Briefcase },
   { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Briefcase },
   { id: 'hr', label: 'HR Command', category: 'Resources & Assets', icon: Briefcase },
@@ -159,23 +172,21 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
-        <div className="flex items-center gap-5">
-          <Button variant="ghost" size="icon" onClick={onBack} className="h-12 w-12 text-slate-400 hover:bg-white rounded-2xl shadow-sm border border-slate-100">
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em] mb-1">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Identity Access Management
-            </div>
-            <h2 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
-              {targetUser.name} <span className="text-slate-400 font-medium ml-2">Protocol Page</span>
-            </h2>
+      <header className="flex items-center gap-5 px-2">
+        <Button variant="ghost" size="icon" onClick={onBack} className="h-12 w-12 text-slate-400 hover:bg-white rounded-2xl shadow-sm border border-slate-100">
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+        <div>
+          <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em] mb-1">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Identity Access Management
           </div>
+          <h2 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
+            {targetUser.name} <span className="text-slate-400 font-medium ml-2">Protocol Page</span>
+          </h2>
         </div>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="ml-auto flex items-center gap-4">
           <Button 
             variant="outline"
             onClick={handleVerifyPortal}
@@ -188,7 +199,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
           <Button 
             disabled={isSaving}
             onClick={handleSaveProtocol}
-            className="w-full md:w-auto h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-primary/20 flex gap-3 group"
+            className="h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-primary/20 flex gap-3 group"
           >
             {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Commit Ledger Changes

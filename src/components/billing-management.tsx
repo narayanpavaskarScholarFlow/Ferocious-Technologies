@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -43,7 +42,7 @@ import {
   ArrowDownLeft,
   Landmark
 } from 'lucide-react';
-import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem } from '@/lib/types';
+import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem, PermissionLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -68,6 +67,7 @@ interface BillingManagementProps {
   records: BillingRecord[];
   orders: Order[];
   users: SystemUser[];
+  permissions?: Record<string, PermissionLevel>;
   onSaveRecord: (record: BillingRecord) => void;
   onDeleteRecord: (id: string) => void;
 }
@@ -84,7 +84,7 @@ const INVOICE_TERMS = `1. Subject to Pune jurisdiction only.
 4. Interest @ 18% p.a. will be charged for delayed payments beyond due date.
 5. Goods once sold will not be taken back.`;
 
-export function BillingManagement({ customers, vendors, records, orders, users, onSaveRecord, onDeleteRecord }: BillingManagementProps) {
+export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord }: BillingManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,6 +94,36 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [previewRecord, setPreviewRecord] = useState<BillingRecord | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
+
+  // Filtering allowed tabs based on permissions
+  const availableCategories = useMemo(() => {
+    const allCats: { id: BillingCategory; label: string; permKey: string }[] = [
+      { id: 'quotation', label: 'Quotation', permKey: 'billing-quotation' },
+      { id: 'invoice', label: 'Invoice', permKey: 'billing-invoice' },
+      { id: 'proforma', label: 'Proforma', permKey: 'billing-proforma' },
+      { id: 'inward', label: 'Inward', permKey: 'billing-inward' },
+      { id: 'outward', label: 'Outward', permKey: 'billing-outward' },
+      { id: 'bank', label: 'Bank Ledger', permKey: 'billing-bank' },
+    ];
+
+    return allCats.filter(cat => {
+      const level = permissions?.[cat.permKey];
+      return level && level !== 'none';
+    });
+  }, [permissions]);
+
+  useEffect(() => {
+    // If current category is not allowed, switch to the first allowed one
+    if (availableCategories.length > 0 && !availableCategories.find(c => c.id === activeCategory)) {
+      setActiveCategory(availableCategories[0].id);
+    }
+  }, [availableCategories, activeCategory]);
+
+  const canEditCurrent = useMemo(() => {
+    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory}`;
+    const level = permissions?.[permKey];
+    return level === 'edit' || level === 'full';
+  }, [permissions, activeCategory]);
 
   // Advanced Filtering State
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -331,22 +361,24 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
            <Button variant="outline" className="rounded-xl border-slate-200 gap-2 h-10 px-6 font-bold text-[10px] uppercase tracking-widest shadow-sm" onClick={handlePrintLedger}>
              <Printer className="h-3.5 w-3.5" /> Print Ledger Matrix
            </Button>
-           {selectedRecords.length > 0 && (
+           {selectedRecords.length > 0 && canEditCurrent && (
              <Button variant="destructive" className="rounded-xl gap-2 h-10 px-6 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-red-500/20" onClick={handleBulkDelete}>
                <Trash2 className="h-3.5 w-3.5" /> Delete ({selectedRecords.length})
              </Button>
            )}
-           <Button className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-10 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleCreateNew}>
-             <Plus className="h-3.5 w-3.5" /> Initialize Record
-           </Button>
+           {canEditCurrent && (
+             <Button className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-10 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleCreateNew}>
+               <Plus className="h-3.5 w-3.5" /> Initialize Record
+             </Button>
+           )}
         </div>
       </header>
 
       <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-6 h-12 inline-flex border border-slate-200 shadow-sm gap-1 print:hidden">
-          {['quotation', 'invoice', 'proforma', 'inward', 'outward', 'bank'].map((cat) => (
-            <TabsTrigger key={cat} value={cat} className="rounded-full px-6 h-10 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
-              {cat === 'bank' ? 'Bank Ledger' : cat}
+          {availableCategories.map((cat) => (
+            <TabsTrigger key={cat.id} value={cat.id} className="rounded-full px-6 h-10 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
+              {cat.label}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -520,12 +552,16 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handlePreview(record)}>
                           <Printer className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEdit(record)}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(record.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canEditCurrent && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-primary" onClick={() => handleEdit(record)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(record.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -768,7 +804,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                               <TableCell className="text-right px-6 font-display font-bold text-[#001F3D]">₹ {itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                               <TableCell>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setLineItems(lineItems.filter(li => li.id !== item.id))}>
-                                  <Trash2 className="h-3 w-3" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </TableCell>
                             </TableRow>

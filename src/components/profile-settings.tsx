@@ -53,7 +53,13 @@ import {
   ShieldAlert,
   Network,
   Phone,
-  ListOrdered
+  ListOrdered,
+  FileText,
+  Receipt,
+  Building2,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Landmark
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -86,7 +92,13 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: GraduationCap },
   { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
   { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Boxes },
-  { id: 'billing', label: 'Financial Hub', category: 'Commercial Operations', icon: CreditCard },
+  { id: 'billing', label: 'Financial Hub (Main)', category: 'Commercial Operations', icon: CreditCard },
+  { id: 'billing-quotation', label: 'Financial: Quotation', category: 'Commercial Operations', icon: FileText },
+  { id: 'billing-invoice', label: 'Financial: Invoice', category: 'Commercial Operations', icon: Receipt },
+  { id: 'billing-proforma', label: 'Financial: Proforma', category: 'Commercial Operations', icon: Building2 },
+  { id: 'billing-inward', label: 'Financial: Inward', category: 'Commercial Operations', icon: ArrowDownLeft },
+  { id: 'billing-outward', label: 'Financial: Outward', category: 'Commercial Operations', icon: ArrowUpRight },
+  { id: 'billing-bank', label: 'Financial: Bank Ledger', category: 'Commercial Operations', icon: Landmark },
   { id: 'vendor', label: 'Supply Chain', category: 'Commercial Operations', icon: Truck },
   { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Cpu },
   { id: 'hr', label: 'HR Command', category: 'Resources & Assets', icon: Users },
@@ -569,7 +581,7 @@ export function ProfileSettings({
             </div>
 
             <Tabs defaultValue="architecture">
-              <TabsList className="bg-slate-100 p-1 rounded-full mb-10 h-11 inline-flex border border-slate-200 w-fit">
+              <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-11 inline-flex border border-slate-200 w-fit">
                 <TabsTrigger value="architecture" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Architecture</TabsTrigger>
                 <TabsTrigger value="modules" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Module Customizer</TabsTrigger>
               </TabsList>

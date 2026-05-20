@@ -239,6 +239,10 @@ function IndustrialERPInternal() {
     setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
   };
 
+  const handleSaveCustomer = (customer: Customer) => {
+    setDocumentNonBlocking(doc(db, 'customers', customer.id), customer, { merge: true });
+  };
+
   const handleNavigateToUserDetail = (userId: string) => {
     setSelectedDetailUserId(userId);
     setCurrentView('user-detail');
@@ -374,6 +378,7 @@ function IndustrialERPInternal() {
             {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />}
             {currentView === 'gantt' && <ProductionGantt orders={orders} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
+            {currentView === 'customer-orders' && <CustomerOrders customers={customers} onSaveCustomer={handleSaveCustomer} />}
           </div>
         </main>
       </div>

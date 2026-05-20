@@ -23,7 +23,8 @@ import {
   Eye,
   EyeOff,
   Hash,
-  Fingerprint
+  Fingerprint,
+  ExternalLink
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -57,9 +58,10 @@ interface UserDetailViewProps {
   users: SystemUser[];
   onBack: () => void;
   onSaveUser: (user: SystemUser) => void;
+  onVerifyPortal: (userName: string) => void;
 }
 
-export function UserDetailView({ userId, users, onBack, onSaveUser }: UserDetailViewProps) {
+export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPortal }: UserDetailViewProps) {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -138,6 +140,16 @@ export function UserDetailView({ userId, users, onBack, onSaveUser }: UserDetail
     }, 800);
   };
 
+  const handleVerifyPortal = () => {
+    if (targetUser) {
+      onVerifyPortal(targetUser.name);
+      toast({
+        title: "Simulation Initialized",
+        description: `Redirecting to Personnel Portal for ${targetUser.name}.`
+      });
+    }
+  };
+
   if (!targetUser) return null;
 
   return (
@@ -159,6 +171,15 @@ export function UserDetailView({ userId, users, onBack, onSaveUser }: UserDetail
         </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
+          <Button 
+            variant="outline"
+            onClick={handleVerifyPortal}
+            className="h-12 px-6 rounded-xl font-bold uppercase tracking-[0.3em] text-[10px] border-slate-200 bg-white hover:bg-slate-50 flex gap-3"
+          >
+            <UserCircle className="h-4 w-4" />
+            Verify Portal View
+          </Button>
+          
           <Button 
             disabled={isSaving}
             onClick={handleSaveProtocol}
@@ -195,7 +216,7 @@ export function UserDetailView({ userId, users, onBack, onSaveUser }: UserDetail
                     <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest ml-1">Network Identifier (Login ID)</Label>
                     <div className="relative">
                       <Input value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase()})} className="h-11 bg-slate-50 border-none rounded-xl font-bold font-code text-slate-700 pl-10" />
-                      <Fingerprint className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                      <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
                     </div>
                   </div>
 

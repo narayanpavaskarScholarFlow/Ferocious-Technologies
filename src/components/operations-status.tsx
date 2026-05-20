@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -23,7 +24,8 @@ import {
   Trash2,
   FileSpreadsheet,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -179,9 +181,15 @@ export function OperationsStatus({
 
     const enforcedRouting = newRouting.map(op => {
       if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
-        const allCompleted = op.subTasks.every(s => s.status === 'Completed');
+        const allCompleted = op.subTasks.every(s => s.status === 'Completed' || s.isCompleted);
         if (!allCompleted) {
-          return { ...op, status: 'WIP' };
+          // If at least one is started, it's WIP
+          const anyStarted = op.subTasks.some(s => s.status === 'Completed' || s.isCompleted || s.status === 'WIP');
+          if (anyStarted && op.status !== 'Hold') {
+            return { ...op, status: 'WIP' };
+          }
+        } else if (allCompleted) {
+          return { ...op, status: 'Completed' };
         }
       }
       return op;
@@ -205,7 +213,7 @@ export function OperationsStatus({
 
       if (op.subTasks && op.subTasks.length > 0) {
         totalApplicableTasks += op.subTasks.length;
-        completedTasksCount += op.subTasks.filter(s => s.status === 'Completed').length;
+        completedTasksCount += op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length;
       } else {
         totalApplicableTasks += 1;
         if (op.status === 'Completed') {
@@ -218,29 +226,25 @@ export function OperationsStatus({
 
     const progress = totalApplicableTasks > 0 ? Math.round((completedTasksCount / totalApplicableTasks) * 100) : 0;
 
-    // DELIVERY INTEGRATION LOGIC
-    let orderStatus: Order['status'] = 'Pending';
+    // INTEGRATED STATUS LOGIC
+    let orderStatus: Order['status'] = orderData?.status || 'Pending';
     const opsFinished = progress === 100;
     
     if (opsFinished) {
-      // Check Quality
       const orderReports = allReports?.filter(r => r.workOrderId === selectedWorkOrder) || [];
       const qualityReleased = orderReports.length > 0 && orderReports.every(r => r.status === 'Released');
-      
-      // Check Billing (All invoices associated with order must be paid)
       const orderBilling = allBilling?.filter(b => b.orderId === selectedWorkOrder && b.type === 'invoice') || [];
       const billingCleared = orderBilling.length > 0 && orderBilling.every(b => b.status === 'Paid');
 
       if (qualityReleased && billingCleared) {
         orderStatus = 'Ready for Delivery';
-        toast({ title: "Integrated Success", description: "Order cleared for Dispatch Ledger transition." });
       } else {
-        orderStatus = 'Completed'; // Operations finished, but verification pending
-        if (!qualityReleased) toast({ title: "Quality Hold", description: "Operations finished. Awaiting final QC release." });
-        if (!billingCleared) toast({ title: "Commercial Hold", description: "Operations finished. Awaiting invoice settlement." });
+        orderStatus = 'Completed'; 
       }
-    } else {
-      orderStatus = 'Active';
+    } else if (progress > 0) {
+      if (orderStatus === 'Yet to start' || orderStatus === 'Pending') {
+        orderStatus = 'Active';
+      }
     }
 
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
@@ -464,7 +468,6 @@ export function OperationsStatus({
                     const currentStatus = op.status || "Yet to start";
                     const isExpanded = !!expandedOps[idx];
                     const isNA = currentStatus === 'NA';
-                    const hasSubs = op.subTasks && op.subTasks.length > 0;
                     
                     return (
                       <React.Fragment key={op.id}>
@@ -534,7 +537,7 @@ export function OperationsStatus({
                           </TableCell>
                           <TableCell className="px-4">
                              <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-200 hover:text-red-500" onClick={() => saveRouting(operations.filter(o => o.id !== op.id))}>
-                               <Trash2 className="h-3 w-3" />
+                               <Trash2 className="h-3.5 w-3.5" />
                              </Button>
                           </TableCell>
                         </TableRow>
@@ -544,11 +547,23 @@ export function OperationsStatus({
                             <TableCell colSpan={6} className="pl-12 py-4">
                               <div className="space-y-3">
                                 {op.subTasks.map((task, sIdx) => (
-                                  <div key={task.id} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100">
+                                  <div key={task.id} className={cn(
+                                    "flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 transition-opacity",
+                                    (task.status === 'Completed' || task.isCompleted) && "opacity-60"
+                                  )}>
+                                    <div className="px-2">
+                                      <Checkbox 
+                                        checked={task.status === 'Completed' || task.isCompleted} 
+                                        onCheckedChange={(checked) => handleUpdateSubTask(idx, sIdx, { status: checked ? 'Completed' : 'Yet to start', isCompleted: !!checked })}
+                                      />
+                                    </div>
                                     <Input 
                                       defaultValue={task.name}
                                       onBlur={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
-                                      className="h-7 bg-slate-50 border-none text-[10px] font-bold flex-1" 
+                                      className={cn(
+                                        "h-7 bg-slate-50 border-none text-[10px] font-bold flex-1",
+                                        (task.status === 'Completed' || task.isCompleted) && "line-through"
+                                      )} 
                                     />
                                     <DatePicker value={task.startDate} onChange={(val) => handleUpdateSubTask(idx, sIdx, { startDate: val })} className="h-7 w-28 text-[9px]" />
                                     <Select value={task.machineId} onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}>
@@ -558,7 +573,7 @@ export function OperationsStatus({
                                         {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[9px] font-bold uppercase">{u.name}</SelectItem>)}
                                       </SelectContent>
                                     </Select>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300" onClick={() => handleRemoveSubTask(idx, sIdx)}><Trash2 className="h-3 w-3" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300" onClick={() => handleRemoveSubTask(idx, sIdx)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                   </div>
                                 ))}
                                 <div className="flex gap-2">

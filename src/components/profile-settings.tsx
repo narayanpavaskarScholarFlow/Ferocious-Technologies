@@ -64,7 +64,8 @@ import {
   Landmark,
   Search,
   Filter,
-  X
+  X,
+  Kanban
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -83,16 +84,16 @@ const THEME_COLORS = [
 
 const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }[] = [
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
-  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Zap },
-  { id: 'smart-quote', label: 'AI Quoting', category: 'Strategic Hub', icon: BrainCircuit },
-  { id: 'sqcdp', label: 'Performance Board', category: 'Strategic Hub', icon: LineChart },
+  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
+  { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
+  { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },
   { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
   { id: 'orders', label: 'Master Orders', category: 'Production Control', icon: ShoppingCart },
   { id: 'production-planner', label: 'Mass Production', category: 'Production Control', icon: Factory },
   { id: 'gantt', label: 'Visual Timeline', category: 'Production Control', icon: LayoutGrid },
   { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Control', icon: Layers },
   { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Control', icon: Calendar },
-  { id: 'work-log', label: 'Work Log Hub', category: 'Production Control', icon: ClipboardList },
+  { id: 'work-log', label: 'Daily Work Logs', category: 'Production Control', icon: ClipboardList },
   { id: 'quality', label: 'Quality Hub', category: 'Quality & Compliance', icon: ShieldCheck },
   { id: 'training', label: 'Training Matrix', category: 'Quality & Compliance', icon: GraduationCap },
   { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
@@ -104,9 +105,9 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'billing-inward', label: 'Financial: Inward', category: 'Commercial Operations', icon: ArrowDownLeft },
   { id: 'billing-outward', label: 'Financial: Outward', category: 'Commercial Operations', icon: ArrowUpRight },
   { id: 'billing-bank', label: 'Financial: Bank Ledger', category: 'Commercial Operations', icon: Landmark },
-  { id: 'vendor', label: 'Supply Chain', category: 'Commercial Operations', icon: Truck },
+  { id: 'vendor', label: 'Supply Chain Partner', category: 'Commercial Operations', icon: Truck },
   { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Cpu },
-  { id: 'hr', label: 'HR Command', category: 'Resources & Assets', icon: Users },
+  { id: 'hr', label: 'HR Command Hub', category: 'Resources & Assets', icon: Users },
   { id: 'settings', label: 'Control Center', category: 'System Governance', icon: Settings },
 ];
 
@@ -203,7 +204,13 @@ export function ProfileSettings({
     return ACCESS_NODES.filter(node => {
       const matchesSearch = node.label.toLowerCase().includes(matrixSearch.toLowerCase());
       const matchesCategory = matrixCategoryFilter === 'all' || node.category === matrixCategoryFilter;
-      const matchesModule = selectedMatrixModule === 'all' || node.id === selectedMatrixModule;
+      
+      // Hierarchical Selection Logic: If parent 'billing' is selected, show parent + all 'billing-*'
+      let matchesModule = selectedMatrixModule === 'all' || node.id === selectedMatrixModule;
+      if (selectedMatrixModule === 'billing') {
+        matchesModule = node.id === 'billing' || node.id.startsWith('billing-');
+      }
+
       return matchesSearch && matchesCategory && matchesModule;
     });
   }, [matrixSearch, matrixCategoryFilter, selectedMatrixModule]);
@@ -510,7 +517,6 @@ export function ProfileSettings({
         </TabsContent>
 
         <TabsContent value="matrix" className="m-0 print:hidden space-y-6">
-          {/* Matrix Filter Bar */}
           <div className="px-4">
             <Card className="p-4 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col md:flex-row items-center gap-4">
               <div className="w-full md:w-64">
@@ -524,7 +530,19 @@ export function ProfileSettings({
                   <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                     <SelectItem value="all" className="text-[10px] font-bold uppercase">All Modules</SelectItem>
                     {ACCESS_NODES.map(node => (
-                      <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase">{node.label}</SelectItem>
+                      <SelectItem 
+                        key={node.id} 
+                        value={node.id} 
+                        className={cn(
+                          "text-[10px] font-bold uppercase",
+                          node.id.startsWith('billing-') && "pl-8" // Indent hierarchical sub-items
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <node.icon className={cn("h-3.5 w-3.5", node.id.startsWith('billing-') ? "text-primary/40" : "text-slate-400")} />
+                          {node.label}
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -623,7 +641,12 @@ export function ProfileSettings({
                                 <node.icon className="h-4 w-4" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[11px] font-bold uppercase text-slate-700 tracking-widest leading-none">{node.label}</span>
+                                <span className={cn(
+                                  "text-[11px] font-bold uppercase text-slate-700 tracking-widest leading-none",
+                                  node.id.startsWith('billing-') && "text-primary/70" // Highlight hierarchical items
+                                )}>
+                                  {node.label}
+                                </span>
                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1.5">{node.category}</p>
                               </div>
                             </div>
@@ -803,9 +826,16 @@ export function ProfileSettings({
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                           {ACCESS_NODES.map(node => (
-                            <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase">
+                            <SelectItem 
+                              key={node.id} 
+                              value={node.id} 
+                              className={cn(
+                                "text-[10px] font-bold uppercase",
+                                node.id.startsWith('billing-') && "pl-8"
+                              )}
+                            >
                               <div className="flex items-center gap-3">
-                                <node.icon className="h-3.5 w-3.5 text-slate-400" />
+                                <node.icon className={cn("h-3.5 w-3.5", node.id.startsWith('billing-') ? "text-primary/40" : "text-slate-400")} />
                                 {node.label}
                               </div>
                             </SelectItem>

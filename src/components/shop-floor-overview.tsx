@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card } from '@/components/ui/card';
@@ -13,7 +14,9 @@ import {
   Zap,
   Cpu,
   TrendingUp,
-  Clock
+  Clock,
+  Activity,
+  Factory
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -21,7 +24,8 @@ import {
   YAxis, 
   Tooltip as ChartTooltip, 
   Area,
-  AreaChart
+  AreaChart,
+  CartesianGrid
 } from "recharts";
 import { cn } from '@/lib/utils';
 import { Order } from '@/lib/types';
@@ -35,6 +39,26 @@ interface ShopFloorOverviewProps {
   title?: string;
 }
 
+const DAILY_UTILIZATION_DATA = [
+  { day: 'Mon', value: 72 },
+  { day: 'Tue', value: 85 },
+  { day: 'Wed', value: 78 },
+  { day: 'Thu', value: 92 },
+  { day: 'Fri', value: 88 },
+  { day: 'Sat', value: 45 },
+  { day: 'Sun', value: 30 },
+];
+
+const YIELD_VELOCITY_DATA = [
+  { name: 'Mon', value: 45 },
+  { name: 'Tue', value: 52 },
+  { name: 'Wed', value: 48 },
+  { name: 'Thu', value: 61 },
+  { name: 'Fri', value: 55 },
+  { name: 'Sat', value: 67 },
+  { name: 'Sun', value: 70 },
+];
+
 export function ShopFloorOverview({ 
   orders,
   onNavigateToOrders, 
@@ -46,16 +70,6 @@ export function ShopFloorOverview({
   
   const kpiData = [
     { id: 'orders', label: 'Active Jobs', total: orders.length.toString(), sub1: 'WIP', sub1Val: orders.filter(o => o.status === 'Active').length, sub2: 'Queued', sub2Val: orders.filter(o => o.status === 'Pending').length, icon: ShoppingCart, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-  ];
-
-  const chartData = [
-    { name: 'Mon', value: 45 },
-    { name: 'Tue', value: 52 },
-    { name: 'Wed', value: 48 },
-    { name: 'Thu', value: 61 },
-    { name: 'Fri', value: 55 },
-    { name: 'Sat', value: 67 },
-    { name: 'Sun', value: 70 },
   ];
 
   const handleKPIClick = (id: string) => {
@@ -119,16 +133,19 @@ export function ShopFloorOverview({
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <Card className="lg:col-span-8 p-8 bg-white border border-slate-100 shadow-sm rounded-2xl space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <Card className="lg:col-span-6 p-8 bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-8">
           <div className="flex justify-between items-center">
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Yield Velocity</h4>
-            <Badge variant="outline" className="text-[8px] font-bold uppercase">Live_Feed</Badge>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/5 rounded-lg text-primary"><TrendingUp className="h-4 w-4" /></div>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Yield Velocity</h4>
+            </div>
+            <Badge variant="outline" className="text-[8px] font-bold uppercase bg-slate-50">Live_Feed</Badge>
           </div>
 
-          <div className="h-[240px] w-full">
+          <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart data={YIELD_VELOCITY_DATA}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
@@ -148,7 +165,7 @@ export function ShopFloorOverview({
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-[#001F3D] text-white px-3 py-2 rounded-lg shadow-xl border-none">
-                          <p className="text-xs font-bold">{payload[0].value}% Uptime</p>
+                          <p className="text-xs font-bold">{payload[0].value}% Yield</p>
                         </div>
                       );
                     }
@@ -168,7 +185,71 @@ export function ShopFloorOverview({
           </div>
         </Card>
 
-        <Card className="lg:col-span-4 p-8 bg-[#001F3D] text-white border-none shadow-lg rounded-2xl flex flex-col justify-between group cursor-pointer" onClick={onNavigateToMachine}>
+        <Card className="lg:col-span-6 p-8 bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-8 relative overflow-hidden group">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><Activity className="h-4 w-4" /></div>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Daily Utilization Trend</h4>
+            </div>
+            <div className="text-right">
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">OEE Peak</p>
+              <p className="text-sm font-bold text-emerald-600">92%</p>
+            </div>
+          </div>
+
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={DAILY_UTILIZATION_DATA}>
+                <defs>
+                  <linearGradient id="colorUtil" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="day" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
+                  dy={15}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
+                  tickFormatter={(val) => `${val}%`}
+                />
+                <ChartTooltip 
+                  content={({active, payload}) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-[#001F3D] text-white px-4 py-3 rounded-2xl shadow-2xl border-none">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-1">{payload[0].payload.day}</p>
+                          <p className="text-xl font-display font-bold">{payload[0].value}% <span className="text-[10px] text-emerald-400">OEE</span></p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#10b981" 
+                  strokeWidth={4} 
+                  fillOpacity={1} 
+                  fill="url(#colorUtil)" 
+                  animationDuration={2000}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="p-8 bg-[#001F3D] text-white border-none shadow-lg rounded-[2rem] flex flex-col justify-between group cursor-pointer" onClick={onNavigateToMachine}>
           <div className="space-y-6">
             <div className="p-3 bg-white/10 rounded-xl w-fit">
               <Cpu className="h-6 w-6 text-primary" />
@@ -183,26 +264,26 @@ export function ShopFloorOverview({
             <ChevronRight className="h-4 w-4" />
           </div>
         </Card>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-6 bg-white border border-slate-100 rounded-2xl flex items-center gap-6">
-          <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 shrink-0">
-            <ShieldCheck className="h-6 w-6" />
+        <Card className="p-8 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 shadow-xl shadow-blue-900/5">
+          <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shrink-0">
+            <ShieldCheck className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Security Health</p>
-            <p className="text-sm font-bold text-[#001F3D] uppercase">Ledger Protocol Active</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Security Health</p>
+            <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">Ledger Protocol Active</p>
+            <p className="text-[10px] text-emerald-600 font-bold uppercase mt-1">Verified Node</p>
           </div>
         </Card>
 
-        <Card className="p-6 bg-white border border-slate-100 rounded-2xl flex items-center gap-6">
-          <div className="h-12 w-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary shrink-0">
-            <Clock className="h-6 w-6" />
+        <Card className="p-8 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 shadow-xl shadow-blue-900/5">
+          <div className="h-16 w-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary shrink-0">
+            <Clock className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Monitoring Threads</p>
-            <p className="text-sm font-bold text-[#001F3D] uppercase">{orders.length} Active Jobs</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monitoring Threads</p>
+            <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">{orders.length} Active Jobs</p>
+            <p className="text-[10px] text-primary font-bold uppercase mt-1">Real-time Telemetry</p>
           </div>
         </Card>
       </div>

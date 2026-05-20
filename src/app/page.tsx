@@ -27,6 +27,7 @@ import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
 import { UserManagement } from '@/components/user-management';
 import { UserDetailView } from '@/components/user-detail-view';
+import { DispatchLedger } from '@/components/dispatch-ledger';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -187,7 +188,7 @@ function IndustrialERPInternal() {
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
         'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full',
-        'team-matrix': 'full',
+        'team-matrix': 'full', delivery: 'full',
         'billing-quotation': 'full',
         'billing-invoice': 'full',
         'billing-proforma': 'full',
@@ -379,6 +380,7 @@ function IndustrialERPInternal() {
             {currentView === 'gantt' && <ProductionGantt orders={orders} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
             {currentView === 'customer-orders' && <CustomerOrders customers={customers} onSaveCustomer={handleSaveCustomer} />}
+            {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={handleSaveOrder} />}
           </div>
         </main>
       </div>
@@ -394,3 +396,4 @@ export default function IndustrialERP() {
     </FirebaseClientProvider>
   );
 }
+

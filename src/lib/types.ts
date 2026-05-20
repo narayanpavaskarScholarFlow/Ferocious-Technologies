@@ -1,3 +1,4 @@
+
 export type ToolStatus = 'active' | 'obsolete' | 'maintenance' | 'fault';
 
 export type MachineCategory = 
@@ -67,7 +68,8 @@ export type ViewType =
   | 'training'
   | 'manpower'
   | 'salary'
-  | 'team-matrix';
+  | 'team-matrix'
+  | 'delivery';
 
 export interface SubTask {
   id: string;
@@ -96,7 +98,7 @@ export interface Order {
   startDate: string;
   endDate: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'Active' | 'Pending' | 'Completed' | 'Delayed' | 'Yet to start';
+  status: 'Active' | 'Pending' | 'Completed' | 'Delayed' | 'Yet to start' | 'Ready for Delivery' | 'Delivered';
   owner?: string;
   progress?: number;
   amountSpent?: string;
@@ -106,6 +108,7 @@ export interface Order {
   totalQuoted?: string;
   targetBudget?: string;
   routing?: RoutingOperation[];
+  deliveredAt?: string;
 }
 
 export interface BillingLineItem {

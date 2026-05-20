@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,35 +13,22 @@ import {
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
 import { 
-  Layers, 
-  Truck, 
   ExternalLink, 
   Plus, 
-  Settings2, 
   ChevronDown, 
   ChevronUp, 
   CircleDot,
   Trash2,
-  Calendar as CalendarIcon,
   FileSpreadsheet,
-  Clock,
-  AlertTriangle,
-  User,
-  Lock,
-  Cpu,
   ArrowUp,
   ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import React from 'react';
-import { Order, RoutingOperation, SubTask, SystemUser, Vendor, Machine } from '@/lib/types';
+import { Order, RoutingOperation, SubTask, SystemUser, Vendor, Machine, QualityReport, BillingRecord } from '@/lib/types';
 import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { AnnualLeaveEntry } from './manpower-utilization';
@@ -93,6 +81,12 @@ export function OperationsStatus({
   const holidaysQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
   const { data: holidaysData } = useCollection<AnnualLeaveEntry>(holidaysQuery);
   const holidays = holidaysData || [];
+
+  const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
+  const { data: allReports } = useCollection<QualityReport>(reportsQuery);
+
+  const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
+  const { data: allBilling } = useCollection<BillingRecord>(billingQuery);
 
   const orderDocRef = useMemoFirebase(() => 
     selectedWorkOrder ? doc(db, 'orders', selectedWorkOrder) : null,
@@ -224,11 +218,29 @@ export function OperationsStatus({
 
     const progress = totalApplicableTasks > 0 ? Math.round((completedTasksCount / totalApplicableTasks) * 100) : 0;
 
+    // DELIVERY INTEGRATION LOGIC
     let orderStatus: Order['status'] = 'Pending';
-    if (totalApplicableTasks > 0 && progress === 100) {
-      orderStatus = 'Completed';
+    const opsFinished = progress === 100;
+    
+    if (opsFinished) {
+      // Check Quality
+      const orderReports = allReports?.filter(r => r.workOrderId === selectedWorkOrder) || [];
+      const qualityReleased = orderReports.length > 0 && orderReports.every(r => r.status === 'Released');
+      
+      // Check Billing (All invoices associated with order must be paid)
+      const orderBilling = allBilling?.filter(b => b.orderId === selectedWorkOrder && b.type === 'invoice') || [];
+      const billingCleared = orderBilling.length > 0 && orderBilling.every(b => b.status === 'Paid');
+
+      if (qualityReleased && billingCleared) {
+        orderStatus = 'Ready for Delivery';
+        toast({ title: "Integrated Success", description: "Order cleared for Dispatch Ledger transition." });
+      } else {
+        orderStatus = 'Completed'; // Operations finished, but verification pending
+        if (!qualityReleased) toast({ title: "Quality Hold", description: "Operations finished. Awaiting final QC release." });
+        if (!billingCleared) toast({ title: "Commercial Hold", description: "Operations finished. Awaiting invoice settlement." });
+      }
     } else {
-      orderStatus = 'Pending';
+      orderStatus = 'Active';
     }
 
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
@@ -417,12 +429,12 @@ export function OperationsStatus({
             value={selectedWorkOrder || undefined} 
             onValueChange={handleSelectChange}
           >
-            <SelectTrigger className="w-[180px] h-9 bg-white text-xs font-bold border-slate-200 rounded-lg">
+            <SelectTrigger className="w-[200px] h-9 bg-white text-[10px] font-bold uppercase border-slate-200 rounded-lg">
               <SelectValue placeholder="Select WO..." />
             </SelectTrigger>
             <SelectContent>
               {orders.map(order => (
-                <SelectItem key={order.id} value={order.id} className="text-xs">{order.id} - {order.customer}</SelectItem>
+                <SelectItem key={order.id} value={order.id} className="text-[10px] font-bold uppercase">{order.id} - {order.customer}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -542,8 +554,8 @@ export function OperationsStatus({
                                     <Select value={task.machineId} onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}>
                                       <SelectTrigger className="h-7 w-32 text-[9px] bg-slate-50 border-none"><SelectValue placeholder="Resource" /></SelectTrigger>
                                       <SelectContent>
-                                        {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-[9px]">{m.name}</SelectItem>)}
-                                        {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[9px]">{u.name}</SelectItem>)}
+                                        {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-[9px] font-bold uppercase">{m.name}</SelectItem>)}
+                                        {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[9px] font-bold uppercase">{u.name}</SelectItem>)}
                                       </SelectContent>
                                     </Select>
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300" onClick={() => handleRemoveSubTask(idx, sIdx)}><Trash2 className="h-3 w-3" /></Button>
@@ -552,7 +564,7 @@ export function OperationsStatus({
                                 <div className="flex gap-2">
                                   <Input 
                                     placeholder="Add sub-task..." 
-                                    className="h-8 text-[10px]"
+                                    className="h-8 text-[10px] font-bold"
                                     onKeyDown={(e) => { if (e.key === 'Enter') { handleAddSubTask(idx, e.currentTarget.value); e.currentTarget.value = ''; } }}
                                   />
                                 </div>
@@ -569,17 +581,17 @@ export function OperationsStatus({
                         <Select value={newOpName} onValueChange={setNewOpName}>
                           <SelectTrigger className="h-9 bg-white text-[10px] font-bold uppercase"><SelectValue placeholder="New Operation..." /></SelectTrigger>
                           <SelectContent>
-                            {INITIAL_STEPS.map(step => <SelectItem key={step} value={step}>{step}</SelectItem>)}
+                            {INITIAL_STEPS.map(step => <SelectItem key={step} value={step} className="text-[10px] font-bold uppercase">{step}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <Button onClick={handleAddOperation} className="h-9 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase">Add</Button>
+                        <Button onClick={handleAddOperation} className="h-9 px-6 bg-[#001F3D] text-white text-[10px] font-bold uppercase rounded-lg">Add Sequence Node</Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 </>
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs italic">Select an order to view spreadsheet</TableCell>
+                  <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs italic">Select a Work Order Identity to initialize the operational matrix.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -589,3 +601,4 @@ export function OperationsStatus({
     </div>
   );
 }
+

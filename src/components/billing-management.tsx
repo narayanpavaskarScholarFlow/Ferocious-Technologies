@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -375,7 +376,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
+      <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-6 h-12 inline-flex border border-slate-200 shadow-sm gap-1 print:hidden">
           {availableCategories.map((cat) => (
             <TabsTrigger key={cat.id} value={cat.id} className="rounded-full px-6 h-10 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
@@ -636,7 +637,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </div>
                 )}
 
-                {/* Added Wo ID Dropdown for all financial documents and inward records */}
                 {activeCategory !== 'bank' && (
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">

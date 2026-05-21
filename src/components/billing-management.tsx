@@ -301,7 +301,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const finalAmount = isFinancialDoc ? totals.grandTotal : formData.amount;
 
     const record: BillingRecord = {
-      id: editingRecordId || `BIL-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingLogId || `BIL-${Math.floor(1000 + Math.random() * 9000)}`,
       type: activeCategory,
       customerName: selectedEntity?.name || (activeCategory === 'bank' ? 'BANK_ENTRY' : 'Unknown'),
       customerId: formData.customerId,
@@ -350,7 +350,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     <div className="space-y-6 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 px-2 print:hidden">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
+          <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
             <CreditCard className="h-3.5 w-3.5" />
             Commercial Operations Hub
           </div>
@@ -648,7 +648,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </SelectTrigger>
                       <SelectContent className="rounded-xl shadow-2xl border-slate-100">
                         <SelectItem value="none" className="text-xs font-bold uppercase text-slate-400 italic">No Thread Link</SelectItem>
-                        {orders.map(o => (
+                        {orders
+                          .filter(o => {
+                            // Only show COMPLETED orders when creating an INVOICE
+                            if (activeCategory === 'invoice') return o.status === 'Completed';
+                            return true;
+                          })
+                          .map(o => (
                           <SelectItem key={o.id} value={o.id} className="text-xs font-bold uppercase">WO #{o.id} - {o.customer}</SelectItem>
                         ))}
                       </SelectContent>
@@ -1057,4 +1063,3 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     </div>
   );
 }
-

@@ -183,7 +183,6 @@ export function OperationsStatus({
       if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
         const allCompleted = op.subTasks.every(s => s.status === 'Completed' || s.isCompleted);
         if (!allCompleted) {
-          // If at least one is started, it's WIP
           const anyStarted = op.subTasks.some(s => s.status === 'Completed' || s.isCompleted || s.status === 'WIP');
           if (anyStarted && op.status !== 'Hold') {
             return { ...op, status: 'WIP' };
@@ -194,16 +193,6 @@ export function OperationsStatus({
       }
       return op;
     });
-
-    const activeOps = enforcedRouting.filter(op => op.status !== 'NA');
-    if (activeOps.length === 0) {
-      setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), { 
-        routing: enforcedRouting, 
-        progress: 0, 
-        status: 'Pending' 
-      }, { merge: true });
-      return;
-    }
 
     let totalApplicableTasks = 0;
     let completedTasksCount = 0;
@@ -226,7 +215,6 @@ export function OperationsStatus({
 
     const progress = totalApplicableTasks > 0 ? Math.round((completedTasksCount / totalApplicableTasks) * 100) : 0;
 
-    // INTEGRATED STATUS LOGIC
     let orderStatus: Order['status'] = orderData?.status || 'Pending';
     const opsFinished = progress === 100;
     
@@ -616,4 +604,3 @@ export function OperationsStatus({
     </div>
   );
 }
-

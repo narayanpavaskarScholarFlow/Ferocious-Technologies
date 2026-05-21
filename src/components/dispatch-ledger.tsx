@@ -41,11 +41,12 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
   const readyOrders = useMemo(() => {
     return orders.filter(order => {
       const matchesSearch = order.id.includes(searchTerm) || order.customer.toLowerCase().includes(searchTerm.toLowerCase());
-      const isTerminal = order.status === 'Ready for Delivery' || order.status === 'Delivered';
+      // Show orders that have operations 100% completed, even if not yet fully ready for delivery (triple-lock check)
+      const isTerminal = order.status === 'Ready for Delivery' || order.status === 'Delivered' || order.status === 'Completed';
       return matchesSearch && isTerminal;
     }).sort((a, b) => {
-        if (a.status === 'Ready for Delivery' && b.status === 'Delivered') return -1;
-        if (a.status === 'Delivered' && b.status === 'Ready for Delivery') return 1;
+        if (a.status === 'Ready for Delivery' && b.status !== 'Ready for Delivery') return -1;
+        if (a.status === 'Completed' && b.status === 'Delivered') return -1;
         return 0;
     });
   }, [orders, searchTerm]);
@@ -152,6 +153,7 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
             <TableBody>
               {readyOrders.map((order) => {
                 const v = getVerificationStats(order.id);
+                const isReady = order.status === 'Ready for Delivery';
                 return (
                   <TableRow key={order.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
                     <TableCell className="px-10">
@@ -168,42 +170,49 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                     </TableCell>
                     <TableCell>
                        <div className="flex items-center gap-3">
-                          <div className={cn("p-2 rounded-lg", v.reportsReleased === v.totalReports ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
+                          <div className={cn("p-2 rounded-lg", v.reportsReleased === v.totalReports && v.totalReports > 0 ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
                              <FileBadge className="h-4 w-4" />
                           </div>
                           <div className="flex flex-col">
                              <span className="text-[10px] font-bold text-slate-700 uppercase">Reports Released</span>
-                             <span className="text-[9px] text-slate-400 font-bold">{v.reportsReleased} / {v.totalReports} Verified</span>
+                             <span className="text-[9px] text-slate-400 font-bold">{v.reportsReleased} / {v.totalReports || 0} Verified</span>
                           </div>
                        </div>
                     </TableCell>
                     <TableCell>
                        <div className="flex items-center gap-3">
-                          <div className={cn("p-2 rounded-lg", v.invoicesPaid === v.totalInvoices ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600")}>
+                          <div className={cn("p-2 rounded-lg", v.invoicesPaid === v.totalInvoices && v.totalInvoices > 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600")}>
                              <Receipt className="h-4 w-4" />
                           </div>
                           <div className="flex flex-col">
                              <span className="text-[10px] font-bold text-slate-700 uppercase">Invoices Paid</span>
-                             <span className="text-[9px] text-slate-400 font-bold">{v.invoicesPaid} / {v.totalInvoices} Cleared</span>
+                             <span className="text-[9px] text-slate-400 font-bold">{v.invoicesPaid} / {v.totalInvoices || 0} Cleared</span>
                           </div>
                        </div>
                     </TableCell>
                     <TableCell className="text-center">
                        <Badge className={cn(
                          "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm",
-                         order.status === 'Delivered' ? "bg-slate-100 text-slate-400" : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                         order.status === 'Delivered' ? "bg-slate-100 text-slate-400" : 
+                         order.status === 'Completed' ? "bg-blue-50 text-blue-700 border-blue-100" :
+                         "bg-emerald-50 text-emerald-700 border-emerald-100"
                        )}>
                          {order.status}
                        </Badge>
                     </TableCell>
                     <TableCell className="text-right px-10">
-                       {order.status === 'Ready for Delivery' ? (
+                       {isReady ? (
                          <Button 
                           className="h-11 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-[9px] tracking-widest shadow-xl shadow-emerald-600/20 flex gap-3"
                           onClick={() => handleDispatch(order)}
                          >
                            <Send className="h-4 w-4" /> Execute Dispatch
                          </Button>
+                       ) : order.status === 'Completed' ? (
+                         <div className="flex flex-col items-end gap-1">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Locks</span>
+                            <span className="text-[8px] text-slate-300 font-medium">Clear QC & Billing to dispatch</span>
+                         </div>
                        ) : (
                          <div className="flex flex-col items-end gap-1">
                             <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Archived Terminal</span>
@@ -234,4 +243,3 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
     </div>
   );
 }
-

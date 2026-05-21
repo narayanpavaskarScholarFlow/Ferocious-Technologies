@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -30,10 +31,11 @@ import {
   ArchiveX,
   Edit2,
   Upload,
-  Image as ImageIcon,
+  ImageIcon,
   Maximize2,
   X,
-  Calendar
+  Calendar,
+  Send
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -103,10 +105,12 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const [dimensions, setDimensions] = useState<DimensionRecord[]>(INITIAL_DIMENSIONS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Global Reports Listener
   const allReportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const { data: allReportsData } = useCollection<QualityReport>(allReportsQuery);
   const allReports = allReportsData || [];
+
+  const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
+  const { data: allBilling } = useCollection<BillingRecord>(billingQuery);
 
   const reviewPendingReports = useMemo(() => {
     return allReports.filter(r => r.status === 'Review Pending');
@@ -182,13 +186,44 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
       op.id === opId ? { ...op, status: newStatus } : op
     ) || [];
 
+    let totalTasks = 0;
+    let completedTasks = 0;
+    updatedRouting.forEach(op => {
+      if (op.status === 'NA') return;
+      if (op.subTasks && op.subTasks.length > 0) {
+        totalTasks += op.subTasks.length;
+        completedTasks += op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length;
+      } else {
+        totalTasks += 1;
+        if (op.status === 'Completed') completedTasks += 1;
+        else if (op.status === 'WIP') completedTasks += 0.5;
+      }
+    });
+
+    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    let orderStatus = order.status;
+
+    if (progress === 100) {
+      const orderReports = allReports.filter(r => r.workOrderId === order.id);
+      const qualityReleased = orderReports.length > 0 && orderReports.every(r => r.status === 'Released');
+      const orderBilling = allBilling.filter(b => b.orderId === order.id && b.type === 'invoice');
+      const billingPaid = orderBilling.length > 0 && orderBilling.every(b => b.status === 'Paid');
+      
+      if (qualityReleased && billingPaid) orderStatus = 'Ready for Delivery';
+      else orderStatus = 'Completed';
+    } else if (progress > 0 && (orderStatus === 'Pending' || orderStatus === 'Yet to start')) {
+      orderStatus = 'Active';
+    }
+
     setDocumentNonBlocking(doc(db, 'orders', order.id), {
       routing: updatedRouting,
+      progress: progress,
+      status: orderStatus
     }, { merge: true });
 
     toast({
       title: "Status Synchronized",
-      description: `QC status for Order #${order.id} updated to ${newStatus}.`
+      description: `QC state for Order #${order.id} updated. Progress: ${progress}%`
     });
   };
 
@@ -405,7 +440,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     });
     setCurrentStep('upload'); 
     setActiveReportId(null);
-    if (selectedOrder && onUpdateStatus) onUpdateStatus(selectedOrder.id, 'QC', 'Review Pending');
+    if (selectedOrder && selectedOp) handleStatusUpdate(selectedOrder, selectedOp.id, 'Review Pending');
   };
 
   const finalApproval = () => {
@@ -418,17 +453,16 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
     });
 
     if (selectedOrder && selectedOp) {
-      if (isQCReadyForCompletion(selectedOrder, selectedOp, activeReportId)) {
+      const isReady = isQCReadyForCompletion(selectedOrder, selectedOp, activeReportId);
+      if (isReady) {
         handleStatusUpdate(selectedOrder, selectedOp.id, 'Completed');
         toast({
           title: "QC Protocol Completed",
           description: `All components for Order #${selectedOrder.id} released. Master status updated to Completed.`
         });
       } else {
-        toast({
-          title: "Component Released",
-          description: "Individual compliance report verified and released."
-        });
+        // Just refresh the order progress anyway because one more component is done
+        handleStatusUpdate(selectedOrder, selectedOp.id, 'WIP');
       }
     }
 

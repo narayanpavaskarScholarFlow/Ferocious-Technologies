@@ -102,7 +102,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
-  // Filtering allowed tabs based on permissions
   const availableCategories = useMemo(() => {
     const allCats: { id: BillingCategory; label: string; permKey: string }[] = [
       { id: 'quotation', label: 'Quotation', permKey: 'billing-quotation' },
@@ -121,7 +120,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   }, [permissions]);
 
   useEffect(() => {
-    // If current category is not allowed, switch to the first allowed one
     if (availableCategories.length > 0 && !availableCategories.find(c => c.id === activeCategory)) {
       setActiveCategory(availableCategories[0].id);
     }
@@ -133,12 +131,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     return level === 'edit' || level === 'full';
   }, [permissions, activeCategory]);
 
-  // Advanced Filtering State
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterCustomer, setFilterCustomer] = useState<string>('all');
   const [filterDate, setFilterDate] = useState<string>('');
 
-  // Advanced Billing State
   const [lineItems, setLineItems] = useState<BillingLineItem[]>([]);
   const [formData, setFormData] = useState({
     customerId: '',
@@ -168,22 +164,17 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
   }, [records, activeCategory, searchTerm, filterStatus, filterCustomer, filterDate]);
 
-  // Bank Balance Calculation
   const bankBalance = useMemo(() => {
     const totalInflow = records.reduce((acc, r) => {
       if (r.status !== 'Paid') return acc;
-      // Invoices/Quotations/DCs are inflows if paid
       if (['invoice', 'quotation', 'proforma', 'delivery_challan'].includes(r.type)) return acc + r.amount;
-      // Bank deposits
       if (r.type === 'bank' && (r as any).bankEntryType === 'Deposit') return acc + r.amount;
       return acc;
     }, 0);
 
     const totalOutflow = records.reduce((acc, r) => {
       if (r.status !== 'Paid') return acc;
-      // Inward/Outward/Expenses are outflows if paid
       if (['inward', 'outward', 'expenses'].includes(r.type)) return acc + r.amount;
-      // Bank withdrawals
       if (r.type === 'bank' && (r as any).bankEntryType === 'Withdrawal') return acc + r.amount;
       return acc;
     }, 0);
@@ -208,10 +199,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     let taxTotal = 0;
 
     lineItems.forEach(item => {
-      const lineBase = item.qty * item.price;
-      const lineDiscount = (lineBase * (item.discount || 0)) / 100;
-      const taxableAmount = lineBase - lineDiscount;
-      const lineTax = (taxableAmount * (item.gstRate || 0)) / 100;
+      // Precision Rounding: Standard industrial practice uses 2 decimals
+      const lineBase = Math.round(item.qty * item.price * 100) / 100;
+      const lineDiscount = Math.round((lineBase * (item.discount || 0)) / 100 * 100) / 100;
+      const taxableAmount = Math.round((lineBase - lineDiscount) * 100) / 100;
+      const lineTax = Math.round((taxableAmount * (item.gstRate || 0)) / 100 * 100) / 100;
 
       subTotal += lineBase;
       discountTotal += lineDiscount;
@@ -219,11 +211,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
 
     return {
-      subTotal,
-      discountTotal,
-      taxableValue: subTotal - discountTotal,
-      taxTotal,
-      grandTotal: subTotal - discountTotal + taxTotal
+      subTotal: Math.round(subTotal * 100) / 100,
+      discountTotal: Math.round(discountTotal * 100) / 100,
+      taxableValue: Math.round((subTotal - discountTotal) * 100) / 100,
+      taxTotal: Math.round(taxTotal * 100) / 100,
+      grandTotal: Math.round((subTotal - discountTotal + taxTotal) * 100) / 100
     };
   }, [lineItems]);
 
@@ -332,7 +324,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     onSaveRecord(record);
 
-    // AUTOMATION: If creating an Invoice, automatically create a matching Delivery Challan
     if (activeCategory === 'invoice' && !editingRecordId) {
       const dcRecord: BillingRecord = {
         ...record,
@@ -677,11 +668,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           .filter(o => {
                             if (activeCategory === 'invoice') {
                               const isCompleted = o.status === 'Completed';
-                              // Collision Prevention: Check if invoice already exists for this orderId
                               const invoiceExists = records.some(r => 
                                 r.type === 'invoice' && 
                                 r.orderId === o.id && 
-                                r.id !== editingRecordId // Allow current record's order during edit
+                                r.id !== editingRecordId 
                               );
                               return isCompleted && !invoiceExists;
                             }
@@ -741,7 +731,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Transaction Value (₹)</Label>
-                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-2xl font-display font-bold text-[#001F3D] shadow-inner" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})} />
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-2xl font-display font-bold text-[#001F3D] shadow-inner" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})} />
                         </div>
                       </div>
                     </div>
@@ -837,19 +827,22 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </TableHeader>
                       <TableBody>
                         {lineItems.map((item) => {
-                          const taxableAmount = (item.qty * item.price) * (1 - (item.discount || 0) / 100);
+                          const taxableAmount = Math.round((item.qty * item.price) * (1 - (item.discount || 0) / 100) * 100) / 100;
+                          const lineTax = Math.round((taxableAmount * (item.gstRate || 0)) / 100 * 100) / 100;
+                          const totalLineAmount = Math.round((taxableAmount + lineTax) * 100) / 100;
+                          
                           return (
                             <TableRow key={item.id} className="border-slate-50 hover:bg-white/50 group transition-colors">
                               <TableCell className="px-6">
                                 <Input placeholder="Description" className="h-8 bg-white border-none rounded-lg text-xs font-bold" value={item.description} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, description: e.target.value} : li))} />
                               </TableCell>
                               <TableCell><Input className="h-8 bg-white border-none rounded-lg text-[10px] font-code text-center" value={item.hsn} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, hsn: e.target.value} : li))} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.qty} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, qty: Number(e.target.value)} : li))} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.qty} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, qty: parseFloat(e.target.value) || 0} : li))} /></TableCell>
                               <TableCell><Input className="h-8 bg-white border-none rounded-lg text-[10px] font-bold text-center" value={item.unit} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, unit: e.target.value} : li))} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.price} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, price: Number(e.target.value)} : li))} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.discount} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, discount: Number(e.target.value)} : li))} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.gstRate} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, gstRate: Number(e.target.value)} : li))} /></TableCell>
-                              <TableCell className="text-right px-6 font-display font-bold text-[#001F3D]">₹ {taxableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.price} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, price: parseFloat(e.target.value) || 0} : li))} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.discount} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, discount: parseFloat(e.target.value) || 0} : li))} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.gstRate} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, gstRate: parseFloat(e.target.value) || 0} : li))} /></TableCell>
+                              <TableCell className="text-right px-6 font-display font-bold text-[#001F3D]">₹ {totalLineAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                               <TableCell>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setLineItems(lineItems.filter(li => li.id !== item.id))}>
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -889,7 +882,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           <span>₹ {totals.taxableValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-emerald-400">
-                          <span>GST (18%) (+)</span>
+                          <span>Total GST (+)</span>
                           <span>+ ₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         <div className="pt-4 border-t border-white/10 flex justify-between items-end">
@@ -912,7 +905,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                     <div className="space-y-2.5">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Net Transaction Value (₹)</Label>
-                      <Input type="number" className="h-11 bg-slate-50 border-none rounded-xl text-xl font-display font-bold text-primary shadow-inner" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})} />
+                      <Input type="number" className="h-11 bg-slate-50 border-none rounded-xl text-xl font-display font-bold text-primary shadow-inner" value={formData.amount || ''} onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})} />
                     </div>
                   </div>
                   <div className="space-y-2.5">

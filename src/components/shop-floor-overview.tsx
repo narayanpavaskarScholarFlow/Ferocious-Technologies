@@ -344,7 +344,7 @@ export function ShopFloorOverview({
             <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">{orders.length} Managed Jobs</p>
             <p className="text-[10px] text-primary font-bold uppercase mt-1">Real-time Telemetry</p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -179,8 +179,8 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
       <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
         <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-[#001F3D] rounded-lg text-white"><Archive className="h-4 w-4" /></div>
-             <span className="text-[11px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">Operational Dispatch Matrix</span>
+            <div className="p-2 bg-[#001F3D] rounded-lg text-white"><Archive className="h-4 w-4" /></div>
+            <span className="text-[11px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">Operational Dispatch Matrix</span>
           </div>
           <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 font-bold text-[9px] h-9 px-6 uppercase tracking-widest">
             {readyOrders.length} Terminal Entries
@@ -315,6 +315,11 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
         <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[90vh]">
           {selectedOrder && activeStats && (
             <>
+              <DialogHeader className="sr-only">
+                <DialogTitle>Verification Detail Protocol</DialogTitle>
+                <DialogDescription>Verification matrix details for the selected work order node.</DialogDescription>
+              </DialogHeader>
+
               <div className={cn(
                 "p-8 text-white flex justify-between items-center shrink-0",
                 modalType === 'hold' ? "bg-amber-600" : modalType === 'quality' ? "bg-[#001F3D]" : "bg-emerald-600"
@@ -482,4 +487,3 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
     </div>
   );
 }
-

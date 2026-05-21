@@ -34,11 +34,18 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
   const [searchTerm, setSearchTerm] = useState('');
   const [breakupOrderId, setBreakupOrderId] = useState<string | null>(null);
 
-  const filteredOrders = orders.filter(order => 
-    order.id.includes(searchTerm) || 
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.poNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter Logic: Hide terminal orders (Completed, Ready for Delivery, Delivered) from the active list
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const matchesSearch = order.id.includes(searchTerm) || 
+                           order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           order.poNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const isTerminal = ['Completed', 'Ready for Delivery', 'Delivered'].includes(order.status);
+      
+      return matchesSearch && !isTerminal;
+    });
+  }, [orders, searchTerm]);
 
   const selectedOrderForBreakup = useMemo(() => {
     return orders.find(o => o.id === breakupOrderId);
@@ -83,7 +90,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
           <div className="relative flex-1 sm:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
-              placeholder="Search master ledger..." 
+              placeholder="Search active master ledger..." 
               className="pl-12 h-12 rounded-2xl bg-white border-none shadow-xl shadow-blue-900/5 text-xs font-bold uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-primary/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -107,7 +114,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
             <span className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">Operational Filter Active</span>
           </div>
           <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 font-bold text-[9px] h-8 px-4 uppercase tracking-widest">
-            {filteredOrders.length} Threads Loaded
+            {filteredOrders.length} Active Threads Loaded
           </Badge>
         </div>
         <div className="overflow-x-auto">
@@ -208,7 +215,6 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                      <Badge className={cn(
                        "inline-flex px-5 py-2 rounded-full text-[9px] font-bold justify-center uppercase tracking-widest border shadow-lg",
                        order.status === 'Active' ? "bg-[#001F3D] text-white border-[#001F3D]" :
-                       order.status === 'Completed' ? "bg-emerald-600 text-white border-emerald-600" :
                        order.status === 'Delayed' ? "bg-red-600 text-white border-red-600" :
                        'bg-slate-100 text-slate-400 border-slate-200'
                      )}>

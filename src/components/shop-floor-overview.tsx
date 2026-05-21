@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,11 @@ import {
   TrendingUp,
   Clock,
   Activity,
-  Factory
+  Factory,
+  ShieldAlert,
+  AlertTriangle,
+  Receipt,
+  FileBadge
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -28,7 +33,9 @@ import {
   CartesianGrid
 } from "recharts";
 import { cn } from '@/lib/utils';
-import { Order } from '@/lib/types';
+import { Order, QualityReport, BillingRecord } from '@/lib/types';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 interface ShopFloorOverviewProps {
   orders: Order[];
@@ -67,9 +74,31 @@ export function ShopFloorOverview({
   onNavigateToBilling,
   title = 'Command Matrix'
 }: ShopFloorOverviewProps) {
+  const db = useFirestore();
   
+  const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
+  const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
+  
+  const { data: reports } = useCollection<QualityReport>(reportsQuery);
+  const { data: billing } = useCollection<BillingRecord>(billingQuery);
+
+  // Logic: Identify orders that are Completed but missing DC/Invoice/Verification
+  const awaitingVerification = useMemo(() => {
+    return orders.filter(order => {
+      if (order.status !== 'Completed') return false;
+      
+      const orderReports = reports?.filter(r => r.workOrderId === order.id) || [];
+      const orderInvoices = billing?.filter(b => b.orderId === order.id && b.type === 'invoice') || [];
+      
+      const missingQC = orderReports.length === 0 || orderReports.some(r => r.status !== 'Released');
+      const missingInvoice = orderInvoices.length === 0 || orderInvoices.some(i => i.status !== 'Paid');
+      
+      return missingQC || missingInvoice;
+    });
+  }, [orders, reports, billing]);
+
   const kpiData = [
-    { id: 'orders', label: 'Active Jobs', total: orders.length.toString(), sub1: 'WIP', sub1Val: orders.filter(o => o.status === 'Active').length, sub2: 'Queued', sub2Val: orders.filter(o => o.status === 'Pending').length, icon: ShoppingCart, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { id: 'orders', label: 'Active Jobs', total: orders.filter(o => !['Completed', 'Ready for Delivery', 'Delivered'].includes(o.status)).length.toString(), sub1: 'WIP', sub1Val: orders.filter(o => o.status === 'Active').length, sub2: 'Queued', sub2Val: orders.filter(o => o.status === 'Pending' || o.status === 'Yet to start').length, icon: ShoppingCart, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
 
   const handleKPIClick = (id: string) => {
@@ -131,6 +160,36 @@ export function ShopFloorOverview({
             </Card>
           );
         })}
+
+        {/* Verification Reminder Card */}
+        {awaitingVerification.length > 0 && (
+          <Card className="premium-card p-6 bg-amber-50 border-amber-100 shadow-amber-900/5 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <ShieldAlert className="h-16 w-16 text-amber-900" />
+            </div>
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="p-3 bg-amber-500 rounded-xl text-white shadow-lg shadow-amber-500/20">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase text-amber-900 tracking-widest">Verification Alerts</p>
+                <p className="text-[8px] font-bold uppercase text-amber-600 tracking-widest mt-0.5">Triple-Lock Reminder</p>
+              </div>
+            </div>
+            <div className="space-y-4 relative z-10">
+              <h3 className="text-2xl font-display font-bold text-amber-900">{awaitingVerification.length} <span className="text-sm">Threads</span></h3>
+              <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                Orders operationally completed but awaiting final DC/Invoice or QC certification.
+              </p>
+              <div className="pt-4 flex gap-2">
+                {awaitingVerification.slice(0, 3).map(o => (
+                  <Badge key={o.id} variant="outline" className="bg-white border-amber-200 text-amber-700 text-[8px] font-bold">#{o.id}</Badge>
+                ))}
+                {awaitingVerification.length > 3 && <span className="text-[8px] font-bold text-amber-400">+{awaitingVerification.length - 3} more</span>}
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -282,10 +341,10 @@ export function ShopFloorOverview({
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monitoring Threads</p>
-            <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">{orders.length} Active Jobs</p>
+            <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">{orders.length} Managed Jobs</p>
             <p className="text-[10px] text-primary font-bold uppercase mt-1">Real-time Telemetry</p>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

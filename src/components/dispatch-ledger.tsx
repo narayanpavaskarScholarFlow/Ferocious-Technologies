@@ -61,15 +61,18 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
 
   const getVerificationStats = (orderId: string) => {
     const orderReports = reports.filter(r => r.workOrderId === orderId);
-    const orderBilling = billing.filter(b => b.orderId === orderId && b.type === 'invoice');
+    const orderInvoices = billing.filter(b => b.orderId === orderId && b.type === 'invoice');
+    const orderDCs = billing.filter(b => b.orderId === orderId && b.type === 'delivery_challan');
     
     return {
       reportsReleased: orderReports.filter(r => r.status === 'Released').length,
       totalReports: orderReports.length,
-      invoicesPaid: orderBilling.filter(b => b.status === 'Paid').length,
-      totalInvoices: orderBilling.length,
+      invoicesPaid: orderInvoices.filter(b => b.status === 'Paid').length,
+      totalInvoices: orderInvoices.length,
+      dcsCreated: orderDCs.length,
+      totalDCs: orderDCs.length,
       allReports: orderReports,
-      allBilling: orderBilling
+      allBilling: [...orderInvoices, ...orderDCs]
     };
   };
 
@@ -79,7 +82,8 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
     
     const v = getVerificationStats(order.id);
     const qualityComplete = v.totalReports > 0 && v.reportsReleased === v.totalReports;
-    const financialComplete = v.totalInvoices > 0 && v.invoicesPaid === v.totalInvoices;
+    // Financial logic: Must have at least one Invoice, all Invoices must be paid, and at least one DC must exist
+    const financialComplete = v.totalInvoices > 0 && v.invoicesPaid === v.totalInvoices && v.dcsCreated > 0;
     
     if (qualityComplete && financialComplete) return 'Ready for Delivery';
     return 'HOLD';
@@ -245,7 +249,7 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                        >
                           <div className={cn(
                             "p-2 rounded-lg transition-all group-hover/lock:scale-110", 
-                            v.invoicesPaid === v.totalInvoices && v.totalInvoices > 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                            v.invoicesPaid === v.totalInvoices && v.totalInvoices > 0 && v.dcsCreated > 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
                           )}>
                              <Receipt className="h-4 w-4" />
                           </div>
@@ -253,7 +257,7 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                              <span className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1 group-hover/lock:text-primary">
                                Financial Lock <ExternalLink className="h-2 w-2 opacity-0 group-hover/lock:opacity-100" />
                              </span>
-                             <span className="text-[9px] text-slate-400 font-bold">{v.invoicesPaid} / {v.totalInvoices || 0} Settled</span>
+                             <span className="text-[9px] text-slate-400 font-bold">{v.invoicesPaid} / {v.totalInvoices || 0} Paid • {v.dcsCreated} DC</span>
                           </div>
                        </div>
                     </TableCell>
@@ -315,15 +319,7 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
         <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[90vh]">
           {selectedOrder && activeStats && (
             <>
-              <DialogHeader className="sr-only">
-                <DialogTitle>Verification Detail Protocol</DialogTitle>
-                <DialogDescription>Verification matrix details for the selected work order node.</DialogDescription>
-              </DialogHeader>
-
-              <div className={cn(
-                "p-8 text-white flex justify-between items-center shrink-0",
-                modalType === 'hold' ? "bg-amber-600" : modalType === 'quality' ? "bg-[#001F3D]" : "bg-emerald-600"
-              )}>
+              <DialogHeader className="p-8 text-white flex justify-between items-center shrink-0" style={{backgroundColor: modalType === 'hold' ? '#d97706' : modalType === 'quality' ? '#001F3D' : '#059669'}}>
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-white/10 rounded-2xl">
                     {modalType === 'hold' && <AlertCircle className="h-7 w-7" />}
@@ -331,18 +327,18 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                     {modalType === 'financial' && <Receipt className="h-7 w-7" />}
                   </div>
                   <div>
-                    <h3 className="text-2xl font-display font-bold uppercase tracking-tight">
+                    <DialogTitle className="text-2xl font-display font-bold uppercase tracking-tight">
                       {modalType === 'hold' && 'Protocol Bottleneck Analysis'}
                       {modalType === 'quality' && 'Quality Verification Registry'}
-                      {modalType === 'financial' && 'Financial Settlement Ledger'}
-                    </h3>
-                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Work Order Node: #{selectedOrder.id} - {selectedOrder.customer}</p>
+                      {modalType === 'financial' && 'Financial & Logistical Ledger'}
+                    </DialogTitle>
+                    <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Work Order Node: #{selectedOrder.id} - {selectedOrder.customer}</DialogDescription>
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full">
                   <X className="h-6 w-6" />
                 </Button>
-              </div>
+              </DialogHeader>
 
               <ScrollArea className="flex-1 p-10">
                 {modalType === 'hold' && (
@@ -373,15 +369,15 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
 
                       <Card className={cn(
                         "p-6 border-slate-100 shadow-sm flex flex-col gap-4",
-                        activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 ? "bg-slate-50/50" : "bg-red-50/50 border-red-100"
+                        activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 && activeStats.dcsCreated > 0 ? "bg-slate-50/50" : "bg-red-50/50 border-red-100"
                       )}>
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Financial Lock</span>
-                          {activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Lock className="h-4 w-4 text-red-500" />}
+                          {activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 && activeStats.dcsCreated > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Lock className="h-4 w-4 text-red-500" />}
                         </div>
-                        <p className="text-xs font-bold text-slate-700">{activeStats.invoicesPaid} / {activeStats.totalInvoices} Settled</p>
-                        <Badge className={cn("w-fit text-[8px] uppercase font-bold", activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-500 text-white")}>
-                          {activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 ? 'PAID' : 'AWAITING'}
+                        <p className="text-xs font-bold text-slate-700">{activeStats.invoicesPaid} Paid • {activeStats.dcsCreated} DC</p>
+                        <Badge className={cn("w-fit text-[8px] uppercase font-bold", activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 && activeStats.dcsCreated > 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-500 text-white")}>
+                          {activeStats.invoicesPaid === activeStats.totalInvoices && activeStats.totalInvoices > 0 && activeStats.dcsCreated > 0 ? 'PAID & DC_READY' : 'GATED'}
                         </Badge>
                       </Card>
                     </div>
@@ -392,7 +388,8 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                        </h4>
                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
                          Terminal dispatch node is locked. {activeStats.reportsReleased < activeStats.totalReports ? 'Quality reports are still in Draft or Review Pending status. ' : ''} 
-                         {activeStats.invoicesPaid < activeStats.totalInvoices ? 'Commercial settlement for linked invoices is pending in the Financial Hub.' : ''}
+                         {activeStats.invoicesPaid < activeStats.totalInvoices ? 'Commercial settlement for linked invoices is pending. ' : ''}
+                         {activeStats.dcsCreated === 0 ? 'Delivery Challan has not been initialized for this order. ' : ''}
                        </p>
                     </div>
                   </div>
@@ -433,17 +430,22 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                 {modalType === 'financial' && (
                   <div className="space-y-6">
                     <div className="flex justify-between items-center px-1">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Commercial Ledger</h4>
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Commercial & Logistics Ledger</h4>
                       <Badge className="bg-emerald-600 text-white text-[8px] font-bold uppercase">Valuation Sync Active</Badge>
                     </div>
                     <div className="space-y-3">
                       {activeStats.allBilling.map(b => (
                         <div key={b.id} className="p-5 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-emerald-200 transition-all">
                            <div className="flex items-center gap-4">
-                              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><Receipt className="h-5 w-5" /></div>
+                              <div className={cn("p-3 rounded-xl", b.type === 'delivery_challan' ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600")}>
+                                {b.type === 'delivery_challan' ? <Truck className="h-5 w-5" /> : <Receipt className="h-5 w-5" />}
+                              </div>
                               <div className="flex flex-col">
-                                 <span className="text-xs font-bold text-slate-700 uppercase">{b.number}</span>
-                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{b.date} • {b.paymentMethod || 'Bank'}</span>
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-xs font-bold text-slate-700 uppercase">{b.number}</span>
+                                   <Badge variant="outline" className="text-[7px] border-slate-100 text-slate-400 uppercase font-bold">{b.type.replace('_', ' ')}</Badge>
+                                 </div>
+                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">{b.date} • {b.paymentMethod || 'Logistics'}</span>
                               </div>
                            </div>
                            <div className="flex items-center gap-8">
@@ -452,15 +454,15 @@ export function DispatchLedger({ orders, reports, billing, onSaveOrder }: Dispat
                               </div>
                               <Badge className={cn(
                                 "w-20 justify-center text-[8px] font-bold uppercase",
-                                b.status === 'Paid' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
+                                b.status === 'Paid' || b.status === 'Completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
                               )}>{b.status}</Badge>
                            </div>
                         </div>
                       ))}
-                      {activeStats.totalInvoices === 0 && (
+                      {activeStats.totalInvoices === 0 && activeStats.totalDCs === 0 && (
                         <div className="py-10 flex flex-col items-center justify-center opacity-30 text-center">
                            <Wallet className="h-8 w-8 mb-2" />
-                           <p className="text-[9px] font-bold uppercase tracking-widest">No Commercial Invoices Discovered</p>
+                           <p className="text-[9px] font-bold uppercase tracking-widest">No Commercial Records Discovered</p>
                         </div>
                       )}
                     </div>

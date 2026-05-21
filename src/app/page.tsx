@@ -184,6 +184,7 @@ function IndustrialERPInternal() {
         'team-matrix': 'full', delivery: 'full',
         'billing-quotation': 'full',
         'billing-invoice': 'full',
+        'billing-dc': 'full',
         'billing-proforma': 'full',
         'billing-inward': 'full',
         'billing-outward': 'full',
@@ -366,7 +367,7 @@ function IndustrialERPInternal() {
             {currentView === 'production-planner' && <ProductionPlanner batches={batches} orders={orders} machines={machines} users={usersData} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
             {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
-            {currentView === 'vendor' && <VendorManagement vendors={vendors} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
+            {currentView === 'vendor' && <VendorManagement vendors={vendors} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db, 'vendors', v.id), v, {merge:true})} />}
             {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} onNavigateToGantt={()=>handleViewChange('gantt')} />}
           </div>
         </main>

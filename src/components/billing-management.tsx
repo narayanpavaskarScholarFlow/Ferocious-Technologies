@@ -42,7 +42,8 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Landmark,
-  ListOrdered
+  ListOrdered,
+  PackageCheck
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem, PermissionLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -61,7 +62,7 @@ import { doc } from 'firebase/firestore';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 
-type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses' | 'bank';
+type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses' | 'bank' | 'delivery_challan';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -86,6 +87,10 @@ const INVOICE_TERMS = `1. Subject to Pune jurisdiction only.
 4. Interest @ 18% p.a. will be charged for delayed payments beyond due date.
 5. Goods once sold will not be taken back.`;
 
+const DC_TERMS = `1. Goods received in good condition.
+2. Any shortages or damages must be reported immediately upon receipt.
+3. This challan is for internal logistical verification only.`;
+
 export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord }: BillingManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
@@ -102,6 +107,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const allCats: { id: BillingCategory; label: string; permKey: string }[] = [
       { id: 'quotation', label: 'Quotation', permKey: 'billing-quotation' },
       { id: 'invoice', label: 'Invoice', permKey: 'billing-invoice' },
+      { id: 'delivery_challan', label: 'Delivery Challan', permKey: 'billing-dc' },
       { id: 'proforma', label: 'Proforma', permKey: 'billing-proforma' },
       { id: 'inward', label: 'Inward', permKey: 'billing-inward' },
       { id: 'outward', label: 'Outward', permKey: 'billing-outward' },
@@ -122,7 +128,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   }, [availableCategories, activeCategory]);
 
   const canEditCurrent = useMemo(() => {
-    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory}`;
+    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory === 'delivery_challan' ? 'dc' : activeCategory}`;
     const level = permissions?.[permKey];
     return level === 'edit' || level === 'full';
   }, [permissions, activeCategory]);
@@ -166,8 +172,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const bankBalance = useMemo(() => {
     const totalInflow = records.reduce((acc, r) => {
       if (r.status !== 'Paid') return acc;
-      // Invoices/Quotations are inflows if paid
-      if (['invoice', 'quotation', 'proforma'].includes(r.type)) return acc + r.amount;
+      // Invoices/Quotations/DCs are inflows if paid
+      if (['invoice', 'quotation', 'proforma', 'delivery_challan'].includes(r.type)) return acc + r.amount;
       // Bank deposits
       if (r.type === 'bank' && (r as any).bankEntryType === 'Deposit') return acc + r.amount;
       return acc;
@@ -229,6 +235,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const prefix = activeCategory === 'quotation' ? 'QT' : 
                    activeCategory === 'invoice' ? 'INV' : 
                    activeCategory === 'proforma' ? 'PI' : 
+                   activeCategory === 'delivery_challan' ? 'DC' :
                    activeCategory === 'inward' ? 'INW' : 
                    activeCategory === 'bank' ? 'BNK' : 'DOC';
     
@@ -238,7 +245,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       customerId: '',
       date: new Date().toISOString().split('T')[0],
       number: `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`,
-      note: activeCategory === 'invoice' ? INVOICE_TERMS : (activeCategory === 'inward' ? 'Inward logistical record initialized.' : activeCategory === 'bank' ? 'Bank ledger reconciliation entry.' : QUOTATION_TERMS),
+      note: activeCategory === 'invoice' ? INVOICE_TERMS : (activeCategory === 'inward' ? 'Inward logistical record initialized.' : activeCategory === 'bank' ? 'Bank ledger reconciliation entry.' : activeCategory === 'delivery_challan' ? DC_TERMS : QUOTATION_TERMS),
       amount: 0,
       itemName: '',
       orderId: '',
@@ -297,7 +304,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       return;
     }
 
-    const isFinancialDoc = ['quotation', 'invoice', 'proforma'].includes(activeCategory);
+    const isFinancialDoc = ['quotation', 'invoice', 'proforma', 'delivery_challan'].includes(activeCategory);
     const finalAmount = isFinancialDoc ? totals.grandTotal : formData.amount;
 
     const record: BillingRecord = {
@@ -319,11 +326,28 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       subTotal: totals.subTotal,
       taxTotal: totals.taxTotal,
       discountTotal: totals.discountTotal,
-      // Add bank-specific metadata using type casting or direct assignment
       ...((activeCategory === 'bank') ? { bankEntryType: formData.bankEntryType } : {})
     } as any;
 
     onSaveRecord(record);
+
+    // AUTOMATION: If creating an Invoice, automatically create a matching Delivery Challan
+    if (activeCategory === 'invoice' && !editingRecordId) {
+      const dcRecord: BillingRecord = {
+        ...record,
+        id: `DC-${Math.floor(1000 + Math.random() * 9000)}`,
+        type: 'delivery_challan',
+        number: `DC-${record.number.split('-')[1] || Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'Completed',
+        note: `Delivery Challan generated automatically from Invoice ${record.number}.`,
+        items: [...lineItems]
+      };
+      onSaveRecord(dcRecord);
+      toast({
+        title: "Protocol Automation Active",
+        description: "Matching Delivery Challan initialized and committed to ledger."
+      });
+    }
 
     if (activeCategory === 'inward' && formData.orderId) {
       const linkedOrder = orders.find(o => o.id === formData.orderId);
@@ -407,7 +431,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><ArrowUpRight className="h-4 w-4" /></div>
                   <p className="text-xl font-display font-bold text-[#001F3D]">
-                    ₹ {records.filter(r => r.status === 'Paid' && (['invoice', 'quotation', 'proforma'].includes(r.type) || (r.type === 'bank' && (r as any).bankEntryType === 'Deposit'))).reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN')}
+                    ₹ {records.filter(r => r.status === 'Paid' && (['invoice', 'quotation', 'proforma', 'delivery_challan'].includes(r.type) || (r.type === 'bank' && (r as any).bankEntryType === 'Deposit'))).reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN')}
                   </p>
                 </div>
               </Card>
@@ -496,7 +520,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4">Identity / Ref</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Entity Name</TableHead>
-                  {(activeCategory === 'inward' || activeCategory === 'bank' || activeCategory === 'invoice' || activeCategory === 'quotation' || activeCategory === 'proforma') && <TableHead className="font-bold text-[10px] uppercase text-slate-400">WO ID / Note</TableHead>}
+                  {(activeCategory === 'inward' || activeCategory === 'bank' || activeCategory === 'invoice' || activeCategory === 'quotation' || activeCategory === 'proforma' || activeCategory === 'delivery_challan') && <TableHead className="font-bold text-[10px] uppercase text-slate-400">WO ID / Note</TableHead>}
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
                   <TableHead className="w-32 print:hidden"></TableHead>
@@ -520,7 +544,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </div>
                     </TableCell>
                     <TableCell className="text-xs font-bold text-slate-700 uppercase">{record.customerName}</TableCell>
-                    {(activeCategory === 'inward' || activeCategory === 'bank' || activeCategory === 'invoice' || activeCategory === 'quotation' || activeCategory === 'proforma') && (
+                    {(activeCategory === 'inward' || activeCategory === 'bank' || activeCategory === 'invoice' || activeCategory === 'quotation' || activeCategory === 'proforma' || activeCategory === 'delivery_challan') && (
                       <TableCell>
                         <div className="flex flex-col">
                           {record.orderId ? (
@@ -593,7 +617,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   Financial Protocol Implementation
                 </div>
                 <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] tracking-tight">
-                  {editingRecordId ? 'Modify Record' : 'Initialize Protocol'}: {activeCategory === 'bank' ? 'Bank Entry' : activeCategory.toUpperCase()}
+                  {editingRecordId ? 'Modify Record' : 'Initialize Protocol'}: {activeCategory === 'bank' ? 'Bank Entry' : activeCategory.toUpperCase().replace('_', ' ')}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest mt-1">Configure and synchronize financial lifecycle documents.</DialogDescription>
               </div>
@@ -784,7 +808,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                   </div>
                 </div>
-              ) : ['quotation', 'invoice', 'proforma'].includes(activeCategory) ? (
+              ) : ['quotation', 'invoice', 'proforma', 'delivery_challan'].includes(activeCategory) ? (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center px-1">
                     <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2">
@@ -923,7 +947,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="p-3 bg-[#001F3D] rounded-xl text-white">
-                      <CreditCard className="h-6 w-6" />
+                      {previewRecord?.type === 'delivery_challan' ? <PackageCheck className="h-6 w-6" /> : <CreditCard className="h-6 w-6" />}
                     </div>
                     <div>
                       <h1 className="text-2xl font-display font-bold tracking-tighter">BHARAT<span className="text-primary">AXIS</span></h1>
@@ -937,7 +961,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </div>
                 </div>
                 <div className="text-right space-y-1.5">
-                  <h2 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tighter">{previewRecord?.type}</h2>
+                  <h2 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tighter">{previewRecord?.type.replace('_', ' ')}</h2>
                   <p className="text-[10px] font-bold text-primary uppercase font-code"># {previewRecord?.number}</p>
                   <p className="text-[9px] font-bold text-slate-400 uppercase">DATE: {previewRecord?.date}</p>
                 </div>

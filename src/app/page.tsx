@@ -56,7 +56,6 @@ import {
   FirebaseClientProvider
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { differenceInDays, parseISO } from 'date-fns';
 
 const DEFAULT_UI_SETTINGS: UISettings = {
   fontSize: 13,
@@ -83,10 +82,6 @@ function IndustrialERPInternal() {
   const [selectedDetailUserId, setSelectedDetailUserId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   
-  const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  
-  // UI Customization State
   const [uiSettings, setUISettings] = useState<UISettings>(DEFAULT_UI_SETTINGS);
 
   // Firestore Collections
@@ -103,8 +98,8 @@ function IndustrialERPInternal() {
   const assignmentsQuery = useMemoFirebase(() => collection(db, 'training_assignments'), [db]);
   const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
-  const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
   const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
+  const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -119,8 +114,8 @@ function IndustrialERPInternal() {
   const { data: assignmentsData } = useCollection<TrainingAssignment>(assignmentsQuery);
   const { data: reportsData } = useCollection<QualityReport>(reportsQuery);
   const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
-  const { data: annualData } = useCollection<any>(annualQuery);
   const { data: slipsData } = useCollection<SalarySlip>(slipsQuery);
+  const { data: annualData } = useCollection<any>(annualQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -135,8 +130,8 @@ function IndustrialERPInternal() {
   const assignments = assignmentsData || [];
   const reports = reportsData || [];
   const leaves = leavesData || [];
-  const annualLeaves = annualData || [];
   const slips = slipsData || [];
+  const annualLeaves = annualData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -144,7 +139,6 @@ function IndustrialERPInternal() {
     return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
 
-  // Master Admin Node (for global sequence settings)
   const masterAdmin = useMemo(() => {
     return usersData.find(u => u.name === 'Master Admin');
   }, [usersData]);
@@ -159,7 +153,6 @@ function IndustrialERPInternal() {
     };
   }, [masterAdmin]);
 
-  // Apply UI Settings when changed or on mount
   useEffect(() => {
     const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
     setUISettings(targetSettings);
@@ -196,22 +189,16 @@ function IndustrialERPInternal() {
         'billing-outward': 'full',
         'billing-bank': 'full',
       };
-
-      if (isMasterAdminUser) {
-        clearance.matrix = 'full';
-        clearance.users = 'full';
-      }
+      if (isMasterAdminUser) clearance.users = 'full';
       return clearance;
     }
     
-    const basePermissions = currentUserData?.permissions || {};
-    return basePermissions;
-  }, [currentUser, currentUserData, isReportingManager]);
+    return currentUserData?.permissions || {};
+  }, [currentUser, currentUserData]);
 
   const hasAccess = useCallback((view: string): boolean => {
     if (currentUser === 'Master Admin') return true;
     if (view === 'my-portal' || view === 'settings' || view === 'user-detail') return true;
-    
     const level = permissions[view];
     return level && level !== 'none';
   }, [permissions, currentUser]);
@@ -230,7 +217,6 @@ function IndustrialERPInternal() {
   };
 
   const handleLogin = (user: string) => {
-    sessionStorage.removeItem('bharat_axis_verify'); // Clear any simulation
     localStorage.setItem('bharat_axis_user', user);
     setCurrentUser(user);
     setIsLoggedIn(true);
@@ -256,11 +242,9 @@ function IndustrialERPInternal() {
 
   const handleSaveOrder = (order: Order) => {
     const isNew = !orders.find(o => o.id === order.id);
-    
     setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
     
     if (isNew && masterAdmin) {
-      // Increment global sequence in Master Admin document
       const currentUISettings = masterAdmin.uiSettings || DEFAULT_UI_SETTINGS;
       setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
         uiSettings: {
@@ -270,7 +254,6 @@ function IndustrialERPInternal() {
         }
       }, { merge: true });
     }
-
     setCurrentView('orders');
   };
 
@@ -281,7 +264,6 @@ function IndustrialERPInternal() {
 
   useEffect(() => {
     setMounted(true);
-    
     const params = new URLSearchParams(window.location.search);
     const verifyUser = params.get('verifyUser');
     
@@ -377,10 +359,15 @@ function IndustrialERPInternal() {
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
             {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />}
-            {currentView === 'gantt' && <ProductionGantt orders={orders} />}
+            {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
             {currentView === 'customer-orders' && <CustomerOrders customers={customers} onSaveCustomer={handleSaveCustomer} />}
             {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={handleSaveOrder} />}
+            {currentView === 'production-planner' && <ProductionPlanner batches={batches} orders={orders} machines={machines} users={usersData} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
+            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
+            {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
+            {currentView === 'vendor' && <VendorManagement vendors={vendors} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
+            {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} onNavigateToGantt={()=>handleViewChange('gantt')} />}
           </div>
         </main>
       </div>
@@ -396,4 +383,3 @@ export default function IndustrialERP() {
     </FirebaseClientProvider>
   );
 }
-

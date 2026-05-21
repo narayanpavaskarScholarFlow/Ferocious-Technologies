@@ -221,6 +221,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     return {
       subTotal,
       discountTotal,
+      taxableValue: subTotal - discountTotal,
       taxTotal,
       grandTotal: subTotal - discountTotal + taxTotal
     };
@@ -431,7 +432,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><ArrowUpRight className="h-4 w-4" /></div>
                   <p className="text-xl font-display font-bold text-[#001F3D]">
-                    ₹ {records.filter(r => r.status === 'Paid' && (['invoice', 'quotation', 'proforma', 'delivery_challan'].includes(r.type) || (r.type === 'bank' && (r as any).bankEntryType === 'Deposit'))).reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN')}
+                    ₹ {records.filter(r => r.status === 'Paid' && (['invoice', 'quotation', 'proforma', 'delivery_challan'].includes(r.type) || (r.type === 'bank' && (r as any).bankEntryType === 'Deposit'))).reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </Card>
@@ -441,7 +442,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-red-50 rounded-lg text-red-600"><ArrowDownLeft className="h-4 w-4" /></div>
                   <p className="text-xl font-display font-bold text-[#001F3D]">
-                    ₹ {records.filter(r => r.status === 'Paid' && (['inward', 'outward', 'expenses'].includes(r.type) || (r.type === 'bank' && (r as any).bankEntryType === 'Withdrawal'))).reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN')}
+                    ₹ {records.filter(r => r.status === 'Paid' && (['inward', 'outward', 'expenses'].includes(r.type) || (r.type === 'bank' && (r as any).bankEntryType === 'Withdrawal'))).reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </Card>
@@ -836,7 +837,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </TableHeader>
                       <TableBody>
                         {lineItems.map((item) => {
-                          const itemTotal = (item.qty * item.price) * (1 - (item.discount || 0) / 100) * (1 + (item.gstRate || 0) / 100);
+                          const taxableAmount = (item.qty * item.price) * (1 - (item.discount || 0) / 100);
                           return (
                             <TableRow key={item.id} className="border-slate-50 hover:bg-white/50 group transition-colors">
                               <TableCell className="px-6">
@@ -848,7 +849,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                               <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.price} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, price: Number(e.target.value)} : li))} /></TableCell>
                               <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.discount} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, discount: Number(e.target.value)} : li))} /></TableCell>
                               <TableCell><Input type="number" className="h-8 bg-white border-none rounded-lg text-xs font-bold text-center" value={item.gstRate} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, gstRate: Number(e.target.value)} : li))} /></TableCell>
-                              <TableCell className="text-right px-6 font-display font-bold text-[#001F3D]">₹ {itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                              <TableCell className="text-right px-6 font-display font-bold text-[#001F3D]">₹ {taxableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                               <TableCell>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setLineItems(lineItems.filter(li => li.id !== item.id))}>
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -876,15 +877,19 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </div>
                       <div className="space-y-4 relative z-10">
                         <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-white/40">
-                          <span>Sub Total</span>
+                          <span>Gross Total</span>
                           <span>₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-red-400">
-                          <span>Discount (-)</span>
+                          <span>Total Discount (-)</span>
                           <span>- ₹ {totals.discountTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
+                        <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-white/60 border-t border-white/5 pt-2">
+                          <span>Taxable Value</span>
+                          <span>₹ {totals.taxableValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
                         <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-emerald-400">
-                          <span>GST (18%)</span>
+                          <span>GST (18%) (+)</span>
                           <span>+ ₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         <div className="pt-4 border-t border-white/10 flex justify-between items-end">

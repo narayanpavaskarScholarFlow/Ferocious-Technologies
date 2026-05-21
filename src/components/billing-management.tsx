@@ -301,7 +301,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const finalAmount = isFinancialDoc ? totals.grandTotal : formData.amount;
 
     const record: BillingRecord = {
-      id: editingLogId || `BIL-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingRecordId || `BIL-${Math.floor(1000 + Math.random() * 9000)}`,
       type: activeCategory,
       customerName: selectedEntity?.name || (activeCategory === 'bank' ? 'BANK_ENTRY' : 'Unknown'),
       customerId: formData.customerId,
@@ -650,8 +650,16 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         <SelectItem value="none" className="text-xs font-bold uppercase text-slate-400 italic">No Thread Link</SelectItem>
                         {orders
                           .filter(o => {
-                            // Only show COMPLETED orders when creating an INVOICE
-                            if (activeCategory === 'invoice') return o.status === 'Completed';
+                            if (activeCategory === 'invoice') {
+                              const isCompleted = o.status === 'Completed';
+                              // Collision Prevention: Check if invoice already exists for this orderId
+                              const invoiceExists = records.some(r => 
+                                r.type === 'invoice' && 
+                                r.orderId === o.id && 
+                                r.id !== editingRecordId // Allow current record's order during edit
+                              );
+                              return isCompleted && !invoiceExists;
+                            }
                             return true;
                           })
                           .map(o => (
@@ -955,7 +963,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
               {previewRecord?.type === 'inward' ? (
                 <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-3">Intake Specification Matrix</h3>
+                  <h3 className="text-10px font-bold text-[#001F3D] uppercase tracking-[0.2em] border-l-4 border-primary pl-3">Intake Specification Matrix</h3>
                   <Card className="bg-slate-50/50 border border-slate-200 p-6 rounded-2xl space-y-6">
                     <div className="grid grid-cols-2 gap-10">
                       <div className="space-y-1">

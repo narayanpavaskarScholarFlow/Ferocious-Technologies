@@ -66,7 +66,8 @@ import {
   Search,
   Filter,
   X,
-  Kanban
+  Kanban,
+  PackageCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -88,7 +89,7 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
   { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
-  { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: ShieldCheck },
+  { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },
   { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
   { id: 'orders', label: 'Master Orders', category: 'Production Management', icon: ShoppingCart },
   { id: 'production-planner', label: 'Mass Production', category: 'Production Management', icon: Factory },
@@ -98,6 +99,7 @@ const ACCESS_NODES: { id: ViewType; label: string; category: string; icon: any }
   { id: 'work-log', label: 'Daily Work Logs', category: 'Production Management', icon: ClipboardList },
   { id: 'quality', label: 'Quality Hub', category: 'Quality Hub', icon: ShieldCheck },
   { id: 'training', label: 'Training Matrix', category: 'Quality Hub', icon: GraduationCap },
+  { id: 'delivery', label: 'Dispatch Ledger', category: 'Commercial Operations', icon: PackageCheck },
   { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
   { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Boxes },
   { id: 'billing', label: 'Financial Hub (Main)', category: 'Commercial Operations', icon: CreditCard },
@@ -841,4 +843,3 @@ export function ProfileSettings({
     </div>
   );
 }
-

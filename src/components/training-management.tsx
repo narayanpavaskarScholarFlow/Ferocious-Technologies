@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -30,7 +31,8 @@ import {
   FileText,
   Youtube,
   Link as LinkIcon,
-  HelpCircle
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -45,6 +47,7 @@ import { cn } from '@/lib/utils';
 import { Training, TrainingAssignment, SystemUser, QuizQuestion } from '@/lib/types';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TrainingManagementProps {
   trainings: Training[];
@@ -448,9 +451,3 @@ export function TrainingManagement({
     </div>
   );
 }
-
-const X = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 6L6 18M6 6l12 12" />
-  </svg>
-);

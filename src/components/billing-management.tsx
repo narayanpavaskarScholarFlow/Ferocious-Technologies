@@ -40,7 +40,8 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownLeft,
-  Landmark
+  Landmark,
+  ListOrdered
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem, PermissionLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -374,7 +375,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
       </header>
 
-      <Tabs value={activeCategory} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
+      <Tabs value={activeTab} onValueChange={(val) => { setActiveCategory(val as any); setSelectedRecords([]); }} className="print:block">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-6 h-12 inline-flex border border-slate-200 shadow-sm gap-1 print:hidden">
           {availableCategories.map((cat) => (
             <TabsTrigger key={cat.id} value={cat.id} className="rounded-full px-6 h-10 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D] shadow-sm">
@@ -494,7 +495,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4">Identity / Ref</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400">Account / Entity Name</TableHead>
-                  {(activeCategory === 'inward' || activeCategory === 'bank') && <TableHead className="font-bold text-[10px] uppercase text-slate-400">Item / Note</TableHead>}
+                  {(activeCategory === 'inward' || activeCategory === 'bank' || activeCategory === 'invoice' || activeCategory === 'quotation' || activeCategory === 'proforma') && <TableHead className="font-bold text-[10px] uppercase text-slate-400">WO ID / Note</TableHead>}
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Net Value</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
                   <TableHead className="w-32 print:hidden"></TableHead>
@@ -518,11 +519,15 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </div>
                     </TableCell>
                     <TableCell className="text-xs font-bold text-slate-700 uppercase">{record.customerName}</TableCell>
-                    {(activeCategory === 'inward' || activeCategory === 'bank') && (
+                    {(activeCategory === 'inward' || activeCategory === 'bank' || activeCategory === 'invoice' || activeCategory === 'quotation' || activeCategory === 'proforma') && (
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">{record.itemName || (record as any).bankEntryType || '---'}</span>
-                          {record.orderId && <Badge variant="outline" className="w-fit text-[8px] border-primary/20 text-primary mt-1 font-bold">WO #{record.orderId}</Badge>}
+                          {record.orderId ? (
+                            <Badge variant="outline" className="w-fit text-[8px] border-primary/20 text-primary font-bold uppercase">WO #{record.orderId}</Badge>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-400">---</span>
+                          )}
+                          <span className="text-[9px] text-slate-400 truncate max-w-[120px] mt-1">{record.itemName || (record as any).bankEntryType || ''}</span>
                         </div>
                       </TableCell>
                     )}
@@ -595,14 +600,14 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </DialogHeader>
             
             <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {activeCategory !== 'bank' ? (
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                       <Building2 className="h-3 w-3" /> Select Identity
                     </Label>
                     <Select value={formData.customerId} onValueChange={(val) => setFormData({...formData, customerId: val})}>
-                      <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                      <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
                         <SelectValue placeholder="Identify entity..." />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl shadow-2xl border-slate-100">
@@ -620,12 +625,32 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       <ArrowUpRight className="h-3 w-3" /> Entry Type
                     </Label>
                     <Select value={formData.bankEntryType} onValueChange={(val: any) => setFormData({...formData, bankEntryType: val})}>
-                      <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                      <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         <SelectItem value="Deposit" className="text-xs font-bold uppercase text-emerald-600">Deposit / Credit (+)</SelectItem>
                         <SelectItem value="Withdrawal" className="text-xs font-bold uppercase text-red-600">Withdrawal / Debit (-)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Added Wo ID Dropdown for all financial documents and inward records */}
+                {activeCategory !== 'bank' && (
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                      <ListOrdered className="h-3.5 w-3.5" /> Linked Work Order
+                    </Label>
+                    <Select value={formData.orderId} onValueChange={(val) => setFormData({...formData, orderId: val})}>
+                      <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner">
+                        <SelectValue placeholder="Select Wo ID..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-2xl border-slate-100">
+                        <SelectItem value="none" className="text-xs font-bold uppercase text-slate-400 italic">No Thread Link</SelectItem>
+                        {orders.map(o => (
+                          <SelectItem key={o.id} value={o.id} className="text-xs font-bold uppercase">WO #{o.id} - {o.customer}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -647,7 +672,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <Filter className="h-3 w-3" /> Operational Status
                   </Label>
                   <Select disabled={activeCategory === 'bank'} value={formData.paymentStatus} onValueChange={(val) => setFormData({...formData, paymentStatus: val})}>
-                    <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
+                    <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase shadow-inner">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl shadow-2xl border-slate-100">
@@ -666,30 +691,14 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                         <Package className="h-5 w-5 text-primary" />
-                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{activeCategory === 'bank' ? 'Transaction Identity' : 'Item & Production Link'}</h4>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{activeCategory === 'bank' ? 'Transaction Identity' : 'Item Identification'}</h4>
                       </div>
                       
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">{activeCategory === 'bank' ? 'Reference Name' : 'Item Identification'}</Label>
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">{activeCategory === 'bank' ? 'Reference Name' : 'Item Specification'}</Label>
                           <Input placeholder={activeCategory === 'bank' ? 'e.g. GST Refund, Monthly Rent...' : 'e.g. Rough Casting Lot #12'} className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner" value={formData.itemName} onChange={(e) => setFormData({...formData, itemName: e.target.value})} />
                         </div>
-                        
-                        {activeCategory === 'inward' && (
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Linked Production Order (Work Order)</Label>
-                            <Select value={formData.orderId} onValueChange={(val) => setFormData({...formData, orderId: val})}>
-                              <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold">
-                                <SelectValue placeholder="Select active thread..." />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                <SelectItem value="none" className="text-xs font-bold uppercase">No Link (Direct Intake)</SelectItem>
-                                {orders.map(o => <SelectItem key={o.id} value={o.id} className="text-xs font-bold uppercase">WO #{o.id} - {o.customer}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <p className="text-[8px] text-slate-400 italic px-1">* Linking will automatically update the Order's "Amount Spent" ledger.</p>
-                          </div>
-                        )}
 
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Transaction Value (₹)</Label>
@@ -707,7 +716,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Receiver Identification</Label>
                           <Select value={formData.receiverName} onValueChange={(val) => setFormData({...formData, receiverName: val})}>
-                            <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold">
+                            <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner">
                               <SelectValue placeholder="Identify receiver node..." />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
@@ -747,7 +756,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           <Textarea 
                             disabled={formData.paymentStatus !== 'Paid'}
                             placeholder="UTR No, Reference, or Note..." 
-                            className="h-20 bg-white border-none rounded-xl text-xs font-medium" 
+                            className="h-20 bg-white border-none rounded-xl text-xs font-medium shadow-sm" 
                             value={formData.transactionDetails}
                             onChange={(e) => setFormData({...formData, transactionDetails: e.target.value})}
                           />
@@ -757,7 +766,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Internal Logistics Note</Label>
-                      <Textarea placeholder="Specific storage or intake observations..." className="h-24 bg-slate-50 border-none rounded-xl text-xs font-medium" value={formData.note} onChange={(e) => setFormData({...formData, note: e.target.value})} />
+                      <Textarea placeholder="Specific storage or intake observations..." className="h-24 bg-slate-50 border-none rounded-xl text-xs font-medium shadow-inner" value={formData.note} onChange={(e) => setFormData({...formData, note: e.target.value})} />
                     </div>
                   </div>
                 </div>
@@ -767,7 +776,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2">
                       <Box className="h-3.5 w-3.5 text-primary" /> Itemized Commercial Matrix
                     </h4>
-                    <Button variant="ghost" size="sm" onClick={() => setLineItems([...lineItems, { id: `ITEM-${Date.now()}`, description: '', hsn: '', qty: 1, unit: 'Units', price: 0, discount: 0, gstRate: 18 }])} className="text-[10px] font-bold uppercase gap-2 text-primary hover:bg-primary/5 h-8">
+                    <Button variant="ghost" size="sm" onClick={() => setLineItems([...lineItems, { id: `ITEM-${Date.now()}`, description: '', hsn: '', qty: 1, unit: 'Units', price: 0, discount: 0, gstRate: 18 }])} className="text-[10px] font-bold uppercase gap-2 text-primary hover:bg-primary/5 h-8 px-4 rounded-xl">
                       <Plus className="h-3.5 w-3.5" /> Append Item
                     </Button>
                   </div>
@@ -1048,3 +1057,4 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     </div>
   );
 }
+

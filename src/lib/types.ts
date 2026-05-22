@@ -57,6 +57,7 @@ export type ViewType =
   | 'billing-inward'
   | 'billing-outward'
   | 'billing-bank'
+  | 'billing-dc'
   | 'work-log'
   | 'inventory'
   | 'quality'
@@ -250,6 +251,19 @@ export interface UISettings {
   customTitles: Record<string, string>;
   woPrefix: string;
   woNextNumber: number;
+  billingTableSettings?: {
+    colWidths: {
+      description: number;
+      hsn: number;
+      qty: number;
+      unit: number;
+      price: number;
+      discount: number;
+      gst: number;
+      total: number;
+    };
+    rowHeight: number;
+  };
 }
 
 export interface SystemUser {

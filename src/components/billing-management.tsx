@@ -45,7 +45,7 @@ import {
   ListOrdered,
   PackageCheck
 } from 'lucide-react';
-import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem, PermissionLevel } from '@/lib/types';
+import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem, PermissionLevel, UISettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -73,6 +73,7 @@ interface BillingManagementProps {
   permissions?: Record<string, PermissionLevel>;
   onSaveRecord: (record: BillingRecord) => void;
   onDeleteRecord: (id: string) => void;
+  uiSettings: UISettings;
 }
 
 const QUOTATION_TERMS = `1. Validity: 30 Days from date of issue.
@@ -91,7 +92,7 @@ const DC_TERMS = `1. Goods received in good condition.
 2. Any shortages or damages must be reported immediately upon receipt.
 3. This challan is for internal logistical verification only.`;
 
-export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord }: BillingManagementProps) {
+export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,7 +100,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [previewRecord, setPreviewRecord] = useState<BillingRecord | null>(null);
-  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [editingRecordId, setEditingLogId] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
   const availableCategories = useMemo(() => {
@@ -236,7 +237,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                    activeCategory === 'inward' ? 'INW' : 
                    activeCategory === 'bank' ? 'BNK' : 'DOC';
     
-    setEditingRecordId(null);
+    setEditingLogId(null);
     setLineItems([]);
     setFormData({
       customerId: '',
@@ -256,7 +257,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   };
 
   const handleEdit = (record: BillingRecord) => {
-    setEditingRecordId(record.id);
+    setEditingLogId(record.id);
     setLineItems(record.items || []);
     setFormData({
       customerId: record.customerId,
@@ -365,6 +366,19 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     setPreviewRecord(record);
     setIsPreviewDialogOpen(true);
   };
+
+  // Dynamic Column Style Protocol
+  const colWidths = uiSettings.billingTableSettings?.colWidths || {
+    description: 400,
+    hsn: 112,
+    qty: 96,
+    unit: 112,
+    price: 160,
+    discount: 96,
+    gst: 96,
+    total: 192,
+  };
+  const rowHeight = uiSettings.billingTableSettings?.rowHeight || 48;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -604,7 +618,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       </Tabs>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-[1000px] bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogContent className="max-w-[1200px] bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden flex flex-col max-h-[95vh]">
           <div className="p-8 overflow-y-auto hide-scrollbar flex-1">
             <DialogHeader className="mb-8 flex flex-row justify-between items-start">
               <div>
@@ -814,18 +828,18 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </Button>
                   </div>
 
-                  <div className="border border-slate-100 rounded-[1.5rem] overflow-hidden shadow-inner bg-slate-50/30">
-                    <Table>
+                  <div className="border border-slate-100 rounded-[1.5rem] overflow-x-auto shadow-inner bg-slate-50/30">
+                    <Table style={{ minWidth: 'max-content' }}>
                       <TableHeader className="bg-white">
                         <TableRow className="border-slate-100 hover:bg-transparent">
-                          <TableHead className="text-[9px] font-bold uppercase py-3 px-6">Description</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-28">HSN</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-24">Qty</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-28">Unit</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-40">Price</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-24">Disc %</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-24">GST %</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-right px-6 w-48">Total (₹)</TableHead>
+                          <TableHead style={{ width: colWidths.description }} className="text-[9px] font-bold uppercase py-3 px-6">Description</TableHead>
+                          <TableHead style={{ width: colWidths.hsn }} className="text-[9px] font-bold uppercase text-center">HSN</TableHead>
+                          <TableHead style={{ width: colWidths.qty }} className="text-[9px] font-bold uppercase text-center">Qty</TableHead>
+                          <TableHead style={{ width: colWidths.unit }} className="text-[9px] font-bold uppercase text-center">Unit</TableHead>
+                          <TableHead style={{ width: colWidths.price }} className="text-[9px] font-bold uppercase text-center">Price</TableHead>
+                          <TableHead style={{ width: colWidths.discount }} className="text-[9px] font-bold uppercase text-center">Disc %</TableHead>
+                          <TableHead style={{ width: colWidths.gst }} className="text-[9px] font-bold uppercase text-center">GST %</TableHead>
+                          <TableHead style={{ width: colWidths.total }} className="text-[9px] font-bold uppercase text-right px-6">Total (₹)</TableHead>
                           <TableHead className="w-10"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -843,7 +857,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           const totalLineAmount = Number((lineTaxable + lineTax).toFixed(2));
                           
                           return (
-                            <TableRow key={item.id} className="border-slate-50 hover:bg-white/50 group transition-colors">
+                            <TableRow key={item.id} style={{ height: rowHeight }} className="border-slate-50 hover:bg-white/50 group transition-colors">
                               <TableCell className="px-6">
                                 <Input placeholder="Description" className="h-8 bg-white border-none rounded-lg text-xs font-bold" value={item.description} onChange={(e) => setLineItems(lineItems.map(li => li.id === item.id ? {...li, description: e.target.value} : li))} />
                               </TableCell>

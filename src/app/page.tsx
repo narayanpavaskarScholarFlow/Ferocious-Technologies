@@ -68,7 +68,20 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   headerAlignment: 'left',
   customTitles: {},
   woPrefix: 'WO-',
-  woNextNumber: 1001
+  woNextNumber: 1001,
+  billingTableSettings: {
+    colWidths: {
+      description: 400,
+      hsn: 112,
+      qty: 96,
+      unit: 112,
+      price: 160,
+      discount: 96,
+      gst: 96,
+      total: 192,
+    },
+    rowHeight: 48,
+  }
 };
 
 function IndustrialERPInternal() {
@@ -355,7 +368,7 @@ function IndustrialERPInternal() {
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSequenceSettings} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
-            {currentView === 'billing' && <BillingManagement customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
+            {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}

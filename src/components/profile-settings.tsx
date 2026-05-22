@@ -67,7 +67,8 @@ import {
   Filter,
   X,
   Kanban,
-  PackageCheck
+  PackageCheck,
+  Maximize2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -303,6 +304,24 @@ export function ProfileSettings({
   const selectedModuleData = useMemo(() => {
     return ACCESS_NODES.find(n => n.id === selectedModuleForConfig);
   }, [selectedModuleForConfig]);
+
+  const updateBillingTableSetting = (field: string, value: number, isHeight = false) => {
+    const current = uiSettings.billingTableSettings || {
+      colWidths: { description: 400, hsn: 112, qty: 96, unit: 112, price: 160, discount: 96, gst: 96, total: 192 },
+      rowHeight: 48
+    };
+
+    onUpdateUISettings({
+      ...uiSettings,
+      billingTableSettings: isHeight ? { ...current, rowHeight: value } : {
+        ...current,
+        colWidths: {
+          ...current.colWidths,
+          [field]: value
+        }
+      }
+    });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 print:space-y-0 print:p-0">
@@ -663,6 +682,7 @@ export function ProfileSettings({
               <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-11 inline-flex border border-slate-200 w-fit">
                 <TabsTrigger value="architecture" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Architecture</TabsTrigger>
                 <TabsTrigger value="modules" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Module Customizer</TabsTrigger>
+                <TabsTrigger value="financial" className="rounded-full px-6 h-9 font-bold text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-[#001F3D]">Financial Matrix</TabsTrigger>
               </TabsList>
 
               <TabsContent value="architecture" className="m-0 space-y-16">
@@ -693,7 +713,6 @@ export function ProfileSettings({
                           />
                         </div>
                       </div>
-                      <p className="text-[8px] text-slate-400 italic">* New orders will follow this protocol. Paddings apply automatically (e.g. {(uiSettings.woPrefix || 'WO-')}{(uiSettings.woNextNumber || 1001).toString().padStart(4, '0')}).</p>
                     </div>
 
                     <div className="space-y-6">
@@ -706,24 +725,6 @@ export function ProfileSettings({
                             <div className={cn("h-8 w-8 rounded-full", theme.color)} />
                             <span className="text-[8px] font-bold uppercase tracking-tighter">{theme.name}</span>
                           </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                        <TableProperties className="h-4 w-4" /> Table Interaction Density
-                      </Label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {(['compact', 'standard', 'comfortable'] as const).map((d) => (
-                          <Button 
-                            key={d} 
-                            variant={uiSettings.tableDensity === d ? 'default' : 'outline'} 
-                            className="h-12 rounded-xl font-bold uppercase text-[9px] tracking-widest" 
-                            onClick={() => onUpdateUISettings({ ...uiSettings, tableDensity: d })}
-                          >
-                            {d}
-                          </Button>
                         ))}
                       </div>
                     </div>
@@ -751,21 +752,6 @@ export function ProfileSettings({
                           <button onClick={() => onUpdateUISettings({ ...uiSettings, labelCase: 'capitalize' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.labelCase === 'capitalize' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>Lower</button>
                         </div>
                       </div>
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2"><AlignCenter className="h-4 w-4" /> Header Align</Label>
-                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                          <button onClick={() => onUpdateUISettings({ ...uiSettings, headerAlignment: 'left' })} className={cn("flex-1 h-9 rounded-lg flex items-center justify-center transition-all", uiSettings.headerAlignment === 'left' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}><AlignLeft className="h-4 w-4" /></button>
-                          <button onClick={() => onUpdateUISettings({ ...uiSettings, headerAlignment: 'center' })} className={cn("flex-1 h-9 rounded-lg flex items-center justify-center transition-all", uiSettings.headerAlignment === 'center' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}><AlignCenter className="h-4 w-4" /></button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2"><PanelLeft className="h-4 w-4" /> Navigation Architecture</Label>
-                      <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                        <button onClick={() => onUpdateUISettings({ ...uiSettings, sidebarMode: 'full' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.sidebarMode === 'full' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>Expanded</button>
-                        <button onClick={() => onUpdateUISettings({ ...uiSettings, sidebarMode: 'slim' })} className={cn("flex-1 h-9 rounded-lg text-[9px] font-bold uppercase transition-all", uiSettings.sidebarMode === 'slim' ? "bg-white shadow-sm text-[#001F3D]" : "text-slate-400")}>Slim (Icons)</button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -784,11 +770,7 @@ export function ProfileSettings({
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                           {ACCESS_NODES.filter(node => !node.id.startsWith('billing-') || node.id === 'billing').map(node => (
-                            <SelectItem 
-                              key={node.id} 
-                              value={node.id} 
-                              className="text-[10px] font-bold uppercase py-3"
-                            >
+                            <SelectItem key={node.id} value={node.id} className="text-[10px] font-bold uppercase py-3">
                               <div className="flex items-center gap-3">
                                 <node.icon className="h-3.5 w-3.5 text-slate-400" />
                                 {node.label}
@@ -797,7 +779,6 @@ export function ProfileSettings({
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-[9px] text-slate-400 font-medium italic mt-2 ml-1">Select a primary hub from the list to initialize specific page configuration.</p>
                     </div>
 
                     {selectedModuleData && (
@@ -824,16 +805,92 @@ export function ProfileSettings({
                               />
                               <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                             </div>
-                            <p className="text-[8px] text-slate-400 uppercase tracking-widest mt-2 px-1">This title will reflect in headers and navigation labels.</p>
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                          <Zap className="h-4 w-4 text-primary" />
-                          <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Real-time synchronization active for this node.</p>
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="financial" className="m-0 space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                  <div className="space-y-12">
+                    <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                      <TableProperties className="h-6 w-6 text-primary" />
+                      <div>
+                        <h3 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">Matrix Spacing Protocols</h3>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Adjust width/height for Financial Registry items.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 shadow-inner">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <Maximize2 className="h-4 w-4 text-primary" /> Column Width Controllers (PX)
+                      </Label>
+                      
+                      <div className="space-y-6">
+                        {[
+                          { id: 'description', label: 'Description', min: 200, max: 600 },
+                          { id: 'hsn', label: 'HSN Code', min: 80, max: 200 },
+                          { id: 'qty', label: 'Quantity', min: 60, max: 150 },
+                          { id: 'unit', label: 'Unit', min: 80, max: 200 },
+                          { id: 'price', label: 'Price (Rate)', min: 100, max: 300 },
+                          { id: 'discount', label: 'Discount %', min: 60, max: 150 },
+                          { id: 'gst', label: 'GST %', min: 60, max: 150 },
+                          { id: 'total', label: 'Total (₹)', min: 120, max: 350 },
+                        ].map((col) => (
+                          <div key={col.id} className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] font-bold uppercase text-slate-400">{col.label}</span>
+                              <Badge variant="outline" className="font-code text-[10px] bg-white text-primary">
+                                {(uiSettings.billingTableSettings?.colWidths as any)?.[col.id] || col.min}px
+                              </Badge>
+                            </div>
+                            <Slider 
+                              min={col.min} 
+                              max={col.max} 
+                              step={1} 
+                              value={[(uiSettings.billingTableSettings?.colWidths as any)?.[col.id] || col.min]} 
+                              onValueChange={(val) => updateBillingTableSetting(col.id, val[0])} 
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-12">
+                    <div className="space-y-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100 shadow-inner">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                        <Monitor className="h-4 w-4 text-primary" /> Entry Row Architecture
+                      </Label>
+                      
+                      <div className="space-y-6">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-bold uppercase text-slate-400">Master Row Height</span>
+                            <Badge variant="outline" className="font-code text-[10px] bg-white text-primary">
+                              {uiSettings.billingTableSettings?.rowHeight || 48}px
+                            </Badge>
+                          </div>
+                          <Slider 
+                            min={32} 
+                            max={80} 
+                            step={1} 
+                            value={[uiSettings.billingTableSettings?.rowHeight || 48]} 
+                            onValueChange={(val) => updateBillingTableSetting('rowHeight', val[0], true)} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-8 bg-primary/5 border border-primary/10 rounded-3xl flex items-start gap-4">
+                      <Zap className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
+                        <b>Real-time Sync Active:</b> Changes made to the Financial Matrix layout are committed globally. Ensure spatial consistency for high-density entry environments.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </TabsContent>

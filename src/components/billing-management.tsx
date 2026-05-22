@@ -199,23 +199,27 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     let taxTotal = 0;
 
     lineItems.forEach(item => {
-      // Precision Rounding: Standard industrial practice uses 2 decimals
-      const lineBase = Math.round(item.qty * item.price * 100) / 100;
-      const lineDiscount = Math.round((lineBase * (item.discount || 0)) / 100 * 100) / 100;
-      const taxableAmount = Math.round((lineBase - lineDiscount) * 100) / 100;
-      const lineTax = Math.round((taxableAmount * (item.gstRate || 0)) / 100 * 100) / 100;
+      const qty = Number(item.qty) || 0;
+      const price = Number(item.price) || 0;
+      const discPercent = Number(item.discount) || 0;
+      const gstPercent = Number(item.gstRate) || 0;
 
-      subTotal += lineBase;
+      const lineGross = qty * price;
+      const lineDiscount = (lineGross * discPercent) / 100;
+      const lineTaxable = lineGross - lineDiscount;
+      const lineTax = (lineTaxable * gstPercent) / 100;
+
+      subTotal += lineGross;
       discountTotal += lineDiscount;
       taxTotal += lineTax;
     });
 
     return {
-      subTotal: Math.round(subTotal * 100) / 100,
-      discountTotal: Math.round(discountTotal * 100) / 100,
-      taxableValue: Math.round((subTotal - discountTotal) * 100) / 100,
-      taxTotal: Math.round(taxTotal * 100) / 100,
-      grandTotal: Math.round((subTotal - discountTotal + taxTotal) * 100) / 100
+      subTotal: Number(subTotal.toFixed(2)),
+      discountTotal: Number(discountTotal.toFixed(2)),
+      taxableValue: Number((subTotal - discountTotal).toFixed(2)),
+      taxTotal: Number(taxTotal.toFixed(2)),
+      grandTotal: Number((subTotal - discountTotal + taxTotal).toFixed(2))
     };
   }, [lineItems]);
 
@@ -827,9 +831,16 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </TableHeader>
                       <TableBody>
                         {lineItems.map((item) => {
-                          const taxableAmount = Math.round((item.qty * item.price) * (1 - (item.discount || 0) / 100) * 100) / 100;
-                          const lineTax = Math.round((taxableAmount * (item.gstRate || 0)) / 100 * 100) / 100;
-                          const totalLineAmount = Math.round((taxableAmount + lineTax) * 100) / 100;
+                          const qty = Number(item.qty) || 0;
+                          const price = Number(item.price) || 0;
+                          const discPercent = Number(item.discount) || 0;
+                          const gstPercent = Number(item.gstRate) || 0;
+
+                          const lineGross = qty * price;
+                          const lineDiscount = (lineGross * discPercent) / 100;
+                          const lineTaxable = lineGross - lineDiscount;
+                          const lineTax = (lineTaxable * gstPercent) / 100;
+                          const totalLineAmount = Number((lineTaxable + lineTax).toFixed(2));
                           
                           return (
                             <TableRow key={item.id} className="border-slate-50 hover:bg-white/50 group transition-colors">

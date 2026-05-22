@@ -204,10 +204,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       const discPercent = Number(item.discount) || 0;
       const gstPercent = Number(item.gstRate) || 0;
 
-      const lineGross = qty * price;
-      const lineDiscount = (lineGross * discPercent) / 100;
-      const lineTaxable = lineGross - lineDiscount;
-      const lineTax = (lineTaxable * gstPercent) / 100;
+      const lineGross = Number((qty * price).toFixed(2));
+      const lineDiscount = Number((lineGross * (discPercent / 100)).toFixed(2));
+      const lineTaxable = Number((lineGross - lineDiscount).toFixed(2));
+      const lineTax = Number((lineTaxable * (gstPercent / 100)).toFixed(2));
 
       subTotal += lineGross;
       discountTotal += lineDiscount;
@@ -819,13 +819,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       <TableHeader className="bg-white">
                         <TableRow className="border-slate-100 hover:bg-transparent">
                           <TableHead className="text-[9px] font-bold uppercase py-3 px-6">Description</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-20">HSN</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-16">Qty</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-20">Unit</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-28">Price</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-16">Disc %</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-center w-16">GST %</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-right px-6 w-32">Total (₹)</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-center w-28">HSN</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-center w-24">Qty</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-center w-28">Unit</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-center w-40">Price</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-center w-24">Disc %</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-center w-24">GST %</TableHead>
+                          <TableHead className="text-[9px] font-bold uppercase text-right px-6 w-48">Total (₹)</TableHead>
                           <TableHead className="w-10"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -836,10 +836,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           const discPercent = Number(item.discount) || 0;
                           const gstPercent = Number(item.gstRate) || 0;
 
-                          const lineGross = qty * price;
-                          const lineDiscount = (lineGross * discPercent) / 100;
-                          const lineTaxable = lineGross - lineDiscount;
-                          const lineTax = (lineTaxable * gstPercent) / 100;
+                          const lineGross = Number((qty * price).toFixed(2));
+                          const lineDiscount = Number((lineGross * (discPercent / 100)).toFixed(2));
+                          const lineTaxable = Number((lineGross - lineDiscount).toFixed(2));
+                          const lineTax = Number((lineTaxable * (gstPercent / 100)).toFixed(2));
                           const totalLineAmount = Number((lineTaxable + lineTax).toFixed(2));
                           
                           return (

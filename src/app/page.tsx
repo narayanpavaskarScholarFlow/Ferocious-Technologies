@@ -202,6 +202,8 @@ function IndustrialERPInternal() {
         'billing-inward': 'full',
         'billing-outward': 'full',
         'billing-bank': 'full',
+        'billing-edit': 'full',
+        'billing-delete': 'full',
       };
       if (isMasterAdminUser) clearance.users = 'full';
       return clearance;

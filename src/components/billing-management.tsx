@@ -44,7 +44,8 @@ import {
   Landmark,
   ListOrdered,
   PackageCheck,
-  Info
+  Info,
+  Save
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, BillingLineItem, PermissionLevel, UISettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -100,8 +101,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<BillingCategory>('quotation');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-  const [previewRecord, setPreviewRecord] = useState<BillingRecord | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
@@ -181,24 +180,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
   }, [records, activeCategory, searchTerm, filterStatus, filterCustomer, filterDate]);
 
-  const bankBalance = useMemo(() => {
-    const totalInflow = records.reduce((acc, r) => {
-      if (r.status !== 'Paid') return acc;
-      if (['invoice', 'quotation', 'proforma', 'delivery_challan'].includes(r.type)) return acc + r.amount;
-      if (r.type === 'bank' && (r as any).bankEntryType === 'Deposit') return acc + r.amount;
-      return acc;
-    }, 0);
-
-    const totalOutflow = records.reduce((acc, r) => {
-      if (r.status !== 'Paid') return acc;
-      if (['inward', 'outward', 'expenses'].includes(r.type)) return acc + r.amount;
-      if (r.type === 'bank' && (r as any).bankEntryType === 'Withdrawal') return acc + r.amount;
-      return acc;
-    }, 0);
-
-    return totalInflow - totalOutflow;
-  }, [records]);
-
   const totals = useMemo(() => {
     let itemSubTotal = 0;
     let itemDiscountTotal = 0;
@@ -244,12 +225,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   }, [customers, vendors, formData.customerId, activeCategory]);
 
   const availableOrders = useMemo(() => {
-    // For Invoice, only show "Completed" orders that don't already have an invoice
-    // UNLESS we are currently editing that invoice.
     return orders.filter(order => {
       if (activeCategory === 'invoice') {
         if (order.status !== 'Completed') return false;
-        
         const hasExistingInvoice = records.some(r => r.type === 'invoice' && r.orderId === order.id && r.id !== editingRecordId);
         return !hasExistingInvoice;
       }
@@ -343,7 +321,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     onSaveRecord(record);
 
-    // Automated DC Creation Protocol
     if (activeCategory === 'invoice' && !editingRecordId) {
       const dcRecord: BillingRecord = {
         ...record,
@@ -355,10 +332,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         items: [...lineItems]
       };
       onSaveRecord(dcRecord);
-      toast({
-        title: "Protocol Automation Active",
-        description: "Matching Delivery Challan initialized and committed to ledger."
-      });
     }
 
     toast({ title: "Ledger Entry Committed", description: `${record.number} has been synchronized.` });
@@ -551,7 +524,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="flex-1 overflow-y-auto p-8 space-y-10 border-r border-slate-100">
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Account Node</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Account Node</Label>
                     <Select value={formData.customerId} onValueChange={(val) => setFormData({...formData, customerId: val})}>
                       <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner">
                         <SelectValue placeholder="Identify entity..." />

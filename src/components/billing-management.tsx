@@ -149,7 +149,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     paymentStatus: 'Pending',
     paymentMethod: 'Bank Transfer' as 'Cash' | 'Bank Transfer',
     transactionDetails: '',
-    bankEntryType: 'Deposit' as 'Deposit' | 'Withdrawal'
+    bankEntryType: 'Deposit' as 'Deposit' | 'Withdrawal',
+    transportationCharges: 0,
+    packingCharges: 0,
   });
 
   const filteredRecords = useMemo(() => {
@@ -195,9 +197,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   };
 
   const totals = useMemo(() => {
-    let subTotal = 0;
-    let discountTotal = 0;
-    let taxTotal = 0;
+    let itemSubTotal = 0;
+    let itemDiscountTotal = 0;
+    let itemTaxTotal = 0;
 
     lineItems.forEach(item => {
       const qty = Number(item.qty) || 0;
@@ -210,19 +212,34 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       const lineTaxable = Number((lineGross - lineDiscount).toFixed(2));
       const lineTax = Number((lineTaxable * (gstPercent / 100)).toFixed(2));
 
-      subTotal += lineGross;
-      discountTotal += lineDiscount;
-      taxTotal += lineTax;
+      itemSubTotal += lineGross;
+      itemDiscountTotal += lineDiscount;
+      itemTaxTotal += lineTax;
     });
 
+    const transportation = Number(formData.transportationCharges || 0);
+    const packing = Number(formData.packingCharges || 0);
+    
+    // Taxable Value is Items Subtotal - Discount + Transportation
+    const taxableBase = Number((itemSubTotal - itemDiscountTotal + transportation).toFixed(2));
+    
+    // Total Taxable Value includes Packing as well
+    const finalTaxableValue = Number((taxableBase + packing).toFixed(2));
+    
+    // For simplicity, we assume transportation and packing attract 18% tax if lines exist, 
+    // or we just use line taxes. Standard industrial practice is line-item based.
+    // We'll add 18% GST to transportation and packing if they are specified.
+    const chargesTax = Number(((transportation + packing) * 0.18).toFixed(2));
+    const finalTaxTotal = Number((itemTaxTotal + chargesTax).toFixed(2));
+
     return {
-      subTotal: Number(subTotal.toFixed(2)),
-      discountTotal: Number(discountTotal.toFixed(2)),
-      taxableValue: Number((subTotal - discountTotal).toFixed(2)),
-      taxTotal: Number(taxTotal.toFixed(2)),
-      grandTotal: Number((subTotal - discountTotal + taxTotal).toFixed(2))
+      subTotal: Number(itemSubTotal.toFixed(2)),
+      discountTotal: Number(itemDiscountTotal.toFixed(2)),
+      taxableValue: finalTaxableValue,
+      taxTotal: finalTaxTotal,
+      grandTotal: Number((finalTaxableValue + finalTaxTotal).toFixed(2))
     };
-  }, [lineItems]);
+  }, [lineItems, formData.transportationCharges, formData.packingCharges]);
 
   const selectedEntity = useMemo(() => {
     if (activeCategory === 'inward') return vendors.find(v => v.id === formData.customerId);
@@ -251,7 +268,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       paymentStatus: activeCategory === 'bank' ? 'Paid' : 'Pending',
       paymentMethod: 'Bank Transfer',
       transactionDetails: '',
-      bankEntryType: 'Deposit'
+      bankEntryType: 'Deposit',
+      transportationCharges: 0,
+      packingCharges: 0
     });
     setIsCreateDialogOpen(true);
   };
@@ -271,7 +290,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       paymentStatus: record.status || 'Pending',
       paymentMethod: record.paymentMethod || 'Bank Transfer',
       transactionDetails: record.transactionDetails || '',
-      bankEntryType: (record as any).bankEntryType || 'Deposit'
+      bankEntryType: (record as any).bankEntryType || 'Deposit',
+      transportationCharges: record.transportationCharges || 0,
+      packingCharges: record.packingCharges || 0
     });
     setIsCreateDialogOpen(true);
   };
@@ -324,6 +345,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       subTotal: totals.subTotal,
       taxTotal: totals.taxTotal,
       discountTotal: totals.discountTotal,
+      transportationCharges: formData.transportationCharges,
+      packingCharges: formData.packingCharges,
       ...((activeCategory === 'bank') ? { bankEntryType: formData.bankEntryType } : {})
     } as any;
 
@@ -902,14 +925,58 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           <span>Total Discount (-)</span>
                           <span>- ₹ {totals.discountTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
+                        
+                        {/* Transportation Charges Input */}
+                        <div className="flex justify-between items-center group">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Transportation</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-white/20">₹</span>
+                            <input 
+                              type="number" 
+                              className="bg-white/5 border-none w-20 h-6 text-right px-2 rounded font-code text-[10px] text-white focus:bg-white/10 outline-none" 
+                              value={formData.transportationCharges}
+                              onChange={(e) => setFormData({...formData, transportationCharges: parseFloat(e.target.value) || 0})}
+                            />
+                          </div>
+                        </div>
+
                         <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-white/60 border-t border-white/5 pt-2">
                           <span>Taxable Value</span>
                           <span>₹ {totals.taxableValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-emerald-400">
-                          <span>Total GST (+)</span>
-                          <span>+ ₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+
+                        {/* Packing Charges Input */}
+                        <div className="flex justify-between items-center group">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Packing</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-white/20">₹</span>
+                            <input 
+                              type="number" 
+                              className="bg-white/5 border-none w-20 h-6 text-right px-2 rounded font-code text-[10px] text-white focus:bg-white/10 outline-none" 
+                              value={formData.packingCharges}
+                              onChange={(e) => setFormData({...formData, packingCharges: parseFloat(e.target.value) || 0})}
+                            />
+                          </div>
                         </div>
+
+                        <div className="space-y-1.5 pt-2 border-t border-white/5">
+                          <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-emerald-400">
+                            <span>Total GST (+)</span>
+                            <span>+ ₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          {/* GST Components */}
+                          <div className="pl-4 space-y-1">
+                            <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-white/30">
+                              <span>CGST (50%)</span>
+                              <span>₹ {(totals.taxTotal / 2).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-white/30">
+                              <span>SGST (50%)</span>
+                              <span>₹ {(totals.taxTotal / 2).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="pt-4 border-t border-white/10 flex justify-between items-end">
                           <div className="space-y-1">
                             <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Net Valuation</p>
@@ -1043,48 +1110,74 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   </Card>
                 </div>
               ) : (
-                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow className="hover:bg-transparent border-slate-200">
-                        <TableHead className="text-[8px] font-bold uppercase py-3 px-6 text-[#001F3D]">SR.</TableHead>
-                        <TableHead className="text-[8px] font-bold uppercase text-[#001F3D]">Description of Goods / Services</TableHead>
-                        <TableHead className="text-[8px] font-bold uppercase text-center text-[#001F3D]">HSN</TableHead>
-                        <TableHead className="text-[8px] font-bold uppercase text-center text-[#001F3D]">Qty</TableHead>
-                        <TableHead className="text-[8px] font-bold uppercase text-center text-[#001F3D]">Rate (₹)</TableHead>
-                        <TableHead className="text-[8px] font-bold uppercase text-right px-6 text-[#001F3D]">Amount (₹)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {previewRecord?.items?.map((item, idx) => (
-                        <TableRow key={item.id} className="border-slate-100 h-10">
-                          <TableCell className="text-center font-bold text-[9px] text-slate-400 px-6">{idx + 1}</TableCell>
-                          <TableCell className="font-bold text-[10px] text-slate-700 uppercase">{item.description}</TableCell>
-                          <TableCell className="text-center font-code text-[9px] text-slate-500">{item.hsn}</TableCell>
-                          <TableCell className="text-center text-[9px] font-bold text-slate-700">{item.qty} {item.unit}</TableCell>
-                          <TableCell className="text-center text-[9px] font-bold text-slate-700">{item.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                          <TableCell className="text-right px-6 text-[9px] font-bold text-[#001F3D]">{(item.qty * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                <div className="space-y-6">
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow className="hover:bg-transparent border-slate-200">
+                          <TableHead className="text-[8px] font-bold uppercase py-3 px-6 text-[#001F3D]">SR.</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-[#001F3D]">Description of Goods / Services</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-center text-[#001F3D]">HSN</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-center text-[#001F3D]">Qty</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-center text-[#001F3D]">Rate (₹)</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-right px-6 text-[#001F3D]">Amount (₹)</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+                      </TableHeader>
+                      <TableBody>
+                        {previewRecord?.items?.map((item, idx) => (
+                          <TableRow key={item.id} className="border-slate-100 h-10">
+                            <TableCell className="text-center font-bold text-[9px] text-slate-400 px-6">{idx + 1}</TableCell>
+                            <TableCell className="font-bold text-[10px] text-slate-700 uppercase">{item.description}</TableCell>
+                            <TableCell className="text-center font-code text-[9px] text-slate-500">{item.hsn}</TableCell>
+                            <TableCell className="text-center text-[9px] font-bold text-slate-700">{item.qty} {item.unit}</TableCell>
+                            <TableCell className="text-center text-[9px] font-bold text-slate-700">{item.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                            <TableCell className="text-right px-6 text-[9px] font-bold text-[#001F3D]">{(item.qty * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5">Terms & Notes</h3>
-                  <p className="text-[9px] text-slate-500 leading-relaxed whitespace-pre-wrap italic font-medium">{previewRecord?.note}</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-slate-50 p-6 rounded-2xl space-y-3 border border-slate-100">
-                    <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-[#001F3D] uppercase">Total Valuation Protocol</span>
-                      <span className="text-xl font-display font-bold text-[#001F3D]">₹ {previewRecord?.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <div className="grid grid-cols-2 gap-10">
+                    <div className="space-y-4">
+                      <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5">Terms & Notes</h3>
+                      <p className="text-[9px] text-slate-500 leading-relaxed whitespace-pre-wrap italic font-medium">{previewRecord?.note}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="bg-slate-50 p-6 rounded-2xl space-y-2 border border-slate-100">
+                        <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase">
+                          <span>Sub Total</span>
+                          <span>₹ {previewRecord?.subTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        {previewRecord?.transportationCharges ? (
+                          <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase">
+                            <span>Transportation</span>
+                            <span>₹ {previewRecord.transportationCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        ) : null}
+                        {previewRecord?.packingCharges ? (
+                          <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase">
+                            <span>Packing</span>
+                            <span>₹ {previewRecord.packingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        ) : null}
+                        <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase border-t border-slate-200 pt-2">
+                          <span>Taxable Value</span>
+                          <span>₹ {((previewRecord?.subTotal || 0) - (previewRecord?.discountTotal || 0) + (previewRecord?.transportationCharges || 0) + (previewRecord?.packingCharges || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] font-bold text-emerald-600 uppercase">
+                          <span>Total GST</span>
+                          <span>₹ {previewRecord?.taxTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
+                          <span className="text-[10px] font-bold text-[#001F3D] uppercase">Net Total</span>
+                          <span className="text-xl font-display font-bold text-[#001F3D]">₹ {previewRecord?.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="pt-16 grid grid-cols-2 gap-32">
                 <div className="text-center space-y-3">

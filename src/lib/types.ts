@@ -142,6 +142,8 @@ export interface BillingRecord {
   subTotal?: number;
   taxTotal?: number;
   discountTotal?: number;
+  transportationCharges?: number;
+  packingCharges?: number;
 }
 
 export interface SQCDPData {

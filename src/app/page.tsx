@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -220,8 +219,8 @@ function IndustrialERPInternal() {
   }, [permissions, currentUser]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('bharat_axis_user');
-    sessionStorage.removeItem('bharat_axis_verify');
+    localStorage.removeItem('jayasimha_user');
+    sessionStorage.removeItem('jayasimha_verify');
     setIsLoggedIn(false);
     setCurrentUser(null);
     setCurrentView('overview');
@@ -233,7 +232,7 @@ function IndustrialERPInternal() {
   };
 
   const handleLogin = (user: string) => {
-    localStorage.setItem('bharat_axis_user', user);
+    localStorage.setItem('jayasimha_user', user);
     setCurrentUser(user);
     setIsLoggedIn(true);
   };
@@ -284,7 +283,7 @@ function IndustrialERPInternal() {
     const verifyUser = params.get('verifyUser');
     
     if (verifyUser) {
-      sessionStorage.setItem('bharat_axis_verify', verifyUser);
+      sessionStorage.setItem('jayasimha_verify', verifyUser);
       setCurrentUser(verifyUser);
       setIsLoggedIn(true);
       setCurrentView('my-portal');
@@ -292,7 +291,7 @@ function IndustrialERPInternal() {
       return;
     }
 
-    const verifiedUser = sessionStorage.getItem('bharat_axis_verify');
+    const verifiedUser = sessionStorage.getItem('jayasimha_verify');
     if (verifiedUser) {
       setCurrentUser(verifiedUser);
       setIsLoggedIn(true);
@@ -300,7 +299,7 @@ function IndustrialERPInternal() {
       return;
     }
 
-    const savedUser = localStorage.getItem('bharat_axis_user');
+    const savedUser = localStorage.getItem('jayasimha_user');
     if (savedUser) {
       setCurrentUser(savedUser);
       setIsLoggedIn(true);
@@ -336,7 +335,7 @@ function IndustrialERPInternal() {
         <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
           <div className="flex items-center gap-6">
             <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
-              BHARAT<span className="text-primary">AXIS</span>
+              JAYASIMHA<span className="text-primary">PRECISION</span>
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -348,7 +347,7 @@ function IndustrialERPInternal() {
                 <DropdownMenuTrigger asChild>
                    <Avatar className="h-8 w-8 border cursor-pointer hover:ring-2 ring-primary/20">
                       <AvatarImage src={currentUserData?.image} />
-                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">BA</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">JP</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl">

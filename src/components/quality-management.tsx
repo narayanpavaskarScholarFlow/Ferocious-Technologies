@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -79,14 +78,6 @@ const STATUS_OPTIONS = ["Pending", "Yet to start", "Hold", "Completed", "WIP"];
 const INITIAL_DIMENSIONS: DimensionRecord[] = [
   { id: '1', balloonNo: 'BL-01', typeOfDim: 'Normal Dim', instrument: 'Vernier', target: '', tolerance: '±', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
 ];
-
-interface QualityManagementProps {
-  orders: Order[];
-  users?: SystemUser[];
-  vendors?: Vendor[];
-  onUpdateStatus?: (orderId: string, operation: string, status: string) => void;
-  permissions?: Record<string, PermissionLevel>;
-}
 
 export function QualityManagement({ orders, users = [], vendors = [], onUpdateStatus, permissions }: QualityManagementProps) {
   const db = useFirestore();
@@ -1097,7 +1088,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-[#001F3D] rounded-2xl shadow-xl shadow-primary/20"><ShieldCheck className="h-10 w-10 text-white" /></div>
                   <div>
-                    <h1 className="text-3xl font-display font-bold tracking-tighter">BHARAT<span className="text-primary">AXIS</span></h1>
+                    <h1 className="text-3xl font-display font-bold tracking-tighter">JAYASIMHA<span className="text-primary">PRECISION</span></h1>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Precision Engineering & QC Hub</p>
                   </div>
                 </div>
@@ -1274,7 +1265,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
             </div>
             <div className="p-4 bg-slate-900/80 backdrop-blur-md border-t border-white/10 text-center shrink-0">
-              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Proprietary Matrix Data • Bharat Axis Pvt Ltd • Plant Control v2.4</p>
+              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Proprietary Matrix Data • Jayasimha Precision • Plant Control v2.4</p>
             </div>
           </div>
         </DialogContent>

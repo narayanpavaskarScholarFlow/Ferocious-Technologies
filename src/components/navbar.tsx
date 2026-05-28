@@ -22,7 +22,7 @@ export function Navbar() {
             <Box className="h-6 w-6 text-primary" />
           </div>
           <span className="text-xl font-headline font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-            BHARAT<span className="text-foreground">AXIS</span>
+            JAYASIMHA<span className="text-foreground">PRECISION</span>
           </span>
         </Link>
 
@@ -52,7 +52,7 @@ export function Navbar() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">John Doe</p>
-                  <p className="text-xs leading-none text-muted-foreground">john.doe@bharataxis.tech</p>
+                  <p className="text-xs leading-none text-muted-foreground">john.doe@jayasimha.tech</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/5" />

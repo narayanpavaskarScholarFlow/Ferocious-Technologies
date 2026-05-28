@@ -51,7 +51,7 @@ const analyzeQuotePrompt = ai.definePrompt({
   name: 'analyzeQuotePrompt',
   input: {schema: QuoteAnalysisInputSchema},
   output: {schema: QuoteAnalysisOutputSchema},
-  prompt: `You are a precision industrial quoting agent for Bharat Axis Pvt Ltd, an expert in CNC VMC and Tool Room operations.
+  prompt: `You are a precision industrial quoting agent for Jayasimha Precision, an expert in CNC VMC and Tool Room operations.
 Your task is to analyze a machining part to provide a professional, realistic cost and lead-time estimation in Indian Rupees (₹).
 
 Part Identity: {{{partName}}}

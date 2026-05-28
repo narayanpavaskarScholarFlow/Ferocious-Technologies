@@ -53,6 +53,7 @@ export type ViewType =
   | 'billing'
   | 'billing-quotation'
   | 'billing-invoice'
+  | 'billing-po'
   | 'billing-proforma'
   | 'billing-inward'
   | 'billing-outward'

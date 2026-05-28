@@ -65,7 +65,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-type BillingCategory = 'quotation' | 'invoice' | 'proforma' | 'inward' | 'outward' | 'expenses' | 'bank' | 'delivery_challan';
+type BillingCategory = 'quotation' | 'invoice' | 'purchase_order' | 'proforma' | 'inward' | 'outward' | 'expenses' | 'bank' | 'delivery_challan';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -91,6 +91,10 @@ const INVOICE_TERMS = `1. Subject to Pune jurisdiction only.
 4. Interest @ 18% p.a. will be charged for delayed payments beyond due date.
 5. Goods once sold will not be taken back.`;
 
+const PO_TERMS = `1. Subject to standard industrial procurement terms.
+2. Quality inspection mandatory upon receipt.
+3. Payment as per agreed cycle.`;
+
 const DC_TERMS = `1. Goods received in good condition.
 2. Any shortages or damages must be reported immediately upon receipt.
 3. This challan is for internal logistical verification only.`;
@@ -110,6 +114,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       { id: 'invoice', label: 'Invoice', permKey: 'billing-invoice' },
       { id: 'delivery_challan', label: 'Delivery Challan', permKey: 'billing-dc' },
       { id: 'proforma', label: 'Proforma', permKey: 'billing-proforma' },
+      { id: 'purchase_order', label: 'Purchase Order', permKey: 'billing-po' },
       { id: 'inward', label: 'Inward', permKey: 'billing-inward' },
       { id: 'outward', label: 'Outward', permKey: 'billing-outward' },
       { id: 'bank', label: 'Bank Ledger', permKey: 'billing-bank' },
@@ -131,7 +136,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const globalEdit = permissions?.['billing-edit'];
     if (globalEdit === 'edit' || globalEdit === 'full') return true;
     
-    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory === 'delivery_challan' ? 'dc' : activeCategory}`;
+    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory === 'delivery_challan' ? 'dc' : activeCategory === 'purchase_order' ? 'po' : activeCategory}`;
     const level = permissions?.[permKey];
     return level === 'edit' || level === 'full';
   }, [permissions, activeCategory]);
@@ -140,7 +145,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const globalDelete = permissions?.['billing-delete'];
     if (globalDelete === 'full') return true;
 
-    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory === 'delivery_challan' ? 'dc' : activeCategory}`;
+    const permKey = `billing-${activeCategory === 'bank' ? 'bank' : activeCategory === 'delivery_challan' ? 'dc' : activeCategory === 'purchase_order' ? 'po' : activeCategory}`;
     const level = permissions?.[permKey];
     return level === 'full';
   }, [permissions, activeCategory]);
@@ -220,7 +225,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   }, [lineItems, formData.transportationCharges, formData.packingCharges]);
 
   const selectedEntity = useMemo(() => {
-    if (activeCategory === 'inward') return vendors.find(v => v.id === formData.customerId);
+    if (activeCategory === 'inward' || activeCategory === 'purchase_order') return vendors.find(v => v.id === formData.customerId);
     return customers.find(c => c.id === formData.customerId || c.name === formData.customerId);
   }, [customers, vendors, formData.customerId, activeCategory]);
 
@@ -239,6 +244,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const prefix = activeCategory === 'quotation' ? 'QT' : 
                    activeCategory === 'invoice' ? 'INV' : 
                    activeCategory === 'proforma' ? 'PI' : 
+                   activeCategory === 'purchase_order' ? 'PO' :
                    activeCategory === 'delivery_challan' ? 'DC' :
                    activeCategory === 'inward' ? 'INW' : 
                    activeCategory === 'bank' ? 'BNK' : 'DOC';
@@ -249,7 +255,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       customerId: '',
       date: new Date().toISOString().split('T')[0],
       number: `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`,
-      note: activeCategory === 'invoice' ? INVOICE_TERMS : (activeCategory === 'inward' ? 'Inward logistical record initialized.' : activeCategory === 'bank' ? 'Bank ledger reconciliation entry.' : activeCategory === 'delivery_challan' ? DC_TERMS : QUOTATION_TERMS),
+      note: activeCategory === 'invoice' ? INVOICE_TERMS : (activeCategory === 'purchase_order' ? PO_TERMS : activeCategory === 'inward' ? 'Inward logistical record initialized.' : activeCategory === 'bank' ? 'Bank ledger reconciliation entry.' : activeCategory === 'delivery_challan' ? DC_TERMS : QUOTATION_TERMS),
       amount: 0,
       itemName: '',
       orderId: '',
@@ -292,7 +298,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       return;
     }
 
-    const isFinancialDoc = ['quotation', 'invoice', 'proforma', 'delivery_challan'].includes(activeCategory);
+    const isFinancialDoc = ['quotation', 'invoice', 'proforma', 'purchase_order', 'delivery_challan'].includes(activeCategory);
     const finalAmount = isFinancialDoc ? totals.grandTotal : formData.amount;
 
     const record: BillingRecord = {
@@ -530,7 +536,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         <SelectValue placeholder="Identify entity..." />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-slate-100">
-                        {activeCategory === 'inward' ? (
+                        {activeCategory === 'inward' || activeCategory === 'purchase_order' ? (
                           vendors.map(v => <SelectItem key={v.id} value={v.id} className="text-xs font-bold uppercase">{v.name}</SelectItem>)
                         ) : (
                           customers.map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)

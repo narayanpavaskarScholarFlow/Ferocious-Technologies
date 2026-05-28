@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -196,6 +197,7 @@ function IndustrialERPInternal() {
         'team-matrix': 'full', delivery: 'full',
         'billing-quotation': 'full',
         'billing-invoice': 'full',
+        'billing-po': 'full',
         'billing-dc': 'full',
         'billing-proforma': 'full',
         'billing-inward': 'full',

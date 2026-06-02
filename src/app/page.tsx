@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -318,7 +317,7 @@ function IndustrialERPInternal() {
 
   return (
     <div className={cn(
-      "flex min-h-screen bg-slate-50/50 text-slate-900 font-body overflow-hidden print:h-auto print:block print:bg-white",
+      "flex min-h-screen bg-background text-slate-900 font-body overflow-hidden print:h-auto print:block print:bg-white",
       uiSettings.labelCase === 'uppercase' ? "labels-uppercase" : "labels-capitalize"
     )}>
       <div className={cn("hidden lg:block print:hidden transition-all duration-500", isSlimSidebar ? "w-20" : "w-64")}>

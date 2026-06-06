@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -36,7 +35,10 @@ import {
   Rocket,
   ShieldCheck,
   Building2,
-  History
+  History,
+  FileCheck,
+  Zap,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -79,9 +81,9 @@ export function LoanProjectHub() {
     vision: true,
     mission: true,
     objectives: true,
-    marketAnalysis: false,
-    machineList: false,
-    financialProjections: false,
+    marketAnalysis: true,
+    machineList: true,
+    financialProjections: true,
     licenseGst: false,
   });
 
@@ -159,8 +161,8 @@ export function LoanProjectHub() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2 print:hidden">
+    <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20 print:pb-0">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2 no-print">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.3em]">
             <Landmark className="h-4 w-4" />
@@ -183,25 +185,25 @@ export function LoanProjectHub() {
       </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full print:block">
-        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2 print:hidden">
-          <TabsTrigger value="input" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2 no-print">
+          <TabsTrigger value="input" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
             01. Input Matrix
           </TabsTrigger>
-          <TabsTrigger value="products" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
+          <TabsTrigger value="products" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
             02. Product Line
           </TabsTrigger>
-          <TabsTrigger value="financials" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
+          <TabsTrigger value="financials" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
             03. Financials
           </TabsTrigger>
-          <TabsTrigger value="visuals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
+          <TabsTrigger value="visuals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
             04. Design Matrix
           </TabsTrigger>
-          <TabsTrigger value="display" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
+          <TabsTrigger value="display" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
             05. Final Preview
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="input" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 print:hidden">
+        <TabsContent value="input" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <Card className="lg:col-span-8 p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
                  <div className="space-y-10">
@@ -302,7 +304,7 @@ export function LoanProjectHub() {
            </div>
         </TabsContent>
 
-        <TabsContent value="products" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 print:hidden">
+        <TabsContent value="products" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 gap-8">
               <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                  <div className="flex justify-between items-center border-l-4 border-primary pl-6">
@@ -376,7 +378,7 @@ export function LoanProjectHub() {
            </div>
         </TabsContent>
 
-        <TabsContent value="financials" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 print:hidden">
+        <TabsContent value="financials" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <Card className="lg:col-span-4 p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
                  <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-primary pl-4">Valuation Matrix</h3>
@@ -447,7 +449,7 @@ export function LoanProjectHub() {
            </div>
         </TabsContent>
 
-        <TabsContent value="visuals" className="m-0 animate-in slide-in-from-bottom-2 duration-500 print:hidden">
+        <TabsContent value="visuals" className="m-0 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <Card className="p-20 flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[3rem] bg-slate-50/50 text-center group hover:bg-white hover:border-primary/20 transition-all">
               <div className="p-8 bg-white rounded-3xl shadow-xl mb-6 group-hover:scale-110 transition-transform"><ImageIcon className="h-16 w-16 text-primary" /></div>
               <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Visual Artifact Registry</h3>
@@ -458,130 +460,234 @@ export function LoanProjectHub() {
            </Card>
         </TabsContent>
 
-        <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:p-0">
-           <Card className="p-16 md:p-20 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] max-w-[1000px] mx-auto space-y-16 print:shadow-none print:border-none print:max-w-none print:p-0">
-              {/* Cover Page */}
-              <div className="text-center space-y-8 border-b-2 border-[#001F3D] pb-16">
-                 <div className="flex justify-center mb-10">
-                    <div className="p-5 bg-[#001F3D] rounded-[2rem] shadow-2xl"><Landmark className="h-12 w-12 text-white" /></div>
-                 </div>
-                 <h1 className="text-5xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">Project Feasibility Report</h1>
-                 <p className="text-xl font-headline font-bold text-slate-400 uppercase tracking-[0.4em]">{foundationalData.projectName}</p>
-                 <div className="pt-10 flex flex-col items-center gap-2">
-                    <Badge className="bg-primary text-white border-none px-6 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">Master Strategy Matrix v2.4</Badge>
-                    <p className="text-xs font-bold text-slate-400 uppercase mt-4">Submitted by: <span className="text-[#001F3D]">{foundationalData.promoterName}</span></p>
-                 </div>
-              </div>
-
-              {/* Strategic Narrative Hub (New) */}
-              <div className="space-y-12">
-                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Strategic Narrative</h4>
-                 
-                 <div className="grid grid-cols-1 gap-10">
-                    {checklist.aboutProject && (
-                      <div className="space-y-4">
-                         <div className="flex items-center gap-3">
-                           <Rocket className="h-4 w-4 text-[#001F3D]" />
-                           <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-wider">About Project</h5>
-                         </div>
-                         <p className="text-xs text-slate-500 font-medium leading-relaxed indent-8">{foundationalData.aboutProject}</p>
+        <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:m-0 print:p-0">
+           <div className="max-w-[1000px] mx-auto space-y-16 print:max-w-none print:w-full">
+             <Card className="p-16 md:p-24 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] space-y-20 print:shadow-none print:border-none print:p-0 print:rounded-none">
+                
+                {/* Formal Cover Page Matrix */}
+                <div className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-100 pb-20 relative">
+                   <div className="absolute top-0 right-0 p-10 opacity-[0.03] no-print">
+                      <Landmark className="h-96 w-96 text-[#001F3D]" />
+                   </div>
+                   
+                   <div className="space-y-6 relative z-10">
+                      <div className="flex justify-center mb-16">
+                        <div className="p-8 bg-[#001F3D] rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+                           <Zap className="h-20 w-20 text-white fill-white relative z-10" />
+                           <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                       </div>
-                    )}
-                    
-                    {checklist.aboutUs && (
+                      
                       <div className="space-y-4">
-                         <div className="flex items-center gap-3">
-                           <Building2 className="h-4 w-4 text-[#001F3D]" />
-                           <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-wider">About Us</h5>
-                         </div>
-                         <p className="text-xs text-slate-500 font-medium leading-relaxed indent-8">{foundationalData.aboutUs}</p>
+                         <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">Official Submission</Badge>
+                         <h1 className="text-7xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">
+                            Project Feasibility <br />Report
+                         </h1>
+                         <div className="h-1.5 w-32 bg-red-600 mx-auto rounded-full mt-8" />
                       </div>
-                    )}
+                      
+                      <div className="pt-12">
+                         <p className="text-2xl font-headline font-bold text-slate-400 uppercase tracking-[0.4em] mb-2">{foundationalData.projectName}</p>
+                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{foundationalData.location}</p>
+                      </div>
+                   </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                       {checklist.vision && (
-                         <div className="p-8 bg-[#001F3D] text-white rounded-[2rem] space-y-4 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Compass className="h-10 w-10" /></div>
-                            <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Vision Node</h5>
-                            <p className="text-xs font-bold leading-relaxed">{foundationalData.vision}</p>
+                   <div className="pt-20 grid grid-cols-2 gap-20 w-full max-w-2xl text-left border-t border-slate-50 mt-auto relative z-10">
+                      <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submitted by</p>
+                        <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{foundationalData.promoterName}</h4>
+                        <p className="text-xs font-bold text-slate-500 mt-1">FEROCIOUS TECH INDUSTRIAL GROUP</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submission Date</p>
+                        <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</h4>
+                        <Badge variant="outline" className="mt-2 border-slate-200 text-slate-400 font-code text-[9px] uppercase">Ref: FT_STRAT_2.4</Badge>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Section 01: Strategic Narrative Hub */}
+                <div className="space-y-16 pt-20">
+                   <div className="flex items-center gap-6">
+                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div>
+                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary & Vision</h3>
+                   </div>
+
+                   <div className="space-y-12">
+                      {checklist.aboutProject && (
+                        <div className="space-y-6">
+                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">The Initiative</h4>
+                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutProject}</p>
+                        </div>
+                      )}
+                      
+                      {checklist.aboutUs && (
+                        <div className="space-y-6">
+                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Organizational Pedigree</h4>
+                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutUs}</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
+                         {checklist.vision && (
+                           <div className="p-10 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-6 relative overflow-hidden group">
+                              <Compass className="h-12 w-12 text-[#001F3D] opacity-10 absolute top-6 right-6" />
+                              <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Future Node (Vision)</h5>
+                              <p className="text-sm font-bold text-slate-700 leading-relaxed italic">"{foundationalData.vision}"</p>
+                           </div>
+                         )}
+                         {checklist.mission && (
+                           <div className="p-10 bg-[#001F3D] text-white rounded-[2.5rem] space-y-6 relative overflow-hidden group">
+                              <ShieldCheck className="h-12 w-12 text-white opacity-10 absolute top-6 right-6" />
+                              <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Core Protocol (Mission)</h5>
+                              <p className="text-sm font-bold text-white/90 leading-relaxed italic">"{foundationalData.mission}"</p>
+                           </div>
+                         )}
+                      </div>
+                   </div>
+                </div>
+
+                {/* Section 02: Marketable Assets */}
+                <div className="space-y-16 pt-20">
+                   <div className="flex items-center gap-6">
+                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div>
+                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Portfolio</h3>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      {proprietaryProducts.map(p => (
+                         <div key={p.id} className="p-8 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-8 shadow-sm group hover:border-primary transition-all">
+                            <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner">
+                               <Image src={p.imageUrl} alt={p.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                            </div>
+                            <div className="space-y-4">
+                               <div className="space-y-1">
+                                  <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{p.name || 'Undefined Node'}</h5>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                     <Box className="h-3 w-3" /> Sector: {p.market}
+                                  </p>
+                               </div>
+                               <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Target Valuation</span>
+                                  <span className="text-xl font-display font-bold text-primary">₹ {p.price} <span className="text-[10px] ml-1">/ Unit</span></span>
+                               </div>
+                            </div>
                          </div>
-                       )}
-                       {checklist.mission && (
-                         <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] space-y-4 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><ShieldCheck className="h-10 w-10 text-[#001F3D]" /></div>
-                            <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Mission Protocol</h5>
-                            <p className="text-xs font-bold text-slate-700 leading-relaxed">{foundationalData.mission}</p>
+                      ))}
+                   </div>
+                </div>
+
+                {/* Section 03: Manufacturing Capabilities */}
+                <div className="space-y-16 pt-20">
+                   <div className="flex items-center gap-6">
+                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div>
+                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">B2B Manufacturing Capacity</h3>
+                   </div>
+
+                   <div className="grid grid-cols-1 gap-6">
+                      {services.map((s, idx) => (
+                        <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl flex justify-between items-center group">
+                           <div className="flex items-center gap-6">
+                              <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-[#001F3D] shadow-sm font-display font-bold text-xl">{idx + 1}</div>
+                              <div>
+                                 <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">{s.name || 'Protocol Neutral'}</h5>
+                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Service ID: {s.id}</p>
+                              </div>
+                           </div>
+                           <div className="text-right">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annual Capacity Output</p>
+                              <Badge className="bg-[#001F3D] text-white border-none px-6 py-1.5 rounded-full font-bold text-[10px] uppercase">{s.capacity}</Badge>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+
+                {/* Section 04: Financial Feasibility Matrix */}
+                <div className="space-y-16 pt-20 page-break">
+                   <div className="flex items-center gap-6">
+                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div>
+                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Financial Intelligence Matrix</h3>
+                   </div>
+
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                      <div className="space-y-8">
+                         <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Capital Allocation</h4>
+                         <div className="p-10 bg-slate-900 text-white rounded-[2.5rem] space-y-10 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-10"><DollarSign className="h-32 w-32" /></div>
+                            <div className="space-y-2 relative z-10">
+                               <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Total Loan Requirement</p>
+                               <h3 className="text-5xl font-display font-bold text-white tracking-tighter">₹ {foundationalData.totalLoanRequirement}</h3>
+                            </div>
+                            <div className="space-y-6 pt-10 border-t border-white/10 relative z-10">
+                               <div className="flex justify-between items-center">
+                                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Fixed Asset Investment</span>
+                                  <span className="text-sm font-bold text-white">₹ {financials.capitalInvestment.toLocaleString()}</span>
+                               </div>
+                               <div className="flex justify-between items-center">
+                                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Working Capital Reserve</span>
+                                  <span className="text-sm font-bold text-white">₹ {financials.workingCapital.toLocaleString()}</span>
+                               </div>
+                            </div>
                          </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
+                      </div>
 
-              {/* Summary Ledger */}
-              <div className="grid grid-cols-2 gap-12">
-                 <div className="space-y-6">
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Firm Profile Summary</h4>
-                    <div className="space-y-4">
-                       <div className="flex justify-between items-center py-3 border-b border-slate-50"><span className="text-[9px] font-bold text-slate-400 uppercase">Entity ID</span><span className="text-xs font-bold text-slate-800">FEROCIOUS_TECH_OP_1</span></div>
-                       <div className="flex justify-between items-center py-3 border-b border-slate-50"><span className="text-[9px] font-bold text-slate-400 uppercase">Location Node</span><span className="text-xs font-bold text-slate-800">{foundationalData.location}</span></div>
-                       <div className="flex justify-between items-center py-3 border-b border-slate-50"><span className="text-[9px] font-bold text-slate-400 uppercase">Strategic Lead</span><span className="text-xs font-bold text-slate-800">{foundationalData.promoterName}</span></div>
-                    </div>
-                 </div>
-                 <div className="space-y-6">
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Valuation Summary</h4>
-                    <div className="p-8 bg-slate-50 rounded-[2rem] space-y-4">
-                       <p className="text-[9px] font-bold text-slate-400 uppercase">Loan Requirement</p>
-                       <p className="text-4xl font-display font-bold text-[#001F3D]">₹ {foundationalData.totalLoanRequirement}</p>
-                       <Badge variant="outline" className="border-emerald-200 text-emerald-600 bg-white font-bold text-[8px] uppercase">ROI Yield Sync: 84%</Badge>
-                    </div>
-                 </div>
-              </div>
+                      <div className="space-y-8">
+                         <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Revenue Yield Curve</h4>
+                         <div className="h-64 w-full bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 shadow-inner">
+                            <ResponsiveContainer width="100%" height="100%">
+                               <BarChart data={pnlChartData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                                  <YAxis hide />
+                                  <Bar dataKey="rev" fill="#001F3D" radius={[4, 4, 0, 0]} />
+                                  <Bar dataKey="exp" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                               </BarChart>
+                            </ResponsiveContainer>
+                         </div>
+                         <div className="flex justify-center gap-10">
+                            <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#001F3D]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Revenue</span></div>
+                            <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#f43f5e]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Expense</span></div>
+                         </div>
+                      </div>
+                   </div>
 
-              {/* Proprietary Product Catalog */}
-              <div className="space-y-8">
-                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Proprietary Product Portfolio</h4>
-                 <div className="grid grid-cols-2 gap-6">
-                    {proprietaryProducts.map(p => (
-                       <Card key={p.id} className="p-6 bg-white border border-slate-100 rounded-3xl flex gap-6 items-center shadow-sm">
-                          <div className="h-24 w-24 rounded-2xl overflow-hidden relative border shadow-inner shrink-0">
-                             <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
-                          </div>
-                          <div className="flex-1 space-y-2">
-                             <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-tight line-clamp-1">{p.name || 'Undefined Node'}</h5>
-                             <div className="flex items-center gap-2">
-                                <Box className="h-3 w-3 text-slate-300" />
-                                <span className="text-[10px] text-slate-400 font-bold uppercase">{p.market}</span>
-                             </div>
-                             <div className="flex items-center gap-2 pt-2">
-                                <Tags className="h-3 w-3 text-primary" />
-                                <span className="text-sm font-display font-bold text-primary">₹ {p.price} / unit</span>
-                             </div>
-                          </div>
-                       </Card>
-                    ))}
-                 </div>
-              </div>
+                   <div className="p-10 border-2 border-slate-100 rounded-[2.5rem] space-y-6">
+                      <div className="flex items-center gap-3">
+                         <Info className="h-4 w-4 text-primary" />
+                         <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Feasibility Disclosure</p>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">
+                         The figures presented in this matrix represent precision industrial projections based on current market dynamics in the VMC machining sector. The estimated <b className="text-[#001F3D]">monthly revenue node of ₹ {financials.projectedMonthlyRevenue.toLocaleString()}</b> is synchronized with projected machine utilization rates of 85% OEE across the proposed asset fleet.
+                      </p>
+                   </div>
+                </div>
 
-              {/* Industrial Services Matrix */}
-              <div className="space-y-8">
-                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent border-l-4 border-accent pl-4">Manufacturing Service Nodes</h4>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {services.map(s => (
-                       <div key={s.id} className="p-6 bg-[#001F3D] text-white rounded-3xl relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Cpu className="h-10 w-10" /></div>
-                          <p className="text-[8px] font-bold uppercase text-white/40 mb-2">Service ID: {s.id}</p>
-                          <h5 className="text-sm font-bold uppercase tracking-tight">{s.name || 'Protocol Neutral'}</h5>
-                          <p className="text-[10px] font-bold text-primary mt-3 uppercase tracking-widest">Capacity: {s.capacity}</p>
-                       </div>
-                    ))}
-                 </div>
-              </div>
+                {/* Final Footer Protocol */}
+                <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
+                   <div className="space-y-4 text-left">
+                      <div className="h-16 w-16 bg-[#001F3D] rounded-2xl flex items-center justify-center text-white shadow-xl">
+                        <FileCheck className="h-8 w-8" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End of Report</p>
+                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_PROTOCOL_SYNC_2.4</p>
+                      </div>
+                   </div>
 
-              <div className="pt-24 border-t border-slate-100 flex justify-between items-end italic opacity-40 text-[9px] font-bold uppercase tracking-widest">
-                 <span>Ferocious Tech Strategy Protocol</span>
-                 <span>Generated via Architect Matrix v2.4</span>
-              </div>
-           </Card>
+                   <div className="text-right space-y-8 w-full md:w-80">
+                      <div className="space-y-12">
+                         <div className="h-[1px] bg-slate-200 w-full" />
+                         <div className="space-y-1">
+                            <p className="text-xs font-bold text-[#001F3D] uppercase tracking-widest">{foundationalData.promoterName}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signatory node</p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+             </Card>
+           </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -486,7 +486,7 @@ export function LoanProjectHub() {
            <Card className="p-20 flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[3rem] bg-slate-50/50 text-center group hover:bg-white hover:border-primary/20 transition-all">
               <div className="p-8 bg-white rounded-3xl shadow-xl mb-6 group-hover:scale-110 transition-transform"><ImageIcon className="h-16 w-16 text-primary" /></div>
               <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Visual Artifact Registry</h3>
-              <p className="text-xs text-slate-400 mt-2 max-w-sm">Upload high-resolution photography of machining assets, existing products, and strategic workshop layouts for bank inspection.</p>
+              <p className="text-xs text-slate-400 mt-2 max-sm">Upload high-resolution photography of machining assets, existing products, and strategic workshop layouts for bank inspection.</p>
               <Button className="mt-8 h-12 px-10 rounded-xl bg-[#001F3D] font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl">
                  <Upload className="h-4 w-4" /> Initialize Upload Protocol
               </Button>
@@ -495,7 +495,7 @@ export function LoanProjectHub() {
 
         <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:m-0 print:p-0">
            <div className="max-w-[1000px] mx-auto space-y-16 print:max-w-none print:w-full">
-             <Card className="p-16 md:p-24 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] space-y-20 print:shadow-none print:border-none print:p-0 print:rounded-none">
+             <Card className="p-16 md:p-24 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] space-y-20 print:shadow-none print:border-none print:p-0 print:m-0 print:rounded-none">
                 
                 {/* Formal Cover Page Matrix */}
                 <div className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-100 pb-20 relative">
@@ -588,22 +588,22 @@ export function LoanProjectHub() {
                         <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Portfolio</h3>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         {proprietaryProducts.map(p => (
-                          <div key={p.id} className="p-8 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-8 shadow-sm group hover:border-primary transition-all">
-                              <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner">
-                                <Image src={p.imageUrl} alt={p.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                          <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col gap-4 shadow-sm group transition-all">
+                              <div className="aspect-video w-full rounded-xl overflow-hidden relative border shadow-inner">
+                                <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
                               </div>
-                              <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{p.name || 'Undefined Node'}</h5>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                      <Box className="h-3 w-3" /> Sector: {p.market}
+                              <div className="space-y-2">
+                                <div className="space-y-0.5">
+                                    <h5 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-tight truncate">{p.name || 'Undefined Node'}</h5>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                      <Box className="h-2 w-2" /> {p.market}
                                     </p>
                                 </div>
-                                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Target Valuation</span>
-                                    <span className="text-xl font-display font-bold text-primary">₹ {p.price} <span className="text-[10px] ml-1">/ Unit</span></span>
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                                    <span className="text-[7px] font-bold text-slate-400 uppercase">Price</span>
+                                    <span className="text-xs font-display font-bold text-primary">₹ {p.price}</span>
                                 </div>
                               </div>
                           </div>

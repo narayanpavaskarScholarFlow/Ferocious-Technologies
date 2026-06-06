@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
@@ -47,6 +48,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 import { 
   useFirestore, 
@@ -316,6 +318,7 @@ function IndustrialERPInternal() {
   }
 
   const isSlimSidebar = uiSettings.sidebarMode === 'slim';
+  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   return (
     <div className={cn(
@@ -337,9 +340,19 @@ function IndustrialERPInternal() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:block">
         <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
           <div className="flex items-center gap-6">
-            <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
-              FEROCIOUS<span className="text-primary">TECH</span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <Image 
+                src={brandLogo} 
+                alt="Ferocious Tech" 
+                width={32} 
+                height={32} 
+                className="rounded-lg object-contain"
+                data-ai-hint="lion technology logo"
+              />
+              <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
+                FEROCIOUS<span className="text-primary">TECH</span>
+              </h1>
+            </div>
           </div>
           <div className="flex items-center gap-4">
              <div className="text-right hidden md:block">

@@ -2,6 +2,12 @@
 {
   "placeholderImages": [
     {
+      "id": "brand-logo",
+      "description": "Ferocious Tech Corporate Logo",
+      "imageUrl": "https://picsum.photos/seed/ferocious-logo/400/400",
+      "imageHint": "lion technology logo"
+    },
+    {
       "id": "milling",
       "description": "Industrial Milling Machine",
       "imageUrl": "https://picsum.photos/seed/milling/600/400",

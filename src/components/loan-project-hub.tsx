@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -58,6 +59,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
@@ -72,6 +74,8 @@ interface ProprietaryProduct {
 export function LoanProjectHub() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
+
+  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState({
@@ -505,9 +509,14 @@ export function LoanProjectHub() {
                    
                    <div className="space-y-6 relative z-10">
                       <div className="flex justify-center mb-16">
-                        <div className="p-8 bg-[#001F3D] rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-                           <Zap className="h-20 w-20 text-white fill-white relative z-10" />
-                           <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl">
+                           <Image 
+                            src={brandLogo} 
+                            alt="Ferocious Tech Logo" 
+                            fill 
+                            className="object-contain p-4 bg-white"
+                            data-ai-hint="lion technology logo"
+                           />
                         </div>
                       </div>
                       
@@ -703,8 +712,15 @@ export function LoanProjectHub() {
                 {/* Final Footer Protocol */}
                 <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
                    <div className="space-y-4 text-left">
-                      <div className="h-16 w-16 bg-[#001F3D] rounded-2xl flex items-center justify-center text-white shadow-xl">
-                        <FileCheck className="h-8 w-8" />
+                      <div className="h-16 w-16 bg-[#001F3D] rounded-2xl flex items-center justify-center text-white shadow-xl overflow-hidden p-2">
+                        <Image 
+                          src={brandLogo} 
+                          alt="Ferocious Tech Logo" 
+                          width={48} 
+                          height={48} 
+                          className="object-contain"
+                          data-ai-hint="lion technology logo"
+                        />
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End of Report</p>

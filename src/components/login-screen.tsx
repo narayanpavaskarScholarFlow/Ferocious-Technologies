@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 interface LoginScreenProps {
   onLogin: (user: string) => void;
@@ -39,6 +41,8 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+
+  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const handleLogin = () => {
     // Strict manual trigger only
@@ -115,9 +119,17 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
       <div className="w-full max-w-[520px] z-50 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
         <div className="flex flex-col items-center text-center gap-6">
           <div className="relative group">
-            <div className="p-7 bg-[#0A0F18] rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] border border-white/5 relative">
-              <Zap className="h-14 w-14 text-white fill-white pointer-events-none" />
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-4 border-[#0A0F18] animate-pulse pointer-events-none" />
+            <div className="p-6 bg-white rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border border-slate-100 relative w-28 h-28 flex items-center justify-center">
+              <div className="relative w-16 h-16">
+                <Image 
+                  src={brandLogo} 
+                  alt="Ferocious Tech Logo" 
+                  fill 
+                  className="object-contain"
+                  data-ai-hint="lion technology logo"
+                />
+              </div>
+              <div className="absolute -top-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-4 border-white animate-pulse pointer-events-none" />
             </div>
           </div>
           <div className="space-y-2">
@@ -250,7 +262,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   Abort
                 </Button>
                 <Button 
-                  type="button"
+                  type="button" 
                   disabled={isLoading}
                   onClick={handleResetRequest}
                   className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 relative z-50"

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { ViewType, PermissionLevel } from '@/lib/types';
 import { 
   LayoutDashboard, 
@@ -37,6 +38,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 interface SidebarNavProps {
   currentView: ViewType;
@@ -54,6 +56,8 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const menuItems = useMemo(() => {
     const isMasterAdmin = userRole === 'Master Admin';
@@ -109,13 +113,21 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     )}>
       <div 
         className={cn(
-          "p-3 bg-primary rounded-xl shadow-lg cursor-pointer group transition-all",
-          isSlim ? "w-12 h-12 flex items-center justify-center" : "w-full flex items-center gap-3"
+          "bg-white rounded-xl shadow-lg cursor-pointer group transition-all overflow-hidden",
+          isSlim ? "w-12 h-12 flex items-center justify-center p-2" : "w-full flex items-center gap-3 p-3"
         )} 
         onClick={() => onViewChange('overview')}
       >
-        <Zap className="h-6 w-6 text-white fill-white transition-transform group-hover:rotate-12 shrink-0" />
-        {!isSlim && <span className="text-white font-headline font-bold text-sm tracking-tight uppercase">FEROCIOUS TECH</span>}
+        <div className="relative w-8 h-8 shrink-0">
+          <Image 
+            src={brandLogo} 
+            alt="Ferocious Tech" 
+            fill 
+            className="object-contain"
+            data-ai-hint="lion technology logo"
+          />
+        </div>
+        {!isSlim && <span className="text-[#001F3D] font-headline font-bold text-sm tracking-tight uppercase">FEROCIOUS TECH</span>}
       </div>
 
       <div className="flex-1 flex flex-col gap-1 w-full mt-4">

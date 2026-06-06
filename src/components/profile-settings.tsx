@@ -150,6 +150,10 @@ export function ProfileSettings({
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Access Matrix State
+  const [selectedMatrixUserId, setSelectedMatrixUserId] = useState<string | null>(null);
+  const [matrixPermissions, setMatrixPermissions] = useState<Record<string, PermissionLevel>>({});
+
   const isMasterAdmin = currentUser === 'Master Admin';
 
   const [personalInfo, setPersonalInfo] = useState({
@@ -159,6 +163,15 @@ export function ProfileSettings({
     phone: currentUserData?.phone || '',
     password: currentUserData?.password || ''
   });
+
+  useEffect(() => {
+    if (selectedMatrixUserId) {
+      const user = users.find(u => u.id === selectedMatrixUserId);
+      if (user) {
+        setMatrixPermissions(user.permissions || {});
+      }
+    }
+  }, [selectedMatrixUserId, users]);
 
   const handleUpdatePersonal = () => {
     if (!currentUserData) return;
@@ -203,6 +216,20 @@ export function ProfileSettings({
     toast({ title: "Global Sequence Synchronized", description: `Sequence protocol ${key} updated for future nodes.` });
   };
 
+  const handleMatrixPermissionUpdate = (nodeId: string, level: PermissionLevel) => {
+    setMatrixPermissions(prev => ({ ...prev, [nodeId]: level }));
+  };
+
+  const handleSaveMatrix = () => {
+    if (!selectedMatrixUserId) return;
+    const user = users.find(u => u.id === selectedMatrixUserId);
+    if (!user) return;
+    onSaveUser({ ...user, permissions: matrixPermissions });
+    toast({ title: "Access Synchronized", description: `Permissions for ${user.name} committed to matrix.` });
+  };
+
+  const categories = Array.from(new Set(ACCESS_NODES.map(n => n.category)));
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
       <header className="px-2">
@@ -221,6 +248,9 @@ export function ProfileSettings({
             <>
               <TabsTrigger value="users" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
                 <Users className="h-3.5 w-3.5 mr-2" /> Identity Ledger
+              </TabsTrigger>
+              <TabsTrigger value="access-matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+                <ShieldCheck className="h-3.5 w-3.5 mr-2" /> Access Matrix
               </TabsTrigger>
               <TabsTrigger value="ui" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
                 <Palette className="h-3.5 w-3.5 mr-2" /> UI Architecture
@@ -285,6 +315,107 @@ export function ProfileSettings({
           <>
             <TabsContent value="users" className="m-0">
               <UserManagement users={users} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} onNavigateToDetail={onNavigateToDetail!} />
+            </TabsContent>
+
+            <TabsContent value="access-matrix" className="m-0 space-y-10">
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg"><ShieldCheck className="h-6 w-6" /></div>
+                    <div>
+                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Matrix Hub</h3>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Select identity to govern operational nodes.</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-4 w-full md:w-auto">
+                    <Select value={selectedMatrixUserId || ''} onValueChange={setSelectedMatrixUserId}>
+                       <SelectTrigger className="w-full md:w-64 h-12 bg-slate-50 border-none rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-inner">
+                          <SelectValue placeholder="Identify Personnel..." />
+                       </SelectTrigger>
+                       <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                          {users.map(u => (
+                            <SelectItem key={u.id} value={u.id} className="text-[10px] font-bold uppercase py-2">
+                              {u.name} ({u.role})
+                            </SelectItem>
+                          ))}
+                       </SelectContent>
+                    </Select>
+                    {selectedMatrixUserId && (
+                      <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleSaveMatrix}>
+                        <Save className="h-4 w-4" /> Commit Matrix
+                      </Button>
+                    )}
+                 </div>
+              </Card>
+
+              {selectedMatrixUserId ? (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  {categories.map((cat) => (
+                    <Card key={cat} className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-[2rem]">
+                      <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex items-center justify-between">
+                        <h3 className="text-[11px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">{cat}</h3>
+                        <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[8px] font-bold px-3 uppercase tracking-tighter">GATED_NODES</Badge>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent bg-white">
+                            <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-10">Functional Node</TableHead>
+                            <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">None</TableHead>
+                            <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">Read-Only</TableHead>
+                            <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">Standard Access</TableHead>
+                            <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">Full Control</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ACCESS_NODES.filter(n => n.category === cat).map((node) => (
+                            <TableRow key={node.id} className="hover:bg-slate-50/30 h-20 border-b border-slate-50 transition-colors">
+                              <TableCell className="px-10">
+                                <div className="flex items-center gap-4">
+                                  <div className="p-2 bg-slate-50 rounded-lg text-slate-400"><node.icon className="h-4 w-4" /></div>
+                                  <span className="text-[12px] font-bold text-slate-700 uppercase tracking-tight">{node.label}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="none" className="h-5 w-5 border-slate-200 text-slate-400" />
+                                  </RadioGroup>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="read" className="h-5 w-5 border-slate-200 text-blue-500" />
+                                  </RadioGroup>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="edit" className="h-5 w-5 border-slate-200 text-primary" />
+                                  </RadioGroup>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="full" className="h-5 w-5 border-slate-200 text-emerald-500" />
+                                  </RadioGroup>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-[400px] flex flex-col items-center justify-center opacity-30 text-center border-4 border-dashed border-slate-200 rounded-[3rem]">
+                   <ShieldAlert className="h-16 w-16 mb-6 text-slate-300" />
+                   <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Required</h4>
+                   <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity from the ledger above to initialize the access matrix protocol.</p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="ui" className="m-0 space-y-8 max-w-6xl">

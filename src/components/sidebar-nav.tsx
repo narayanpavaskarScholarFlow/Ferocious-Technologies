@@ -61,7 +61,6 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
 
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
-      { id: 'external-matrix' as ViewType, icon: Globe, label: customTitles['external-matrix'] || 'Integrated Hub' },
       { id: 'loan-project' as ViewType, icon: Landmark, label: customTitles['loan-project'] || 'Loan Strategy Hub' },
       { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'My Personnel Portal' },
       { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub' },

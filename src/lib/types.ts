@@ -72,7 +72,8 @@ export type ViewType =
   | 'salary'
   | 'team-matrix'
   | 'delivery'
-  | 'external-matrix';
+  | 'external-matrix'
+  | 'loan-project';
 
 export interface SubTask {
   id: string;

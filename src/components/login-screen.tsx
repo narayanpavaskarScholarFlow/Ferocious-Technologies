@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -26,14 +25,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import placeholderImages from '@/app/lib/placeholder-images.json';
 
 interface LoginScreenProps {
   onLogin: (user: string) => void;
   users: SystemUser[];
+  brandLogo?: string;
 }
 
-export function LoginScreen({ onLogin, users }: LoginScreenProps) {
+export function LoginScreen({ onLogin, users, brandLogo = '' }: LoginScreenProps) {
   const { toast } = useToast();
   const [view, setView] = useState<'login' | 'reset'>('login');
   const [username, setUsername] = useState('');
@@ -41,8 +40,6 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-
-  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const handleLogin = () => {
     // Strict manual trigger only

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -78,6 +77,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { UserManagement } from './user-management';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 const THEME_COLORS = [
   { name: 'Classic Navy', value: '243 75% 59%', color: 'bg-[#6366f1]' },
@@ -155,6 +155,7 @@ export function ProfileSettings({
   const [matrixPermissions, setMatrixPermissions] = useState<Record<string, PermissionLevel>>({});
 
   const isMasterAdmin = currentUser === 'Master Admin';
+  const defaultBrandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const [personalInfo, setPersonalInfo] = useState({
     firstName: currentUserData?.firstName || '',
@@ -190,6 +191,23 @@ export function ProfileSettings({
     if (currentUserData) {
       onSaveUser({ ...currentUserData, uiSettings: updated });
     }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleUpdateUI('brandLogo', reader.result as string);
+        toast({ title: "Brand Identity Synchronized", description: "Global logo updated in master settings." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDeleteLogo = () => {
+    handleUpdateUI('brandLogo', undefined);
+    toast({ title: "Brand Identity Reset", description: "Logo reverted to system default artifact." });
   };
 
   const handleUpdateBillingTable = (field: string, value: number) => {
@@ -440,6 +458,30 @@ export function ProfileSettings({
                         {THEME_COLORS.map(color => (
                           <button key={color.value} onClick={() => handleUpdateUI('primaryColor', color.value)} className={cn("h-10 w-full rounded-xl transition-all border-4", uiSettings.primaryColor === color.value ? "border-white ring-2 ring-slate-900" : "border-transparent", color.color)} />
                         ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Corporate Branding</Label>
+                      <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="relative group">
+                           <div className="h-20 w-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-2 shadow-sm">
+                              <img src={uiSettings.brandLogo || defaultBrandLogo} alt="Corporate Logo" className="h-full w-full object-contain" />
+                           </div>
+                           <input type="file" id="logo-upload" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                           <label htmlFor="logo-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+                              <Camera className="h-4 w-4" />
+                           </label>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                           <p className="text-[11px] font-bold text-[#001F3D] uppercase">Global Corporate Identity</p>
+                           <p className="text-[9px] text-slate-400 font-medium leading-relaxed">This logo will be synchronized across the command matrix, reports, and security gateway.</p>
+                           {uiSettings.brandLogo && (
+                             <Button variant="ghost" size="sm" className="h-7 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 text-[9px] font-bold uppercase tracking-widest gap-2 mt-2" onClick={handleDeleteLogo}>
+                               <Trash2 className="h-3 w-3" /> Reset to Default
+                             </Button>
+                           )}
+                        </div>
                       </div>
                     </div>
                   </div>

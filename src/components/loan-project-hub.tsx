@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -59,7 +58,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
-import placeholderImages from '@/app/lib/placeholder-images.json';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
@@ -71,11 +69,13 @@ interface ProprietaryProduct {
   imageUrl: string;
 }
 
-export function LoanProjectHub() {
+interface LoanProjectHubProps {
+  brandLogo?: string;
+}
+
+export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
-
-  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState({

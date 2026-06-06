@@ -1,4 +1,3 @@
-
 export type ToolStatus = 'active' | 'obsolete' | 'maintenance' | 'fault';
 
 export type MachineCategory = 
@@ -255,6 +254,7 @@ export interface UISettings {
   customTitles: Record<string, string>;
   woPrefix: string;
   woNextNumber: number;
+  brandLogo?: string; // High-fidelity corporate logo data URI
   billingTableSettings?: {
     colWidths: {
       description: number;

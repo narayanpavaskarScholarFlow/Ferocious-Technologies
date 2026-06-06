@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -159,15 +158,20 @@ function IndustrialERPInternal() {
     return usersData.find(u => u.name === 'Master Admin');
   }, [usersData]);
 
-  const globalSequenceSettings = useMemo(() => {
+  const globalSystemSettings = useMemo(() => {
     const settings = masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
     return {
       ...DEFAULT_UI_SETTINGS,
       ...settings,
       woPrefix: settings.woPrefix ?? DEFAULT_UI_SETTINGS.woPrefix,
-      woNextNumber: settings.woNextNumber ?? DEFAULT_UI_SETTINGS.woNextNumber
+      woNextNumber: settings.woNextNumber ?? DEFAULT_UI_SETTINGS.woNextNumber,
+      brandLogo: settings.brandLogo
     };
   }, [masterAdmin]);
+
+  const brandLogo = useMemo(() => {
+    return globalSystemSettings.brandLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
+  }, [globalSystemSettings]);
 
   useEffect(() => {
     const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
@@ -314,11 +318,10 @@ function IndustrialERPInternal() {
   if (!mounted) return null;
 
   if (!isLoggedIn) {
-    return <><LoginScreen onLogin={handleLogin} users={usersData} /><Toaster /></>;
+    return <><LoginScreen onLogin={handleLogin} users={usersData} brandLogo={brandLogo} /><Toaster /></>;
   }
 
   const isSlimSidebar = uiSettings.sidebarMode === 'slim';
-  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   return (
     <div className={cn(
@@ -334,6 +337,7 @@ function IndustrialERPInternal() {
           customTitles={uiSettings.customTitles}
           userRole={currentUser === 'Master Admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
           isReportingManager={isReportingManager}
+          brandLogo={brandLogo}
         />
       </div>
 
@@ -378,13 +382,13 @@ function IndustrialERPInternal() {
         <main className="flex-1 overflow-y-auto w-full p-6 print:p-0">
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
-            {currentView === 'loan-project' && <LoanProjectHub />}
+            {currentView === 'loan-project' && <LoanProjectHub brandLogo={brandLogo} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('settings')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
-            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSequenceSettings} />}
+            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSystemSettings} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
             {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}

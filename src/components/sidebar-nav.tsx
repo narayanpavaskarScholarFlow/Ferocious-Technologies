@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -38,7 +37,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import placeholderImages from '@/app/lib/placeholder-images.json';
 
 interface SidebarNavProps {
   currentView: ViewType;
@@ -48,16 +46,15 @@ interface SidebarNavProps {
   customTitles?: Record<string, string>;
   userRole?: string;
   isReportingManager?: boolean;
+  brandLogo?: string;
 }
 
-export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {}, userRole, isReportingManager }: SidebarNavProps) {
+export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {}, userRole, isReportingManager, brandLogo = '' }: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const brandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const menuItems = useMemo(() => {
     const isMasterAdmin = userRole === 'Master Admin';

@@ -61,7 +61,6 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
 
     const items = [
       { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
-      { id: 'loan-project' as ViewType, icon: Landmark, label: customTitles['loan-project'] || 'Loan Strategy Hub' },
       { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'My Personnel Portal' },
       { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub' },
       { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
@@ -80,6 +79,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
       { id: 'vendor' as ViewType, icon: Truck, label: customTitles['vendor'] || 'Supply Chain' },
       { id: 'weekly-plan' as ViewType, icon: Calendar, label: customTitles['weekly-plan'] || 'Master Plan' },
       { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: customTitles['smart-quote'] || 'AI Quoting' },
+      { id: 'loan-project' as ViewType, icon: Landmark, label: customTitles['loan-project'] || 'Project Architect' },
     ];
 
     return items.filter(item => {

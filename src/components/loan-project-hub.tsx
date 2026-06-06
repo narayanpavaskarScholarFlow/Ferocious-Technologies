@@ -31,7 +31,12 @@ import {
   Upload,
   BarChart3,
   Box,
-  Tags
+  Tags,
+  Compass,
+  Rocket,
+  ShieldCheck,
+  Building2,
+  History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -49,6 +54,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
@@ -63,12 +69,15 @@ interface ProprietaryProduct {
 
 export function LoanProjectHub() {
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState('input');
 
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState({
     firmProfile: true,
+    aboutProject: true,
+    aboutUs: true,
+    vision: true,
+    mission: true,
     objectives: true,
     marketAnalysis: false,
     machineList: false,
@@ -81,6 +90,10 @@ export function LoanProjectHub() {
     promoterName: 'Ferocious Tech Strategy Team',
     location: 'Pune, Maharashtra',
     totalLoanRequirement: '50,00,000',
+    aboutProject: 'A specialized facility designed to scale the production of proprietary high-precision components and provide high-fidelity VMC machining services to Tier 1 aerospace and automotive clients.',
+    aboutUs: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
+    vision: 'To establish Ferocious Tech as the global benchmark for precision machining and innovative industrial tool-room solutions.',
+    mission: 'Providing exceptional technical value through specialized engineering, uncompromising quality releases, and innovative product development.',
   });
 
   // 02. Product Line State
@@ -141,6 +154,10 @@ export function LoanProjectHub() {
     setProprietaryProducts(newP);
   };
 
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2 print:hidden">
@@ -186,7 +203,7 @@ export function LoanProjectHub() {
 
         <TabsContent value="input" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 print:hidden">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <Card className="lg:col-span-8 p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem]">
+              <Card className="lg:col-span-8 p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
                  <div className="space-y-10">
                     <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
                        <div className="p-3 bg-primary/10 rounded-2xl text-primary"><FileText className="h-6 w-6" /></div>
@@ -199,25 +216,76 @@ export function LoanProjectHub() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Project Name</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName} onChange={(e)=>updateField('projectName', e.target.value)} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter / Applicant Node</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName} onChange={(e)=>updateField('promoterName', e.target.value)} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Operational Base (Location)</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.location} onChange={(e)=>setFormData({...foundationalData, location: e.target.value})} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.location} onChange={(e)=>updateField('location', e.target.value)} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Loan Capital Requirement (₹)</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold text-primary text-xl font-display" value={foundationalData.totalLoanRequirement} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold text-primary text-xl font-display" value={foundationalData.totalLoanRequirement} onChange={(e)=>updateField('totalLoanRequirement', e.target.value)} />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="space-y-10 pt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
+                       <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Target className="h-6 w-6" /></div>
+                       <div>
+                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Strategic Narrative Hub</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Detailed organizational and functional descriptors.</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">About Project</Label>
+                          <Textarea 
+                            className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
+                            placeholder="Detailed technical description of the proposed project..."
+                            value={foundationalData.aboutProject}
+                            onChange={(e) => updateField('aboutProject', e.target.value)}
+                          />
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">About Us (Firm Profile)</Label>
+                          <Textarea 
+                            className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
+                            placeholder="History, technical expertise, and team pedigree..."
+                            value={foundationalData.aboutUs}
+                            onChange={(e) => updateField('aboutUs', e.target.value)}
+                          />
+                       </div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-3">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Vision Statement</Label>
+                             <Textarea 
+                               className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
+                               placeholder="The long-term aspiration and target node..."
+                               value={foundationalData.vision}
+                               onChange={(e) => updateField('vision', e.target.value)}
+                             />
+                          </div>
+                          <div className="space-y-3">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Mission Statement</Label>
+                             <Textarea 
+                               className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
+                               placeholder="Primary functional purpose and core protocols..."
+                               value={foundationalData.mission}
+                               onChange={(e) => updateField('mission', e.target.value)}
+                             />
+                          </div>
                        </div>
                     </div>
                  </div>
               </Card>
 
-              <Card className="lg:col-span-4 p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative overflow-hidden">
+              <Card className="lg:col-span-4 p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative overflow-hidden h-fit sticky top-24">
                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
                  <div className="relative z-10 space-y-8">
                     <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40">Report Composition Matrix</h3>
@@ -405,10 +473,54 @@ export function LoanProjectHub() {
                  </div>
               </div>
 
+              {/* Strategic Narrative Hub (New) */}
+              <div className="space-y-12">
+                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Strategic Narrative</h4>
+                 
+                 <div className="grid grid-cols-1 gap-10">
+                    {checklist.aboutProject && (
+                      <div className="space-y-4">
+                         <div className="flex items-center gap-3">
+                           <Rocket className="h-4 w-4 text-[#001F3D]" />
+                           <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-wider">About Project</h5>
+                         </div>
+                         <p className="text-xs text-slate-500 font-medium leading-relaxed indent-8">{foundationalData.aboutProject}</p>
+                      </div>
+                    )}
+                    
+                    {checklist.aboutUs && (
+                      <div className="space-y-4">
+                         <div className="flex items-center gap-3">
+                           <Building2 className="h-4 w-4 text-[#001F3D]" />
+                           <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-wider">About Us</h5>
+                         </div>
+                         <p className="text-xs text-slate-500 font-medium leading-relaxed indent-8">{foundationalData.aboutUs}</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                       {checklist.vision && (
+                         <div className="p-8 bg-[#001F3D] text-white rounded-[2rem] space-y-4 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Compass className="h-10 w-10" /></div>
+                            <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Vision Node</h5>
+                            <p className="text-xs font-bold leading-relaxed">{foundationalData.vision}</p>
+                         </div>
+                       )}
+                       {checklist.mission && (
+                         <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] space-y-4 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><ShieldCheck className="h-10 w-10 text-[#001F3D]" /></div>
+                            <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Mission Protocol</h5>
+                            <p className="text-xs font-bold text-slate-700 leading-relaxed">{foundationalData.mission}</p>
+                         </div>
+                       )}
+                    </div>
+                 </div>
+              </div>
+
               {/* Summary Ledger */}
               <div className="grid grid-cols-2 gap-12">
                  <div className="space-y-6">
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Firm Profile</h4>
+                    <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Firm Profile Summary</h4>
                     <div className="space-y-4">
                        <div className="flex justify-between items-center py-3 border-b border-slate-50"><span className="text-[9px] font-bold text-slate-400 uppercase">Entity ID</span><span className="text-xs font-bold text-slate-800">FEROCIOUS_TECH_OP_1</span></div>
                        <div className="flex justify-between items-center py-3 border-b border-slate-50"><span className="text-[9px] font-bold text-slate-400 uppercase">Location Node</span><span className="text-xs font-bold text-slate-800">{foundationalData.location}</span></div>

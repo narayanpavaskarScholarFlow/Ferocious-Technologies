@@ -75,15 +75,14 @@ export function LoanProjectHub() {
 
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState({
-    firmProfile: true,
     aboutProject: true,
     aboutUs: true,
     vision: true,
     mission: true,
-    objectives: true,
-    marketAnalysis: true,
-    machineList: true,
+    productLine: true,
+    services: true,
     financialProjections: true,
+    machineList: true,
     licenseGst: false,
   });
 
@@ -295,7 +294,11 @@ export function LoanProjectHub() {
                        {Object.entries(checklist).map(([key, val]) => (
                           <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key]: !val})}>
                              <Checkbox checked={val} className="border-white/20 data-[state=checked]:bg-primary" />
-                             <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1')}</span>
+                             <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
+                               {key === 'productLine' ? 'Proprietary Products' : 
+                                key === 'services' ? 'Industrial Services' : 
+                                key.replace(/([A-Z])/g, ' $1')}
+                             </span>
                           </div>
                        ))}
                     </div>
@@ -547,61 +550,65 @@ export function LoanProjectHub() {
                    </div>
                 </div>
 
-                {/* Section 02: Marketable Assets */}
-                <div className="space-y-16 pt-20">
-                   <div className="flex items-center gap-6">
-                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Portfolio</h3>
-                   </div>
-                   
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                      {proprietaryProducts.map(p => (
-                         <div key={p.id} className="p-8 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-8 shadow-sm group hover:border-primary transition-all">
-                            <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner">
-                               <Image src={p.imageUrl} alt={p.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
-                            </div>
-                            <div className="space-y-4">
-                               <div className="space-y-1">
-                                  <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{p.name || 'Undefined Node'}</h5>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                     <Box className="h-3 w-3" /> Sector: {p.market}
-                                  </p>
-                               </div>
-                               <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Target Valuation</span>
-                                  <span className="text-xl font-display font-bold text-primary">₹ {p.price} <span className="text-[10px] ml-1">/ Unit</span></span>
-                               </div>
-                            </div>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-
-                {/* Section 03: Manufacturing Capabilities */}
-                <div className="space-y-16 pt-20">
-                   <div className="flex items-center gap-6">
-                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">B2B Manufacturing Capacity</h3>
-                   </div>
-
-                   <div className="grid grid-cols-1 gap-6">
-                      {services.map((s, idx) => (
-                        <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl flex justify-between items-center group">
-                           <div className="flex items-center gap-6">
-                              <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-[#001F3D] shadow-sm font-display font-bold text-xl">{idx + 1}</div>
-                              <div>
-                                 <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">{s.name || 'Protocol Neutral'}</h5>
-                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Service ID: {s.id}</p>
+                {/* Section 02: Marketable Assets (Product Line) */}
+                {checklist.productLine && (
+                  <div className="space-y-16 pt-20">
+                    <div className="flex items-center gap-6">
+                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Portfolio</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        {proprietaryProducts.map(p => (
+                          <div key={p.id} className="p-8 bg-white border border-slate-100 rounded-[2rem] flex flex-col gap-8 shadow-sm group hover:border-primary transition-all">
+                              <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner">
+                                <Image src={p.imageUrl} alt={p.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
                               </div>
-                           </div>
-                           <div className="text-right">
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annual Capacity Output</p>
-                              <Badge className="bg-[#001F3D] text-white border-none px-6 py-1.5 rounded-full font-bold text-[10px] uppercase">{s.capacity}</Badge>
-                           </div>
-                        </div>
-                      ))}
-                   </div>
-                </div>
+                              <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{p.name || 'Undefined Node'}</h5>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                      <Box className="h-3 w-3" /> Sector: {p.market}
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Target Valuation</span>
+                                    <span className="text-xl font-display font-bold text-primary">₹ {p.price} <span className="text-[10px] ml-1">/ Unit</span></span>
+                                </div>
+                              </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Section 03: Manufacturing Capabilities (Services) */}
+                {checklist.services && (
+                  <div className="space-y-16 pt-20">
+                    <div className="flex items-center gap-6">
+                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">B2B Manufacturing Capacity</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                        {services.map((s, idx) => (
+                          <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl flex justify-between items-center group">
+                            <div className="flex items-center gap-6">
+                                <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-[#001F3D] shadow-sm font-display font-bold text-xl">{idx + 1}</div>
+                                <div>
+                                  <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">{s.name || 'Protocol Neutral'}</h5>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Service ID: {s.id}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annual Capacity Output</p>
+                                <Badge className="bg-[#001F3D] text-white border-none px-6 py-1.5 rounded-full font-bold text-[10px] uppercase">{s.capacity}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Section 04: Financial Feasibility Matrix */}
                 <div className="space-y-16 pt-20 page-break">

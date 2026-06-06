@@ -155,6 +155,18 @@ export function LoanProjectHub() {
     setProprietaryProducts(newP);
   };
 
+  const handleProductImageUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateProduct(idx, 'imageUrl', reader.result as string);
+        toast({ title: "Visual Matrix Cached", description: "Product image initialized for report." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -340,8 +352,26 @@ export function LoanProjectHub() {
                                 </div>
                              </div>
                              <div className="flex-1 space-y-2">
-                                <Label className="text-[8px] font-bold uppercase text-slate-400">Image Artifact URL</Label>
-                                <Input placeholder="URL..." className="bg-white border-none h-11 text-[9px] font-code" value={p.imageUrl} onChange={(e) => updateProduct(idx, 'imageUrl', e.target.value)} />
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Technical Image Artifact</Label>
+                                <div className="relative">
+                                  <input 
+                                    type="file" 
+                                    id={`product-img-${p.id}`} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={(e) => handleProductImageUpload(idx, e)}
+                                  />
+                                  <label 
+                                    htmlFor={`product-img-${p.id}`}
+                                    className={cn(
+                                      "h-11 w-full flex items-center gap-3 px-4 rounded-xl text-[9px] font-bold uppercase tracking-widest cursor-pointer transition-all border border-dashed",
+                                      p.imageUrl.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-primary/50"
+                                    )}
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    {p.imageUrl.startsWith('data:') ? "Image Cached" : "Upload Photo"}
+                                  </label>
+                                </div>
                              </div>
                              <Button variant="ghost" size="icon" className="h-11 w-11 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => setProprietaryProducts(proprietaryProducts.filter(i => i.id !== p.id))}><Trash2 className="h-4 w-4" /></Button>
                           </div>

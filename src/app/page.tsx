@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -336,7 +337,7 @@ function IndustrialERPInternal() {
         <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
           <div className="flex items-center gap-6">
             <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
-              JAYASIMHA<span className="text-primary">PRECISION</span>
+              FEROCIOUS<span className="text-primary">TECH</span>
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -348,7 +349,7 @@ function IndustrialERPInternal() {
                 <DropdownMenuTrigger asChild>
                    <Avatar className="h-8 w-8 border cursor-pointer hover:ring-2 ring-primary/20">
                       <AvatarImage src={currentUserData?.image} />
-                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">JP</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl">

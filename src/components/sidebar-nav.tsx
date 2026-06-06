@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -111,7 +112,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
         onClick={() => onViewChange('overview')}
       >
         <Zap className="h-6 w-6 text-white fill-white transition-transform group-hover:rotate-12 shrink-0" />
-        {!isSlim && <span className="text-white font-headline font-bold text-sm tracking-tight uppercase">JAYASIMHA</span>}
+        {!isSlim && <span className="text-white font-headline font-bold text-sm tracking-tight uppercase">FEROCIOUS TECH</span>}
       </div>
 
       <div className="flex-1 flex flex-col gap-1 w-full mt-4">

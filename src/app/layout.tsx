@@ -1,8 +1,9 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Jayasimha Precision | Advanced Tool Management',
+  title: 'Ferocious Tech | Advanced Tool Management',
   description: 'Precision resource management with intelligent AI categorization.',
 };
 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -79,7 +80,7 @@ const INITIAL_DIMENSIONS: DimensionRecord[] = [
   { id: '1', balloonNo: 'BL-01', typeOfDim: 'Normal Dim', instrument: 'Vernier', target: '', tolerance: '±', upperLimit: '0.000', lowerLimit: '0.000', actual: '', status: 'Pending', remark: '' },
 ];
 
-export function QualityManagement({ orders, users = [], vendors = [], onUpdateStatus, permissions }: QualityManagementProps) {
+export function QualityManagement({ orders, users = [], vendors = [], permissions }: { orders: Order[], users?: SystemUser[], vendors?: Vendor[], permissions?: Record<string, PermissionLevel> }) {
   const db = useFirestore();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<QualityStep>('list');
@@ -101,7 +102,8 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
   const allReports = allReportsData || [];
 
   const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
-  const { data: allBilling } = useCollection<BillingRecord>(billingQuery);
+  const { data: allBillingData } = useCollection<BillingRecord>(billingQuery);
+  const allBilling = allBillingData || [];
 
   const reviewPendingReports = useMemo(() => {
     return allReports.filter(r => r.status === 'Review Pending');
@@ -452,7 +454,6 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
           description: `All components for Order #${selectedOrder.id} released. Master status updated to Completed.`
         });
       } else {
-        // Just refresh the order progress anyway because one more component is done
         handleStatusUpdate(selectedOrder, selectedOp.id, 'WIP');
       }
     }
@@ -1088,7 +1089,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-[#001F3D] rounded-2xl shadow-xl shadow-primary/20"><ShieldCheck className="h-10 w-10 text-white" /></div>
                   <div>
-                    <h1 className="text-3xl font-display font-bold tracking-tighter">JAYASIMHA<span className="text-primary">PRECISION</span></h1>
+                    <h1 className="text-3xl font-display font-bold tracking-tighter">FEROCIOUS<span className="text-primary">TECH</span></h1>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">Precision Engineering & QC Hub</p>
                   </div>
                 </div>
@@ -1236,7 +1237,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
         </DialogContent>
       </Dialog>
 
-      {/* High-Fidelity Fullscreen Fit-to-Screen Viewer */}
+      {/* Fit-to-Screen Viewer */}
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
         <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col transition-all duration-500">
           <div className="relative w-full h-full flex flex-col">
@@ -1265,7 +1266,7 @@ export function QualityManagement({ orders, users = [], vendors = [], onUpdateSt
               </div>
             </div>
             <div className="p-4 bg-slate-900/80 backdrop-blur-md border-t border-white/10 text-center shrink-0">
-              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Proprietary Matrix Data • Jayasimha Precision • Plant Control v2.4</p>
+              <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.5em] animate-pulse">Proprietary Matrix Data • Ferocious Tech • Plant Control v2.4</p>
             </div>
           </div>
         </DialogContent>

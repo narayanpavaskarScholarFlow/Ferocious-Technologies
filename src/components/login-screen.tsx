@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -71,7 +72,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
         onLogin(loginIdentity);
         toast({
           title: "Access Granted",
-          description: `Welcome back, ${loginIdentity}. Jayasimha Matrix initialized.`
+          description: `Welcome back, ${loginIdentity}. Ferocious Matrix initialized.`
         });
       } else {
         toast({
@@ -121,7 +122,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
           </div>
           <div className="space-y-2">
             <h1 className="text-6xl font-display font-bold text-[#001F3D] tracking-tighter uppercase flex items-center gap-2 justify-center">
-              JAYASIMHA<span className="text-primary">PRECISION</span>
+              FEROCIOUS<span className="text-primary">TECH</span>
             </h1>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.6em] ml-2">Industrial Command Gateway</p>
           </div>
@@ -229,7 +230,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Registered Node Email</Label>
                   <div className="relative group/input z-50">
                     <Input 
-                      placeholder="e.g. admin@jayasimha.tech" 
+                      placeholder="e.g. admin@ferocious.tech" 
                       className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner relative z-50"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
@@ -250,7 +251,7 @@ export function LoginScreen({ onLogin, users }: LoginScreenProps) {
                 </Button>
                 <Button 
                   type="button"
-                  disabled={isLoading || !resetEmail}
+                  disabled={isLoading}
                   onClick={handleResetRequest}
                   className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 relative z-50"
                 >

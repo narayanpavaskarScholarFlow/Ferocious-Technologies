@@ -69,7 +69,8 @@ import {
   Kanban,
   PackageCheck,
   Maximize2,
-  Trash2
+  Trash2,
+  Globe
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -89,6 +90,7 @@ const THEME_COLORS = [
 
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
+  { id: 'external-matrix', label: 'Integrated Hub', category: 'Strategic Hub', icon: Globe },
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
   { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },

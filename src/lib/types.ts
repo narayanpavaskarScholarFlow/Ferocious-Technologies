@@ -71,7 +71,8 @@ export type ViewType =
   | 'manpower'
   | 'salary'
   | 'team-matrix'
-  | 'delivery';
+  | 'delivery'
+  | 'external-matrix';
 
 export interface SubTask {
   id: string;

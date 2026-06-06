@@ -57,7 +57,8 @@ import {
   Kanban,
   Edit3,
   Trash2,
-  PackageCheck
+  PackageCheck,
+  Globe
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -66,6 +67,7 @@ import { cn } from '@/lib/utils';
 
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
   { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
+  { id: 'external-matrix', label: 'Integrated Hub', category: 'Strategic Hub', icon: Globe },
   { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
   { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },

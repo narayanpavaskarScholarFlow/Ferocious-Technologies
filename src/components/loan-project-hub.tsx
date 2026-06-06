@@ -29,7 +29,9 @@ import {
   Cpu,
   Save,
   Upload,
-  BarChart3
+  BarChart3,
+  Box,
+  Tags
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -47,8 +49,17 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import Image from 'next/image';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
+
+interface ProprietaryProduct {
+  id: string;
+  name: string;
+  market: string;
+  price: string;
+  imageUrl: string;
+}
 
 export function LoanProjectHub() {
   const { toast } = useToast();
@@ -73,9 +84,23 @@ export function LoanProjectHub() {
   });
 
   // 02. Product Line State
-  const [proprietaryProducts, setProprietaryProducts] = useState([
-    { id: '1', name: 'Precision Spindle Housings', market: 'Automotive' },
+  const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
+    { 
+      id: '1', 
+      name: 'Precision Curved Conduit Connector', 
+      market: 'Electrical / Construction', 
+      price: '45.00',
+      imageUrl: 'https://picsum.photos/seed/conduit/600/400' 
+    },
+    { 
+      id: '2', 
+      name: 'VMC Machined Engine Plate', 
+      market: 'Automotive Tier 1', 
+      price: '1,800.00',
+      imageUrl: 'https://picsum.photos/seed/engineplate/600/400' 
+    },
   ]);
+
   const [services, setServices] = useState([
     { id: '1', name: 'VMC Custom Machining', capacity: '2000 hours/year' },
     { id: '2', name: 'Mould Design & Fabrication', capacity: '12 moulds/year' },
@@ -101,8 +126,20 @@ export function LoanProjectHub() {
     { month: 'Month 4', rev: financials.projectedMonthlyRevenue * 1.1, exp: financials.projectedMonthlyExpense },
   ], [financials]);
 
-  const handleAddProduct = () => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '' }]);
+  const handleAddProduct = () => setProprietaryProducts([...proprietaryProducts, { 
+    id: Date.now().toString(), 
+    name: '', 
+    market: '', 
+    price: '0.00', 
+    imageUrl: 'https://picsum.photos/seed/default/600/400' 
+  }]);
   const handleAddService = () => setServices([...services, { id: Date.now().toString(), name: '', capacity: '' }]);
+
+  const updateProduct = (idx: number, field: keyof ProprietaryProduct, value: string) => {
+    const newP = [...proprietaryProducts];
+    newP[idx] = { ...newP[idx], [field]: value };
+    setProprietaryProducts(newP);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20">
@@ -113,7 +150,7 @@ export function LoanProjectHub() {
             Bank Loan Strategy Protocol
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D]">
-            Project <span className="text-slate-400 font-medium">Report Architect</span>
+            Project <span className="text-slate-400 font-medium">Architect</span>
           </h2>
           <p className="text-muted-foreground font-medium uppercase text-[10px] tracking-widest">Generating high-fidelity feasibility studies for financial institutions.</p>
         </div>
@@ -140,7 +177,7 @@ export function LoanProjectHub() {
             03. Financials
           </TabsTrigger>
           <TabsTrigger value="visuals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
-            04. Graphical Matrix
+            04. Design Matrix
           </TabsTrigger>
           <TabsTrigger value="display" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">
             05. Final Preview
@@ -198,31 +235,43 @@ export function LoanProjectHub() {
         </TabsContent>
 
         <TabsContent value="products" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 print:hidden">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div className="grid grid-cols-1 gap-8">
               <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                  <div className="flex justify-between items-center border-l-4 border-primary pl-6">
                     <div>
-                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Products</h3>
-                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">IP owned by the firm for market introduction.</p>
+                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial items designed and manufactured for market introduction.</p>
                     </div>
                     <Button variant="ghost" size="sm" className="h-10 px-4 rounded-xl text-primary font-bold text-[9px] uppercase hover:bg-primary/5" onClick={handleAddProduct}>
-                       <Plus className="h-4 w-4 mr-2" /> Add Item
+                       <Plus className="h-4 w-4 mr-2" /> Append New Item
                     </Button>
                  </div>
-                 <div className="space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {proprietaryProducts.map((p, idx) => (
-                       <div key={p.id} className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl group">
-                          <Input placeholder="Product Name..." className="bg-white border-none h-12 text-xs font-bold" value={p.name} onChange={(e) => {
-                             const newP = [...proprietaryProducts];
-                             newP[idx].name = e.target.value;
-                             setProprietaryProducts(newP);
-                          }} />
-                          <Input placeholder="Target Market..." className="bg-white border-none h-12 text-xs font-bold" value={p.market} onChange={(e) => {
-                             const newP = [...proprietaryProducts];
-                             newP[idx].market = e.target.value;
-                             setProprietaryProducts(newP);
-                          }} />
-                          <Button variant="ghost" size="icon" className="h-12 w-12 text-slate-300 hover:text-red-500" onClick={() => setProprietaryProducts(proprietaryProducts.filter(i => i.id !== p.id))}><Trash2 className="h-4 w-4" /></Button>
+                       <div key={p.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl flex flex-col gap-6 group hover:border-primary/20 transition-all">
+                          <div className="flex gap-4">
+                             <div className="h-24 w-24 rounded-2xl overflow-hidden border border-white shadow-md relative shrink-0">
+                                <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
+                             </div>
+                             <div className="flex-1 space-y-3">
+                                <Input placeholder="Product Name..." className="bg-white border-none h-11 text-xs font-bold" value={p.name} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
+                                <Input placeholder="Target Market Sector..." className="bg-white border-none h-11 text-[10px] font-medium" value={p.market} onChange={(e) => updateProduct(idx, 'market', e.target.value)} />
+                             </div>
+                          </div>
+                          <div className="flex gap-4 items-end">
+                             <div className="flex-1 space-y-2">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Unit Price (₹)</Label>
+                                <div className="relative">
+                                   <Input placeholder="0.00" className="bg-white border-none h-11 text-sm font-display font-bold pl-8" value={p.price} onChange={(e) => updateProduct(idx, 'price', e.target.value)} />
+                                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                                </div>
+                             </div>
+                             <div className="flex-1 space-y-2">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Image Artifact URL</Label>
+                                <Input placeholder="URL..." className="bg-white border-none h-11 text-[9px] font-code" value={p.imageUrl} onChange={(e) => updateProduct(idx, 'imageUrl', e.target.value)} />
+                             </div>
+                             <Button variant="ghost" size="icon" className="h-11 w-11 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => setProprietaryProducts(proprietaryProducts.filter(i => i.id !== p.id))}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
                        </div>
                     ))}
                  </div>
@@ -231,11 +280,11 @@ export function LoanProjectHub() {
               <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                  <div className="flex justify-between items-center border-l-4 border-accent pl-6">
                     <div>
-                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services</h3>
-                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">B2B Job-work and tool-room manufacturing nodes.</p>
+                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">B2B Job-work and tool-room manufacturing capacities.</p>
                     </div>
                     <Button variant="ghost" size="sm" className="h-10 px-4 rounded-xl text-accent font-bold text-[9px] uppercase hover:bg-accent/5" onClick={handleAddService}>
-                       <Plus className="h-4 w-4 mr-2" /> Add Service
+                       <Plus className="h-4 w-4 mr-2" /> Add Service Node
                     </Button>
                  </div>
                  <div className="space-y-4">
@@ -246,12 +295,12 @@ export function LoanProjectHub() {
                              newS[idx].name = e.target.value;
                              setServices(newS);
                           }} />
-                          <Input placeholder="Annual Capacity..." className="bg-white border-none h-12 text-xs font-bold" value={s.capacity} onChange={(e) => {
+                          <Input placeholder="Annual Capacity Output..." className="bg-white border-none h-12 text-xs font-bold" value={s.capacity} onChange={(e) => {
                              const newS = [...services];
                              newS[idx].capacity = e.target.value;
                              setServices(newS);
                           }} />
-                          <Button variant="ghost" size="icon" className="h-12 w-12 text-slate-300 hover:text-red-500" onClick={() => setServices(services.filter(i => i.id !== s.id))}><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-12 w-12 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => setServices(services.filter(i => i.id !== s.id))}><Trash2 className="h-4 w-4" /></Button>
                        </div>
                     ))}
                  </div>
@@ -267,21 +316,21 @@ export function LoanProjectHub() {
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Fixed Capital (Machinery/Land)</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10" value={financials.capitalInvestment} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
                           <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                        </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10" value={financials.workingCapital} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
                           <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                        </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proj. Monthly Revenue</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10" value={financials.projectedMonthlyRevenue} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
                           <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-300" />
                        </div>
                     </div>
@@ -335,14 +384,14 @@ export function LoanProjectHub() {
               <div className="p-8 bg-white rounded-3xl shadow-xl mb-6 group-hover:scale-110 transition-transform"><ImageIcon className="h-16 w-16 text-primary" /></div>
               <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Visual Artifact Registry</h3>
               <p className="text-xs text-slate-400 mt-2 max-w-sm">Upload high-resolution photography of machining assets, existing products, and strategic workshop layouts for bank inspection.</p>
-              <Button className="mt-8 h-12 px-10 rounded-xl bg-[#001F3D] font-bold uppercase text-[10px] tracking-widest gap-3">
+              <Button className="mt-8 h-12 px-10 rounded-xl bg-[#001F3D] font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl">
                  <Upload className="h-4 w-4" /> Initialize Upload Protocol
               </Button>
            </Card>
         </TabsContent>
 
         <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:p-0">
-           <Card className="p-16 md:p-24 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] max-w-[900px] mx-auto space-y-16 print:shadow-none print:border-none print:max-w-none print:p-0">
+           <Card className="p-16 md:p-20 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] max-w-[1000px] mx-auto space-y-16 print:shadow-none print:border-none print:max-w-none print:p-0">
               {/* Cover Page */}
               <div className="text-center space-y-8 border-b-2 border-[#001F3D] pb-16">
                  <div className="flex justify-center mb-10">
@@ -356,8 +405,8 @@ export function LoanProjectHub() {
                  </div>
               </div>
 
-              {/* Identity Ledger */}
-              <div className="grid grid-cols-2 gap-12 pt-10">
+              {/* Summary Ledger */}
+              <div className="grid grid-cols-2 gap-12">
                  <div className="space-y-6">
                     <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Firm Profile</h4>
                     <div className="space-y-4">
@@ -376,30 +425,49 @@ export function LoanProjectHub() {
                  </div>
               </div>
 
-              {/* Operations Matrix */}
+              {/* Proprietary Product Catalog */}
               <div className="space-y-8">
-                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Manufacturing Infrastructure</h4>
-                 <div className="grid grid-cols-2 gap-8">
-                    <div className="p-8 bg-slate-900 text-white rounded-[2.5rem] relative overflow-hidden">
-                       <div className="absolute top-0 right-0 p-4 opacity-10"><Factory className="h-10 w-10" /></div>
-                       <p className="text-[9px] font-bold uppercase text-white/40 mb-4">Core Products</p>
-                       <ul className="space-y-3">
-                          {proprietaryProducts.map(p => <li key={p.id} className="text-xs font-bold uppercase flex items-center gap-3"><div className="h-1.5 w-1.5 rounded-full bg-primary" /> {p.name}</li>)}
-                       </ul>
-                    </div>
-                    <div className="p-8 bg-[#001F3D] text-white rounded-[2.5rem] relative overflow-hidden">
-                       <div className="absolute top-0 right-0 p-4 opacity-10"><Cpu className="h-10 w-10" /></div>
-                       <p className="text-[9px] font-bold uppercase text-white/40 mb-4">Industrial Services</p>
-                       <ul className="space-y-3">
-                          {services.map(s => <li key={s.id} className="text-xs font-bold uppercase flex items-center gap-3"><div className="h-1.5 w-1.5 rounded-full bg-accent" /> {s.name}</li>)}
-                       </ul>
-                    </div>
+                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Proprietary Product Portfolio</h4>
+                 <div className="grid grid-cols-2 gap-6">
+                    {proprietaryProducts.map(p => (
+                       <Card key={p.id} className="p-6 bg-white border border-slate-100 rounded-3xl flex gap-6 items-center shadow-sm">
+                          <div className="h-24 w-24 rounded-2xl overflow-hidden relative border shadow-inner shrink-0">
+                             <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
+                          </div>
+                          <div className="flex-1 space-y-2">
+                             <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-tight line-clamp-1">{p.name || 'Undefined Node'}</h5>
+                             <div className="flex items-center gap-2">
+                                <Box className="h-3 w-3 text-slate-300" />
+                                <span className="text-[10px] text-slate-400 font-bold uppercase">{p.market}</span>
+                             </div>
+                             <div className="flex items-center gap-2 pt-2">
+                                <Tags className="h-3 w-3 text-primary" />
+                                <span className="text-sm font-display font-bold text-primary">₹ {p.price} / unit</span>
+                             </div>
+                          </div>
+                       </Card>
+                    ))}
+                 </div>
+              </div>
+
+              {/* Industrial Services Matrix */}
+              <div className="space-y-8">
+                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent border-l-4 border-accent pl-4">Manufacturing Service Nodes</h4>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {services.map(s => (
+                       <div key={s.id} className="p-6 bg-[#001F3D] text-white rounded-3xl relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Cpu className="h-10 w-10" /></div>
+                          <p className="text-[8px] font-bold uppercase text-white/40 mb-2">Service ID: {s.id}</p>
+                          <h5 className="text-sm font-bold uppercase tracking-tight">{s.name || 'Protocol Neutral'}</h5>
+                          <p className="text-[10px] font-bold text-primary mt-3 uppercase tracking-widest">Capacity: {s.capacity}</p>
+                       </div>
+                    ))}
                  </div>
               </div>
 
               <div className="pt-24 border-t border-slate-100 flex justify-between items-end italic opacity-40 text-[9px] font-bold uppercase tracking-widest">
                  <span>Ferocious Tech Strategy Protocol</span>
-                 <span>Generated via Hub Matrix v2.4</span>
+                 <span>Generated via Architect Matrix v2.4</span>
               </div>
            </Card>
         </TabsContent>

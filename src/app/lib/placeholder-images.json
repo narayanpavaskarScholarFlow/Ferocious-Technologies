@@ -36,6 +36,18 @@
       "description": "Double Column Milling Center",
       "imageUrl": "https://picsum.photos/seed/doublecol/600/400",
       "imageHint": "large milling machine"
+    },
+    {
+      "id": "conduit-connector",
+      "description": "Precision Curved Conduit Connector",
+      "imageUrl": "https://picsum.photos/seed/conduit/600/400",
+      "imageHint": "curved industrial pipe"
+    },
+    {
+      "id": "engine-plate",
+      "description": "VMC Machined Engine Plate",
+      "imageUrl": "https://picsum.photos/seed/engineplate/600/400",
+      "imageHint": "machined metal part"
     }
   ]
 }

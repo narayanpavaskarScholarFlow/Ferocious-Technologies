@@ -420,6 +420,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       entrepreneurPct,
       emi,
       monthlyOpEx,
+      totalMonthlyOutflow: monthlyOpEx + emi,
       schedule,
       targetTurnover,
       prodTarget: targetTurnover * prodRatio,
@@ -584,7 +585,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Educational Qualification</Label>
                           <Input placeholder="e.g. B.E. Mechanical / MBA" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.qualification || ''} onChange={(e)=>updateField('qualification', e.target.value)} />
@@ -818,8 +819,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          </div>
                        ))}
                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Monthly OpEx</Label>
-                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={calculations.monthlyOpEx.toLocaleString()} />
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Monthly EMI</Label>
+                          <Input readOnly className="h-12 bg-primary/5 text-primary border-none rounded-xl font-display font-bold" value={calculations.emi.toLocaleString(undefined, {maximumFractionDigits: 0})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Monthly Outflow</Label>
+                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={calculations.totalMonthlyOutflow.toLocaleString(undefined, {maximumFractionDigits: 0})} />
                        </div>
                     </div>
                     <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">

@@ -34,7 +34,13 @@ import {
   Layers,
   ZoomIn,
   ZoomOut,
-  Maximize
+  Maximize,
+  Calculator,
+  Percent,
+  Clock,
+  Coins,
+  CreditCard,
+  Factory
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -166,6 +172,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     workingCapital: 2000000,
     projectedMonthlyRevenue: 1500000,
     projectedMonthlyExpense: 800000,
+    // Granular Loan Details
+    loanROI: 9.5,
+    loanTenure: 60,
+    loanMoratorium: 6,
+    // Monthly Expense Breakup
+    expenseRent: 150000,
+    expenseSalaries: 400000,
+    expensePower: 100000,
+    expenseMaintenance: 50000,
+    expenseConsumables: 100000
   });
 
   // Load saved data when available
@@ -208,6 +224,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const financialChartData = useMemo(() => [
     { name: 'Fixed Assets', value: financials.capitalInvestment || 0 },
     { name: 'Working Cap', value: financials.workingCapital || 0 },
+  ], [financials]);
+
+  const expenseChartData = useMemo(() => [
+    { name: 'Rent', value: financials.expenseRent || 0 },
+    { name: 'Salaries', value: financials.expenseSalaries || 0 },
+    { name: 'Power/Util', value: financials.expensePower || 0 },
+    { name: 'Maint.', value: financials.expenseMaintenance || 0 },
+    { name: 'Consumables', value: financials.expenseConsumables || 0 },
   ], [financials]);
 
   const pnlChartData = useMemo(() => [
@@ -641,71 +665,124 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
         <TabsContent value="financials" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <Card className="lg:col-span-4 p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
-                 <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-primary pl-4">Valuation Matrix</h3>
-                 <div className="space-y-8">
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Fixed Capital (Machinery/Land)</Label>
-                       <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment || 0} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
-                          <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+              <div className="lg:col-span-4 space-y-8">
+                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                   <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-primary pl-4">Valuation Matrix</h3>
+                   <div className="space-y-6">
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Fixed Capital (Machinery/Land)</Label>
+                         <div className="relative">
+                            <Input type="number" className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment || 0} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
+                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve</Label>
+                         <div className="relative">
+                            <Input type="number" className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital || 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
+                            <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proj. Monthly Revenue</Label>
+                         <div className="relative">
+                            <Input type="number" className="h-14 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue || 0} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
+                            <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-300" />
+                         </div>
+                      </div>
+                   </div>
+                </Card>
+
+                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                   <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-accent pl-4">LOAN Matrix</h3>
+                   <div className="space-y-6">
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Interest Rate (% p.a.)</Label>
+                         <div className="relative">
+                            <Input type="number" step="0.1" className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.loanROI || 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} />
+                            <Percent className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Tenure (Months)</Label>
+                         <div className="relative">
+                            <Input type="number" className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.loanTenure || 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} />
+                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Moratorium Window (Months)</Label>
+                         <div className="relative">
+                            <Input type="number" className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.loanMoratorium || 0} onChange={(e)=>setFinancials({...financials, loanMoratorium: Number(e.target.value)})} />
+                            <Coins className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                         </div>
+                      </div>
+                   </div>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-8 space-y-8">
+                 <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                    <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-emerald-500 pl-4">Monthly Expense Ledger</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Rent / Lease</Label>
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold shadow-inner" value={financials.expenseRent || 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Manpower / Salaries</Label>
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold shadow-inner" value={financials.expenseSalaries || 0} onChange={(e)=>setFinancials({...financials, expenseSalaries: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Power & Utilities</Label>
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold shadow-inner" value={financials.expensePower || 0} onChange={(e)=>setFinancials({...financials, expensePower: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Machine Maintenance</Label>
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold shadow-inner" value={financials.expenseMaintenance || 0} onChange={(e)=>setFinancials({...financials, expenseMaintenance: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Consumables / Tooling</Label>
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold shadow-inner" value={financials.expenseConsumables || 0} onChange={(e)=>setFinancials({...financials, expenseConsumables: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Cumulative Monthly Ex.</Label>
+                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold shadow-inner" value={(financials.expenseRent + financials.expenseSalaries + financials.expensePower + financials.expenseMaintenance + financials.expenseConsumables).toLocaleString()} />
                        </div>
                     </div>
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve</Label>
-                       <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital || 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
-                          <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
-                       </div>
-                    </div>
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proj. Monthly Revenue</Label>
-                       <div className="relative">
-                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue || 0} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
-                          <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-300" />
-                       </div>
-                    </div>
+                 </Card>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col items-center gap-6">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">OpEx Breakup (MTD)</h4>
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie data={expenseChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                    {expenseChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }} />
+                              </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                    </Card>
+
+                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col gap-6">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Revenue Projections (90-Day Sync)</h4>
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={pnlChartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                <YAxis hide />
+                                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none' }} />
+                                <Bar dataKey="rev" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="exp" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                    </Card>
                  </div>
-              </Card>
-
-              <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col items-center gap-6">
-                    <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Asset Allocation Matrix</h4>
-                    <div className="h-64 w-full">
-                       <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                             <Pie data={financialChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                {financialChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
-                             </Pie>
-                             <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }} />
-                          </PieChart>
-                       </ResponsiveContainer>
-                    </div>
-                    <div className="flex gap-6">
-                       {financialChartData.map((item, i) => (
-                          <div key={item.name} className="flex items-center gap-2">
-                             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i] }} />
-                             <span className="text-[9px] font-bold uppercase text-slate-400">{item.name}</span>
-                          </div>
-                       ))}
-                    </div>
-                 </Card>
-
-                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col gap-6">
-                    <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Revenue Projections (90-Day Sync)</h4>
-                    <div className="h-64 w-full">
-                       <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={pnlChartData}>
-                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
-                             <YAxis hide />
-                             <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none' }} />
-                             <Bar dataKey="rev" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                             <Bar dataKey="exp" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                       </ResponsiveContainer>
-                    </div>
-                 </Card>
               </div>
            </div>
         </TabsContent>
@@ -1022,6 +1099,49 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               <div className="flex justify-center gap-10">
                                  <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#001F3D]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Revenue</span></div>
                                  <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#f43f5e]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Expense</span></div>
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* LOAN & EXPENSE DETAILS GRID */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
+                           <div className="space-y-8">
+                              <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent border-l-4 border-accent pl-6">LOAN Servicing Matrix</h4>
+                              <div className="p-8 border border-slate-200 rounded-[2rem] space-y-6">
+                                 <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Projected ROI</span>
+                                    <span className="text-sm font-bold text-[#001F3D]">{financials.loanROI}% p.a.</span>
+                                 </div>
+                                 <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Tenure Node</span>
+                                    <span className="text-sm font-bold text-[#001F3D]">{financials.loanTenure} Months</span>
+                                 </div>
+                                 <div className="flex justify-between items-center py-3">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Moratorium Window</span>
+                                    <span className="text-sm font-bold text-[#001F3D]">{financials.loanMoratorium} Months</span>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="space-y-8">
+                              <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-600 border-l-4 border-emerald-500 pl-6">Monthly Operational Expense (OpEx)</h4>
+                              <div className="p-8 border border-slate-200 rounded-[2rem] space-y-4">
+                                 {[
+                                    { label: 'Infrastructure / Rent', val: financials.expenseRent },
+                                    { label: 'Personnel / Salaries', val: financials.expenseSalaries },
+                                    { label: 'Utilities / Power', val: financials.expensePower },
+                                    { label: 'Maintenance / Service', val: financials.expenseMaintenance },
+                                    { label: 'Consumables / Tooling', val: financials.expenseConsumables },
+                                 ].map((ex) => (
+                                    <div key={ex.label} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-none">
+                                       <span className="text-[10px] font-medium text-slate-500 uppercase">{ex.label}</span>
+                                       <span className="text-sm font-bold text-[#001F3D]">₹ {ex.val.toLocaleString()}</span>
+                                    </div>
+                                 ))}
+                                 <div className="pt-4 mt-2 border-t-2 border-slate-100 flex justify-between items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase">Total Monthly OpEx</span>
+                                    <span className="text-lg font-display font-bold text-emerald-600">₹ {(financials.expenseRent + financials.expenseSalaries + financials.expensePower + financials.expenseMaintenance + financials.expenseConsumables).toLocaleString()}</span>
+                                 </div>
                               </div>
                            </div>
                         </div>

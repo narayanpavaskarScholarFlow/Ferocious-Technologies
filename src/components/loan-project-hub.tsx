@@ -348,8 +348,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }, 0);
 
     const totalPotential = prodPotential + svcPotential || 1;
-    const prodRatio = prodPotential / totalPotential;
-    const svcRatio = svcPotential / totalPotential;
+    const prodRatio = totalPotential > 0 ? prodPotential / totalPotential : 0;
+    const svcRatio = totalPotential > 0 ? svcPotential / totalPotential : 0;
 
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
@@ -417,7 +417,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         interest: yearlyInterest,
         emi: yearlyEMI,
         profit: yearlyNetProfit,
-        margin: ((yearlyNetProfit / yearlyRevenue) * 100).toFixed(1)
+        margin: yearlyRevenue > 0 ? ((yearlyNetProfit / yearlyRevenue) * 100).toFixed(1) : 0
       });
     }
 
@@ -566,6 +566,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter / Applicant Node</Label>
                           <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName || ''} onChange={(e)=>updateField('promoterName', e.target.value)} />
                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Project Abstract</Label>
+                       <Textarea className="bg-slate-50 border-none min-h-[100px] text-xs font-medium rounded-2xl" value={foundationalData.aboutProject || ''} onChange={(e)=>updateField('aboutProject', e.target.value)} />
                     </div>
                  </div>
 
@@ -1001,7 +1006,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <div className="space-y-6 relative z-10">
                            <div className="flex justify-center mb-16">
                              <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl bg-white flex items-center justify-center p-4">
-                                <Image src={brandLogo} alt="Logo" fill className="object-contain p-4" data-ai-hint="lion technology logo" />
+                                <Image src={brandLogo || defaultBrandLogo} alt="Logo" fill className="object-contain p-4" data-ai-hint="lion technology logo" />
                              </div>
                            </div>
                            <div className="space-y-4">
@@ -1020,10 +1025,133 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         </div>
                      </div>
 
-                     {/* Section 04: Project Cost & Funding Matrix */}
+                     {/* Section 01: Project Narrative */}
+                     {(checklist.aboutProject || checklist.aboutUs) && (
+                       <div className="space-y-12 pt-20 page-break">
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Project Narrative</h3></div>
+                          <div className="grid grid-cols-1 gap-12">
+                             {checklist.aboutProject && (
+                               <div className="space-y-4">
+                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">About the Project</h4>
+                                  <p className="text-sm text-slate-500 leading-relaxed text-justify indent-8">{foundationalData.aboutProject}</p>
+                               </div>
+                             )}
+                             {checklist.aboutUs && (
+                               <div className="space-y-4">
+                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Company Profile</h4>
+                                  <p className="text-sm text-slate-500 leading-relaxed text-justify indent-8">{foundationalData.aboutUs}</p>
+                               </div>
+                             )}
+                          </div>
+                       </div>
+                     )}
+
+                     {/* Section 02: Vision & Mission */}
+                     {(checklist.vision || checklist.mission) && (
+                       <div className="space-y-12 pt-20 page-break">
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Strategic Roadmap</h3></div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                             {checklist.vision && (
+                               <div className="p-10 bg-slate-50 rounded-[2.5rem] border border-slate-200 relative overflow-hidden">
+                                  <Compass className="absolute -top-4 -right-4 h-24 w-24 text-[#001F3D]/5" />
+                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary mb-6">Our Vision</h4>
+                                  <p className="text-sm text-[#001F3D] font-bold leading-relaxed">{foundationalData.vision}</p>
+                               </div>
+                             )}
+                             {checklist.mission && (
+                               <div className="p-10 bg-slate-50 rounded-[2.5rem] border border-slate-200 relative overflow-hidden">
+                                  <Target className="absolute -top-4 -right-4 h-24 w-24 text-[#001F3D]/5" />
+                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary mb-6">Our Mission</h4>
+                                  <p className="text-sm text-[#001F3D] font-bold leading-relaxed">{foundationalData.mission}</p>
+                               </div>
+                             )}
+                          </div>
+                       </div>
+                     )}
+
+                     {/* Section 03: Promoter Pedigree */}
+                     {checklist.entrepreneurDetails && (
+                       <div className="space-y-12 pt-20 page-break">
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter Leadership Matrix</h3></div>
+                          <div className="p-10 bg-white border-2 border-slate-100 rounded-[3rem] space-y-10">
+                             <div className="flex items-center gap-8 border-b border-slate-50 pb-10">
+                                <div className="h-24 w-24 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-300"><UserCircle className="h-12 w-12" /></div>
+                                <div className="space-y-2">
+                                   <h4 className="text-3xl font-display font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</h4>
+                                   <div className="flex gap-4">
+                                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-4 py-1 text-[9px] uppercase tracking-widest">{foundationalData.qualification}</Badge>
+                                      <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 font-bold px-4 py-1 text-[9px] uppercase tracking-widest">{foundationalData.experience}</Badge>
+                                   </div>
+                                </div>
+                             </div>
+                             <div className="space-y-4">
+                                <p className="text-sm text-slate-500 leading-relaxed text-justify indent-8">{foundationalData.promoterNarrative}</p>
+                             </div>
+                             <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-50">
+                                <div><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">GST Identification</p><p className="text-xs font-bold text-slate-700">{foundationalData.gstNumber}</p></div>
+                                <div><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">MSME Registry</p><p className="text-xs font-bold text-slate-700">{foundationalData.msmeNumber}</p></div>
+                             </div>
+                          </div>
+                       </div>
+                     )}
+
+                     {/* Catalogues Section */}
+                     {(checklist.productLine || checklist.services) && (
+                       <div className="space-y-16 pt-20 page-break">
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
+                          
+                          {checklist.productLine && proprietaryProducts.length > 0 && (
+                            <div className="space-y-8">
+                               <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Proprietary Products</h4>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                  {proprietaryProducts.map(p => (
+                                    <div key={p.id} className="flex gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                                       <div className="h-20 w-20 rounded-2xl overflow-hidden bg-white border border-slate-100 relative shrink-0">
+                                          {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-8 w-8 text-slate-200 m-auto mt-6" />}
+                                       </div>
+                                       <div className="space-y-2">
+                                          <p className="text-sm font-bold text-[#001F3D] uppercase truncate">{p.name}</p>
+                                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Market: {p.market}</p>
+                                          <div className="flex gap-4 pt-2">
+                                             <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Unit Price</p><p className="text-[11px] font-bold text-[#001F3D]">₹ {p.price}</p></div>
+                                             <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Target Qty</p><p className="text-[11px] font-bold text-[#001F3D]">{p.annualTargetQty}</p></div>
+                                          </div>
+                                       </div>
+                                    </div>
+                                  ))}
+                               </div>
+                            </div>
+                          )}
+
+                          {checklist.services && industrialServices.length > 0 && (
+                            <div className="space-y-8 pt-10">
+                               <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent border-l-4 border-accent pl-6">Technical Services</h4>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                  {industrialServices.map(s => (
+                                    <div key={s.id} className="flex gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                                       <div className="h-20 w-20 rounded-2xl overflow-hidden bg-white border border-slate-100 relative shrink-0">
+                                          {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-8 w-8 text-slate-200 m-auto mt-6" />}
+                                       </div>
+                                       <div className="space-y-2">
+                                          <p className="text-sm font-bold text-[#001F3D] uppercase truncate">{s.name}</p>
+                                          <p className="text-[9px] text-slate-400 font-medium line-clamp-2 leading-snug">{s.description}</p>
+                                          <div className="flex gap-4 pt-2">
+                                             <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Hourly Rate</p><p className="text-[11px] font-bold text-[#001F3D]">₹ {s.price}</p></div>
+                                             <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Annual Load</p><p className="text-[11px] font-bold text-[#001F3D]">{s.annualTargetQty}</p></div>
+                                          </div>
+                                       </div>
+                                    </div>
+                                  ))}
+                               </div>
+                            </div>
+                          )}
+                       </div>
+                     )}
+
+                     {/* Section 05: Project Cost & Funding Matrix */}
                      {checklist.oneTimeInvestment && (
                        <div className="space-y-16 pt-20 page-break">
-                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Project Cost & Funding Architecture</h3></div>
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Project Cost & Funding Architecture</h3></div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                              <div className="space-y-8">
@@ -1076,10 +1204,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 05: 5-Year Growth Matrix */}
+                     {/* Section 06: 5-Year Growth Matrix */}
                      {checklist.financialProjections && (
                        <div className="space-y-16 pt-20 page-break">
-                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">5-Year Growth Projections</h3></div>
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">5-Year Growth Projections</h3></div>
                           <div className="border border-slate-200 rounded-[2rem] overflow-hidden">
                              <table className="w-full text-left">
                                 <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-6 font-bold text-[9px] uppercase">Timeline Node</th><th className="p-6 font-bold text-[9px] uppercase">Revenue (₹)</th><th className="p-6 font-bold text-[9px] uppercase">OpEx (₹)</th><th className="p-6 font-bold text-[9px] uppercase">Loan Servicing (₹)</th><th className="p-6 font-bold text-[9px] uppercase">Net Profit (₹)</th><th className="p-6 font-bold text-[9px] uppercase text-center">Margin</th></tr></thead>
@@ -1110,10 +1238,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 06: Amortization Schedule */}
+                     {/* Section 07: Amortization Schedule */}
                      {checklist.amortizationSchedule && (
                        <div className="space-y-16 pt-20 page-break">
-                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Loan Repayment Matrix</h3></div>
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Loan Repayment Matrix</h3></div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                              <div className="space-y-8">
                                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Year 1 Recovery Protocol</h4>
@@ -1128,23 +1256,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                    </table>
                                 </div>
                              </div>
-                             <div className="space-y-8">
-                                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Target Turnover Structure</h4>
-                                <div className="p-8 bg-slate-900 text-white rounded-[2rem] space-y-8">
-                                   <div className="space-y-2"><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Monthly Yield Mandate</p><p className="text-3xl font-display font-bold">₹ {calculations.targetTurnover.toLocaleString(undefined, {maximumFractionDigits: 0})}</p></div>
-                                   <div className="pt-8 border-t border-white/10 space-y-6">
-                                      <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Proprietary Products (Split)</span><span className="text-sm font-bold">₹ {calculations.prodTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-                                      <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Industrial Services (Split)</span><span className="text-sm font-bold">₹ {calculations.svcTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-                                   </div>
-                                </div>
-                             </div>
+                             {checklist.turnoverAnalysis && (
+                               <div className="space-y-8">
+                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Target Turnover Structure</h4>
+                                  <div className="p-8 bg-slate-900 text-white rounded-[2rem] space-y-8">
+                                     <div className="space-y-2"><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Monthly Yield Mandate</p><p className="text-3xl font-display font-bold">₹ {calculations.targetTurnover.toLocaleString(undefined, {maximumFractionDigits: 0})}</p></div>
+                                     <div className="pt-8 border-t border-white/10 space-y-6">
+                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Proprietary Products (Split)</span><span className="text-sm font-bold">₹ {calculations.prodTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Industrial Services (Split)</span><span className="text-sm font-bold">₹ {calculations.svcTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+                                     </div>
+                                  </div>
+                               </div>
+                             )}
                           </div>
                        </div>
                      )}
 
                      {/* Footer */}
                      <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
-                        <div className="space-y-4 text-left"><div className="h-16 w-16 bg-white rounded-2xl relative p-2 shadow-xl"><Image src={brandLogo} alt="Logo" fill className="object-contain p-2" /></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">End of Strategic Report</p><p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_STRAT_SYNC_2.4</p></div></div>
+                        <div className="space-y-4 text-left"><div className="h-16 w-16 bg-white rounded-2xl relative p-2 shadow-xl"><Image src={brandLogo || defaultBrandLogo} alt="Logo" fill className="object-contain p-2" /></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">End of Strategic Report</p><p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_STRAT_SYNC_2.4</p></div></div>
                         <div className="text-right space-y-8 w-full md:w-80"><div className="space-y-12"><div className="h-[1px] bg-slate-200 w-full" /><div className="space-y-1"><p className="text-xs font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</p><p className="text-[9px] font-bold text-slate-400 uppercase">Lead Strategist Node</p></div></div></div>
                      </div>
 

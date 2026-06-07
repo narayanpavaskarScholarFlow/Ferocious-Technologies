@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -217,9 +217,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     targetNetMargin: 20
   });
 
+  // Hydration and Overwrite prevention
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   // Load saved data when available
   useEffect(() => {
-    if (savedStrategy) {
+    if (savedStrategy && !isDataLoaded) {
       if (savedStrategy.foundationalData) {
         setFormData(prev => ({ ...prev, ...savedStrategy.foundationalData }));
       }
@@ -235,8 +238,39 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       if (savedStrategy.checklist) {
         setChecklist(prev => ({ ...prev, ...savedStrategy.checklist }));
       }
+      setIsDataLoaded(true);
     }
-  }, [savedStrategy]);
+  }, [savedStrategy, isDataLoaded]);
+
+  const handleSaveStrategy = useCallback((silent = false) => {
+    const data = {
+      foundationalData,
+      proprietaryProducts,
+      industrialServices,
+      financials,
+      checklist,
+      updatedAt: new Date().toISOString()
+    };
+    setDocumentNonBlocking(strategyRef, data, { merge: true });
+    
+    if (!silent) {
+      toast({ 
+        title: "Strategy Matrix Committed", 
+        description: "All financial nodes and schedules have been synchronized." 
+      });
+    }
+  }, [foundationalData, proprietaryProducts, industrialServices, financials, checklist, strategyRef, toast]);
+
+  // Auto-Save Debounce Protocol
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    
+    const timeout = setTimeout(() => {
+      handleSaveStrategy(true);
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+  }, [foundationalData, proprietaryProducts, industrialServices, financials, checklist, isDataLoaded, handleSaveStrategy]);
 
   // Financial Computations Engine
   const calculations = useMemo(() => {
@@ -387,22 +421,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     };
   }, [foundationalData.totalLoanRequirement, financials, proprietaryProducts, industrialServices]);
 
-  const handleSaveStrategy = () => {
-    const data = {
-      foundationalData,
-      proprietaryProducts,
-      industrialServices,
-      financials,
-      checklist,
-      updatedAt: new Date().toISOString()
-    };
-    setDocumentNonBlocking(strategyRef, data, { merge: true });
-    toast({ 
-      title: "Strategy Matrix Committed", 
-      description: "All financial nodes and schedules have been synchronized." 
-    });
-  };
-
   const handleAddProduct = () => setProprietaryProducts([...proprietaryProducts, { 
     id: Date.now().toString(), 
     name: '', 
@@ -485,7 +503,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </Button>
            <Button 
             className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
-            onClick={handleSaveStrategy}
+            onClick={() => handleSaveStrategy()}
            >
              <Save className="h-4 w-4" /> Commit Strategy
            </Button>
@@ -596,6 +614,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                     </div>
                  </div>
+
+                 <div className="pt-8 border-t border-slate-100 flex justify-end">
+                   <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={() => handleSaveStrategy()}>
+                     <Save className="h-4 w-4" /> Save Identity Node
+                   </Button>
+                 </div>
               </Card>
 
               <Card className="lg:col-span-4 p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative h-fit sticky top-24">
@@ -622,7 +646,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Items designed for market introduction.</p>
                  </div>
                  <div className="flex gap-4">
-                    <Button variant="outline" className="text-primary font-bold text-[9px] uppercase h-10 px-6 rounded-xl border-primary/20" onClick={handleSaveStrategy}>Save Matrix Nodes</Button>
+                    <Button variant="outline" className="text-primary font-bold text-[9px] uppercase h-10 px-6 rounded-xl border-primary/20" onClick={() => handleSaveStrategy()}>Save Matrix Nodes</Button>
                     <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={handleAddProduct}>+ Append Item</Button>
                  </div>
               </div>
@@ -659,7 +683,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Specialized technical operations for B2B fulfillment.</p>
                  </div>
-                 <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={handleAddService}>+ Append Service</Button>
+                 <div className="flex gap-4">
+                    <Button variant="outline" className="text-primary font-bold text-[9px] uppercase h-10 px-6 rounded-xl border-primary/20" onClick={() => handleSaveStrategy()}>Save Matrix Nodes</Button>
+                    <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={handleAddService}>+ Append Service</Button>
+                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  {industrialServices.map((s, idx) => (
@@ -872,6 +899,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        ))}
                     </div>
                  </Card>
+
+                 <div className="pt-8 border-t border-slate-100 flex justify-end">
+                   <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={() => handleSaveStrategy()}>
+                     <Save className="h-4 w-4" /> Save Financial Matrix
+                   </Button>
+                 </div>
 
                  <Card className="p-8 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden">
                    <div className="flex items-center justify-between mb-8">

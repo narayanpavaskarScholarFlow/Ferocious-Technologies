@@ -197,7 +197,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     { 
       id: 'S2', 
       name: 'Mould Design & Prototyping', 
-      description: 'End-to-end mould fabrication from DFM analysis to final polishing and testing.', 
+      description: 'End-to-end mould fabrication from Dfm analysis to final polishing and testing.', 
       price: '45,000.00',
       annualTargetQty: '24',
       imageUrl: 'https://picsum.photos/seed/edm/600/400'
@@ -221,7 +221,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investCivil: 1000000,
     investElectrical: 500000,
     investFurniture: 300000,
-    investPreOp: 200000,
     investSoftware: 200000,
     investSystem: 150000,
     investAdvance: 400000,
@@ -274,7 +273,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     // Total Project Cost: LOAN + Entrepreneur + Working Capital
     const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
     
-    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
+    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
 
     // EMI Scheduling
     const monthlyRate = (financials.loanROI / 100) / 12;
@@ -340,7 +339,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearTax = yearPBT > 0 ? yearPBT * 0.25 : 0;
       const yearPAT = yearPBT - yearTax;
       
-      const prevTNW = currentTNW;
       currentTNW += yearPAT * 0.8; // Assume 20% drawings
       const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
@@ -672,7 +670,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Rent</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseRent || 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Salary</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expensePersonnel || 0} onChange={(e)=>setFinancials({...financials, expensePersonnel: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-emerald-600">Total Monthly OpEx</Label><Input readOnly className="bg-emerald-50/50 border-none font-bold text-emerald-700 h-11" value={calculations.monthlyOpEx.toLocaleString()} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-emerald-600">Monthly EMI (Debt Service)</Label><Input readOnly className="bg-emerald-50/50 border-none font-bold text-emerald-700 h-11" value={calculations.emi.toLocaleString()} /></div>
                     </div>
                  </Card>
               </div>

@@ -54,7 +54,8 @@ import {
   Edit3,
   User,
   Star,
-  Maximize2
+  Maximize2,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -69,7 +70,8 @@ import {
   Line,
   AreaChart,
   Area,
-  Legend
+  Legend,
+  Cell
 } from 'recharts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
@@ -77,7 +79,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -207,9 +209,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanTenure: 60,
     loanMoratorium: 6,
     expenseRent: 150000,
+    expensePersonnel: 100000,
     expensePower: 100000,
     expenseMaintenance: 50000,
-    expenseSalary: 100000,
+    expenseConsumables: 100000,
     investMachinery: 4500000,
     investCivil: 1000000,
     investElectrical: 500000,
@@ -259,7 +262,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // DEEP FINANCIAL ENGINE
   const calculations = useMemo(() => {
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseSalary || 0);
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
     const workingCapitalValue = monthlyOpEx * 3;
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const entrepreneurAmt = financials.entrepreneurContribution || 0;
@@ -267,6 +270,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     // Total Project Cost: LOAN + Entrepreneur + Working Capital
     const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
     
+    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
+
     const loanPct = totalProjectCost > 0 ? (loanAmt / totalProjectCost) * 100 : 0;
     const entrepreneurPct = totalProjectCost > 0 ? (entrepreneurAmt / totalProjectCost) * 100 : 0;
 
@@ -331,7 +336,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearPAT = yearPBT - yearTax;
       
       currentTNW += yearPAT * 0.8; // Assume 20% drawings
-      const yearTermLoan = schedule[y * 12 - 1]?.balance || 0;
+      const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
       const yearTOL = yearTermLoan + yearCurrentLiabilities;
 
@@ -368,6 +373,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     return {
       monthlyOpEx,
+      oneTimeTotal,
       workingCapitalValue,
       totalProjectCost,
       loanAmt,
@@ -568,6 +574,149 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
         <TabsContent value="financials" className="m-0 space-y-12 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Top Row: Core Financial Input Matrices */}
+              <div className="lg:col-span-4 space-y-8">
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-6">
+                    <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-widest border-l-4 border-primary pl-4">
+                       <Calculator className="h-4 w-4" /> Valuation & Funding Matrix
+                    </div>
+                    <div className="space-y-6">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Total Project Cost (₹)</Label>
+                          <Input readOnly className="h-12 bg-slate-50 border-none font-display font-bold text-lg" value={calculations.totalProjectCost.toLocaleString()} />
+                          <p className="text-[8px] text-slate-400 italic">* SUM OF ONE-TIME INVESTMENT + WORKING CAPITAL</p>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500">Loan Capital Node (₹)</Label>
+                          <div className="relative">
+                            <Input className="h-12 bg-slate-50 border-none font-bold" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} />
+                            <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary/5 text-primary border-none text-[8px]">{calculations.loanPct.toFixed(1)}%</Badge>
+                          </div>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500">Entrepreneur Invest Node (₹)</Label>
+                          <div className="relative">
+                            <Input type="number" className="h-12 bg-slate-50 border-none font-bold" value={financials.entrepreneurContribution || 0} onChange={(e)=>setFinancials({...financials, entrepreneurContribution: Number(e.target.value)})} />
+                            <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-50 text-emerald-600 border-none text-[8px]">{calculations.entrepreneurPct.toFixed(1)}%</Badge>
+                          </div>
+                       </div>
+                       <div className="space-y-2 pt-4 border-t">
+                          <Label className="text-[9px] font-bold uppercase text-emerald-600 flex justify-between">Working Capital Reserve (₹) <span className="text-[8px] bg-emerald-50 px-2 rounded-full">3.0x OPEX MULTIPLIER</span></Label>
+                          <Input readOnly className="h-12 bg-emerald-50/30 border-none font-bold text-emerald-700" value={calculations.workingCapitalValue.toLocaleString()} />
+                          <p className="text-[7px] text-slate-400 uppercase tracking-widest leading-tight mt-2">Automatically derived as 3-months of operational liquidity buffer.</p>
+                       </div>
+                    </div>
+                 </Card>
+
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-6">
+                    <div className="flex items-center gap-3 text-rose-500 font-bold text-[10px] uppercase tracking-widest border-l-4 border-rose-500 pl-4">
+                       <Receipt className="h-4 w-4" /> Loan Parameters
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500">ROI (% P.A.)</Label>
+                          <Input type="number" className="bg-slate-50 border-none h-11" value={financials.loanROI || 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500">Tenure (Months)</Label>
+                          <Input type="number" className="bg-slate-50 border-none h-11" value={financials.loanTenure || 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2 col-span-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500">Moratorium Window (Months)</Label>
+                          <Input type="number" className="bg-slate-50 border-none h-11" value={financials.loanMoratorium || 0} onChange={(e)=>setFinancials({...financials, loanMoratorium: Number(e.target.value)})} />
+                       </div>
+                    </div>
+                 </Card>
+              </div>
+
+              <div className="lg:col-span-8 space-y-8">
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
+                    <div className="flex justify-between items-center border-l-4 border-primary pl-4">
+                       <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-widest">
+                          <Factory className="h-4 w-4" /> One-Time Investment Matrix
+                       </div>
+                       <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3 w-3" /> Edit Breakup</Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-11" value={financials.investMachinery.toLocaleString()} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Civil / Interior</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investCivil || 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Electrical Install</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investElectrical || 0} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Furniture / Office</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investFurniture || 0} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Pre-Operative Exp</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investPreOp || 0} onChange={(e)=>setFinancials({...financials, investPreOp: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Software</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investSoftware || 0} onChange={(e)=>setFinancials({...financials, investSoftware: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">System</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investSystem || 0} onChange={(e)=>setFinancials({...financials, investSystem: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Advance</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investAdvance || 0} onChange={(e)=>setFinancials({...financials, investAdvance: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-primary">Total Fixed Capital</Label><Input readOnly className="bg-primary/5 border-none font-bold text-primary h-11" value={calculations.oneTimeTotal.toLocaleString()} /></div>
+                    </div>
+                 </Card>
+
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
+                    <div className="flex items-center gap-3 text-emerald-600 font-bold text-[10px] uppercase tracking-widest border-l-4 border-emerald-500 pl-4">
+                       <Clock className="h-4 w-4" /> Monthly Operational Expense (OpEx) Matrix
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Rent / Lease</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseRent || 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Personnel</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expensePersonnel || 0} onChange={(e)=>setFinancials({...financials, expensePersonnel: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Power & Util</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expensePower || 0} onChange={(e)=>setFinancials({...financials, expensePower: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Maintenance</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseMaintenance || 0} onChange={(e)=>setFinancials({...financials, expenseMaintenance: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Consumables</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseConsumables || 0} onChange={(e)=>setFinancials({...financials, expenseConsumables: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-emerald-600">Total Monthly OpEx</Label><Input readOnly className="bg-emerald-50/50 border-none font-bold text-emerald-700 h-11" value={calculations.monthlyOpEx.toLocaleString()} /></div>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-xl flex gap-4 items-start border border-blue-100">
+                       <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                       <p className="text-[9px] text-blue-700 font-medium leading-relaxed">Increasing your operational burn will automatically update the Working Capital Reserve in the Valuation Matrix to maintain a 3-month liquidity buffer.</p>
+                    </div>
+                 </Card>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm space-y-4">
+                       <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Required Monthly Turnover</span><span className="text-xs font-bold text-emerald-600">₹ {calculations.targetTurnover.toLocaleString()}</span></div>
+                       <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-primary" style={{width: '70%'}} /></div>
+                       <p className="text-[8px] text-slate-400 italic">* Click to view strategic breakup matrix.</p>
+                    </Card>
+                    <Card className="p-6 bg-slate-900 text-white rounded-3xl shadow-xl space-y-4 relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><TrendingUp className="h-8 w-8" /></div>
+                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Cumulative 5-Year Profit Target</span>
+                       <h4 className="text-3xl font-display font-bold text-white tracking-tighter">₹ {(calculations.projections.reduce((acc, p)=>acc + p.pat, 0)).toLocaleString()}</h4>
+                       <Badge className="bg-emerald-500/20 text-emerald-400 border-none text-[8px] font-bold px-3">{calculations.roi.toFixed(1)}% Projected ROI</Badge>
+                    </Card>
+                 </div>
+              </div>
+
+              {/* Growth & Performance Matrix Section */}
+              <div className="lg:col-span-12">
+                 <Card className="p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] space-y-8">
+                    <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                       <div className="p-3 bg-white rounded-2xl text-primary shadow-sm"><Activity className="h-6 w-6" /></div>
+                       <div>
+                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Growth & Performance Matrix</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Year-by-year yield trajectory for institutional submission.</p>
+                       </div>
+                    </div>
+                    <div className="grid grid-cols-5 gap-6">
+                       {[0, 1, 2, 3, 4].map((i) => (
+                          <div key={i} className="space-y-3 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm group hover:border-primary/50 transition-all">
+                             <div className="flex justify-between items-center">
+                                <Label className="text-[9px] font-bold uppercase text-slate-400">Year {i + 1}</Label>
+                                <span className="text-[8px] font-bold text-primary">GROWTH %</span>
+                             </div>
+                             <Input 
+                                type="number" 
+                                className="h-10 bg-slate-50 border-none text-center font-display font-bold text-lg" 
+                                value={financials.yearlyGrowthTargets[i]} 
+                                onChange={(e) => {
+                                   const newTargets = [...financials.yearlyGrowthTargets];
+                                   newTargets[i] = Number(e.target.value);
+                                   setFinancials({...financials, yearlyGrowthTargets: newTargets});
+                                }} 
+                             />
+                          </div>
+                       ))}
+                    </div>
+                 </Card>
+              </div>
+
+              {/* Visual Analytics Row */}
               <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
                  <Card className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl space-y-6">
                     <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-widest"><FileBarChart className="h-4 w-4" /> Projected Sales & Profitability</div>
@@ -617,72 +766,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </Card>
               </div>
-
-              <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
-                       <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Clock className="h-6 w-6" /></div>
-                       <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">OpEx Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Recurring monthly liabilities.</p></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Rent Hub (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseRent ?? 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Salary Ledger (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseSalary ?? 0} onChange={(e)=>setFinancials({...financials, expenseSalary: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Power Node (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expensePower ?? 0} onChange={(e)=>setFinancials({...financials, expensePower: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Maintenance (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseMaintenance ?? 0} onChange={(e)=>setFinancials({...financials, expenseMaintenance: Number(e.target.value)})} /></div>
-                    </div>
-                    <div className="p-5 bg-primary/5 rounded-2xl border border-primary/10 flex justify-between items-center">
-                       <div className="flex items-center gap-3"><Receipt className="h-5 w-5 text-primary" /><span className="text-[10px] font-bold uppercase text-[#001F3D]">Monthly EMI (Auto)</span></div>
-                       <span className="text-lg font-display font-bold text-primary">₹ {calculations.emi.toLocaleString()}</span>
-                    </div>
-                 </Card>
-
-                 <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <div className="flex items-center justify-between border-l-4 border-emerald-500 pl-6">
-                       <div className="flex items-center gap-4">
-                          <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><Factory className="h-6 w-6" /></div>
-                          <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Investment Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">One-time capital expenditures.</p></div>
-                       </div>
-                       <Button variant="ghost" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5" /> Edit Breakup</Button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                       <div className="space-y-2 col-span-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Plant & Machinery (Total)</Label><Input readOnly className="bg-slate-100 font-bold" value={(financials.investMachinery ?? 0).toLocaleString()} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Advance (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investAdvance ?? 0} onChange={(e)=>setFinancials({...financials, investAdvance: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Civil (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investCivil ?? 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Software (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investSoftware ?? 0} onChange={(e)=>setFinancials({...financials, investSoftware: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">System (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investSystem ?? 0} onChange={(e)=>setFinancials({...financials, investSystem: Number(e.target.value)})} /></div>
-                    </div>
-                 </Card>
-              </div>
-
-              <div className="lg:col-span-12">
-                 <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[3rem] relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
-                    <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
-                       <div className="space-y-6">
-                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">LOAN CAPITAL</p><div className="flex items-center gap-3 mt-2"><DollarSign className="h-6 w-6 text-primary" /><Input className="bg-white/5 border-none h-14 text-3xl font-display font-bold text-white shadow-inner p-0" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} /></div></div>
-                          <div className="grid grid-cols-2 gap-4">
-                             <div><Label className="text-[8px] font-bold text-white/40 uppercase">ROI (%)</Label><Input type="number" className="bg-white/5 border-none h-10 text-xs font-bold" value={financials.loanROI ?? 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} /></div>
-                             <div><Label className="text-[8px] font-bold text-white/40 uppercase">TENURE (MO)</Label><Input type="number" className="bg-white/5 border-none h-10 text-xs font-bold" value={financials.loanTenure ?? 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} /></div>
-                          </div>
-                       </div>
-
-                       <div className="space-y-6">
-                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">ENTREPRENEUR INVEST</p><div className="flex items-center gap-3 mt-2"><User className="h-6 w-6 text-emerald-400" /><Input type="number" className="bg-white/5 border-none h-14 text-3xl font-display font-bold text-white shadow-inner p-0" value={financials.entrepreneurContribution ?? 0} onChange={(e)=>setFinancials({...financials, entrepreneurContribution: Number(e.target.value)})} /></div></div>
-                          <Badge className="bg-emerald-500/10 text-emerald-400 border-none px-4 py-1.5 rounded-full text-[9px] font-bold uppercase">EQUITY NODE ACTIVE</Badge>
-                       </div>
-
-                       <div className="space-y-6">
-                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">WORKING CAPITAL</p><div className="flex items-center gap-3 mt-2"><Cpu className="h-6 w-6 text-amber-400" /><p className="text-3xl font-display font-bold text-white">₹ {calculations.workingCapitalValue.toLocaleString()}</p></div></div>
-                          <Badge variant="outline" className="border-white/10 text-white/40 text-[8px] font-bold uppercase px-3">3.0X OPEX MULTIPLIER</Badge>
-                       </div>
-
-                       <div className="p-8 bg-white/5 rounded-[2rem] border border-white/10 flex flex-col justify-between">
-                          <p className="text-[10px] font-bold uppercase text-primary tracking-[0.4em]">TOTAL PROJECT COST</p>
-                          <p className="text-4xl font-display font-bold text-white tracking-tighter">₹ {calculations.totalProjectCost.toLocaleString()}</p>
-                       </div>
-                    </div>
-                 </Card>
-              </div>
            </div>
         </TabsContent>
 
@@ -706,7 +789,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <div className="space-y-6">
                         <div className="flex justify-center mb-16">
                            <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white flex items-center justify-center p-4">
-                              <Image src={brandLogo || defaultBrandLogo} alt="Logo" fill className="object-contain p-4" />
+                              <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo/400/400'} alt="Logo" fill className="object-contain p-4" />
                            </div>
                         </div>
                         <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">CONFIDENTIAL STRATEGIC REPORT</Badge>
@@ -903,25 +986,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Gross Quotation Value</p><p className="text-2xl font-display font-bold text-primary">₹ {(financials.investMachinery ?? 0).toLocaleString()}</p></div>
              <Button className="h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl" onClick={() => setIsMachineryBreakupOpen(false)}>Commit Breakup Matrix <ChevronRight className="h-3.5 w-3.5 ml-2" /></Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Drawing Zoom Protocol Dialog */}
-      <Dialog open={zoom > 1} onOpenChange={() => setZoom(1)}>
-        <DialogContent className="max-w-5xl bg-black/90 border-none shadow-2xl p-0 overflow-hidden rounded-[2rem] flex flex-col h-[90vh]">
-          <div className="flex justify-between items-center p-6 text-white bg-slate-950 border-b border-white/10">
-            <h3 className="text-sm font-bold uppercase tracking-widest">High-Fidelity Document Viewer</h3>
-            <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-white hover:bg-white/10 rounded-full"><X className="h-6 w-6" /></Button>
-          </div>
-          <ScrollArea className="flex-1 p-10">
-            <div className="flex justify-center">
-               {/* This is a visual zoom simulation for the preview report */}
-               <div className="bg-white shadow-2xl p-20 min-h-[297mm] space-y-16" style={{ width: '210mm' }}>
-                  {/* Content would normally be re-rendered here at full size */}
-                  <p className="text-center text-slate-400 font-bold uppercase tracking-widest pt-40">Matrix Fit to Scroll Active</p>
-               </div>
-            </div>
-          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

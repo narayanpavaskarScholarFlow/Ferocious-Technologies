@@ -148,7 +148,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     oneTimeInvestment: true,
     amortizationSchedule: true,
     turnoverAnalysis: true,
-    roadMapNextFiveYears: true
+    roadMapNextFiveYears: true,
+    cgtmseScheme: true
   });
 
   const [foundationalData, setFormData] = useState({
@@ -646,7 +647,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key]: !val})}>
                           <Checkbox checked={val} className="border-white/20 data-[state=checked]:bg-primary" />
                           <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
-                            {key === 'productLine' ? 'Proprietary Products' : key === 'roadMapNextFiveYears' ? 'Road Map for next five years' : key.replace(/([A-Z])/g, ' $1')}
+                            {key === 'productLine' ? 'Proprietary Products' : 
+                             key === 'roadMapNextFiveYears' ? 'Road Map for next five years' : 
+                             key === 'cgtmseScheme' ? 'CGTMSE Scheme Details' :
+                             key.replace(/([A-Z])/g, ' $1')}
                           </span>
                        </div>
                     ))}
@@ -1303,6 +1307,43 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   </div>
                                </div>
                              )}
+                          </div>
+                       </div>
+                     )}
+
+                     {/* Section 08: CGTMSE Scheme */}
+                     {checklist.cgtmseScheme && (
+                       <div className="space-y-12 pt-20 page-break">
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CGTMSE Scheme Protocol</h3></div>
+                          <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-200 space-y-10 relative overflow-hidden">
+                             <div className="absolute top-0 right-0 p-8 opacity-[0.05]"><ShieldCheck className="h-40 w-40" /></div>
+                             <div className="space-y-6 relative z-10">
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Credit Guarantee Fund Trust</h4>
+                                <p className="text-sm text-slate-500 leading-relaxed text-justify">
+                                   The Credit Guarantee Fund Trust for Micro and Small Enterprises (CGTMSE) is a joint initiative by the Ministry of Micro, Small & Medium Enterprises (MSME), Government of India and the Small Industries Development Bank of India (SIDBI). This project seeks coverage under the CGTMSE scheme to facilitate collateral-free credit for the established VMC and Tool Room nodes.
+                                </p>
+                             </div>
+                             
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                                <div className="space-y-4">
+                                   <div className="flex items-center gap-3"><div className="h-2 w-2 rounded-full bg-primary" /><p className="text-[10px] font-bold uppercase text-slate-700">Guarantee Coverage</p></div>
+                                   <p className="text-[11px] text-slate-500 leading-relaxed">The scheme provides guarantee cover of up to 75% / 85% for loans up to ₹500 Lakhs, significantly reducing the risk profile for the lending institution while eliminating the need for tangible collateral or third-party guarantees.</p>
+                                </div>
+                                <div className="space-y-4">
+                                   <div className="flex items-center gap-3"><div className="h-2 w-2 rounded-full bg-primary" /><p className="text-[10px] font-bold uppercase text-slate-700">Operational Eligibility</p></div>
+                                   <p className="text-[11px] text-slate-500 leading-relaxed">Ferocious Tech, as a registered MSME node, qualifies for the Hybrid Security Model. The primary security is provided through the hypothecation of Plant & Machinery and assets acquired through the loan capital.</p>
+                                </div>
+                             </div>
+
+                             <div className="p-6 bg-white rounded-2xl border border-slate-100 relative z-10">
+                                <div className="flex items-start gap-4">
+                                   <Info className="h-5 w-5 text-primary mt-0.5" />
+                                   <div className="space-y-1">
+                                      <p className="text-[10px] font-bold text-[#001F3D] uppercase">Strategic Note</p>
+                                      <p className="text-[11px] text-slate-400 font-medium">The Annual Guarantee Fee (AGF) will be borne by the project OpEx as a recurring compliance cost, ensuring the continuous validity of the credit guarantee matrix throughout the loan tenure.</p>
+                                   </div>
+                                </div>
+                             </div>
                           </div>
                        </div>
                      )}

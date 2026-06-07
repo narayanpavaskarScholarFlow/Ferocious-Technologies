@@ -334,7 +334,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       });
     }
 
-    // Revenue Matrix Computation
+    // Revenue Matrix Computation with Safety
     const prodPotential = proprietaryProducts.reduce((acc, p) => {
       const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
       const qty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
@@ -659,8 +659,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {proprietaryProducts.map((p, idx) => (
                     <div key={p.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 group hover:border-primary/20 transition-all">
                        <div className="flex gap-6">
-                          <div className="h-28 w-28 rounded-3xl overflow-hidden border border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center">
+                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img relative">
                              {p.imageUrl ? <Image src={p.imageUrl} alt={p.name || ''} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
+                             <input 
+                                type="file" 
+                                id={`prod-upload-${idx}`} 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={(e) => handleProductImageUpload(idx, e)}
+                             />
+                             <label htmlFor={`prod-upload-${idx}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer">
+                                <Upload className="h-6 w-6 text-white" />
+                             </label>
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
@@ -697,8 +707,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {industrialServices.map((s, idx) => (
                     <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 group hover:border-accent/20 transition-all">
                        <div className="flex gap-6">
-                          <div className="h-28 w-28 rounded-3xl overflow-hidden border border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center">
+                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img relative">
                              {s.imageUrl ? <Image src={s.imageUrl} alt={s.name || ''} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
+                             <input 
+                                type="file" 
+                                id={`svc-upload-${idx}`} 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={(e) => handleServiceImageUpload(idx, e)}
+                             />
+                             <label htmlFor={`svc-upload-${idx}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer">
+                                <Upload className="h-6 w-6 text-white" />
+                             </label>
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Service Identity (e.g. VMC Machining)" className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />

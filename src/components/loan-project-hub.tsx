@@ -635,7 +635,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </div>
                 </div>
 
-                {/* Section 02: Marketable Assets (Product Line) */}
+                {/* Section 02: Marketable Assets (Product Catalogue) */}
                 {checklist.productLine && (
                   <div className="space-y-16 pt-20">
                     <div className="flex items-center gap-6">
@@ -643,31 +643,40 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Portfolio</h3>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
                         {proprietaryProducts.map(p => (
-                          <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col gap-4 shadow-sm group transition-all">
-                              <div className="aspect-video w-full rounded-xl overflow-hidden relative border shadow-inner bg-white flex items-center justify-center">
+                          <div key={p.id} className="p-5 bg-white border border-slate-100 rounded-3xl flex flex-col gap-5 shadow-md hover:shadow-xl transition-all group border-b-4 border-b-slate-200">
+                              <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner bg-slate-50 flex items-center justify-center p-3">
                                 {p.imageUrl ? (
-                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-2" />
+                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-4 mix-blend-multiply" />
                                 ) : (
-                                  <ImageIcon className="h-6 w-6 text-slate-100" />
+                                  <ImageIcon className="h-8 w-8 text-slate-200" />
                                 )}
                               </div>
-                              <div className="space-y-2">
-                                <div className="space-y-0.5">
-                                    <h5 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-tight truncate">{p.name || 'Undefined Node'}</h5>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                      <Box className="h-2 w-2" /> {p.market}
+                              <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <h5 className="text-[11px] font-bold text-[#001F3D] uppercase tracking-tight leading-tight line-clamp-2 min-h-[2.4em]">{p.name || 'Undefined Node'}</h5>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.1em] flex items-center gap-1.5 mt-1">
+                                      <Box className="h-2 w-2 text-primary" /> {p.market}
                                     </p>
                                 </div>
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                                    <span className="text-[7px] font-bold text-slate-400 uppercase">Price</span>
-                                    <span className="text-xs font-display font-bold text-primary">₹ {p.price}</span>
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                                    <div className="flex flex-col">
+                                      <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Unit Valuation</span>
+                                      <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price}</span>
+                                    </div>
+                                    <Badge variant="outline" className="h-6 text-[7px] font-bold border-slate-100 bg-slate-50 text-slate-400 uppercase px-2">Market Ready</Badge>
                                 </div>
                               </div>
                           </div>
                         ))}
                     </div>
+                    {proprietaryProducts.length === 0 && (
+                      <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200 opacity-30">
+                        <Box className="h-16 w-16 text-slate-300 mx-auto mb-6" />
+                        <p className="text-lg font-bold uppercase tracking-widest">Product Catalogue Null</p>
+                      </div>
+                    )}
                   </div>
                 )}
 

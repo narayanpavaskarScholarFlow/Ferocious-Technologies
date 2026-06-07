@@ -41,7 +41,8 @@ import {
   Info,
   UserCircle,
   GraduationCap,
-  Award
+  Award,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -98,7 +99,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     services: true,
     financialProjections: true,
     machineList: true,
-    licenseGst: false,
+    licenseGst: true,
   });
 
   const [foundationalData, setFormData] = useState({
@@ -114,6 +115,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     qualification: 'B.E. Mechanical / MBA Operations',
     experience: '15+ Years in Tool Room & VMC Operations',
     promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
+    // Compliance nodes
+    gstNumber: '27AAAAA0000A1Z5',
+    msmeNumber: 'UDYAM-MH-00-0000000',
   });
 
   // 02. Product Line State
@@ -295,10 +299,32 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </div>
 
-                 {/* Entrepreneur Section */}
+                 {/* Regulatory Section */}
                  <div className="space-y-10 pt-6 border-t border-slate-50">
                     <div className="flex items-center gap-4 border-l-4 border-emerald-500 pl-6">
-                       <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><UserCircle className="h-6 w-6" /></div>
+                       <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><Shield className="h-6 w-6" /></div>
+                       <div>
+                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Regulatory & Compliance</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Official licensing and taxation identifiers.</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification Number</Label>
+                          <Input placeholder="e.g. 27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber} onChange={(e)=>updateField('gstNumber', e.target.value)} />
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label>
+                          <Input placeholder="e.g. UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber} onChange={(e)=>updateField('msmeNumber', e.target.value)} />
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* Entrepreneur Section */}
+                 <div className="space-y-10 pt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-4 border-l-4 border-blue-500 pl-6">
+                       <div className="p-3 bg-blue-50 rounded-2xl text-blue-600"><UserCircle className="h-6 w-6" /></div>
                        <div>
                           <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Entrepreneur / Promoter Profile</h3>
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Professional pedigree and industrial expertise.</p>
@@ -390,6 +416,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                {key === 'productLine' ? 'Proprietary Products' : 
                                 key === 'services' ? 'Industrial Services' : 
                                 key === 'entrepreneurDetails' ? 'Entrepreneur Details' :
+                                key === 'licenseGst' ? 'Licenses (GST & MSME)' :
                                 key.replace(/([A-Z])/g, ' $1')}
                              </span>
                           </div>
@@ -703,6 +730,33 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <p className="text-sm text-white/90 leading-relaxed font-medium italic indent-8">
                             "{foundationalData.promoterNarrative}"
                           </p>
+                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section Compliance: License & Registrations */}
+                {checklist.licenseGst && (
+                  <div className="space-y-16 pt-20">
+                    <div className="flex items-center gap-6">
+                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">C</div>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Compliance & Registration Matrix</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
+                          <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Shield className="h-8 w-8" /></div>
+                          <div>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GSTIN Identification</p>
+                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.gstNumber}</h4>
+                          </div>
+                       </div>
+                       <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
+                          <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600"><FileText className="h-8 w-8" /></div>
+                          <div>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MSME Udyam Registration</p>
+                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.msmeNumber}</h4>
+                          </div>
                        </div>
                     </div>
                   </div>

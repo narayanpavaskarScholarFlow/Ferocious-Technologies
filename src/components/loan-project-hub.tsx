@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,10 @@ import {
   Cpu,
   Receipt,
   FileBarChart,
-  Scale
+  Scale,
+  Edit3,
+  User,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -82,8 +85,6 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
-
-const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
 interface ProprietaryProduct {
   id: string;
@@ -257,19 +258,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // DEEP FINANCIAL ENGINE
   const calculations = useMemo(() => {
-    // 01. Baseline Definitions
     const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseSalary || 0);
     const workingCapitalValue = monthlyOpEx * 3;
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const entrepreneurAmt = financials.entrepreneurContribution || 0;
     
-    // Total Project Cost: LOAN + Entrepreneur + Working Capital (Requested Logic)
+    // Total Project Cost: LOAN + Entrepreneur + Working Capital
     const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
     
     const loanPct = totalProjectCost > 0 ? (loanAmt / totalProjectCost) * 100 : 0;
     const entrepreneurPct = totalProjectCost > 0 ? (entrepreneurAmt / totalProjectCost) * 100 : 0;
 
-    // 02. EMI Scheduling
+    // EMI Scheduling
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
     const moratorium = financials.loanMoratorium;
@@ -294,7 +294,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
-    // 03. 5-Year Projection Matrix
+    // 5-Year Projection Matrix
     const projections: any[] = [];
     const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
@@ -311,7 +311,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       
       let yearRevenue = 0;
       if (y === 1) {
-        // Ramp up in Year 1
         for (let m = 1; m <= 12; m++) yearRevenue += targetTurnover * (m <= 6 ? 0.4 + (m * 0.1) : 1.0);
         yearRevenue *= revMultiplier;
         currentCapacityRevenue = targetTurnover * 12 * revMultiplier;
@@ -330,7 +329,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearTax = yearPBT > 0 ? yearPBT * 0.25 : 0;
       const yearPAT = yearPBT - yearTax;
       
-      // Update Net Worth (Retained Earnings)
       currentTNW += yearPAT * 0.8; // Assume 20% drawings
       const yearTermLoan = schedule[y * 12 - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
@@ -368,6 +366,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     return {
+      monthlyOpEx,
       workingCapitalValue,
       totalProjectCost,
       loanAmt,
@@ -375,7 +374,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       loanPct,
       entrepreneurPct,
       emi,
-      monthlyOpEx,
       schedule,
       targetTurnover,
       projections,
@@ -383,7 +381,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       cashFlow,
       roi: (projections.reduce((acc, p) => acc + p.pat, 0) / totalProjectCost * 100)
     };
-  }, [foundationalData.totalLoanRequirement, financials, proprietaryProducts, industrialServices]);
+  }, [foundationalData.totalLoanRequirement, financials]);
 
   const handleImageUpload = (idx: number, type: 'product' | 'service', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -493,7 +491,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40 mb-10">Report Composition Matrix</h3>
                  <div className="space-y-4">
                     {Object.entries(checklist).map(([key, val]) => (
-                       <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key]: !val})}>
+                       <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key as keyof typeof checklist]: !val})}>
                           <Checkbox checked={val} className="border-white/20 data-[state=checked]:bg-primary" />
                           <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1')}</span>
                        </div>
@@ -569,7 +567,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
         <TabsContent value="financials" className="m-0 space-y-12 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Analytics Dashboard */}
               <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
                  <Card className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl space-y-6">
                     <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-widest"><FileBarChart className="h-4 w-4" /> Projected Sales & Profitability</div>
@@ -620,9 +617,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
               </div>
 
-              {/* Matrix Control Panels */}
               <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                 {/* OPEX PANEL */}
                  <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                     <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
                        <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Clock className="h-6 w-6" /></div>
@@ -640,7 +635,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </Card>
 
-                 {/* CAPEX PANEL */}
                  <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                     <div className="flex items-center justify-between border-l-4 border-emerald-500 pl-6">
                        <div className="flex items-center gap-4">
@@ -659,7 +653,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
               </div>
 
-              {/* Master Financial Summary */}
               <div className="lg:col-span-12">
                  <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[3rem] relative overflow-hidden">
                     <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
@@ -685,50 +678,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="p-8 bg-white/5 rounded-[2rem] border border-white/10 flex flex-col justify-between">
                           <p className="text-[10px] font-bold uppercase text-primary tracking-[0.4em]">TOTAL PROJECT COST</p>
                           <p className="text-4xl font-display font-bold text-white tracking-tighter">₹ {calculations.totalProjectCost.toLocaleString()}</p>
-                          <div className="flex justify-between items-end mt-4">
-                             <div className="text-[8px] font-bold uppercase text-white/20">Funding Gap: 0.0%</div>
-                             <Badge className="bg-primary text-white text-[8px] font-bold uppercase">SYNC_OK</Badge>
-                          </div>
                        </div>
-                    </div>
-                 </Card>
-              </div>
-
-              {/* Structured Financial Tables */}
-              <div className="lg:col-span-12 space-y-10">
-                 {/* Income Statement */}
-                 <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] overflow-hidden">
-                    <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.3em] mb-10 border-l-4 border-primary pl-6">Projected Income Statement (5-Year Matrix)</h3>
-                    <div className="overflow-x-auto">
-                       <table className="w-full text-left">
-                          <thead className="bg-slate-50"><tr className="border-b border-slate-200"><th className="p-5 text-[9px] font-bold uppercase">Particulars (₹ Actuals)</th>{calculations.projections.map(p => <th key={p.year} className="p-5 text-[9px] font-bold uppercase text-right">{p.year}</th>)}</tr></thead>
-                          <tbody>
-                             <tr className="border-b border-slate-100"><td className="p-5 font-bold text-[11px] uppercase">Income (Gross Sales)</td>{calculations.projections.map(p => <td key={p.year} className="p-5 text-[11px] font-display font-bold text-right">{p.revenue.toLocaleString()}</td>)}</tr>
-                             <tr className="border-b border-slate-100"><td className="p-5 text-[10px] text-slate-500 uppercase">Operational Expenses</td>{calculations.projections.map((p, i) => <td key={i} className="p-5 text-[10px] font-medium text-right text-red-400">({(p.revenue - p.ebitda).toLocaleString()})</td>)}</tr>
-                             <tr className="border-b border-slate-100 bg-slate-50/30"><td className="p-5 font-bold text-[11px] text-emerald-600 uppercase">EBITDA</td>{calculations.projections.map(p => <td key={p.year} className="p-5 text-[11px] font-display font-bold text-right text-emerald-600">{p.ebitda.toLocaleString()}</td>)}</tr>
-                             <tr className="border-b border-slate-100"><td className="p-5 text-[10px] text-slate-500 uppercase">Profit Before Tax (PBT)</td>{calculations.projections.map(p => <td key={p.year} className="p-5 text-[10px] font-medium text-right">{p.pbt.toLocaleString()}</td>)}</tr>
-                             <tr className="bg-[#001F3D] text-white"><td className="p-5 font-bold text-[12px] uppercase">Profit After Tax (PAT)</td>{calculations.projections.map(p => <td key={p.year} className="p-5 text-[12px] font-display font-bold text-right text-emerald-400">₹ {p.pat.toLocaleString()}</td>)}</tr>
-                          </tbody>
-                       </table>
-                    </div>
-                 </Card>
-
-                 {/* Balance Sheet */}
-                 <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] overflow-hidden">
-                    <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.3em] mb-10 border-l-4 border-emerald-500 pl-6">Projected Balance Sheet (Sources of Funds)</h3>
-                    <div className="overflow-x-auto">
-                       <table className="w-full text-left">
-                          <thead className="bg-slate-50"><tr className="border-b border-slate-200"><th className="p-5 text-[9px] font-bold uppercase">Particulars (₹ Actuals)</th>{calculations.balanceSheet.map(b => <th key={b.year} className="p-5 text-[9px] font-bold uppercase text-right">{b.year}</th>)}</tr></thead>
-                          <tbody>
-                             <tr><td colSpan={6} className="p-5 bg-blue-50/50 text-[10px] font-bold uppercase text-primary tracking-widest">A. Own Funds (TNW)</td></tr>
-                             <tr className="border-b border-slate-100"><td className="p-5 text-[10px] text-slate-600 uppercase pl-10">Total Equity / Net Worth</td>{calculations.balanceSheet.map(b => <td key={b.year} className="p-5 text-[10px] font-bold text-right">{b.tnw.toLocaleString()}</td>)}</tr>
-                             <tr><td colSpan={6} className="p-5 bg-emerald-50/50 text-[10px] font-bold uppercase text-emerald-700 tracking-widest">B. Long Term Liabilities</td></tr>
-                             <tr className="border-b border-slate-100"><td className="p-5 text-[10px] text-slate-600 uppercase pl-10">Term Loan from Bank</td>{calculations.balanceSheet.map(b => <td key={b.year} className="p-5 text-[10px] font-bold text-right">{b.loan.toLocaleString()}</td>)}</tr>
-                             <tr><td colSpan={6} className="p-5 bg-slate-50 text-[10px] font-bold uppercase text-slate-400 tracking-widest">C. Current Liabilities</td></tr>
-                             <tr className="border-b border-slate-100"><td className="p-5 text-[10px] text-slate-600 uppercase pl-10">Provisions & Creditors</td>{calculations.balanceSheet.map(b => <td key={b.year} className="p-5 text-[10px] font-bold text-right">{b.currentLiabilities.toLocaleString()}</td>)}</tr>
-                             <tr className="bg-slate-900 text-white"><td className="p-5 font-bold text-[12px] uppercase">Total Sources of Funds</td>{calculations.balanceSheet.map(b => <td key={b.year} className="p-5 text-[12px] font-display font-bold text-right">₹ {b.totalSources.toLocaleString()}</td>)}</tr>
-                          </tbody>
-                       </table>
                     </div>
                  </Card>
               </div>
@@ -768,7 +718,104 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </div>
                    </div>
 
-                   {/* Road Map Section */}
+                   {/* Section 01: About Project */}
+                   {checklist.aboutProject && (
+                     <div className="space-y-8 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary</h3></div>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.aboutProject}</p>
+                     </div>
+                   )}
+
+                   {/* Section 02: Vision & Mission */}
+                   {(checklist.vision || checklist.mission) && (
+                     <div className="grid grid-cols-2 gap-12 page-break">
+                        {checklist.vision && (
+                          <div className="space-y-6">
+                             <div className="flex items-center gap-4"><Target className="h-6 w-6 text-primary" /><h4 className="text-lg font-bold uppercase tracking-tight">Our Vision</h4></div>
+                             <p className="text-xs text-slate-500 italic leading-relaxed">"{foundationalData.vision}"</p>
+                          </div>
+                        )}
+                        {checklist.mission && (
+                          <div className="space-y-6">
+                             <div className="flex items-center gap-4"><Compass className="h-6 w-6 text-primary" /><h4 className="text-lg font-bold uppercase tracking-tight">Our Mission</h4></div>
+                             <p className="text-xs text-slate-500 italic leading-relaxed">"{foundationalData.mission}"</p>
+                          </div>
+                        )}
+                     </div>
+                   )}
+
+                   {/* Section 03: About Us */}
+                   {checklist.aboutUs && (
+                     <div className="space-y-8 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Organizational Profile</h3></div>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.aboutUs}</p>
+                     </div>
+                   )}
+
+                   {/* Section 04: Product & Service Catalogue */}
+                   {(checklist.productLine || checklist.services) && (
+                     <div className="space-y-12 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
+                        
+                        {checklist.productLine && proprietaryProducts.length > 0 && (
+                          <div className="space-y-8">
+                             <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Proprietary Product Line</h4>
+                             <div className="grid grid-cols-2 gap-8">
+                                {proprietaryProducts.map(p => (
+                                  <div key={p.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
+                                     <div className="aspect-video relative bg-white flex items-center justify-center p-4">
+                                        {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-12 w-12 text-slate-100" />}
+                                     </div>
+                                     <div className="p-5 space-y-2">
+                                        <p className="text-[11px] font-bold text-[#001F3D] uppercase">{p.name}</p>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.annualTargetQty} Projected Units / Year</p>
+                                     </div>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                        )}
+
+                        {checklist.services && industrialServices.length > 0 && (
+                          <div className="space-y-8">
+                             <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-600 border-l-4 border-emerald-500 pl-4">Technical Service Nodes</h4>
+                             <div className="grid grid-cols-2 gap-8">
+                                {industrialServices.map(s => (
+                                  <div key={s.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
+                                     <div className="aspect-video relative bg-white flex items-center justify-center p-4">
+                                        {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-12 w-12 text-slate-100" />}
+                                     </div>
+                                     <div className="p-5 space-y-2">
+                                        <p className="text-[11px] font-bold text-[#001F3D] uppercase">{s.name}</p>
+                                        <p className="text-[9px] text-slate-500 leading-relaxed font-medium">{s.description}</p>
+                                     </div>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                        )}
+                     </div>
+                   )}
+
+                   {/* Section 05: Entrepreneur Details */}
+                   {checklist.entrepreneurDetails && (
+                     <div className="space-y-8 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter Technical Profile</h3></div>
+                        <div className="p-10 border border-slate-200 rounded-3xl space-y-8 bg-slate-50/30">
+                           <div className="flex items-center gap-8 border-b border-slate-200 pb-8">
+                              <div className="h-24 w-24 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-200 shadow-sm"><UserCircle className="h-16 w-16" /></div>
+                              <div className="space-y-2">
+                                 <h4 className="text-xl font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</h4>
+                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{foundationalData.qualification}</p>
+                                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 px-4 py-1 rounded-full text-[10px] font-bold uppercase">{foundationalData.experience}</Badge>
+                              </div>
+                           </div>
+                           <p className="text-xs text-slate-600 leading-relaxed font-medium italic">"{foundationalData.promoterNarrative}"</p>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* Section 06: Road Map */}
                    {checklist.roadMapNextFiveYears && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
@@ -789,7 +836,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* CGTMSE Section */}
+                   {/* Section 08: CGTMSE Section */}
                    {checklist.cgtmseScheme && (
                       <div className="space-y-10 pt-20 page-break">
                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CGTMSE Scheme Protocol</h3></div>

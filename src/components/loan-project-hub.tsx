@@ -259,7 +259,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     // Revenue Matrix Computation
-    // Added defensive nullish coalescing to prevent .replace on undefined
     const prodPotential = proprietaryProducts.reduce((acc, p) => {
       const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
       const qty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
@@ -288,14 +287,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       let yearlyRevenue = 0;
       if (y === 1) {
         for (let m = 1; m <= 12; m++) {
-          const rampFactor = m <= 6 ? 0.3 + (m * 0.1) : 1.0; // Starts at 40%, reaches 100% by month 7
+          const rampFactor = m <= 6 ? 0.3 + (m * 0.1) : 1.0; 
           yearlyRevenue += targetTurnover * rampFactor;
         }
       } else {
         yearlyRevenue = targetTurnover * 12 * growthFactor;
       }
 
-      const yearlyOpEx = monthlyOpEx * 12 * (1 + (y * 0.05)); // 5% yearly OpEx inflation
+      const yearlyOpEx = monthlyOpEx * 12 * (1 + (y * 0.05)); 
       const yearlyEMI = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.payment, 0);
       const yearlyInterest = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.interest, 0);
       const yearlyEBITDA = yearlyRevenue - yearlyOpEx;
@@ -436,9 +435,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2 no-print">
           <TabsTrigger value="input" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">01. Identity</TabsTrigger>
           <TabsTrigger value="products" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">02. Catalogues</TabsTrigger>
-          <TabsTrigger value="financials" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">03. OpEx & Loan</TabsTrigger>
-          <TabsTrigger value="projections" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">04. Projections</TabsTrigger>
-          <TabsTrigger value="display" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">05. Preview</TabsTrigger>
+          <TabsTrigger value="financials" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">03. Financials & Projections</TabsTrigger>
+          <TabsTrigger value="display" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">04. Preview</TabsTrigger>
         </TabsList>
 
         <TabsContent value="input" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
@@ -557,7 +555,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </Card>
         </TabsContent>
 
-        <TabsContent value="financials" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
+        <TabsContent value="financials" className="m-0 space-y-12 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-4 space-y-8">
                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
@@ -593,6 +591,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </div>
                    </div>
                 </Card>
+
+                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col items-center gap-6">
+                    <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">EMI Settlement Overview</h4>
+                    <div className="text-center space-y-2">
+                      <p className="text-5xl font-display font-bold text-primary">₹ {calculations.emi.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Monthly Installment Node</p>
+                    </div>
+                </Card>
               </div>
 
               <div className="lg:col-span-8 space-y-8">
@@ -619,14 +625,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col items-center gap-6">
-                        <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">EMI Settlement Overview</h4>
-                        <div className="text-center space-y-2">
-                          <p className="text-5xl font-display font-bold text-primary">₹ {calculations.emi.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Monthly Installment Node</p>
-                        </div>
-                    </Card>
-
                     <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col justify-center gap-6">
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
                           <span>Required Monthly Turnover</span>
@@ -637,95 +635,99 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         </div>
                         <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">* Turnover required to achieve {financials.targetNetMargin}% net margin after all OpEx and EMI commitments.</p>
                     </Card>
+                    <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between">
+                       <p className="text-[10px] font-bold uppercase text-white/40 tracking-widest">Cumulative 5-Year Profit Target</p>
+                       <div className="flex items-center justify-between">
+                         <h3 className="text-4xl font-display font-bold text-emerald-400">₹ {(calculations.projections.reduce((acc, p) => acc + p.profit, 0)).toLocaleString(undefined, {maximumFractionDigits: 0})}</h3>
+                         <TrendingUp className="h-8 w-8 text-primary" />
+                       </div>
+                       <Badge className="bg-white/10 text-white w-fit text-[8px] font-bold uppercase mt-4">{calculations.roi.toFixed(1)}% Projected ROI</Badge>
+                    </Card>
                  </div>
-              </div>
-           </div>
-        </TabsContent>
 
-        <TabsContent value="projections" className="m-0 space-y-10 no-print">
-           <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl"><TrendingUp className="h-7 w-7" /></div>
-                    <div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Growth & Performance Matrix</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Multi-year industrial forecasting nodes.</p>
+                 <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                       <div className="flex items-center gap-4">
+                          <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl"><TrendingUp className="h-7 w-7" /></div>
+                          <div>
+                            <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Growth & Performance Matrix</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Multi-year industrial forecasting nodes.</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-6">
+                          <div className="space-y-2 text-right">
+                             <Label className="text-[9px] font-bold uppercase text-slate-400">Yearly Growth (%)</Label>
+                             <Input type="number" className="h-10 w-24 bg-slate-50 border-none text-right font-bold text-primary" value={financials.growthTarget} onChange={(e)=>setFinancials({...financials, growthTarget: Number(e.target.value)})} />
+                          </div>
+                          <div className="space-y-2 text-right">
+                             <Label className="text-[9px] font-bold uppercase text-slate-400">Target Margin (%)</Label>
+                             <Input type="number" className="h-10 w-24 bg-slate-50 border-none text-right font-bold text-primary" value={financials.targetNetMargin} onChange={(e)=>setFinancials({...financials, targetNetMargin: Number(e.target.value)})} />
+                          </div>
+                       </div>
                     </div>
-                 </div>
-                 <div className="flex items-center gap-6">
-                    <div className="space-y-2 text-right">
-                       <Label className="text-[9px] font-bold uppercase text-slate-400">Yearly Growth Target (%)</Label>
-                       <Input type="number" className="h-10 w-32 bg-slate-50 border-none text-right font-bold text-primary" value={financials.growthTarget} onChange={(e)=>setFinancials({...financials, growthTarget: Number(e.target.value)})} />
-                    </div>
-                    <div className="space-y-2 text-right">
-                       <Label className="text-[9px] font-bold uppercase text-slate-400">Target Net Margin (%)</Label>
-                       <Input type="number" className="h-10 w-32 bg-slate-50 border-none text-right font-bold text-primary" value={financials.targetNetMargin} onChange={(e)=>setFinancials({...financials, targetNetMargin: Number(e.target.value)})} />
-                    </div>
-                 </div>
-              </div>
 
-              <div className="h-[400px] w-full">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={calculations.projections}>
-                       <defs>
-                          <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
-                       </defs>
-                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                       <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} />
-                       <YAxis hide />
-                       <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none', backgroundColor: '#001F3D', color: '#fff' }} />
-                       <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
-                       <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={4} fill="transparent" />
-                    </AreaChart>
-                 </ResponsiveContainer>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                 {calculations.projections.map((p, idx) => (
-                    <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-2">
-                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{p.year} Net Profit</p>
-                       <p className="text-sm font-display font-bold text-[#001F3D]">₹ {p.profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
-                       <Badge className="bg-emerald-50 text-emerald-700 text-[8px] font-bold w-fit">{p.margin}% Margin</Badge>
+                    <div className="h-[300px] w-full">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={calculations.projections}>
+                             <defs>
+                                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                             </defs>
+                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                             <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} />
+                             <YAxis hide />
+                             <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', shadow: 'none', backgroundColor: '#001F3D', color: '#fff' }} />
+                             <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
+                             <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={4} fill="transparent" />
+                          </AreaChart>
+                       </ResponsiveContainer>
                     </div>
-                 ))}
-              </div>
-           </Card>
 
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <Card className="lg:col-span-12 p-8 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden">
-                 <div className="flex items-center justify-between mb-8">
-                    <h4 className="text-xs font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-accent pl-4">Loan Repayment Schedule (Amortization Ledger)</h4>
-                    <Badge variant="outline" className="bg-slate-50 text-[8px] font-bold">REPAYMENT_MATRIX_v2.4</Badge>
-                 </div>
-                 <ScrollArea className="h-[400px]">
-                    <table className="w-full text-left">
-                       <thead>
-                          <tr className="border-b border-slate-100">
-                             <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Month</th>
-                             <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Installment (₹)</th>
-                             <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Principal (₹)</th>
-                             <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Interest (₹)</th>
-                             <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Closing Balance (₹)</th>
-                             <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Phase</th>
-                          </tr>
-                       </thead>
-                       <tbody>
-                          {calculations.schedule.map((s) => (
-                             <tr key={s.month} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                <td className="py-4 font-code text-[10px] font-bold text-slate-500">Node_{s.month.toString().padStart(2, '0')}</td>
-                                <td className="py-4 font-display font-bold text-[11px] text-slate-700">{s.payment.toLocaleString()}</td>
-                                <td className="py-4 font-display font-bold text-[11px] text-emerald-600">{s.principal.toLocaleString()}</td>
-                                <td className="py-4 font-display font-bold text-[11px] text-red-400">{s.interest.toLocaleString()}</td>
-                                <td className="py-4 font-display font-bold text-[11px] text-[#001F3D]">{s.balance.toLocaleString()}</td>
-                                <td className="py-4">
-                                   <Badge className={cn("text-[8px] font-bold uppercase", s.status === 'Moratorium' ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700")}>{s.status}</Badge>
-                                </td>
-                             </tr>
-                          ))}
-                       </tbody>
-                    </table>
-                 </ScrollArea>
-              </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                       {calculations.projections.map((p, idx) => (
+                          <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-2">
+                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{p.year}</p>
+                             <p className="text-sm font-display font-bold text-[#001F3D]">₹ {(p.profit / 100000).toFixed(1)}L</p>
+                             <Badge className="bg-emerald-50 text-emerald-700 text-[8px] font-bold w-fit">{p.margin}%</Badge>
+                          </div>
+                       ))}
+                    </div>
+                 </Card>
+
+                 <Card className="p-8 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden">
+                   <div className="flex items-center justify-between mb-8">
+                      <h4 className="text-xs font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-accent pl-4">Loan Repayment schedule</h4>
+                      <Badge variant="outline" className="bg-slate-50 text-[8px] font-bold uppercase">Amortization_Ledger</Badge>
+                   </div>
+                   <ScrollArea className="h-[400px]">
+                      <table className="w-full text-left">
+                         <thead>
+                            <tr className="border-b border-slate-100">
+                               <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Month</th>
+                               <th className="py-4 font-bold text-[9px] uppercase text-slate-400">EMI (₹)</th>
+                               <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Principal</th>
+                               <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Interest</th>
+                               <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Balance</th>
+                               <th className="py-4 font-bold text-[9px] uppercase text-slate-400">Phase</th>
+                            </tr>
+                         </thead>
+                         <tbody>
+                            {calculations.schedule.map((s) => (
+                               <tr key={s.month} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                  <td className="py-4 font-code text-[10px] font-bold text-slate-500">M_{s.month.toString().padStart(2, '0')}</td>
+                                  <td className="py-4 font-display font-bold text-[11px] text-slate-700">{s.payment.toLocaleString()}</td>
+                                  <td className="py-4 font-display font-bold text-[11px] text-emerald-600">{s.principal.toLocaleString()}</td>
+                                  <td className="py-4 font-display font-bold text-[11px] text-red-400">{s.interest.toLocaleString()}</td>
+                                  <td className="py-4 font-display font-bold text-[11px] text-[#001F3D]">{s.balance.toLocaleString()}</td>
+                                  <td className="py-4">
+                                     <Badge className={cn("text-[8px] font-bold uppercase", s.status === 'Moratorium' ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700")}>{s.status}</Badge>
+                                  </td>
+                               </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </ScrollArea>
+                 </Card>
+              </div>
            </div>
         </TabsContent>
 

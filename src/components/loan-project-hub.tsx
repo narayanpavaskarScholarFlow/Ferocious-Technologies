@@ -205,10 +205,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       if (savedStrategy.foundationalData) {
         setFormData(prev => ({ ...prev, ...savedStrategy.foundationalData }));
       }
-      if (savedStrategy.proprietaryProducts) {
+      if (Array.isArray(savedStrategy.proprietaryProducts)) {
         setProprietaryProducts(savedStrategy.proprietaryProducts);
       }
-      if (savedStrategy.industrialServices) {
+      if (Array.isArray(savedStrategy.industrialServices)) {
         setIndustrialServices(savedStrategy.industrialServices);
       }
       if (savedStrategy.financials) {
@@ -222,7 +222,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // Financial Computations Engine
   const calculations = useMemo(() => {
-    const loanAmt = parseFloat(foundationalData.totalLoanRequirement.replace(/,/g, '')) || 0;
+    const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
     const moratorium = financials.loanMoratorium;
@@ -259,8 +259,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     // Revenue Matrix Computation
-    const prodPotential = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price.replace(/,/g, '')) * (parseFloat(p.annualTargetQty.replace(/,/g, '')) / 12)), 0);
-    const svcPotential = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price.replace(/,/g, '')) * (parseFloat(s.annualTargetQty.replace(/,/g, '')) / 12)), 0);
+    // Added defensive nullish coalescing to prevent .replace on undefined
+    const prodPotential = proprietaryProducts.reduce((acc, p) => {
+      const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
+      const qty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
+      return acc + (price * (qty / 12));
+    }, 0);
+
+    const svcPotential = industrialServices.reduce((acc, s) => {
+      const price = parseFloat((s.price || '0').replace(/,/g, '')) || 0;
+      const qty = parseFloat((s.annualTargetQty || '0').replace(/,/g, '')) || 0;
+      return acc + (price * (qty / 12));
+    }, 0);
+
     const totalPotential = prodPotential + svcPotential || 1;
     const prodRatio = prodPotential / totalPotential;
     const svcRatio = svcPotential / totalPotential;
@@ -303,7 +314,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     const total5YearProfit = projections.reduce((acc, p) => acc + p.profit, 0);
     const totalInvestment = financials.capitalInvestment + financials.workingCapital;
-    const roi = (total5YearProfit / totalInvestment) * 100;
+    const roi = totalInvestment > 0 ? (total5YearProfit / totalInvestment) * 100 : 0;
 
     return {
       emi,
@@ -352,13 +363,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const updateProduct = (idx: number, field: keyof ProprietaryProduct, value: string) => {
     const newP = [...proprietaryProducts];
-    newP[idx] = { ...newP[idx], [field]: value };
+    newP[idx] = { ...newP[idx], [field]: value || '' };
     setProprietaryProducts(newP);
   };
 
   const updateService = (idx: number, field: keyof IndustrialService, value: string) => {
     const newS = [...industrialServices];
-    newS[idx] = { ...newS[idx], [field]: value };
+    newS[idx] = { ...newS[idx], [field]: value || '' };
     setIndustrialServices(newS);
   };
 
@@ -523,7 +534,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div key={p.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 group hover:border-primary/20 transition-all">
                        <div className="flex gap-6">
                           <div className="h-28 w-28 rounded-3xl overflow-hidden border border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center">
-                             {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
+                             {p.imageUrl ? <Image src={p.imageUrl} alt={p.name || ''} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
@@ -821,7 +832,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Year 1 Recovery Protocol</h4>
                                 <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden">
                                    <table className="w-full text-left">
-                                      <thead className="bg-slate-50"><tr className="border-b border-slate-200"><th className="p-4 text-[8px] font-bold uppercase">Month</th><th className="p-4 text-[8px] font-bold uppercase">EMI</th><th className="p-4 text-[8px] font-bold uppercase">Closing Balance</th></tr></thead>
+                                      <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-4 text-[8px] font-bold uppercase">Month</th><th className="p-4 text-[8px] font-bold uppercase">EMI</th><th className="p-4 text-[8px] font-bold uppercase">Closing Balance</th></tr></thead>
                                       <tbody>
                                          {calculations.schedule.slice(0, 12).map(s => (
                                            <tr key={s.month} className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">M_{s.month.toString().padStart(2, '0')}</td><td className="p-4 text-[10px] font-bold text-[#001F3D]">₹ {s.payment.toLocaleString()}</td><td className="p-4 text-[10px] font-medium text-slate-500">₹ {s.balance.toLocaleString()}</td></tr>

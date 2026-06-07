@@ -731,7 +731,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <Input className="bg-white border-none h-12 text-sm font-display font-bold shadow-sm" value={s.price || ''} onChange={(e) => updateService(idx, 'price', e.target.value)} />
                           </div>
                           <div className="space-y-2">
-                             <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Target (Units/Hrs)</Label>
+                             <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Projection (Qty)</Label>
                              <Input className="bg-white border-none h-12 text-sm font-display font-bold shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
                           </div>
                        </div>

@@ -213,6 +213,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investPreOp: 200000,
     // Projection Config
     growthTarget: 15,
+    yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
     entrepreneurContribution: 0,
   });
@@ -233,7 +234,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         setIndustrialServices(savedStrategy.industrialServices);
       }
       if (savedStrategy.financials) {
-        setFinancials(prev => ({ ...prev, ...savedStrategy.financials }));
+        setFinancials(prev => ({ 
+          ...prev, 
+          ...savedStrategy.financials,
+          yearlyGrowthTargets: savedStrategy.financials.yearlyGrowthTargets || [0, 15, 15, 15, 15]
+        }));
       }
       if (savedStrategy.checklist) {
         setChecklist(prev => ({ ...prev, ...savedStrategy.checklist }));
@@ -277,7 +282,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     // Monthly OpEx
     const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
     
-    // NEW: Working Capital is 3 months of OpEx
+    // Working Capital is 3 months of OpEx
     const workingCapitalValue = monthlyOpEx * 3;
 
     // Investment Calcs
@@ -375,19 +380,28 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       };
     });
 
-    // 5-Year Projection Matrix
+    // 5-Year Projection Matrix with Variable Yearly Growth
     const projections: any[] = [];
+    let currentCapacityRevenue = targetTurnover * 12;
+
     for (let y = 1; y <= 5; y++) {
-      const growthFactor = Math.pow(1 + ((financials.growthTarget || 15) / 100), y - 1);
+      const yearlyGrowth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
+      const growthMultiplier = 1 + (yearlyGrowth / 100);
       
       let yearlyRevenue = 0;
       if (y === 1) {
+        // Base year with ramp up logic
+        let baseYearRev = 0;
         for (let m = 1; m <= 12; m++) {
           const rampFactor = m <= 6 ? 0.3 + (m * 0.1) : 1.0; 
-          yearlyRevenue += targetTurnover * rampFactor;
+          baseYearRev += targetTurnover * rampFactor;
         }
+        yearlyRevenue = baseYearRev * growthMultiplier;
+        // The "Full Potential" baseline for next year's growth is targetTurnover * 12 * current growth
+        currentCapacityRevenue = targetTurnover * 12 * growthMultiplier;
       } else {
-        yearlyRevenue = targetTurnover * 12 * growthFactor;
+        yearlyRevenue = currentCapacityRevenue * growthMultiplier;
+        currentCapacityRevenue = yearlyRevenue;
       }
 
       const yearlyOpEx = monthlyOpEx * 12 * (1 + (y * 0.05)); 
@@ -827,12 +841,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={calculations.totalMonthlyOutflow.toLocaleString(undefined, {maximumFractionDigits: 0})} />
                        </div>
                     </div>
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
-                      <Info className="h-4 w-4 text-blue-500 mt-0.5" />
-                      <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
-                        Increasing your operational burn will automatically update the <b>Working Capital Reserve</b> in the Valuation Matrix to maintain a 3-month liquidity buffer.
-                      </p>
-                    </div>
                  </Card>
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -871,13 +879,29 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Multi-year industrial forecasting nodes.</p>
                           </div>
                        </div>
-                       <div className="flex items-center gap-6">
-                          <div className="space-y-2 text-right">
-                             <Label className="text-[9px] font-bold uppercase text-slate-400">Yearly Growth (%)</Label>
-                             <Input type="number" className="h-10 w-24 bg-slate-50 border-none text-right font-bold text-primary" value={financials.growthTarget} onChange={(e)=>setFinancials({...financials, growthTarget: Number(e.target.value)})} />
+                       <div className="flex items-center gap-10">
+                          <div className="space-y-3">
+                             <Label className="text-[9px] font-bold uppercase text-slate-400 tracking-widest block text-center">Yearly Growth Targets (%)</Label>
+                             <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((y) => (
+                                  <div key={y} className="space-y-1">
+                                    <span className="text-[7px] font-bold text-slate-300 uppercase block text-center">Y{y}</span>
+                                    <Input 
+                                      type="number" 
+                                      className="h-9 w-14 bg-slate-50 border-none text-center font-bold text-primary text-[10px]" 
+                                      value={financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15)} 
+                                      onChange={(e) => {
+                                        const newTargets = [...(financials.yearlyGrowthTargets || [0, 15, 15, 15, 15])];
+                                        newTargets[y-1] = Number(e.target.value);
+                                        setFinancials({...financials, yearlyGrowthTargets: newTargets});
+                                      }} 
+                                    />
+                                  </div>
+                                ))}
+                             </div>
                           </div>
                           <div className="space-y-2 text-right">
-                             <Label className="text-[9px] font-bold uppercase text-slate-400">Target Margin (%)</Label>
+                             <Label className="text-[9px] font-bold uppercase text-slate-400 block">Target Margin (%)</Label>
                              <Input type="number" className="h-10 w-24 bg-slate-50 border-none text-right font-bold text-primary" value={financials.targetNetMargin} onChange={(e)=>setFinancials({...financials, targetNetMargin: Number(e.target.value)})} />
                           </div>
                        </div>

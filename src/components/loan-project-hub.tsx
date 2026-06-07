@@ -91,6 +91,11 @@ import {
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 interface ProprietaryProduct {
   id: string;
   name: string;
@@ -196,7 +201,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // 03. Financial Data State
   const [financials, setFinancials] = useState({
-    workingCapital: 2000000,
+    workingCapital: 0, // This will be calculated from OpEx
     loanROI: 9.5,
     loanTenure: 60,
     loanMoratorium: 6,
@@ -229,9 +234,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       }
       if (Array.isArray(savedStrategy.proprietaryProducts)) {
         setProprietaryProducts(savedStrategy.proprietaryProducts);
+      } else {
+        setProprietaryProducts([]);
       }
       if (Array.isArray(savedStrategy.industrialServices)) {
         setIndustrialServices(savedStrategy.industrialServices);
+      } else {
+        setIndustrialServices([]);
       }
       if (savedStrategy.financials) {
         setFinancials(prev => ({ ...prev, ...savedStrategy.financials }));
@@ -275,9 +284,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // Financial Computations Engine
   const calculations = useMemo(() => {
+    // Monthly OpEx
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
+    
+    // NEW: Working Capital is 3 months of OpEx
+    const calculatedWorkingCapital = monthlyOpEx * 3;
+
     // Investment Calcs
     const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0);
-    const totalProjectCost = oneTimeTotal + (financials.workingCapital || 0);
+    const totalProjectCost = oneTimeTotal + calculatedWorkingCapital;
 
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     
@@ -341,13 +356,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const prodRatio = prodPotential / totalPotential;
     const svcRatio = svcPotential / totalPotential;
 
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
     // Item-wise targets based on target turnover
     const productItemBreakup = proprietaryProducts.map(p => {
       const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
-      const potential = price * (parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) / 12);
+      const annualQty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
+      const potential = price * (annualQty / 12);
       const ratioInCat = potential / (prodPotential || 1);
       const targetRev = targetTurnover * prodRatio * ratioInCat;
       return {
@@ -359,7 +374,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     const serviceItemBreakup = industrialServices.map(s => {
       const price = parseFloat((s.price || '0').replace(/,/g, '')) || 0;
-      const potential = price * (parseFloat((s.annualTargetQty || '0').replace(/,/g, '')) / 12);
+      const annualQty = parseFloat((s.annualTargetQty || '0').replace(/,/g, '')) || 0;
+      const potential = price * (annualQty / 12);
       const ratioInCat = potential / (svcPotential || 1);
       const targetRev = targetTurnover * svcRatio * ratioInCat;
       return {
@@ -406,6 +422,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     return {
       oneTimeTotal,
+      workingCapitalValue,
       totalProjectCost,
       loanAmt,
       entrepreneurAmt,
@@ -755,8 +772,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                       <div className="pt-4 border-t space-y-4">
                          <div className="space-y-2">
-                            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve (₹)</Label>
-                            <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.workingCapital || 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
+                            <div className="flex justify-between items-center mb-1">
+                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve (₹)</Label>
+                              <Badge className="bg-emerald-50 text-emerald-700 text-[8px] font-bold border-none uppercase">3.0x OpEx Multiplier</Badge>
+                            </div>
+                            <Input readOnly className="h-12 bg-emerald-50/50 border-none rounded-xl font-bold text-emerald-700" value={calculations.workingCapitalValue.toLocaleString()} />
+                            <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 ml-1 leading-relaxed">
+                              Automatically derived as 3 months of operational liquidity buffer.
+                            </p>
                          </div>
                       </div>
                    </div>
@@ -835,6 +858,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Monthly OpEx</Label>
                           <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={calculations.monthlyOpEx.toLocaleString()} />
                        </div>
+                    </div>
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
+                      <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                      <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                        Increasing your operational burn will automatically update the <b>Working Capital Reserve</b> in the Valuation Matrix to maintain a 3-month liquidity buffer.
+                      </p>
                     </div>
                  </Card>
 
@@ -1021,7 +1050,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Electrical Install</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investElectrical.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Office & Furniture</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investFurniture.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Pre-operative / Misc</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investPreOp.toLocaleString()}</td></tr>
-                                         <tr className="border-b border-slate-100 bg-slate-50/50"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">Working Capital</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.workingCapital.toLocaleString()}</td></tr>
+                                         <tr className="border-b border-slate-100 bg-slate-50/50"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">Working Capital (3M OpEx)</td><td className="p-4 text-[10px] font-bold text-right">₹ {calculations.workingCapitalValue.toLocaleString()}</td></tr>
                                          <tr className="bg-slate-900 text-white"><td className="p-4 text-[10px] font-bold uppercase">Total Project Cost</td><td className="p-4 text-[11px] font-display font-bold text-right">₹ {calculations.totalProjectCost.toLocaleString()}</td></tr>
                                       </tbody>
                                    </table>

@@ -218,10 +218,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanMoratorium: 6,
     // Monthly OpEx
     expenseRent: 150000,
-    expenseAdvance: 400000, // Changed from Salaries
     expensePower: 100000,
     expenseMaintenance: 50000,
-    expenseSalary: 100000, // Changed from Consumables
+    expenseSalary: 100000,
     // One Time Investment
     investMachinery: 4500000,
     investCivil: 1000000,
@@ -230,6 +229,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investPreOp: 200000,
     investSoftware: 200000,
     investSystem: 150000,
+    investAdvance: 400000, // Now moved to One-Time
     // Projection Config
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
@@ -300,19 +300,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // Financial Computations Engine
   const calculations = useMemo(() => {
-    // Monthly OpEx
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseAdvance || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseSalary || 0);
+    // Monthly OpEx (Now excludes Advance as it is one-time)
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseSalary || 0);
     
     // Working Capital is 3 months of OpEx
     const workingCapitalValue = monthlyOpEx * 3;
 
     // Investment Calcs
-    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0);
+    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
 
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const entrepreneurAmt = financials.entrepreneurContribution || 0;
     
-    // NEW FORMULA: Total Project Cost = Loan + Entrepreneur + Working Capital
+    // Total Project Cost = Loan + Entrepreneur + Working Capital
     const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
 
     const loanPct = totalProjectCost > 0 ? (loanAmt / totalProjectCost) * 100 : 0;
@@ -673,6 +673,23 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="flex gap-6">
                           <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img">
                              {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
+                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                               <input 
+                                 type="file" 
+                                 id={`product-img-${p.id}`} 
+                                 className="hidden" 
+                                 accept="image/*"
+                                 onChange={(e) => {
+                                   const file = e.target.files?.[0];
+                                   if (file) {
+                                     const reader = new FileReader();
+                                     reader.onloadend = () => updateProduct(idx, 'imageUrl', reader.result as string);
+                                     reader.readAsDataURL(file);
+                                   }
+                                 }}
+                               />
+                               <label htmlFor={`product-img-${p.id}`} className="cursor-pointer p-3 bg-white rounded-full shadow-xl"><Upload className="h-4 w-4 text-[#001F3D]" /></label>
+                             </div>
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
@@ -711,6 +728,23 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="flex gap-6">
                           <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img">
                              {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
+                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                               <input 
+                                 type="file" 
+                                 id={`service-img-${s.id}`} 
+                                 className="hidden" 
+                                 accept="image/*"
+                                 onChange={(e) => {
+                                   const file = e.target.files?.[0];
+                                   if (file) {
+                                     const reader = new FileReader();
+                                     reader.onloadend = () => updateService(idx, 'imageUrl', reader.result as string);
+                                     reader.readAsDataURL(file);
+                                   }
+                                 }}
+                               />
+                               <label htmlFor={`service-img-${s.id}`} className="cursor-pointer p-3 bg-white rounded-full shadow-xl"><Upload className="h-4 w-4 text-[#001F3D]" /></label>
+                             </div>
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Service Identity (e.g. VMC Machining)" className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
@@ -823,6 +857,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          { k: 'investPreOp', l: 'Pre-operative Exp', icon: HardHat },
                          { k: 'investSoftware', l: 'Software', icon: Layers },
                          { k: 'investSystem', l: 'System', icon: Cpu },
+                         { k: 'investAdvance', l: 'Advance', icon: Receipt },
                        ].map(item => (
                          <div key={item.k} className="space-y-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
@@ -839,10 +874,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                        {[
                          { k: 'expenseRent', l: 'Rent / Lease' },
-                         { k: 'expenseAdvance', l: 'Advance' }, // Changed from Personnel
                          { k: 'expensePower', l: 'Power & Util' },
                          { k: 'expenseMaintenance', l: 'Maintenance' },
-                         { k: 'expenseSalary', l: 'Salary' }, // Changed from Consumables
+                         { k: 'expenseSalary', l: 'Salary' },
                        ].map(item => (
                          <div key={item.k} className="space-y-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">{item.l}</Label>
@@ -1168,6 +1202,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Office & Furniture</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investFurniture.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Software</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investSoftware.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">System Infrastructure</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investSystem.toLocaleString()}</td></tr>
+                                         <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Advance Payments</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investAdvance.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100 bg-slate-50/50"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">Working Capital Reserve</td><td className="p-4 text-[10px] font-bold text-right">₹ {calculations.workingCapitalValue.toLocaleString()}</td></tr>
                                          <tr className="bg-slate-900 text-white"><td className="p-4 text-[10px] font-bold uppercase">Total Project Cost</td><td className="p-4 text-[11px] font-display font-bold text-right">₹ {calculations.totalProjectCost.toLocaleString()}</td></tr>
                                       </tbody>

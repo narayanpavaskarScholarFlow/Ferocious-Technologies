@@ -214,7 +214,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investPreOp: 200000,
     // Projection Config
     growthTarget: 15,
-    targetNetMargin: 20
+    targetNetMargin: 20,
+    entrepreneurContribution: 0,
   });
 
   // Hydration and Overwrite prevention
@@ -279,7 +280,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const totalProjectCost = oneTimeTotal + (financials.workingCapital || 0);
 
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
-    const entrepreneurAmt = Math.max(0, totalProjectCost - loanAmt);
+    
+    // Use manual contribution if set, otherwise calculate remainder
+    const entrepreneurAmt = financials.entrepreneurContribution > 0 
+      ? financials.entrepreneurContribution 
+      : Math.max(0, totalProjectCost - loanAmt);
     
     const loanPct = totalProjectCost > 0 ? (loanAmt / totalProjectCost) * 100 : 0;
     const entrepreneurPct = totalProjectCost > 0 ? (entrepreneurAmt / totalProjectCost) * 100 : 0;
@@ -736,7 +741,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                       <div className="space-y-2 relative">
                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Entrepreneur Invest Node (₹)</Label>
-                         <Input readOnly className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-slate-700" value={calculations.entrepreneurAmt.toLocaleString()} />
+                         <Input 
+                           className="h-14 bg-white border-2 border-slate-100 rounded-2xl text-xl font-display font-bold text-slate-700 focus-visible:ring-primary/20" 
+                           placeholder={calculations.entrepreneurAmt.toLocaleString()}
+                           value={financials.entrepreneurContribution ? financials.entrepreneurContribution.toLocaleString() : ''} 
+                           onChange={(e) => {
+                             const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+                             setFinancials({...financials, entrepreneurContribution: val});
+                           }}
+                         />
                          <Badge className="absolute right-3 top-10 bg-slate-200 text-slate-500 border-none text-[8px] font-bold">{calculations.entrepreneurPct.toFixed(1)}%</Badge>
                       </div>
 

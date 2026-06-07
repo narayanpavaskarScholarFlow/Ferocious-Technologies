@@ -54,7 +54,9 @@ import {
   X,
   HardHat,
   Construction,
-  Monitor
+  Monitor,
+  Cpu,
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -109,6 +111,14 @@ interface IndustrialService {
   imageUrl: string;
 }
 
+interface MachineryItem {
+  id: string;
+  name: string;
+  qty: number;
+  rate: number;
+  total: number;
+}
+
 interface LoanProjectHubProps {
   brandLogo?: string;
 }
@@ -119,6 +129,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [activeTab, setActiveTab] = useState('input');
   const [zoom, setZoom] = useState(1);
   const [isTurnoverBreakupOpen, setIsTurnoverBreakupOpen] = useState(false);
+  const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
 
   // Firestore Persistence Node
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
@@ -136,7 +147,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     financialProjections: true,
     oneTimeInvestment: true,
     amortizationSchedule: true,
-    turnoverAnalysis: true
+    turnoverAnalysis: true,
+    roadMapNextFiveYears: true
   });
 
   const [foundationalData, setFormData] = useState({
@@ -194,6 +206,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     },
   ]);
 
+  // Machinery Breakup State
+  const [machineryItems, setMachineryItems] = useState<MachineryItem[]>([
+    { id: 'M1', name: 'VMC 3-Axis Center', qty: 1, rate: 4500000, total: 4500000 },
+  ]);
+
   // 03. Financial Data State
   const [financials, setFinancials] = useState({
     loanROI: 9.5,
@@ -201,20 +218,22 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanMoratorium: 6,
     // Monthly OpEx
     expenseRent: 150000,
-    expenseSalaries: 400000,
+    expenseAdvance: 400000, // Changed from Salaries
     expensePower: 100000,
     expenseMaintenance: 50000,
-    expenseConsumables: 100000,
+    expenseSalary: 100000, // Changed from Consumables
     // One Time Investment
-    investMachinery: 6000000,
+    investMachinery: 4500000,
     investCivil: 1000000,
     investElectrical: 500000,
     investFurniture: 300000,
     investPreOp: 200000,
+    investSoftware: 200000,
+    investSystem: 150000,
     // Projection Config
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
-    entrepreneurContribution: 0,
+    entrepreneurContribution: 1000000,
   });
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -230,6 +249,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       }
       if (Array.isArray(savedStrategy.industrialServices)) {
         setIndustrialServices(savedStrategy.industrialServices);
+      }
+      if (Array.isArray(savedStrategy.machineryItems)) {
+        setMachineryItems(savedStrategy.machineryItems);
       }
       if (savedStrategy.financials) {
         setFinancials(prev => ({ 
@@ -250,6 +272,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       foundationalData,
       proprietaryProducts,
       industrialServices,
+      machineryItems,
       financials,
       checklist,
       updatedAt: new Date().toISOString()
@@ -262,7 +285,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         description: "All financial nodes and schedules have been synchronized." 
       });
     }
-  }, [foundationalData, proprietaryProducts, industrialServices, financials, checklist, strategyRef, toast]);
+  }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, strategyRef, toast]);
 
   // Auto-Save Debounce Protocol
   useEffect(() => {
@@ -273,27 +296,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }, 2000);
 
     return () => clearTimeout(timeout);
-  }, [foundationalData, proprietaryProducts, industrialServices, financials, checklist, isDataLoaded, handleSaveStrategy]);
+  }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, isDataLoaded, handleSaveStrategy]);
 
   // Financial Computations Engine
   const calculations = useMemo(() => {
     // Monthly OpEx
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseAdvance || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseSalary || 0);
     
     // Working Capital is 3 months of OpEx
     const workingCapitalValue = monthlyOpEx * 3;
 
     // Investment Calcs
-    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0);
-    const totalProjectCost = oneTimeTotal + workingCapitalValue;
+    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0);
 
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
+    const entrepreneurAmt = financials.entrepreneurContribution || 0;
     
-    // Use manual contribution if set, otherwise calculate remainder
-    const entrepreneurAmt = financials.entrepreneurContribution > 0 
-      ? financials.entrepreneurContribution 
-      : Math.max(0, totalProjectCost - loanAmt);
-    
+    // NEW FORMULA: Total Project Cost = Loan + Entrepreneur + Working Capital
+    const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
+
     const loanPct = totalProjectCost > 0 ? (loanAmt / totalProjectCost) * 100 : 0;
     const entrepreneurPct = totalProjectCost > 0 ? (entrepreneurAmt / totalProjectCost) * 100 : 0;
 
@@ -462,6 +483,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     imageUrl: 'https://picsum.photos/seed/service/600/400' 
   }]);
 
+  const handleAddMachineryItem = () => {
+    const newItem = { id: `M-${Date.now()}`, name: '', qty: 1, rate: 0, total: 0 };
+    setMachineryItems([...machineryItems, newItem]);
+  };
+
+  const updateMachineryItem = (idx: number, field: keyof MachineryItem, value: any) => {
+    const updated = [...machineryItems];
+    const item = { ...updated[idx], [field]: value };
+    if (field === 'qty' || field === 'rate') {
+      item.total = (item.qty || 0) * (item.rate || 0);
+    }
+    updated[idx] = item;
+    setMachineryItems(updated);
+    
+    // Sync to total investMachinery
+    const grandTotal = updated.reduce((acc, i) => acc + i.total, 0);
+    setFinancials(prev => ({ ...prev, investMachinery: grandTotal }));
+  };
+
   const updateProduct = (idx: number, field: keyof ProprietaryProduct, value: string) => {
     const newP = [...proprietaryProducts];
     newP[idx] = { ...newP[idx], [field]: value || '' };
@@ -472,30 +512,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const newS = [...industrialServices];
     newS[idx] = { ...newS[idx], [field]: value || '' };
     setIndustrialServices(newS);
-  };
-
-  const handleProductImageUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateProduct(idx, 'imageUrl', reader.result as string);
-        toast({ title: "Visual Matrix Cached", description: "Product image initialized for report." });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleServiceImageUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateService(idx, 'imageUrl', reader.result as string);
-        toast({ title: "Service Artifact Cached", description: "Visual node synchronized." });
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -630,7 +646,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key]: !val})}>
                           <Checkbox checked={val} className="border-white/20 data-[state=checked]:bg-primary" />
                           <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
-                            {key === 'productLine' ? 'Proprietary Products' : key === 'licenseGst' ? 'Licenses (GST & MSME)' : key.replace(/([A-Z])/g, ' $1')}
+                            {key === 'productLine' ? 'Proprietary Products' : key === 'roadMapNextFiveYears' ? 'Road Map for next five years' : key.replace(/([A-Z])/g, ' $1')}
                           </span>
                        </div>
                     ))}
@@ -655,18 +671,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {proprietaryProducts.map((p, idx) => (
                     <div key={p.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 group hover:border-primary/20 transition-all">
                        <div className="flex gap-6">
-                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img relative">
-                             {p.imageUrl ? <Image src={p.imageUrl} alt={p.name || ''} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
-                             <input 
-                                type="file" 
-                                id={`prod-upload-${idx}`} 
-                                className="hidden" 
-                                accept="image/*"
-                                onChange={(e) => handleProductImageUpload(idx, e)}
-                             />
-                             <label htmlFor={`prod-upload-${idx}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer">
-                                <Upload className="h-6 w-6 text-white" />
-                             </label>
+                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img">
+                             {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
@@ -703,18 +709,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {industrialServices.map((s, idx) => (
                     <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 group hover:border-accent/20 transition-all">
                        <div className="flex gap-6">
-                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img relative">
-                             {s.imageUrl ? <Image src={s.imageUrl} alt={s.name || ''} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
-                             <input 
-                                type="file" 
-                                id={`svc-upload-${idx}`} 
-                                className="hidden" 
-                                accept="image/*"
-                                onChange={(e) => handleServiceImageUpload(idx, e)}
-                             />
-                             <label htmlFor={`svc-upload-${idx}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer">
-                                <Upload className="h-6 w-6 text-white" />
-                             </label>
+                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group/img">
+                             {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
                           </div>
                           <div className="flex-1 space-y-4">
                              <Input placeholder="Service Identity (e.g. VMC Machining)" className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
@@ -745,8 +741,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    <div className="space-y-6">
                       <div className="space-y-2">
                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Project Cost (₹)</Label>
-                         <Input readOnly className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D]" value={calculations.totalProjectCost.toLocaleString()} />
-                         <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 ml-1">* Sum of One-Time Investment + Working Capital</p>
+                         <Input readOnly className="h-14 bg-[#001F3D] border-none rounded-2xl text-xl font-display font-bold text-white shadow-xl" value={calculations.totalProjectCost.toLocaleString()} />
+                         <p className="text-[8px] text-slate-400 font-bold uppercase mt-2 ml-1">* Sum: LOAN + INVEST + WORKING CAPITAL</p>
                       </div>
                       
                       <div className="space-y-2 relative">
@@ -759,7 +755,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Entrepreneur Invest Node (₹)</Label>
                          <Input 
                            className="h-14 bg-white border-2 border-slate-100 rounded-2xl text-xl font-display font-bold text-slate-700 focus-visible:ring-primary/20" 
-                           placeholder={calculations.entrepreneurAmt.toLocaleString()}
                            value={financials.entrepreneurContribution ? financials.entrepreneurContribution.toLocaleString() : ''} 
                            onChange={(e) => {
                              const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
@@ -776,9 +771,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               <Badge className="bg-emerald-50 text-emerald-700 text-[8px] font-bold border-none uppercase">3.0x OpEx Multiplier</Badge>
                             </div>
                             <Input readOnly className="h-12 bg-emerald-50/50 border-none rounded-xl font-bold text-emerald-700" value={calculations.workingCapitalValue.toLocaleString()} />
-                            <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 ml-1 leading-relaxed">
-                              Automatically derived as 3 months of operational liquidity buffer.
-                            </p>
                          </div>
                       </div>
                    </div>
@@ -817,12 +809,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
                     <h3 className="text-sm font-bold uppercase text-slate-400 tracking-[0.2em] border-l-4 border-primary pl-4">One-Time Investment Matrix</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center justify-between">
+                             <span className="flex items-center gap-2"><Factory className="h-3 w-3 text-primary" /> Plant & Machinery</span>
+                             <Button variant="ghost" size="sm" className="h-6 px-2 text-primary text-[8px] font-bold uppercase tracking-tighter" onClick={() => setIsMachineryBreakupOpen(true)}>Edit Breakup</Button>
+                          </Label>
+                          <Input type="number" readOnly className="h-12 bg-slate-50 border-none rounded-xl font-bold cursor-pointer" value={financials.investMachinery || 0} onClick={() => setIsMachineryBreakupOpen(true)} />
+                       </div>
                        {[
-                         { k: 'investMachinery', l: 'Plant & Machinery', icon: Factory },
                          { k: 'investCivil', l: 'Civil / Interior', icon: Construction },
                          { k: 'investElectrical', l: 'Electrical Install', icon: Zap },
                          { k: 'investFurniture', l: 'Furniture / Office', icon: Monitor },
                          { k: 'investPreOp', l: 'Pre-operative Exp', icon: HardHat },
+                         { k: 'investSoftware', l: 'Software', icon: Layers },
+                         { k: 'investSystem', l: 'System', icon: Cpu },
                        ].map(item => (
                          <div key={item.k} className="space-y-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
@@ -831,10 +831,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={(financials as any)[item.k] || 0} onChange={(e)=>setFinancials({...financials, [item.k]: Number(e.target.value)})} />
                          </div>
                        ))}
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Fixed Capital</Label>
-                          <Input readOnly className="h-12 bg-primary/5 text-primary border-none rounded-xl font-display font-bold" value={calculations.oneTimeTotal.toLocaleString()} />
-                       </div>
                     </div>
                  </Card>
 
@@ -843,10 +839,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                        {[
                          { k: 'expenseRent', l: 'Rent / Lease' },
-                         { k: 'expenseSalaries', l: 'Personnel' },
+                         { k: 'expenseAdvance', l: 'Advance' }, // Changed from Personnel
                          { k: 'expensePower', l: 'Power & Util' },
                          { k: 'expenseMaintenance', l: 'Maintenance' },
-                         { k: 'expenseConsumables', l: 'Consumables' },
+                         { k: 'expenseSalary', l: 'Salary' }, // Changed from Consumables
                        ].map(item => (
                          <div key={item.k} className="space-y-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">{item.l}</Label>
@@ -856,10 +852,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Monthly EMI</Label>
                           <Input readOnly className="h-12 bg-primary/5 text-primary border-none rounded-xl font-display font-bold" value={calculations.emi.toLocaleString(undefined, {maximumFractionDigits: 0})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Monthly Outflow</Label>
-                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={calculations.totalMonthlyOutflow.toLocaleString(undefined, {maximumFractionDigits: 0})} />
                        </div>
                     </div>
                  </Card>
@@ -942,16 +934,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={4} fill="transparent" />
                           </AreaChart>
                        </ResponsiveContainer>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                       {calculations.projections.map((p, idx) => (
-                          <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-2">
-                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{p.year}</p>
-                             <p className="text-sm font-display font-bold text-[#001F3D]">₹ {(p.profit / 100000).toFixed(1)}L</p>
-                             <Badge className="bg-emerald-50 text-emerald-700 text-[8px] font-bold w-fit">{p.margin}%</Badge>
-                          </div>
-                       ))}
                     </div>
                  </Card>
 
@@ -1061,7 +1043,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 02: Vision & Mission */}
+                     {/* Section 02: Strategic Roadmap */}
                      {(checklist.vision || checklist.mission) && (
                        <div className="space-y-12 pt-20 page-break">
                           <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Strategic Roadmap</h3></div>
@@ -1084,7 +1066,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 03: Promoter Pedigree */}
+                     {/* Section 03: Promoter Leadership */}
                      {checklist.entrepreneurDetails && (
                        <div className="space-y-12 pt-20 page-break">
                           <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter Leadership Matrix</h3></div>
@@ -1163,7 +1145,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 05: Project Cost & Funding Matrix */}
+                     {/* Section 05: Project Cost & Funding Architecture */}
                      {checklist.oneTimeInvestment && (
                        <div className="space-y-16 pt-20 page-break">
                           <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Project Cost & Funding Architecture</h3></div>
@@ -1184,8 +1166,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Civil & Interior</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investCivil.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Electrical Install</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investElectrical.toLocaleString()}</td></tr>
                                          <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Office & Furniture</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investFurniture.toLocaleString()}</td></tr>
-                                         <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Pre-operative / Misc</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investPreOp.toLocaleString()}</td></tr>
-                                         <tr className="border-b border-slate-100 bg-slate-50/50"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">Working Capital (3M OpEx)</td><td className="p-4 text-[10px] font-bold text-right">₹ {calculations.workingCapitalValue.toLocaleString()}</td></tr>
+                                         <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">Software</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investSoftware.toLocaleString()}</td></tr>
+                                         <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-700">System Infrastructure</td><td className="p-4 text-[10px] font-bold text-right">₹ {financials.investSystem.toLocaleString()}</td></tr>
+                                         <tr className="border-b border-slate-100 bg-slate-50/50"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">Working Capital Reserve</td><td className="p-4 text-[10px] font-bold text-right">₹ {calculations.workingCapitalValue.toLocaleString()}</td></tr>
                                          <tr className="bg-slate-900 text-white"><td className="p-4 text-[10px] font-bold uppercase">Total Project Cost</td><td className="p-4 text-[11px] font-display font-bold text-right">₹ {calculations.totalProjectCost.toLocaleString()}</td></tr>
                                       </tbody>
                                    </table>
@@ -1219,10 +1202,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 06: 5-Year Growth Matrix */}
-                     {checklist.financialProjections && (
+                     {/* Section 06: Road Map for next five years */}
+                     {checklist.roadMapNextFiveYears && (
                        <div className="space-y-16 pt-20 page-break">
-                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">5-Year Growth Projections</h3></div>
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
                           <div className="border border-slate-200 rounded-[2rem] overflow-hidden">
                              <table className="w-full text-left">
                                 <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-6 font-bold text-[9px] uppercase">Timeline Node</th><th className="p-6 font-bold text-[9px] uppercase">Revenue (₹)</th><th className="p-6 font-bold text-[9px] uppercase">OpEx (₹)</th><th className="p-6 font-bold text-[9px] uppercase">Loan Servicing (₹)</th><th className="p-6 font-bold text-[9px] uppercase">Net Profit (₹)</th><th className="p-6 font-bold text-[9px] uppercase text-center">Margin</th></tr></thead>
@@ -1253,32 +1236,34 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 07: Amortization Schedule */}
-                     {checklist.amortizationSchedule && (
+                     {/* Section 07: Repayment & Turnover */}
+                     {(checklist.amortizationSchedule || checklist.turnoverAnalysis) && (
                        <div className="space-y-16 pt-20 page-break">
-                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Loan Repayment Matrix</h3></div>
+                          <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Logistics & Repayment</h3></div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                             <div className="space-y-8">
-                                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Year 1 Recovery Protocol</h4>
-                                <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden">
-                                   <table className="w-full text-left">
-                                      <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-4 text-[8px] font-bold uppercase">Month</th><th className="p-4 text-[8px] font-bold uppercase">EMI</th><th className="p-4 text-[8px] font-bold uppercase">Closing Balance</th></tr></thead>
-                                      <tbody>
-                                         {calculations.schedule.slice(0, 12).map(s => (
-                                           <tr key={s.month} className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">M_{s.month.toString().padStart(2, '0')}</td><td className="p-4 text-[10px] font-bold text-[#001F3D]">₹ {s.payment.toLocaleString()}</td><td className="p-4 text-[10px] font-medium text-slate-500">₹ {s.balance.toLocaleString()}</td></tr>
-                                         ))}
-                                      </tbody>
-                                   </table>
-                                </div>
-                             </div>
+                             {checklist.amortizationSchedule && (
+                               <div className="space-y-8">
+                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Year 1 Recovery Protocol</h4>
+                                  <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden">
+                                     <table className="w-full text-left">
+                                        <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-4 text-[8px] font-bold uppercase">Month</th><th className="p-4 text-[8px] font-bold uppercase">EMI</th><th className="p-4 text-[8px] font-bold uppercase">Balance</th></tr></thead>
+                                        <tbody>
+                                           {calculations.schedule.slice(0, 12).map(s => (
+                                             <tr key={s.month} className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">M_{s.month.toString().padStart(2, '0')}</td><td className="p-4 text-[10px] font-bold text-[#001F3D]">₹ {s.payment.toLocaleString()}</td><td className="p-4 text-[10px] font-medium text-slate-500">₹ {s.balance.toLocaleString()}</td></tr>
+                                           ))}
+                                        </tbody>
+                                     </table>
+                                  </div>
+                               </div>
+                             )}
                              {checklist.turnoverAnalysis && (
                                <div className="space-y-8">
                                   <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Target Turnover Structure</h4>
                                   <div className="p-8 bg-slate-900 text-white rounded-[2rem] space-y-8">
                                      <div className="space-y-2"><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Monthly Yield Mandate</p><p className="text-3xl font-display font-bold">₹ {calculations.targetTurnover.toLocaleString(undefined, {maximumFractionDigits: 0})}</p></div>
                                      <div className="pt-8 border-t border-white/10 space-y-6">
-                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Proprietary Products (Split)</span><span className="text-sm font-bold">₹ {calculations.prodTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Industrial Services (Split)</span><span className="text-sm font-bold">₹ {calculations.svcTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Proprietary Yield</span><span className="text-sm font-bold">₹ {calculations.prodTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Service Capacity</span><span className="text-sm font-bold">₹ {calculations.svcTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
                                      </div>
                                   </div>
                                </div>
@@ -1402,6 +1387,85 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 onClick={() => setIsTurnoverBreakupOpen(false)}
              >
                 Close Matrix <ChevronRight className="h-3.5 w-3.5 ml-2" />
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Plant & Machinery Breakup Matrix Dialog */}
+      <Dialog open={isMachineryBreakupOpen} onOpenChange={setIsMachineryBreakupOpen}>
+        <DialogContent className="max-w-4xl h-[85vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
+          <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20"><Factory className="h-8 w-8" /></div>
+              <div>
+                <h3 className="text-2xl font-display font-bold uppercase tracking-tight">Plant & Machinery Breakup</h3>
+                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital Expenditure Quotation Ledger v2.4</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsMachineryBreakupOpen(false)} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full">
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <ScrollArea className="flex-1 p-10">
+            <div className="space-y-10">
+              <div className="flex justify-between items-center px-1">
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Asset Itemization Matrix</h4>
+                <Button variant="ghost" size="sm" className="h-8 text-primary font-bold text-[9px] uppercase tracking-widest gap-2 hover:bg-primary/5" onClick={handleAddMachineryItem}>
+                  <Plus className="h-3.5 w-3.5" /> Append Asset Node
+                </Button>
+              </div>
+
+              <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+                 <table className="w-full text-left">
+                    <thead className="bg-slate-50/80">
+                       <tr className="border-b border-slate-100">
+                          <th className="p-5 font-bold text-[9px] uppercase text-slate-400">Asset Identity / Specification</th>
+                          <th className="p-5 font-bold text-[9px] uppercase text-slate-400 text-center w-24">Qty</th>
+                          <th className="p-5 font-bold text-[9px] uppercase text-slate-400 text-right w-40">Unit Rate (₹)</th>
+                          <th className="p-5 font-bold text-[9px] uppercase text-slate-400 text-right w-40">Net Value (₹)</th>
+                          <th className="p-5 w-12"></th>
+                       </tr>
+                    </thead>
+                    <tbody>
+                       {machineryItems.map((item, idx) => (
+                         <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/30 group">
+                            <td className="p-4">
+                               <Input placeholder="e.g. VMC HAAS VF-2" className="h-10 bg-transparent border-none text-[11px] font-bold uppercase focus:ring-0" value={item.name} onChange={(e)=>updateMachineryItem(idx, 'name', e.target.value)} />
+                            </td>
+                            <td className="p-4">
+                               <Input type="number" className="h-10 bg-transparent border-none text-center text-xs font-bold focus:ring-0" value={item.qty} onChange={(e)=>updateMachineryItem(idx, 'qty', Number(e.target.value))} />
+                            </td>
+                            <td className="p-4">
+                               <Input type="number" className="h-10 bg-transparent border-none text-right text-xs font-display font-bold focus:ring-0" value={item.rate} onChange={(e)=>updateMachineryItem(idx, 'rate', Number(e.target.value))} />
+                            </td>
+                            <td className="p-4 text-right">
+                               <span className="text-[11px] font-display font-bold text-[#001F3D]">₹ {item.total.toLocaleString()}</span>
+                            </td>
+                            <td className="p-4">
+                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100" onClick={() => setMachineryItems(machineryItems.filter((_, i)=>i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button>
+                            </td>
+                         </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-8 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+             <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Gross Quotation Value</p>
+                  <p className="text-2xl font-display font-bold text-primary">₹ {financials.investMachinery.toLocaleString()}</p>
+                </div>
+             </div>
+             <Button 
+                className="h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl"
+                onClick={() => setIsMachineryBreakupOpen(false)}
+             >
+                Commit Breakup Matrix <ChevronRight className="h-3.5 w-3.5 ml-2" />
              </Button>
           </DialogFooter>
         </DialogContent>

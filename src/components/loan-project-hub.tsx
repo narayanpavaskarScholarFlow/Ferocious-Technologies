@@ -147,7 +147,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     financialProjections: true,
     oneTimeInvestment: true,
     amortizationSchedule: true,
-    turnoverAnalysis: true,
     roadMapNextFiveYears: true,
     cgtmseScheme: true
   });
@@ -230,7 +229,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investPreOp: 200000,
     investSoftware: 200000,
     investSystem: 150000,
-    investAdvance: 400000, // Now moved to One-Time
+    investAdvance: 400000,
     // Projection Config
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
@@ -301,7 +300,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // Financial Computations Engine
   const calculations = useMemo(() => {
-    // Monthly OpEx (Now excludes Advance as it is one-time)
+    // Monthly OpEx
     const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseSalary || 0);
     
     // Working Capital is 3 months of OpEx
@@ -354,7 +353,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       });
     }
 
-    // Revenue Matrix Computation with Safety
+    // Revenue Matrix Computation
     const prodPotential = proprietaryProducts.reduce((acc, p) => {
       const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
       const qty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
@@ -374,31 +373,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
     // Item-wise targets
-    const productItemBreakup = proprietaryProducts.map(p => {
-      const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
-      const annualQty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
-      const potential = price * (annualQty / 12);
-      const ratioInCat = potential / (prodPotential || 1);
-      const targetRev = targetTurnover * prodRatio * ratioInCat;
-      return {
-        ...p,
-        targetMonthlyRevenue: targetRev,
-        targetMonthlyQty: price > 0 ? targetRev / price : 0
-      };
-    });
-
-    const serviceItemBreakup = industrialServices.map(s => {
-      const price = parseFloat((s.price || '0').replace(/,/g, '')) || 0;
-      const annualQty = parseFloat((s.annualTargetQty || '0').replace(/,/g, '')) || 0;
-      const potential = price * (annualQty / 12);
-      const ratioInCat = potential / (svcPotential || 1);
-      const targetRev = targetTurnover * svcRatio * ratioInCat;
-      return {
-        ...s,
-        targetMonthlyRevenue: targetRev,
-        targetMonthlyQty: price > 0 ? targetRev / price : 0
-      };
-    });
+    const productItemBreakup = productItemBreakupHelper(proprietaryProducts, prodPotential, targetTurnover, prodRatio);
+    const serviceItemBreakup = serviceItemBreakupHelper(industrialServices, svcPotential, targetTurnover, svcRatio);
 
     // 5-Year Projection Matrix
     const projections: any[] = [];
@@ -452,7 +428,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       entrepreneurPct,
       emi,
       monthlyOpEx,
-      totalMonthlyOutflow: monthlyOpEx + emi,
       schedule,
       targetTurnover,
       prodTarget: targetTurnover * prodRatio,
@@ -465,6 +440,36 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       roi
     };
   }, [foundationalData.totalLoanRequirement, financials, proprietaryProducts, industrialServices]);
+
+  function productItemBreakupHelper(products: ProprietaryProduct[], prodPotential: number, targetTurnover: number, prodRatio: number) {
+    return products.map(p => {
+      const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
+      const annualQty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
+      const potential = price * (annualQty / 12);
+      const ratioInCat = potential / (prodPotential || 1);
+      const targetRev = targetTurnover * prodRatio * ratioInCat;
+      return {
+        ...p,
+        targetMonthlyRevenue: targetRev,
+        targetMonthlyQty: price > 0 ? targetRev / price : 0
+      };
+    });
+  }
+
+  function serviceItemBreakupHelper(services: IndustrialService[], svcPotential: number, targetTurnover: number, svcRatio: number) {
+    return services.map(s => {
+      const price = parseFloat((s.price || '0').replace(/,/g, '')) || 0;
+      const annualQty = parseFloat((s.annualTargetQty || '0').replace(/,/g, '')) || 0;
+      const potential = price * (annualQty / 12);
+      const ratioInCat = potential / (svcPotential || 1);
+      const targetRev = targetTurnover * svcRatio * ratioInCat;
+      return {
+        ...s,
+        targetMonthlyRevenue: targetRev,
+        targetMonthlyQty: price > 0 ? targetRev / price : 0
+      };
+    });
+  }
 
   const handleAddProduct = () => setProprietaryProducts([...proprietaryProducts, { 
     id: Date.now().toString(), 
@@ -1275,38 +1280,22 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Section 07: Repayment & Turnover */}
-                     {(checklist.amortizationSchedule || checklist.turnoverAnalysis) && (
+                     {/* Section 07: Repayment */}
+                     {checklist.amortizationSchedule && (
                        <div className="space-y-16 pt-20 page-break">
                           <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Logistics & Repayment</h3></div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                             {checklist.amortizationSchedule && (
-                               <div className="space-y-8">
-                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Year 1 Recovery Protocol</h4>
-                                  <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden">
-                                     <table className="w-full text-left">
-                                        <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-4 text-[8px] font-bold uppercase">Month</th><th className="p-4 text-[8px] font-bold uppercase">EMI</th><th className="p-4 text-[8px] font-bold uppercase">Balance</th></tr></thead>
-                                        <tbody>
-                                           {calculations.schedule.slice(0, 12).map(s => (
-                                             <tr key={s.month} className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">M_{s.month.toString().padStart(2, '0')}</td><td className="p-4 text-[10px] font-bold text-[#001F3D]">₹ {s.payment.toLocaleString()}</td><td className="p-4 text-[10px] font-medium text-slate-500">₹ {s.balance.toLocaleString()}</td></tr>
-                                           ))}
-                                        </tbody>
-                                     </table>
-                                  </div>
-                               </div>
-                             )}
-                             {checklist.turnoverAnalysis && (
-                               <div className="space-y-8">
-                                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Target Turnover Structure</h4>
-                                  <div className="p-8 bg-slate-900 text-white rounded-[2rem] space-y-8">
-                                     <div className="space-y-2"><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Monthly Yield Mandate</p><p className="text-3xl font-display font-bold">₹ {calculations.targetTurnover.toLocaleString(undefined, {maximumFractionDigits: 0})}</p></div>
-                                     <div className="pt-8 border-t border-white/10 space-y-6">
-                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Proprietary Yield</span><span className="text-sm font-bold">₹ {calculations.prodTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Service Capacity</span><span className="text-sm font-bold">₹ {calculations.svcTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-                                     </div>
-                                  </div>
-                               </div>
-                             )}
+                          <div className="space-y-8">
+                             <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Year 1 Recovery Protocol</h4>
+                             <div className="border border-slate-200 rounded-[1.5rem] overflow-hidden">
+                                <table className="w-full text-left">
+                                   <thead className="bg-slate-50"><tr className="border-b-2 border-slate-200"><th className="p-4 text-[8px] font-bold uppercase">Month</th><th className="p-4 text-[8px] font-bold uppercase">EMI</th><th className="p-4 text-[8px] font-bold uppercase">Balance</th></tr></thead>
+                                   <tbody>
+                                      {calculations.schedule.slice(0, 12).map(s => (
+                                        <tr key={s.month} className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold text-slate-400 uppercase">M_{s.month.toString().padStart(2, '0')}</td><td className="p-4 text-[10px] font-bold text-[#001F3D]">₹ {s.payment.toLocaleString()}</td><td className="p-4 text-[10px] font-medium text-slate-500">₹ {s.balance.toLocaleString()}</td></tr>
+                                      ))}
+                                   </tbody>
+                                </table>
+                             </div>
                           </div>
                        </div>
                      )}

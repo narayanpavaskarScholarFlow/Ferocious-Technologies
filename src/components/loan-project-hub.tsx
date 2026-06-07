@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -551,11 +551,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">High-fidelity items designed for institutional scale.</p></div>
                  <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Product</Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                  {proprietaryProducts.map((p, idx) => (
                     <div key={p.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 relative">
-                       <div className="flex gap-6">
-                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group">
+                       <div className="flex flex-col gap-6">
+                          <div className="aspect-square w-full rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group">
                              {p.imageUrl ? (
                                <img src={p.imageUrl} alt="" className="h-full w-full object-contain p-2" />
                              ) : (
@@ -566,7 +566,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <Upload className="h-6 w-6 text-white" />
                              </label>
                           </div>
-                          <div className="flex-1 space-y-4">
+                          <div className="space-y-4">
                              <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
                              <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.annualTargetQty || ''} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
                           </div>
@@ -582,11 +582,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Specialized technical operations for B2B sub-systems.</p></div>
                  <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Service</Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                  {industrialServices.map((s, idx) => (
                     <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 relative">
-                       <div className="flex gap-6">
-                          <div className="h-28 w-28 rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group">
+                       <div className="flex flex-col gap-6">
+                          <div className="aspect-square w-full rounded-3xl overflow-hidden border-2 border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center group">
                              {s.imageUrl ? (
                                <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" />
                              ) : (
@@ -597,7 +597,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <Upload className="h-6 w-6 text-white" />
                              </label>
                           </div>
-                          <div className="flex-1 space-y-4">
+                          <div className="space-y-4">
                              <Input placeholder="Service Identity..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
                              <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
                           </div>

@@ -143,7 +143,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     oneTimeInvestment: true,
     amortizationSchedule: true,
     roadMapNextFiveYears: true,
-    cgtmseScheme: true
+    cgtmseScheme: true,
+    cashFlowStatement: true,
+    keyRatios: true,
+    mpbfCalculation: true,
+    dscrMatrix: true
   });
 
   const [foundationalData, setFormData] = useState({
@@ -272,9 +276,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     
     const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
 
-    const loanPct = totalProjectCost > 0 ? (loanAmt / totalProjectCost) * 100 : 0;
-    const entrepreneurPct = totalProjectCost > 0 ? (entrepreneurAmt / totalProjectCost) * 100 : 0;
-
     // EMI Scheduling
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
@@ -304,12 +305,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const projections: any[] = [];
     const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
+    const loanRepayment: any[] = [];
 
     let currentTNW = entrepreneurAmt;
     let currentCapacityRevenue = targetTurnover * 12;
     let accumulatedDepreciation = 0;
     const depreciationRate = 0.15; // 15% on machinery/fixed assets
     const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0);
+
+    let openingCash = workingCapitalValue * 0.2; // Initial buffer
 
     for (let y = 1; y <= 5; y++) {
       const growth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
@@ -331,14 +335,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       accumulatedDepreciation += yearDepreciation;
       
       const yearInterest = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.interest, 0);
+      const yearPrincipal = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.principal, 0);
       const yearPBT = yearEBITDA - yearDepreciation - yearInterest;
       const yearTax = yearPBT > 0 ? yearPBT * 0.25 : 0;
       const yearPAT = yearPBT - yearTax;
       
+      const prevTNW = currentTNW;
       currentTNW += yearPAT * 0.8; // Assume 20% drawings
       const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
       const yearTOL = yearTermLoan + yearCurrentLiabilities;
+
+      // DSCR Calculation
+      const dscr = (yearPAT + yearDepreciation + yearInterest) / (yearInterest + yearPrincipal || 1);
 
       projections.push({
         year: `Year ${y}`,
@@ -350,7 +359,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         margin: (yearPAT / yearRevenue * 100).toFixed(1),
         tol: yearTOL,
         tnw: currentTNW,
-        ratio: (yearTOL / currentTNW).toFixed(2)
+        ratio: (yearTOL / currentTNW).toFixed(2),
+        dscr: dscr.toFixed(2),
+        growth: growth
       });
 
       balanceSheet.push({
@@ -363,13 +374,40 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         currentAssets: yearRevenue * 0.15 
       });
 
+      // Cash Flow Calculation (As per User Image Format)
+      const opProfitBeforeWC = yearPAT + yearInterest + yearDepreciation;
+      const changeInCL = yearCurrentLiabilities * 0.1; // Simulated increment
+      const financingActivities = -yearInterest - yearPrincipal;
+      const closingCash = openingCash + opProfitBeforeWC + changeInCL + financingActivities;
+
       cashFlow.push({
         year: `Year ${y}`,
-        inflow: yearPAT + yearDepreciation,
-        financing: -(schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.principal, 0)),
-        closingCash: (yearPAT + yearDepreciation) - (yearRevenue * 0.05)
+        npat: yearPAT,
+        interest: yearInterest,
+        depreciation: yearDepreciation,
+        opProfit: opProfitBeforeWC,
+        clChange: changeInCL,
+        loanRepayment: -yearPrincipal,
+        openingCash,
+        closingCash
       });
+
+      loanRepayment.push({
+        year: `Year ${y}`,
+        opening: schedule[(y-1)*12]?.balance + schedule[(y-1)*12]?.principal || loanAmt,
+        interest: yearInterest,
+        principal: yearPrincipal,
+        closing: yearTermLoan
+      });
+
+      openingCash = closingCash;
     }
+
+    // MPBF Calculation (Method 1: 75% of Working Capital Gap)
+    const currentAssets = targetTurnover * 12 * 0.25;
+    const currentLiabilitiesExclBank = workingCapitalValue * 0.3;
+    const wcGap = currentAssets - currentLiabilitiesExclBank;
+    const mpbf = wcGap * 0.75;
 
     return {
       monthlyOpEx,
@@ -378,14 +416,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       totalProjectCost,
       loanAmt,
       entrepreneurAmt,
-      loanPct,
-      entrepreneurPct,
       emi,
       schedule,
       targetTurnover,
       projections,
       balanceSheet,
       cashFlow,
+      loanRepayment,
+      mpbf,
       roi: (projections.reduce((acc, p) => acc + p.pat, 0) / totalProjectCost * 100)
     };
   }, [foundationalData.totalLoanRequirement, financials]);
@@ -574,7 +612,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
         <TabsContent value="financials" className="m-0 space-y-12 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Top Row: Core Financial Input Matrices */}
               <div className="lg:col-span-4 space-y-8">
                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-6">
                     <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-widest border-l-4 border-primary pl-4">
@@ -584,26 +621,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Total Project Cost (₹)</Label>
                           <Input readOnly className="h-12 bg-slate-50 border-none font-display font-bold text-lg" value={calculations.totalProjectCost.toLocaleString()} />
-                          <p className="text-[8px] text-slate-400 italic">* SUM OF ONE-TIME INVESTMENT + WORKING CAPITAL</p>
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500">Loan Capital Node (₹)</Label>
-                          <div className="relative">
-                            <Input className="h-12 bg-slate-50 border-none font-bold" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} />
-                            <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary/5 text-primary border-none text-[8px]">{calculations.loanPct.toFixed(1)}%</Badge>
-                          </div>
+                          <Input className="h-12 bg-slate-50 border-none font-bold" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500">Entrepreneur Invest Node (₹)</Label>
-                          <div className="relative">
-                            <Input type="number" className="h-12 bg-slate-50 border-none font-bold" value={financials.entrepreneurContribution || 0} onChange={(e)=>setFinancials({...financials, entrepreneurContribution: Number(e.target.value)})} />
-                            <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-50 text-emerald-600 border-none text-[8px]">{calculations.entrepreneurPct.toFixed(1)}%</Badge>
-                          </div>
+                          <Input type="number" className="h-12 bg-slate-50 border-none font-bold" value={financials.entrepreneurContribution || 0} onChange={(e)=>setFinancials({...financials, entrepreneurContribution: Number(e.target.value)})} />
                        </div>
                        <div className="space-y-2 pt-4 border-t">
-                          <Label className="text-[9px] font-bold uppercase text-emerald-600 flex justify-between">Working Capital Reserve (₹) <span className="text-[8px] bg-emerald-50 px-2 rounded-full">3.0x OPEX MULTIPLIER</span></Label>
+                          <Label className="text-[9px] font-bold uppercase text-emerald-600 flex justify-between">Working Capital Reserve (₹)</Label>
                           <Input readOnly className="h-12 bg-emerald-50/30 border-none font-bold text-emerald-700" value={calculations.workingCapitalValue.toLocaleString()} />
-                          <p className="text-[7px] text-slate-400 uppercase tracking-widest leading-tight mt-2">Automatically derived as 3-months of operational liquidity buffer.</p>
                        </div>
                     </div>
                  </Card>
@@ -613,18 +642,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <Receipt className="h-4 w-4" /> Loan Parameters
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500">ROI (% P.A.)</Label>
-                          <Input type="number" className="bg-slate-50 border-none h-11" value={financials.loanROI || 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500">Tenure (Months)</Label>
-                          <Input type="number" className="bg-slate-50 border-none h-11" value={financials.loanTenure || 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} />
-                       </div>
-                       <div className="space-y-2 col-span-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-500">Moratorium Window (Months)</Label>
-                          <Input type="number" className="bg-slate-50 border-none h-11" value={financials.loanMoratorium || 0} onChange={(e)=>setFinancials({...financials, loanMoratorium: Number(e.target.value)})} />
-                       </div>
+                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">ROI (%)</Label><Input type="number" className="bg-slate-50 h-11" value={financials.loanROI || 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Tenure (M)</Label><Input type="number" className="bg-slate-50 h-11" value={financials.loanTenure || 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} /></div>
                     </div>
                  </Card>
               </div>
@@ -640,66 +659,37 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-11" value={financials.investMachinery.toLocaleString()} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Civil / Interior</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investCivil || 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Electrical Install</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investElectrical || 0} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Furniture / Office</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investFurniture || 0} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Pre-Operative Exp</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investPreOp || 0} onChange={(e)=>setFinancials({...financials, investPreOp: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Advance</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investAdvance || 0} onChange={(e)=>setFinancials({...financials, investAdvance: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Software</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investSoftware || 0} onChange={(e)=>setFinancials({...financials, investSoftware: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">System</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investSystem || 0} onChange={(e)=>setFinancials({...financials, investSystem: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Advance</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investAdvance || 0} onChange={(e)=>setFinancials({...financials, investAdvance: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-primary">Total Fixed Capital</Label><Input readOnly className="bg-primary/5 border-none font-bold text-primary h-11" value={calculations.oneTimeTotal.toLocaleString()} /></div>
                     </div>
                  </Card>
 
                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
                     <div className="flex items-center gap-3 text-emerald-600 font-bold text-[10px] uppercase tracking-widest border-l-4 border-emerald-500 pl-4">
-                       <Clock className="h-4 w-4" /> Monthly Operational Expense (OpEx) Matrix
+                       <Clock className="h-4 w-4" /> Monthly OpEx Matrix
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Rent / Lease</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseRent || 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Personnel</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expensePersonnel || 0} onChange={(e)=>setFinancials({...financials, expensePersonnel: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Power & Util</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expensePower || 0} onChange={(e)=>setFinancials({...financials, expensePower: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Maintenance</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseMaintenance || 0} onChange={(e)=>setFinancials({...financials, expenseMaintenance: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Consumables</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseConsumables || 0} onChange={(e)=>setFinancials({...financials, expenseConsumables: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Rent</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expenseRent || 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Salary</Label><Input type="number" className="bg-slate-50 h-11" value={financials.expensePersonnel || 0} onChange={(e)=>setFinancials({...financials, expensePersonnel: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-emerald-600">Total Monthly OpEx</Label><Input readOnly className="bg-emerald-50/50 border-none font-bold text-emerald-700 h-11" value={calculations.monthlyOpEx.toLocaleString()} /></div>
                     </div>
-                    <div className="p-4 bg-blue-50 rounded-xl flex gap-4 items-start border border-blue-100">
-                       <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                       <p className="text-[9px] text-blue-700 font-medium leading-relaxed">Increasing your operational burn will automatically update the Working Capital Reserve in the Valuation Matrix to maintain a 3-month liquidity buffer.</p>
-                    </div>
                  </Card>
-
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm space-y-4">
-                       <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Required Monthly Turnover</span><span className="text-xs font-bold text-emerald-600">₹ {calculations.targetTurnover.toLocaleString()}</span></div>
-                       <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-primary" style={{width: '70%'}} /></div>
-                       <p className="text-[8px] text-slate-400 italic">* Click to view strategic breakup matrix.</p>
-                    </Card>
-                    <Card className="p-6 bg-slate-900 text-white rounded-3xl shadow-xl space-y-4 relative overflow-hidden group">
-                       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><TrendingUp className="h-8 w-8" /></div>
-                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Cumulative 5-Year Profit Target</span>
-                       <h4 className="text-3xl font-display font-bold text-white tracking-tighter">₹ {(calculations.projections.reduce((acc, p)=>acc + p.pat, 0)).toLocaleString()}</h4>
-                       <Badge className="bg-emerald-500/20 text-emerald-400 border-none text-[8px] font-bold px-3">{calculations.roi.toFixed(1)}% Projected ROI</Badge>
-                    </Card>
-                 </div>
               </div>
 
-              {/* Growth & Performance Matrix Section */}
               <div className="lg:col-span-12">
                  <Card className="p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] space-y-8">
                     <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
                        <div className="p-3 bg-white rounded-2xl text-primary shadow-sm"><Activity className="h-6 w-6" /></div>
                        <div>
                           <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Growth & Performance Matrix</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Year-by-year yield trajectory for institutional submission.</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Year-by-year yield trajectory.</p>
                        </div>
                     </div>
-                    <div className="grid grid-cols-5 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                        {[0, 1, 2, 3, 4].map((i) => (
                           <div key={i} className="space-y-3 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm group hover:border-primary/50 transition-all">
-                             <div className="flex justify-between items-center">
-                                <Label className="text-[9px] font-bold uppercase text-slate-400">Year {i + 1}</Label>
-                                <span className="text-[8px] font-bold text-primary">GROWTH %</span>
-                             </div>
+                             <Label className="text-[9px] font-bold uppercase text-slate-400">Year {i + 1} (%)</Label>
                              <Input 
                                 type="number" 
                                 className="h-10 bg-slate-50 border-none text-center font-display font-bold text-lg" 
@@ -713,10 +703,21 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </div>
                        ))}
                     </div>
+
+                    <div className="h-[250px] w-full mt-10">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={calculations.projections}>
+                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                             <XAxis dataKey="year" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
+                             <YAxis hide />
+                             <ChartTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '1rem', border: 'none', shadow: 'none', backgroundColor: '#001F3D', color: '#fff'}} />
+                             <Bar dataKey="growth" name="Target Growth %" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                       </ResponsiveContainer>
+                    </div>
                  </Card>
               </div>
 
-              {/* Visual Analytics Row */}
               <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
                  <Card className="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl space-y-6">
                     <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-widest"><FileBarChart className="h-4 w-4" /> Projected Sales & Profitability</div>
@@ -726,9 +727,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                              <XAxis dataKey="year" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
                              <YAxis hide />
-                             <ChartTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '1rem', border: 'none', shadow: 'none', backgroundColor: '#001F3D', color: '#fff'}} />
-                             <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase'}} />
-                             <Bar dataKey="revenue" name="Gross Sales" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                             <ChartTooltip cursor={{fill: '#f8fafc'}} />
+                             <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: 700}} />
+                             <Bar dataKey="revenue" name="Sales" fill="#6366f1" radius={[4, 4, 0, 0]} />
                              <Bar dataKey="ebitda" name="EBITDA" fill="#10b981" radius={[4, 4, 0, 0]} />
                              <Bar dataKey="pat" name="PAT" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                           </BarChart>
@@ -786,16 +787,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    
                    {/* Cover Page */}
                    <div className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 relative page-break">
-                      <div className="space-y-6">
-                        <div className="flex justify-center mb-16">
-                           <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white flex items-center justify-center p-4">
-                              <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo/400/400'} alt="Logo" fill className="object-contain p-4" />
-                           </div>
-                        </div>
-                        <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">CONFIDENTIAL STRATEGIC REPORT</Badge>
-                        <h1 className="text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">Techno-Economic <br />Feasibility Analysis</h1>
-                        <div className="h-1.5 w-32 bg-red-600 mx-auto rounded-full mt-8" />
+                      <div className="flex justify-center mb-16">
+                         <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white flex items-center justify-center p-4">
+                            <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo/400/400'} alt="Logo" fill className="object-contain p-4" />
+                         </div>
                       </div>
+                      <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">CONFIDENTIAL STRATEGIC REPORT</Badge>
+                      <h1 className="text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">Techno-Economic <br />Feasibility Analysis</h1>
+                      <div className="h-1.5 w-32 bg-red-600 mx-auto rounded-full mt-8" />
                       <div className="pt-20 grid grid-cols-2 gap-20 w-full max-w-2xl text-left border-t border-slate-100 pt-12">
                          <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Project Entity</p><h4 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.projectName}</h4></div>
                          <div className="text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Submission Date</p><h4 className="text-lg font-bold text-[#001F3D] uppercase">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</h4></div>
@@ -828,14 +827,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 03: About Us */}
-                   {checklist.aboutUs && (
-                     <div className="space-y-8 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Organizational Profile</h3></div>
-                        <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.aboutUs}</p>
-                     </div>
-                   )}
-
                    {/* Section 04: Product & Service Catalogue */}
                    {(checklist.productLine || checklist.services) && (
                      <div className="space-y-12 page-break">
@@ -859,43 +850,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              </div>
                           </div>
                         )}
-
-                        {checklist.services && industrialServices.length > 0 && (
-                          <div className="space-y-8">
-                             <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-600 border-l-4 border-emerald-500 pl-4">Technical Service Nodes</h4>
-                             <div className="grid grid-cols-2 gap-8">
-                                {industrialServices.map(s => (
-                                  <div key={s.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
-                                     <div className="aspect-video relative bg-white flex items-center justify-center p-4">
-                                        {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-12 w-12 text-slate-100" />}
-                                     </div>
-                                     <div className="p-5 space-y-2">
-                                        <p className="text-[11px] font-bold text-[#001F3D] uppercase">{s.name}</p>
-                                        <p className="text-[9px] text-slate-500 leading-relaxed font-medium">{s.description}</p>
-                                     </div>
-                                  </div>
-                                ))}
-                             </div>
-                          </div>
-                        )}
-                     </div>
-                   )}
-
-                   {/* Section 05: Entrepreneur Details */}
-                   {checklist.entrepreneurDetails && (
-                     <div className="space-y-8 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter Technical Profile</h3></div>
-                        <div className="p-10 border border-slate-200 rounded-3xl space-y-8 bg-slate-50/30">
-                           <div className="flex items-center gap-8 border-b border-slate-200 pb-8">
-                              <div className="h-24 w-24 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-200 shadow-sm"><UserCircle className="h-16 w-16" /></div>
-                              <div className="space-y-2">
-                                 <h4 className="text-xl font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</h4>
-                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{foundationalData.qualification}</p>
-                                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 px-4 py-1 rounded-full text-[10px] font-bold uppercase">{foundationalData.experience}</Badge>
-                              </div>
-                           </div>
-                           <p className="text-xs text-slate-600 leading-relaxed font-medium italic">"{foundationalData.promoterNarrative}"</p>
-                        </div>
                      </div>
                    )}
 
@@ -903,16 +857,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    {checklist.roadMapNextFiveYears && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
-                        <p className="text-xs text-slate-500 leading-relaxed font-medium italic">Consolidated 5-year revenue yield and profitability matrix factoring in industrial ramp-up and compound growth.</p>
-                        <div className="border-2 border-slate-900 rounded-none overflow-hidden">
+                        <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
-                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ In Actuals)</th>{calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ Actuals)</th>{calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                               </thead>
                               <tbody>
                                  <tr className="border-b border-slate-200 font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{p.revenue.toLocaleString()}</td>)}</tr>
                                  <tr className="border-b border-slate-100"><td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{p.ebitda.toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">Profit Before Tax</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{p.pbt.toLocaleString()}</td>)}</tr>
                                  <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0">₹ {p.pat.toLocaleString()}</td>)}</tr>
                               </tbody>
                            </table>
@@ -920,30 +872,89 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 08: CGTMSE Section */}
-                   {checklist.cgtmseScheme && (
-                      <div className="space-y-10 pt-20 page-break">
-                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CGTMSE Scheme Protocol</h3></div>
-                         <Card className="p-10 border-2 border-slate-900 rounded-none space-y-8 bg-slate-50/30">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                               <div className="space-y-4">
-                                  <h4 className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Coverage Matrix</h4>
-                                  <p className="text-[11px] text-slate-600 leading-relaxed font-medium">The Credit Guarantee Fund Trust for Micro and Small Enterprises (CGTMSE) provides collateral-free credit justification. The scheme covers up to 85% of the loan value for micro-enterprises and women-owned entities.</p>
-                               </div>
-                               <div className="space-y-4">
-                                  <h4 className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-2"><Zap className="h-4 w-4" /> Scheme Multipliers</h4>
-                                  <ul className="text-[10px] font-bold text-slate-500 space-y-2 uppercase">
-                                     <li className="flex justify-between border-b pb-2"><span>Limit Capacity</span> <span>₹ 500.00 Lakhs</span></li>
-                                     <li className="flex justify-between border-b pb-2"><span>Guarantee Scope</span> <span>75% - 85%</span></li>
-                                     <li className="flex justify-between border-b pb-2"><span>Risk Coverage</span> <span>Hybrid Available</span></li>
-                                  </ul>
-                               </div>
-                            </div>
-                            <div className="p-6 bg-white border border-slate-200 text-center">
-                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Note: Annual Guarantee Fee (AGF) will be synchronized with institutional norms.</p>
-                            </div>
-                         </Card>
-                      </div>
+                   {/* Section 07: Cash Flow Statement */}
+                   {checklist.cashFlowStatement && (
+                     <div className="space-y-10 pt-20 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CMA Data: Cash Flow Statement</h3></div>
+                        <div className="border-2 border-slate-900 overflow-hidden">
+                           <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ In Actual)</th>{calculations.cashFlow.map(c => <th key={c.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{c.year}</th>)}</tr>
+                              </thead>
+                              <tbody>
+                                 <tr className="bg-slate-100"><td colSpan={6} className="p-3 text-[10px] font-bold uppercase text-primary">A. Cash Flow from Operating Activities</td></tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Net Profit After Tax</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{c.npat.toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Interest Expense</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{c.interest.toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Depreciation</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{c.depreciation.toLocaleString()}</td>)}</tr>
+                                 <tr className="bg-slate-50 font-bold border-b border-slate-900"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Operating Profit before WC</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{c.opProfit.toLocaleString()}</td>)}</tr>
+                                 <tr className="bg-slate-100"><td colSpan={6} className="p-3 text-[10px] font-bold uppercase text-primary">B. Cash Flow from Financing Activities</td></tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Loan Repaid (Principal)</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{c.loanRepayment.toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Add: Opening Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{c.openingCash.toLocaleString()}</td>)}</tr>
+                                 <tr className="bg-[#001F3D] text-white font-bold"><td className="p-4 text-[11px] uppercase border-r border-white/20">Closing Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[11px] text-right border-r border-white/20">₹ {c.closingCash.toLocaleString()}</td>)}</tr>
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* Section 08: Key Ratios */}
+                   {checklist.keyRatios && (
+                     <div className="space-y-10 pt-20 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Key Ratios & Feasibility</h3></div>
+                        <div className="border-2 border-slate-900 overflow-hidden">
+                           <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Ratio Matrix</th>{calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
+                              </thead>
+                              <tbody>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Debt-Equity (TOL/TNW)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200">{p.ratio}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Net Profit Margin (%)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200">{p.margin}%</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">DSCR</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200">{p.dscr}</td>)}</tr>
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* Section 09: MPBF Calculation */}
+                   {checklist.mpbfCalculation && (
+                     <div className="space-y-10 pt-20 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">09</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">MPBF Calculation</h3></div>
+                        <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-6">
+                           <p className="text-xs font-bold uppercase text-slate-500">Method 1: 75% of Working Capital Gap</p>
+                           <div className="space-y-4">
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.targetTurnover * 12 * 0.25).toLocaleString()}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>B. Current Liabilities (Excl. Bank)</span> <span>₹ {(calculations.workingCapitalValue * 0.3).toLocaleString()}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {(calculations.targetTurnover * 12 * 0.25 - calculations.workingCapitalValue * 0.3).toLocaleString()}</span></div>
+                              <div className="flex justify-between pt-4 text-lg font-display font-bold uppercase text-[#001F3D]"><span>D. Maximum Permissible Bank Finance (75% of C)</span> <span>₹ {calculations.mpbf.toLocaleString()}</span></div>
+                           </div>
+                        </Card>
+                     </div>
+                   )}
+
+                   {/* Section 10: Term Loan Schedule */}
+                   {checklist.amortizationSchedule && (
+                     <div className="space-y-10 pt-20 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">10</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Term Loan Repayment Schedule</h3></div>
+                        <div className="border-2 border-slate-900 overflow-hidden">
+                           <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Period</th><th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200">Opening Balance</th><th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200">Interest Node</th><th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200">Principal Repayment</th><th className="p-4 text-[9px] font-bold uppercase text-right">Closing Balance</th></tr>
+                              </thead>
+                              <tbody>
+                                 {calculations.loanRepayment.map(r => (
+                                   <tr key={r.year} className="border-b border-slate-100">
+                                      <td className="p-4 text-[10px] font-bold uppercase border-r border-slate-200">{r.year}</td>
+                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{r.opening.toLocaleString()}</td>
+                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{r.interest.toLocaleString()}</td>
+                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{r.principal.toLocaleString()}</td>
+                                      <td className="p-4 text-[10px] font-bold text-right">{r.closing.toLocaleString()}</td>
+                                   </tr>
+                                 ))}
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
                    )}
                 </div>
              </div>

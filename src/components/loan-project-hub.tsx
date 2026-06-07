@@ -53,7 +53,8 @@ import {
   Scale,
   Edit3,
   User,
-  Star
+  Star,
+  Maximize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -418,7 +419,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const updateMachineryItem = (idx: number, field: keyof MachineryItem, value: any) => {
     const updated = [...machineryItems];
     const item = { ...updated[idx], [field]: value };
-    if (field === 'qty' || field === 'rate') item.total = (item.qty || 0) * (item.rate || 0);
+    if (field === 'qty' || field === 'rate') item.total = (Number(item.qty) || 0) * (Number(item.rate) || 0);
     updated[idx] = item;
     setMachineryItems(updated);
     const grandTotal = updated.reduce((acc, i) => acc + i.total, 0);
@@ -468,11 +469,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Project Name</Label><Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter / Applicant Node</Label><Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Project Name</Label><Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName || ''} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter / Applicant Node</Label><Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName || ''} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} /></div>
                     </div>
 
-                    <div className="space-y-4"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Project Abstract</Label><Textarea className="bg-slate-50 border-none min-h-[100px] text-xs font-medium rounded-2xl" value={foundationalData.aboutProject} onChange={(e)=>setFormData({...foundationalData, aboutProject: e.target.value})} /></div>
+                    <div className="space-y-4"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Project Abstract</Label><Textarea className="bg-slate-50 border-none min-h-[100px] text-xs font-medium rounded-2xl" value={foundationalData.aboutProject || ''} onChange={(e)=>setFormData({...foundationalData, aboutProject: e.target.value})} /></div>
                  </div>
 
                  <div className="space-y-10 pt-6 border-t border-slate-50">
@@ -481,8 +482,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Regulatory & Compliance</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Official licensing and MSME identifiers.</p></div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification</Label><Input placeholder="27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber} onChange={(e)=>setFormData({...foundationalData, gstNumber: e.target.value})} /></div>
-                       <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label><Input placeholder="UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber} onChange={(e)=>setFormData({...foundationalData, msmeNumber: e.target.value})} /></div>
+                       <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification</Label><Input placeholder="27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber || ''} onChange={(e)=>setFormData({...foundationalData, gstNumber: e.target.value})} /></div>
+                       <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label><Input placeholder="UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber || ''} onChange={(e)=>setFormData({...foundationalData, msmeNumber: e.target.value})} /></div>
                     </div>
                  </div>
               </Card>
@@ -523,8 +524,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              </label>
                           </div>
                           <div className="flex-1 space-y-4">
-                             <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
-                             <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.annualTargetQty} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
+                             <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
+                             <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.annualTargetQty || ''} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
                           </div>
                        </div>
                        <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setProprietaryProducts(proprietaryProducts.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
@@ -554,8 +555,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              </label>
                           </div>
                           <div className="flex-1 space-y-4">
-                             <Input placeholder="Service Identity..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name} onChange={(e) => updateService(idx, 'name', e.target.value)} />
-                             <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={s.annualTargetQty} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
+                             <Input placeholder="Service Identity..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
+                             <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
                           </div>
                        </div>
                        <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setIndustrialServices(industrialServices.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
@@ -624,10 +625,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">OpEx Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Recurring monthly liabilities.</p></div>
                     </div>
                     <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Rent Hub (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseRent} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Salary Ledger (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseSalary} onChange={(e)=>setFinancials({...financials, expenseSalary: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Power Node (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expensePower} onChange={(e)=>setFinancials({...financials, expensePower: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Maintenance (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseMaintenance} onChange={(e)=>setFinancials({...financials, expenseMaintenance: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Rent Hub (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseRent ?? 0} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Salary Ledger (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseSalary ?? 0} onChange={(e)=>setFinancials({...financials, expenseSalary: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Power Node (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expensePower ?? 0} onChange={(e)=>setFinancials({...financials, expensePower: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Maintenance (₹)</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.expenseMaintenance ?? 0} onChange={(e)=>setFinancials({...financials, expenseMaintenance: Number(e.target.value)})} /></div>
                     </div>
                     <div className="p-5 bg-primary/5 rounded-2xl border border-primary/10 flex justify-between items-center">
                        <div className="flex items-center gap-3"><Receipt className="h-5 w-5 text-primary" /><span className="text-[10px] font-bold uppercase text-[#001F3D]">Monthly EMI (Auto)</span></div>
@@ -644,11 +645,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <Button variant="ghost" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5" /> Edit Breakup</Button>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                       <div className="space-y-2 col-span-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Plant & Machinery (Total)</Label><Input readOnly className="bg-slate-100 font-bold" value={financials.investMachinery.toLocaleString()} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Advance (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investAdvance} onChange={(e)=>setFinancials({...financials, investAdvance: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Civil (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investCivil} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Software (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investSoftware} onChange={(e)=>setFinancials({...financials, investSoftware: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">System (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investSystem} onChange={(e)=>setFinancials({...financials, investSystem: Number(e.target.value)})} /></div>
+                       <div className="space-y-2 col-span-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Plant & Machinery (Total)</Label><Input readOnly className="bg-slate-100 font-bold" value={(financials.investMachinery ?? 0).toLocaleString()} /></div>
+                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Advance (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investAdvance ?? 0} onChange={(e)=>setFinancials({...financials, investAdvance: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Civil (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investCivil ?? 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Software (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investSoftware ?? 0} onChange={(e)=>setFinancials({...financials, investSoftware: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">System (₹)</Label><Input type="number" className="bg-slate-50" value={financials.investSystem ?? 0} onChange={(e)=>setFinancials({...financials, investSystem: Number(e.target.value)})} /></div>
                     </div>
                  </Card>
               </div>
@@ -658,15 +659,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
                     <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-12">
                        <div className="space-y-6">
-                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">LOAN CAPITAL</p><div className="flex items-center gap-3 mt-2"><DollarSign className="h-6 w-6 text-primary" /><Input className="bg-white/5 border-none h-14 text-3xl font-display font-bold text-white shadow-inner p-0" value={foundationalData.totalLoanRequirement} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} /></div></div>
+                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">LOAN CAPITAL</p><div className="flex items-center gap-3 mt-2"><DollarSign className="h-6 w-6 text-primary" /><Input className="bg-white/5 border-none h-14 text-3xl font-display font-bold text-white shadow-inner p-0" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>setFormData({...foundationalData, totalLoanRequirement: e.target.value})} /></div></div>
                           <div className="grid grid-cols-2 gap-4">
-                             <div><Label className="text-[8px] font-bold text-white/40 uppercase">ROI (%)</Label><Input type="number" className="bg-white/5 border-none h-10 text-xs font-bold" value={financials.loanROI} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} /></div>
-                             <div><Label className="text-[8px] font-bold text-white/40 uppercase">TENURE (MO)</Label><Input type="number" className="bg-white/5 border-none h-10 text-xs font-bold" value={financials.loanTenure} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} /></div>
+                             <div><Label className="text-[8px] font-bold text-white/40 uppercase">ROI (%)</Label><Input type="number" className="bg-white/5 border-none h-10 text-xs font-bold" value={financials.loanROI ?? 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} /></div>
+                             <div><Label className="text-[8px] font-bold text-white/40 uppercase">TENURE (MO)</Label><Input type="number" className="bg-white/5 border-none h-10 text-xs font-bold" value={financials.loanTenure ?? 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} /></div>
                           </div>
                        </div>
 
                        <div className="space-y-6">
-                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">ENTREPRENEUR INVEST</p><div className="flex items-center gap-3 mt-2"><User className="h-6 w-6 text-emerald-400" /><Input type="number" className="bg-white/5 border-none h-14 text-3xl font-display font-bold text-white shadow-inner p-0" value={financials.entrepreneurContribution} onChange={(e)=>setFinancials({...financials, entrepreneurContribution: Number(e.target.value)})} /></div></div>
+                          <div><p className="text-[10px] font-bold uppercase text-white/40 tracking-[0.4em]">ENTREPRENEUR INVEST</p><div className="flex items-center gap-3 mt-2"><User className="h-6 w-6 text-emerald-400" /><Input type="number" className="bg-white/5 border-none h-14 text-3xl font-display font-bold text-white shadow-inner p-0" value={financials.entrepreneurContribution ?? 0} onChange={(e)=>setFinancials({...financials, entrepreneurContribution: Number(e.target.value)})} /></div></div>
                           <Badge className="bg-emerald-500/10 text-emerald-400 border-none px-4 py-1.5 rounded-full text-[9px] font-bold uppercase">EQUITY NODE ACTIVE</Badge>
                        </div>
 
@@ -705,7 +706,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <div className="space-y-6">
                         <div className="flex justify-center mb-16">
                            <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white flex items-center justify-center p-4">
-                              <Image src={brandLogo} alt="Logo" fill className="object-contain p-4" />
+                              <Image src={brandLogo || defaultBrandLogo} alt="Logo" fill className="object-contain p-4" />
                            </div>
                         </div>
                         <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">CONFIDENTIAL STRATEGIC REPORT</Badge>
@@ -886,10 +887,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <tbody>
                        {machineryItems.map((item, idx) => (
                          <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/30 group">
-                            <td className="p-4"><Input placeholder="e.g. VMC HAAS VF-2" className="h-10 bg-transparent border-none text-[11px] font-bold uppercase" value={item.name} onChange={(e)=>updateMachineryItem(idx, 'name', e.target.value)} /></td>
-                            <td className="p-4"><Input type="number" className="h-10 bg-transparent border-none text-center text-xs font-bold" value={item.qty} onChange={(e)=>updateMachineryItem(idx, 'qty', Number(e.target.value))} /></td>
-                            <td className="p-4"><Input type="number" className="h-10 bg-transparent border-none text-right text-xs font-display font-bold" value={item.rate} onChange={(e)=>updateMachineryItem(idx, 'rate', Number(e.target.value))} /></td>
-                            <td className="p-4 text-right"><span className="text-[11px] font-display font-bold text-[#001F3D]">₹ {item.total.toLocaleString()}</span></td>
+                            <td className="p-4"><Input placeholder="e.g. VMC HAAS VF-2" className="h-10 bg-transparent border-none text-[11px] font-bold uppercase" value={item.name || ''} onChange={(e)=>updateMachineryItem(idx, 'name', e.target.value)} /></td>
+                            <td className="p-4"><Input type="number" className="h-10 bg-transparent border-none text-center text-xs font-bold" value={item.qty ?? 1} onChange={(e)=>updateMachineryItem(idx, 'qty', e.target.value)} /></td>
+                            <td className="p-4"><Input type="number" className="h-10 bg-transparent border-none text-right text-xs font-display font-bold" value={item.rate ?? 0} onChange={(e)=>updateMachineryItem(idx, 'rate', e.target.value)} /></td>
+                            <td className="p-4 text-right"><span className="text-[11px] font-display font-bold text-[#001F3D]">₹ {(item.total ?? 0).toLocaleString()}</span></td>
                             <td className="p-4"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100" onClick={() => setMachineryItems(machineryItems.filter((_, i)=>i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button></td>
                          </tr>
                        ))}
@@ -899,9 +900,28 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
           </ScrollArea>
           <DialogFooter className="p-8 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
-             <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Gross Quotation Value</p><p className="text-2xl font-display font-bold text-primary">₹ {financials.investMachinery.toLocaleString()}</p></div>
+             <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Gross Quotation Value</p><p className="text-2xl font-display font-bold text-primary">₹ {(financials.investMachinery ?? 0).toLocaleString()}</p></div>
              <Button className="h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl" onClick={() => setIsMachineryBreakupOpen(false)}>Commit Breakup Matrix <ChevronRight className="h-3.5 w-3.5 ml-2" /></Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Drawing Zoom Protocol Dialog */}
+      <Dialog open={zoom > 1} onOpenChange={() => setZoom(1)}>
+        <DialogContent className="max-w-5xl bg-black/90 border-none shadow-2xl p-0 overflow-hidden rounded-[2rem] flex flex-col h-[90vh]">
+          <div className="flex justify-between items-center p-6 text-white bg-slate-950 border-b border-white/10">
+            <h3 className="text-sm font-bold uppercase tracking-widest">High-Fidelity Document Viewer</h3>
+            <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-white hover:bg-white/10 rounded-full"><X className="h-6 w-6" /></Button>
+          </div>
+          <ScrollArea className="flex-1 p-10">
+            <div className="flex justify-center">
+               {/* This is a visual zoom simulation for the preview report */}
+               <div className="bg-white shadow-2xl p-20 min-h-[297mm] space-y-16" style={{ width: '210mm' }}>
+                  {/* Content would normally be re-rendered here at full size */}
+                  <p className="text-center text-slate-400 font-bold uppercase tracking-widest pt-40">Matrix Fit to Scroll Active</p>
+               </div>
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

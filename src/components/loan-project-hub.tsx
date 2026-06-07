@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +58,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
@@ -74,8 +76,13 @@ interface LoanProjectHubProps {
 }
 
 export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
+  const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
+
+  // Firestore Persistence Node
+  const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
+  const { data: savedStrategy } = useDoc<any>(strategyRef);
 
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState({
@@ -131,6 +138,33 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     projectedMonthlyRevenue: 1500000,
     projectedMonthlyExpense: 800000,
   });
+
+  // Load saved data when available
+  useEffect(() => {
+    if (savedStrategy) {
+      if (savedStrategy.foundationalData) setFormData(savedStrategy.foundationalData);
+      if (savedStrategy.proprietaryProducts) setProprietaryProducts(savedStrategy.proprietaryProducts);
+      if (savedStrategy.services) setServices(savedStrategy.services);
+      if (savedStrategy.financials) setFinancials(savedStrategy.financials);
+      if (savedStrategy.checklist) setChecklist(savedStrategy.checklist);
+    }
+  }, [savedStrategy]);
+
+  const handleSaveStrategy = () => {
+    const data = {
+      foundationalData,
+      proprietaryProducts,
+      services,
+      financials,
+      checklist,
+      updatedAt: new Date().toISOString()
+    };
+    setDocumentNonBlocking(strategyRef, data, { merge: true });
+    toast({ 
+      title: "Strategy Matrix Committed", 
+      description: "All data nodes have been synchronized with the master ledger." 
+    });
+  };
 
   const financialChartData = useMemo(() => [
     { name: 'Fixed Assets', value: financials.capitalInvestment },
@@ -193,7 +227,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 shadow-sm" onClick={() => window.print()}>
              <Printer className="h-4 w-4" /> Print Protocol
            </Button>
-           <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3">
+           <Button 
+            className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
+            onClick={handleSaveStrategy}
+           >
              <Save className="h-4 w-4" /> Commit Strategy
            </Button>
         </div>
@@ -331,16 +368,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial items designed and manufactured for market introduction.</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-10 px-4 rounded-xl text-primary font-bold text-[9px] uppercase hover:bg-primary/5" onClick={handleAddProduct}>
-                       <Plus className="h-4 w-4 mr-2" /> Append New Item
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 font-bold text-[9px] uppercase tracking-widest gap-2" onClick={handleSaveStrategy}>
+                         <Save className="h-3.5 w-3.5" /> Save Matrix Nodes
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-10 px-4 rounded-xl text-primary font-bold text-[9px] uppercase hover:bg-primary/5" onClick={handleAddProduct}>
+                         <Plus className="h-4 w-4 mr-2" /> Append New Item
+                      </Button>
+                    </div>
                  </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {proprietaryProducts.map((p, idx) => (
                        <div key={p.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl flex flex-col gap-6 group hover:border-primary/20 transition-all">
                           <div className="flex gap-4">
-                             <div className="h-24 w-24 rounded-2xl overflow-hidden border border-white shadow-md relative shrink-0">
-                                <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
+                             <div className="h-24 w-24 rounded-2xl overflow-hidden border border-white shadow-md relative shrink-0 bg-white flex items-center justify-center">
+                                {p.imageUrl ? (
+                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-1" />
+                                ) : (
+                                  <ImageIcon className="h-8 w-8 text-slate-200" />
+                                )}
                              </div>
                              <div className="flex-1 space-y-3">
                                 <Input placeholder="Product Name..." className="bg-white border-none h-11 text-xs font-bold" value={p.name} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
@@ -509,12 +555,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    
                    <div className="space-y-6 relative z-10">
                       <div className="flex justify-center mb-16">
-                        <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl">
+                        <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl bg-white flex items-center justify-center p-4">
                            <Image 
                             src={brandLogo} 
                             alt="Ferocious Tech Logo" 
                             fill 
-                            className="object-contain p-4 bg-white"
+                            className="object-contain p-4"
                             data-ai-hint="lion technology logo"
                            />
                         </div>
@@ -600,8 +646,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         {proprietaryProducts.map(p => (
                           <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col gap-4 shadow-sm group transition-all">
-                              <div className="aspect-video w-full rounded-xl overflow-hidden relative border shadow-inner">
-                                <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
+                              <div className="aspect-video w-full rounded-xl overflow-hidden relative border shadow-inner bg-white flex items-center justify-center">
+                                {p.imageUrl ? (
+                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-2" />
+                                ) : (
+                                  <ImageIcon className="h-6 w-6 text-slate-100" />
+                                )}
                               </div>
                               <div className="space-y-2">
                                 <div className="space-y-0.5">
@@ -712,13 +762,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 {/* Final Footer Protocol */}
                 <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
                    <div className="space-y-4 text-left">
-                      <div className="h-16 w-16 bg-[#001F3D] rounded-2xl flex items-center justify-center text-white shadow-xl overflow-hidden p-2">
+                      <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden p-2 relative">
                         <Image 
                           src={brandLogo} 
                           alt="Ferocious Tech Logo" 
-                          width={48} 
-                          height={48} 
-                          className="object-contain"
+                          fill
+                          className="object-contain p-2"
                           data-ai-hint="lion technology logo"
                         />
                       </div>

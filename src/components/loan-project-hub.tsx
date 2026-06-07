@@ -48,7 +48,10 @@ import {
   Activity,
   FileCheck,
   Settings2,
-  Gauge
+  Gauge,
+  ListOrdered,
+  Workflow,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -74,6 +77,14 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
@@ -104,6 +115,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
   const [zoom, setZoom] = useState(1);
+  const [isTurnoverBreakupOpen, setIsTurnoverBreakupOpen] = useState(false);
 
   // Firestore Persistence Node
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
@@ -260,7 +272,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       });
     }
 
-    // Revenue Matrix Computation
+    // Monthly Potential Calcs for Ratio
     const prodPotential = proprietaryProducts.reduce((acc, p) => {
       const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
       const qty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
@@ -280,12 +292,36 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
+    // Item-wise targets based on target turnover
+    const productItemBreakup = proprietaryProducts.map(p => {
+      const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
+      const potential = price * (parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) / 12);
+      const ratioInCat = potential / (prodPotential || 1);
+      const targetRev = targetTurnover * prodRatio * ratioInCat;
+      return {
+        ...p,
+        targetMonthlyRevenue: targetRev,
+        targetMonthlyQty: price > 0 ? targetRev / price : 0
+      };
+    });
+
+    const serviceItemBreakup = industrialServices.map(s => {
+      const price = parseFloat((s.price || '0').replace(/,/g, '')) || 0;
+      const potential = price * (parseFloat((s.annualTargetQty || '0').replace(/,/g, '')) / 12);
+      const ratioInCat = potential / (svcPotential || 1);
+      const targetRev = targetTurnover * svcRatio * ratioInCat;
+      return {
+        ...s,
+        targetMonthlyRevenue: targetRev,
+        targetMonthlyQty: price > 0 ? targetRev / price : 0
+      };
+    });
+
     // 5-Year Projection Matrix
     const projections: any[] = [];
     for (let y = 1; y <= 5; y++) {
       const growthFactor = Math.pow(1 + ((financials.growthTarget || 15) / 100), y - 1);
       
-      // Ramp-up logic for Year 1 (Months 1-6 focusing on marketing at 30% yield)
       let yearlyRevenue = 0;
       if (y === 1) {
         for (let m = 1; m <= 12; m++) {
@@ -319,10 +355,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     return {
       emi,
+      monthlyOpEx,
       schedule,
       targetTurnover,
       prodTarget: targetTurnover * prodRatio,
       svcTarget: targetTurnover * svcRatio,
+      prodRatio: prodRatio * 100,
+      svcRatio: svcRatio * 100,
+      productItemBreakup,
+      serviceItemBreakup,
       projections,
       roi
     };
@@ -527,7 +568,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Items designed for market introduction.</p>
                  </div>
-                 <Button variant="ghost" className="text-primary font-bold text-[9px] uppercase" onClick={handleAddProduct}>+ Append Item</Button>
+                 <div className="flex gap-4">
+                    <Button variant="outline" className="text-primary font-bold text-[9px] uppercase h-10 px-6 rounded-xl border-primary/20" onClick={handleSaveStrategy}>Save Matrix Nodes</Button>
+                    <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={handleAddProduct}>+ Append Item</Button>
+                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  {proprietaryProducts.map((p, idx) => (
@@ -555,6 +599,41 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  ))}
               </div>
            </Card>
+
+           <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
+              <div className="flex justify-between items-center border-l-4 border-accent pl-6">
+                 <div>
+                    <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Specialized technical operations for B2B fulfillment.</p>
+                 </div>
+                 <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={handleAddService}>+ Append Service</Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {industrialServices.map((s, idx) => (
+                    <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 group hover:border-accent/20 transition-all">
+                       <div className="flex gap-6">
+                          <div className="h-28 w-28 rounded-3xl overflow-hidden border border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center">
+                             {s.imageUrl ? <Image src={s.imageUrl} alt={s.name || ''} fill className="object-contain p-2" /> : <ImageIcon className="h-10 w-10 text-slate-200" />}
+                          </div>
+                          <div className="flex-1 space-y-4">
+                             <Input placeholder="Service Identity (e.g. VMC Machining)" className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
+                             <Textarea placeholder="Technical scope of work..." className="bg-white border-none min-h-[60px] text-[10px] font-medium shadow-sm resize-none" value={s.description || ''} onChange={(e) => updateService(idx, 'description', e.target.value)} />
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                             <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹/Unit or Hour)</Label>
+                             <Input className="bg-white border-none h-12 text-sm font-display font-bold shadow-sm" value={s.price || ''} onChange={(e) => updateService(idx, 'price', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Target (Units/Hrs)</Label>
+                             <Input className="bg-white border-none h-12 text-sm font-display font-bold shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </Card>
         </TabsContent>
 
         <TabsContent value="financials" className="m-0 space-y-12 animate-in slide-in-from-bottom-2 duration-500 no-print">
@@ -570,6 +649,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <div className="space-y-2">
                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve (₹)</Label>
                          <Input type="number" className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-[#001F3D]" value={financials.workingCapital || 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
+                      </div>
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">LOAN Capital Required (₹)</Label>
+                         <Input className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold text-primary" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>updateField('totalLoanRequirement', e.target.value)} />
                       </div>
                    </div>
                 </Card>
@@ -621,21 +704,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        ))}
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Monthly OpEx</Label>
-                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={((financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0)).toLocaleString()} />
+                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={calculations.monthlyOpEx.toLocaleString()} />
                        </div>
                     </div>
                  </Card>
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col justify-center gap-6">
+                    <Card 
+                      className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col justify-center gap-6 cursor-pointer hover:border-primary/50 transition-all group"
+                      onClick={() => setIsTurnoverBreakupOpen(true)}
+                    >
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
-                          <span>Required Monthly Turnover</span>
+                          <span className="group-hover:text-primary transition-colors">Required Monthly Turnover</span>
                           <span className="text-emerald-600">₹ {calculations.targetTurnover.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                         </div>
                         <div className="h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100 shadow-inner">
                           <div className="h-full bg-primary" style={{ width: '100%' }} />
                         </div>
-                        <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">* Turnover required to achieve {financials.targetNetMargin}% net margin after all OpEx and EMI commitments.</p>
+                        <div className="flex justify-between items-center">
+                          <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">* Click to view strategic breakup matrix.</p>
+                          <ChevronRight className="h-3 w-3 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                        </div>
                     </Card>
                     <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between">
                        <p className="text-[10px] font-bold uppercase text-white/40 tracking-widest">Cumulative 5-Year Profit Target</p>
@@ -871,6 +960,117 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </div>
         </TabsContent>
       </Tabs>
+
+      {/* Turnover Breakup Matrix Dialog */}
+      <Dialog open={isTurnoverBreakupOpen} onOpenChange={setIsTurnoverBreakupOpen}>
+        <DialogContent className="max-w-4xl h-[85vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
+          <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-600 rounded-2xl shadow-xl shadow-emerald-600/20"><Workflow className="h-8 w-8" /></div>
+              <div>
+                <h3 className="text-2xl font-display font-bold uppercase tracking-tight">Turnover Analysis Matrix</h3>
+                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Strategic Yield Distribution Protocol v2.4</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsTurnoverBreakupOpen(false)} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full">
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <ScrollArea className="flex-1 p-10">
+            <div className="space-y-12">
+              {/* Financial Logic Node */}
+              <div className="space-y-6">
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Profit Architecture Logic</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Monthly OpEx</p>
+                      <p className="text-lg font-display font-bold text-slate-700">₹ {calculations.monthlyOpEx.toLocaleString()}</p>
+                   </div>
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Monthly EMI</p>
+                      <p className="text-lg font-display font-bold text-slate-700">₹ {calculations.emi.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                   </div>
+                   <div className="p-6 bg-[#001F3D] rounded-2xl text-white space-y-2">
+                      <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Target Margin</p>
+                      <p className="text-lg font-display font-bold text-emerald-400">{financials.targetNetMargin}%</p>
+                   </div>
+                   <div className="p-6 bg-primary rounded-2xl text-white space-y-2 shadow-xl shadow-primary/20">
+                      <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Net Turnover Required</p>
+                      <p className="text-lg font-display font-bold">₹ {calculations.targetTurnover.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                   </div>
+                </div>
+              </div>
+
+              {/* Yield Distribution Matrix */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                 {/* Proprietary Product Split */}
+                 <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                       <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Proprietary Yield Node</h4>
+                       <Badge className="bg-primary text-white text-[8px] font-bold uppercase px-3">{calculations.prodRatio.toFixed(1)}% Weight</Badge>
+                    </div>
+                    <Card className="p-6 border-slate-100 shadow-sm bg-slate-50/50 space-y-4">
+                       <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-bold uppercase text-slate-400">Total Contribution</span>
+                          <span className="text-sm font-display font-bold text-primary">₹ {calculations.prodTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                       </div>
+                       <div className="space-y-3 pt-4 border-t border-slate-100">
+                          {calculations.productItemBreakup.map(p => (
+                            <div key={p.id} className="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 group hover:border-primary/30 transition-all">
+                               <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold text-slate-700 uppercase">{p.name}</span>
+                                  <span className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">Target: {Math.ceil(p.targetMonthlyQty)} Units</span>
+                               </div>
+                               <span className="text-[10px] font-code font-bold text-primary">₹ {p.targetMonthlyRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                          ))}
+                       </div>
+                    </Card>
+                 </div>
+
+                 {/* Industrial Service Split */}
+                 <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                       <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent">Service Capacity Node</h4>
+                       <Badge className="bg-accent text-white text-[8px] font-bold uppercase px-3">{calculations.svcRatio.toFixed(1)}% Weight</Badge>
+                    </div>
+                    <Card className="p-6 border-slate-100 shadow-sm bg-slate-50/50 space-y-4">
+                       <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-bold uppercase text-slate-400">Total Contribution</span>
+                          <span className="text-sm font-display font-bold text-accent">₹ {calculations.svcTarget.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                       </div>
+                       <div className="space-y-3 pt-4 border-t border-slate-100">
+                          {calculations.serviceItemBreakup.map(s => (
+                            <div key={s.id} className="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 group hover:border-accent/30 transition-all">
+                               <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold text-slate-700 uppercase">{s.name}</span>
+                                  <span className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">Target: {Math.ceil(s.targetMonthlyQty)} Units/Hrs</span>
+                               </div>
+                               <span className="text-[10px] font-code font-bold text-accent">₹ {s.targetMonthlyRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                          ))}
+                       </div>
+                    </Card>
+                 </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-8 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600 animate-pulse"><Zap className="h-4 w-4" /></div>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-tight">Targets synchronized with 5-year growth trajectory <br />and startup ramp-up protocol.</p>
+             </div>
+             <Button 
+                className="h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl"
+                onClick={() => setIsTurnoverBreakupOpen(false)}
+             >
+                Close Matrix <ChevronRight className="h-3.5 w-3.5 ml-2" />
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

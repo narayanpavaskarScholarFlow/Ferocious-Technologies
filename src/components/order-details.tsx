@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +27,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Customer, SystemUser as StaffMember, Order, UISettings } from '@/lib/types';
+import { Customer, SystemUser as StaffMember, Order, UISettings, BillingRecord } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -40,6 +39,7 @@ interface OrderDetailsProps {
   onSave: (order: Order) => void;
   orders: Order[];
   uiSettings: UISettings;
+  billing?: BillingRecord[];
 }
 
 const WORK_TYPES = [
@@ -51,7 +51,7 @@ const WORK_TYPES = [
   "Maintenance"
 ];
 
-export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders, uiSettings }: OrderDetailsProps) {
+export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders, uiSettings, billing = [] }: OrderDetailsProps) {
   const { toast } = useToast();
   const isNew = !orderId;
   const [displayId, setDisplayId] = useState("");
@@ -66,6 +66,10 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [poNumber, setPoNumber] = useState("");
   const [typeOfWork, setTypeOfWork] = useState("");
   const [targetBudget, setTargetBudget] = useState("");
+
+  const purchaseOrders = useMemo(() => {
+    return billing.filter(record => record.type === 'purchase_order');
+  }, [billing]);
 
   useEffect(() => {
     if (orderId) {
@@ -110,6 +114,20 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setTargetBudget("");
     }
   }, [orderId, orders, uiSettings]);
+
+  const handlePOConsumption = (selectedPONumber: string) => {
+    setPoNumber(selectedPONumber);
+    
+    // Auto-detect customer from PO ledger
+    const linkedPO = purchaseOrders.find(po => po.number === selectedPONumber);
+    if (linkedPO) {
+      setCustomer(linkedPO.customerName);
+      toast({
+        title: "Financial Sync Active",
+        description: `PO #${selectedPONumber} identified. Customer node set to ${linkedPO.customerName}.`
+      });
+    }
+  };
 
   const handleCommitOrder = () => {
     if (!customer || !startDateStr || !endDateStr) {
@@ -201,6 +219,37 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                  <FileText className="h-3 w-3" /> PO Number (from Ledger)
+                </Label>
+                <Select value={poNumber} onValueChange={handlePOConsumption}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code shadow-inner">
+                    <SelectValue placeholder="Select registered PO..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                    <div className="px-2 py-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Financial Ledger Nodes</div>
+                    {purchaseOrders.map(po => (
+                      <SelectItem key={po.id} value={po.number} className="text-xs font-bold font-code py-3">
+                        {po.number} — {po.customerName}
+                      </SelectItem>
+                    ))}
+                    {purchaseOrders.length === 0 && (
+                      <div className="px-2 py-6 text-center text-[9px] text-slate-400 font-medium uppercase">No Purchase Orders Discovered</div>
+                    )}
+                  </SelectContent>
+                </Select>
+                <div className="pt-2">
+                  <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Manual Override</Label>
+                  <Input 
+                    placeholder="Enter unique PO ID..." 
+                    className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold font-code mt-1"
+                    value={poNumber}
+                    onChange={(e) => setPoNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
                   <Building2 className="h-3 w-3" /> Customer Identity
                 </Label>
                 <Select value={customer} onValueChange={setCustomer}>
@@ -213,6 +262,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[8px] text-slate-400 font-medium italic mt-1 ml-1">* Auto-populated upon PO selection.</p>
               </div>
               
               <div className="space-y-3">
@@ -220,18 +270,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                   <Hash className="h-3 w-3" /> WO. ID (Thread Identification)
                 </Label>
                 <Input value={displayId} readOnly className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code text-slate-400 opacity-60" />
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <FileText className="h-3 w-3" /> PO Number
-                </Label>
-                <Input 
-                  placeholder="e.g. PO-7845-2024" 
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code focus-visible:ring-primary/20 shadow-inner"
-                  value={poNumber}
-                  onChange={(e) => setPoNumber(e.target.value)}
-                />
               </div>
 
               <div className="space-y-3">

@@ -179,11 +179,21 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   // Load saved data when available
   useEffect(() => {
     if (savedStrategy) {
-      if (savedStrategy.foundationalData) setFormData(savedStrategy.foundationalData);
-      if (savedStrategy.proprietaryProducts) setProprietaryProducts(savedStrategy.proprietaryProducts);
-      if (savedStrategy.industrialServices) setIndustrialServices(savedStrategy.industrialServices);
-      if (savedStrategy.financials) setFinancials(savedStrategy.financials);
-      if (savedStrategy.checklist) setChecklist(savedStrategy.checklist);
+      if (savedStrategy.foundationalData) {
+        setFormData(prev => ({ ...prev, ...savedStrategy.foundationalData }));
+      }
+      if (savedStrategy.proprietaryProducts) {
+        setProprietaryProducts(savedStrategy.proprietaryProducts);
+      }
+      if (savedStrategy.industrialServices) {
+        setIndustrialServices(savedStrategy.industrialServices);
+      }
+      if (savedStrategy.financials) {
+        setFinancials(prev => ({ ...prev, ...savedStrategy.financials }));
+      }
+      if (savedStrategy.checklist) {
+        setChecklist(prev => ({ ...prev, ...savedStrategy.checklist }));
+      }
     }
   }, [savedStrategy]);
 
@@ -331,19 +341,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Project Name</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName} onChange={(e)=>updateField('projectName', e.target.value)} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName || ''} onChange={(e)=>updateField('projectName', e.target.value)} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter / Applicant Node</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName} onChange={(e)=>updateField('promoterName', e.target.value)} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName || ''} onChange={(e)=>updateField('promoterName', e.target.value)} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Operational Base (Location)</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.location} onChange={(e)=>updateField('location', e.target.value)} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.location || ''} onChange={(e)=>updateField('location', e.target.value)} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Loan Capital Requirement (₹)</Label>
-                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold text-primary text-xl font-display" value={foundationalData.totalLoanRequirement} onChange={(e)=>updateField('totalLoanRequirement', e.target.value)} />
+                          <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold text-primary text-xl font-display" value={foundationalData.totalLoanRequirement || ''} onChange={(e)=>updateField('totalLoanRequirement', e.target.value)} />
                        </div>
                     </div>
                  </div>
@@ -361,11 +371,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification Number</Label>
-                          <Input placeholder="e.g. 27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber} onChange={(e)=>updateField('gstNumber', e.target.value)} />
+                          <Input placeholder="e.g. 27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber || ''} onChange={(e)=>updateField('gstNumber', e.target.value)} />
                        </div>
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label>
-                          <Input placeholder="e.g. UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber} onChange={(e)=>updateField('msmeNumber', e.target.value)} />
+                          <Input placeholder="e.g. UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber || ''} onChange={(e)=>updateField('msmeNumber', e.target.value)} />
                        </div>
                     </div>
                  </div>
@@ -383,18 +393,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2"><GraduationCap className="h-3 w-3" /> Educational Qualification</Label>
-                          <Input placeholder="e.g. B.E. Mechanical" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.qualification} onChange={(e)=>updateField('qualification', e.target.value)} />
+                          <Input placeholder="e.g. B.E. Mechanical" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.qualification || ''} onChange={(e)=>updateField('qualification', e.target.value)} />
                        </div>
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2"><Award className="h-3 w-3" /> Total Experience</Label>
-                          <Input placeholder="e.g. 15 Years in Tooling" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.experience} onChange={(e)=>updateField('experience', e.target.value)} />
+                          <Input placeholder="e.g. 15 Years in Tooling" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.experience || ''} onChange={(e)=>updateField('experience', e.target.value)} />
                        </div>
                        <div className="md:col-span-2 space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter Background & Narrative</Label>
                           <Textarea 
                             className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
                             placeholder="Detail the promoter's technical journey and project motivation..."
-                            value={foundationalData.promoterNarrative}
+                            value={foundationalData.promoterNarrative || ''}
                             onChange={(e) => updateField('promoterNarrative', e.target.value)}
                           />
                        </div>
@@ -416,7 +426,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Textarea 
                             className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
                             placeholder="Detailed technical description of the proposed project..."
-                            value={foundationalData.aboutProject}
+                            value={foundationalData.aboutProject || ''}
                             onChange={(e) => updateField('aboutProject', e.target.value)}
                           />
                        </div>
@@ -425,7 +435,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Textarea 
                             className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
                             placeholder="History, technical expertise, and team pedigree..."
-                            value={foundationalData.aboutUs}
+                            value={foundationalData.aboutUs || ''}
                             onChange={(e) => updateField('aboutUs', e.target.value)}
                           />
                        </div>
@@ -435,7 +445,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <Textarea 
                                className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
                                placeholder="The long-term aspiration and target node..."
-                               value={foundationalData.vision}
+                               value={foundationalData.vision || ''}
                                onChange={(e) => updateField('vision', e.target.value)}
                              />
                           </div>
@@ -444,7 +454,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <Textarea 
                                className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
                                placeholder="Primary functional purpose and core protocols..."
-                               value={foundationalData.mission}
+                               value={foundationalData.mission || ''}
                                onChange={(e) => updateField('mission', e.target.value)}
                              />
                           </div>
@@ -505,22 +515,22 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 )}
                              </div>
                              <div className="flex-1 space-y-4">
-                                <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
-                                <Input placeholder="Target Market Sector..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.market} onChange={(e) => updateProduct(idx, 'market', e.target.value)} />
+                                <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
+                                <Input placeholder="Target Market Sector..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.market || ''} onChange={(e) => updateProduct(idx, 'market', e.target.value)} />
                              </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Unit Price (₹)</Label>
                                 <div className="relative">
-                                   <Input placeholder="0.00" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={p.price} onChange={(e) => updateProduct(idx, 'price', e.target.value)} />
+                                   <Input placeholder="0.00" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={p.price || ''} onChange={(e) => updateProduct(idx, 'price', e.target.value)} />
                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                 </div>
                              </div>
                              <div className="space-y-2">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Projection (Qty)</Label>
                                 <div className="relative">
-                                   <Input placeholder="e.g. 5,000" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={p.annualTargetQty} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
+                                   <Input placeholder="e.g. 5,000" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={p.annualTargetQty || ''} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
                                    <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                 </div>
                              </div>
@@ -538,11 +548,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     htmlFor={`product-img-${p.id}`}
                                     className={cn(
                                       "h-12 w-full flex items-center gap-3 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all border border-dashed",
-                                      p.imageUrl.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-primary/50"
+                                      p.imageUrl?.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-primary/50"
                                     )}
                                   >
                                     <Upload className="h-4 w-4" />
-                                    {p.imageUrl.startsWith('data:') ? "Image Cached" : "Upload Photo"}
+                                    {p.imageUrl?.startsWith('data:') ? "Image Cached" : "Upload Photo"}
                                   </label>
                                 </div>
                              </div>
@@ -579,22 +589,22 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 )}
                              </div>
                              <div className="flex-1 space-y-4">
-                                <Input placeholder="Service Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name} onChange={(e) => updateService(idx, 'name', e.target.value)} />
-                                <Textarea placeholder="Technical Service Description..." className="bg-white border-none min-h-[60px] text-[11px] font-medium shadow-sm resize-none" value={s.description} onChange={(e) => updateService(idx, 'description', e.target.value)} />
+                                <Input placeholder="Service Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
+                                <Textarea placeholder="Technical Service Description..." className="bg-white border-none min-h-[60px] text-[11px] font-medium shadow-sm resize-none" value={s.description || ''} onChange={(e) => updateService(idx, 'description', e.target.value)} />
                              </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Unit Price / Rate (₹)</Label>
                                 <div className="relative">
-                                   <Input placeholder="0.00" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={s.price} onChange={(e) => updateService(idx, 'price', e.target.value)} />
+                                   <Input placeholder="0.00" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={s.price || ''} onChange={(e) => updateService(idx, 'price', e.target.value)} />
                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                 </div>
                              </div>
                              <div className="space-y-2">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Target Projection</Label>
                                 <div className="relative">
-                                   <Input placeholder="e.g. 2,000 Hours" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={s.annualTargetQty} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
+                                   <Input placeholder="e.g. 2,000 Hours" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
                                    <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                 </div>
                              </div>
@@ -612,11 +622,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     htmlFor={`service-img-${s.id}`}
                                     className={cn(
                                       "h-12 w-full flex items-center gap-3 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all border border-dashed",
-                                      s.imageUrl.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-accent/50"
+                                      s.imageUrl?.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-accent/50"
                                     )}
                                   >
                                     <Upload className="h-4 w-4" />
-                                    {s.imageUrl.startsWith('data:') ? "Artifact Cached" : "Upload Visual"}
+                                    {s.imageUrl?.startsWith('data:') ? "Artifact Cached" : "Upload Visual"}
                                   </label>
                                 </div>
                              </div>
@@ -641,21 +651,21 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Fixed Capital (Machinery/Land)</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment ?? 0} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
                           <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                        </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital ?? 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
                           <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                        </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proj. Monthly Revenue</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue ?? 0} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
                           <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-300" />
                        </div>
                     </div>
@@ -736,15 +746,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </div>
                       
                       <div className="pt-12">
-                         <p className="text-2xl font-headline font-bold text-slate-400 uppercase tracking-[0.4em] mb-2">{foundationalData.projectName}</p>
-                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{foundationalData.location}</p>
+                         <p className="text-2xl font-headline font-bold text-slate-400 uppercase tracking-[0.4em] mb-2">{foundationalData.projectName || '---'}</p>
+                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{foundationalData.location || '---'}</p>
                       </div>
                    </div>
 
                    <div className="pt-20 grid grid-cols-2 gap-20 w-full max-w-2xl text-left border-t border-slate-50 mt-auto relative z-10">
                       <div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submitted by</p>
-                        <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{foundationalData.promoterName}</h4>
+                        <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{foundationalData.promoterName || '---'}</h4>
                         <p className="text-xs font-bold text-slate-500 mt-1">FEROCIOUS TECH INDUSTRIAL GROUP</p>
                       </div>
                       <div className="text-right">
@@ -766,14 +776,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       {checklist.aboutProject && (
                         <div className="space-y-6">
                            <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">The Initiative</h4>
-                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutProject}</p>
+                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutProject || '---'}</p>
                         </div>
                       )}
                       
                       {checklist.aboutUs && (
                         <div className="space-y-6">
                            <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Organizational Pedigree</h4>
-                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutUs}</p>
+                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutUs || '---'}</p>
                         </div>
                       )}
 
@@ -782,14 +792,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                            <div className="p-10 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-6 relative overflow-hidden group">
                               <Compass className="h-12 w-12 text-[#001F3D] opacity-10 absolute top-6 right-6" />
                               <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Future Node (Vision)</h5>
-                              <p className="text-sm font-bold text-slate-700 leading-relaxed italic">"{foundationalData.vision}"</p>
+                              <p className="text-sm font-bold text-slate-700 leading-relaxed italic">"{foundationalData.vision || '---'}"</p>
                            </div>
                          )}
                          {checklist.mission && (
                            <div className="p-10 bg-[#001F3D] text-white rounded-[2.5rem] space-y-6 relative overflow-hidden group">
                               <ShieldCheck className="h-12 w-12 text-white opacity-10 absolute top-6 right-6" />
                               <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Core Protocol (Mission)</h5>
-                              <p className="text-sm font-bold text-white/90 leading-relaxed italic">"{foundationalData.mission}"</p>
+                              <p className="text-sm font-bold text-white/90 leading-relaxed italic">"{foundationalData.mission || '---'}"</p>
                            </div>
                          )}
                       </div>
@@ -810,19 +820,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <UserCircle className="h-12 w-12" />
                           </div>
                           <div>
-                             <h4 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</h4>
+                             <h4 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.promoterName || '---'}</h4>
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lead Entrepreneur</p>
                           </div>
                           <div className="w-full space-y-3">
-                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.qualification}</Badge>
-                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.experience}</Badge>
+                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.qualification || '---'}</Badge>
+                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.experience || '---'}</Badge>
                           </div>
                        </div>
                        <div className="md:col-span-2 p-10 bg-[#001F3D] text-white rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col justify-center">
                           <div className="absolute top-0 right-0 p-8 opacity-[0.03]"><Award className="h-40 w-40" /></div>
                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">Promoter Professional Narrative</h4>
                           <p className="text-sm text-white/90 leading-relaxed font-medium italic indent-8">
-                            "{foundationalData.promoterNarrative}"
+                            "{foundationalData.promoterNarrative || '---'}"
                           </p>
                        </div>
                     </div>
@@ -842,14 +852,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Shield className="h-8 w-8" /></div>
                           <div>
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GSTIN Identification</p>
-                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.gstNumber}</h4>
+                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.gstNumber || '---'}</h4>
                           </div>
                        </div>
                        <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
                           <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600"><FileText className="h-8 w-8" /></div>
                           <div>
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MSME Udyam Registration</p>
-                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.msmeNumber}</h4>
+                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.msmeNumber || '---'}</h4>
                           </div>
                        </div>
                     </div>
@@ -878,18 +888,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <div className="space-y-1">
                                     <h5 className="text-[11px] font-bold text-[#001F3D] uppercase tracking-tight leading-tight line-clamp-2 min-h-[2.4em]">{p.name || 'Undefined Node'}</h5>
                                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.1em] flex items-center gap-1.5 mt-1">
-                                      <Box className="h-2 w-2 text-primary" /> {p.market}
+                                      <Box className="h-2 w-2 text-primary" /> {p.market || '---'}
                                     </p>
                                 </div>
                                 <div className="space-y-4 pt-4 border-t border-slate-50">
                                     <div className="flex justify-between items-end">
                                       <div className="flex flex-col">
                                         <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Unit Price</span>
-                                        <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price}</span>
+                                        <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price || '0.00'}</span>
                                       </div>
                                       <div className="text-right flex flex-col">
                                         <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Annual Projection</span>
-                                        <span className="text-[10px] font-bold text-slate-700">{p.annualTargetQty} <span className="text-[8px] font-medium text-slate-400">Units</span></span>
+                                        <span className="text-[10px] font-bold text-slate-700">{p.annualTargetQty || '0'} <span className="text-[8px] font-medium text-slate-400">Units</span></span>
                                       </div>
                                     </div>
                                     <Badge variant="outline" className="h-6 w-full justify-center text-[7px] font-bold border-slate-100 bg-slate-50 text-slate-400 uppercase">Production Ready</Badge>
@@ -927,15 +937,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   </div>
                                   <div className="text-right space-y-1">
                                      <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Rate Projection</span>
-                                     <p className="text-xl font-display font-bold text-primary">₹ {s.price}</p>
+                                     <p className="text-xl font-display font-bold text-primary">₹ {s.price || '0.00'}</p>
                                   </div>
                                 </div>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">{s.description}</p>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">{s.description || '---'}</p>
                                 <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center">
                                    <div className="flex items-center gap-3">
                                       <TrendingUp className="h-4 w-4 text-emerald-500" />
                                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Annual Capacity Target:</span>
-                                      <Badge className="bg-[#001F3D] text-white border-none rounded-full px-4 h-7 text-[9px] font-bold uppercase">{s.annualTargetQty}</Badge>
+                                      <Badge className="bg-[#001F3D] text-white border-none rounded-full px-4 h-7 text-[9px] font-bold uppercase">{s.annualTargetQty || '0'}</Badge>
                                    </div>
                                    <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-600 text-[8px] font-bold uppercase">Revenue Generation Ready</Badge>
                                 </div>
@@ -960,16 +970,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             <div className="absolute top-0 right-0 p-8 opacity-10"><DollarSign className="h-32 w-32" /></div>
                             <div className="space-y-2 relative z-10">
                                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Total Loan Requirement</p>
-                               <h3 className="text-5xl font-display font-bold text-white tracking-tighter">₹ {foundationalData.totalLoanRequirement}</h3>
+                               <h3 className="text-5xl font-display font-bold text-white tracking-tighter">₹ {foundationalData.totalLoanRequirement || '0'}</h3>
                             </div>
                             <div className="space-y-6 pt-10 border-t border-white/10 relative z-10">
                                <div className="flex justify-between items-center">
                                   <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Fixed Asset Investment</span>
-                                  <span className="text-sm font-bold text-white">₹ {financials.capitalInvestment.toLocaleString()}</span>
+                                  <span className="text-sm font-bold text-white">₹ {(financials.capitalInvestment ?? 0).toLocaleString()}</span>
                                </div>
                                <div className="flex justify-between items-center">
                                   <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Working Capital Reserve</span>
-                                  <span className="text-sm font-bold text-white">₹ {financials.workingCapital.toLocaleString()}</span>
+                                  <span className="text-sm font-bold text-white">₹ {(financials.workingCapital ?? 0).toLocaleString()}</span>
                                </div>
                             </div>
                          </div>
@@ -1001,7 +1011,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Feasibility Disclosure</p>
                       </div>
                       <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">
-                         The figures presented in this matrix represent precision industrial projections based on current market dynamics in the VMC machining sector. The estimated <b className="text-[#001F3D]">monthly revenue node of ₹ {financials.projectedMonthlyRevenue.toLocaleString()}</b> is synchronized with projected machine utilization rates of 85% OEE across the proposed asset fleet.
+                         The figures presented in this matrix represent precision industrial projections based on current market dynamics in the VMC machining sector. The estimated <b className="text-[#001F3D]">monthly revenue node of ₹ {(financials.projectedMonthlyRevenue ?? 0).toLocaleString()}</b> is synchronized with projected machine utilization rates of 85% OEE across the proposed asset fleet.
                       </p>
                    </div>
                 </div>
@@ -1028,7 +1038,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <div className="space-y-12">
                          <div className="h-[1px] bg-slate-200 w-full" />
                          <div className="space-y-1">
-                            <p className="text-xs font-bold text-[#001F3D] uppercase tracking-widest">{foundationalData.promoterName}</p>
+                            <p className="text-xs font-bold text-[#001F3D] uppercase tracking-widest">{foundationalData.promoterName || '---'}</p>
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signatory node</p>
                          </div>
                       </div>

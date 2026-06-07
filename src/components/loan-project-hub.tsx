@@ -77,6 +77,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
@@ -763,6 +764,136 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </AreaChart>
                        </ResponsiveContainer>
                     </div>
+                 </Card>
+              </div>
+
+              {/* CMA Data Integration Sections */}
+              <div className="lg:col-span-12 space-y-12">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* MPBF Calculation */}
+                    <Card className="p-8 bg-white border border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
+                       <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-widest border-l-4 border-primary pl-4">
+                          <Calculator className="h-4 w-4" /> MPBF Calculation (Method 1)
+                       </div>
+                       <div className="space-y-4">
+                          <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-slate-500">
+                             <span>A. Total Current Assets (Projected)</span>
+                             <span className="text-slate-900">₹ {(calculations.targetTurnover * 12 * 0.25).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-slate-500">
+                             <span>B. Current Liabilities (Excl. Bank)</span>
+                             <span className="text-slate-900">₹ {(calculations.workingCapitalValue * 0.3).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary">
+                             <span>C. Working Capital Gap (A - B)</span>
+                             <span>₹ {(calculations.targetTurnover * 12 * 0.25 - calculations.workingCapitalValue * 0.3).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between pt-4 text-xl font-display font-bold uppercase text-[#001F3D]">
+                             <span>Maximum Bank Finance (75%)</span>
+                             <span className="text-emerald-600">₹ {calculations.mpbf.toLocaleString()}</span>
+                          </div>
+                       </div>
+                    </Card>
+
+                    {/* DSCR Summary */}
+                    <Card className="p-8 bg-white border border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
+                       <div className="flex items-center gap-3 text-rose-500 font-bold text-xs uppercase tracking-widest border-l-4 border-rose-500 pl-4">
+                          <Activity className="h-4 w-4" /> DSCR Matrix (Average)
+                       </div>
+                       <div className="flex flex-col items-center justify-center h-full py-6">
+                          <span className="text-6xl font-display font-bold text-[#001F3D] tracking-tighter">
+                             {(calculations.projections.reduce((acc, p) => acc + parseFloat(p.dscr), 0) / 5).toFixed(2)}
+                          </span>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Average Debt Service Coverage Ratio</p>
+                          <Badge className="bg-emerald-50 text-emerald-700 border-none mt-6 px-6 py-2 uppercase font-bold text-[10px]">Robust Serviceability</Badge>
+                       </div>
+                    </Card>
+                 </div>
+
+                 {/* Key Ratios Matrix */}
+                 <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
+                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
+                       <Scale className="h-5 w-5 text-primary" />
+                       <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Key Ratios & Feasibility Matrix</h3>
+                    </div>
+                    <Table>
+                       <TableHeader>
+                          <TableRow className="bg-white">
+                             <TableHead className="font-bold text-[9px] uppercase py-4 px-8">Ratio Component</TableHead>
+                             {calculations.projections.map(p => <TableHead key={p.year} className="text-center font-bold text-[9px] uppercase">{p.year}</TableHead>)}
+                          </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                          <TableRow className="h-16 border-b border-slate-50">
+                             <TableCell className="px-8 font-bold text-[11px] uppercase text-slate-500">TOL / TNW Ratio</TableCell>
+                             {calculations.projections.map(p => <TableCell key={p.year} className="text-center font-code text-xs font-bold text-slate-700">{p.ratio}</TableCell>)}
+                          </TableRow>
+                          <TableRow className="h-16 border-b border-slate-50">
+                             <TableCell className="px-8 font-bold text-[11px] uppercase text-slate-500">Net Profit Margin (%)</TableCell>
+                             {calculations.projections.map(p => <TableCell key={p.year} className="text-center font-code text-xs font-bold text-emerald-600">{p.margin}%</TableCell>)}
+                          </TableRow>
+                          <TableRow className="h-16 border-b border-slate-50">
+                             <TableCell className="px-8 font-bold text-[11px] uppercase text-slate-500">DSCR Analysis</TableCell>
+                             {calculations.projections.map(p => <TableCell key={p.year} className="text-center font-code text-xs font-bold text-primary">{p.dscr}</TableCell>)}
+                          </TableRow>
+                       </TableBody>
+                    </Table>
+                 </Card>
+
+                 {/* 5-Year Cash Flow Statement */}
+                 <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
+                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
+                       <RefreshCw className="h-5 w-5 text-primary" />
+                       <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">5-Year Cash Flow Matrix</h3>
+                    </div>
+                    <Table>
+                       <TableHeader>
+                          <TableRow className="bg-white">
+                             <TableHead className="font-bold text-[9px] uppercase py-4 px-8">Particulars (₹ Actual)</TableHead>
+                             {calculations.cashFlow.map(c => <TableHead key={c.year} className="text-right font-bold text-[9px] uppercase pr-8">{c.year}</TableHead>)}
+                          </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                          <TableRow className="bg-slate-50/30"><TableCell colSpan={6} className="px-8 py-2 text-[10px] font-bold text-primary uppercase">A. Operating Activities</TableCell></TableRow>
+                          <TableRow className="h-14"><TableCell className="px-10 text-[10px] uppercase text-slate-500">Net Profit After Tax</TableCell>{calculations.cashFlow.map(c => <TableCell key={c.year} className="text-right pr-8 font-code text-xs">{c.npat.toLocaleString()}</TableCell>)}</TableRow>
+                          <TableRow className="h-14"><TableCell className="px-10 text-[10px] uppercase text-slate-500">Interest Node</TableCell>{calculations.cashFlow.map(c => <TableCell key={c.year} className="text-right pr-8 font-code text-xs">{c.interest.toLocaleString()}</TableCell>)}</TableRow>
+                          <TableRow className="h-14 border-b border-slate-100"><TableCell className="px-10 text-[10px] uppercase text-slate-500">Depreciation</TableCell>{calculations.cashFlow.map(c => <TableCell key={c.year} className="text-right pr-8 font-code text-xs">{c.depreciation.toLocaleString()}</TableCell>)}</TableRow>
+                          <TableRow className="h-16 font-bold bg-slate-50/50"><TableCell className="px-8 text-[11px] uppercase">Op. Profit before WC</TableCell>{calculations.cashFlow.map(c => <TableCell key={c.year} className="text-right pr-8 font-code text-xs text-[#001F3D]">{c.opProfit.toLocaleString()}</TableCell>)}</TableRow>
+                          <TableRow className="bg-slate-50/30"><TableCell colSpan={6} className="px-8 py-2 text-[10px] font-bold text-rose-500 uppercase">B. Financing Activities</TableCell></TableRow>
+                          <TableRow className="h-14 border-b border-slate-100"><TableCell className="px-10 text-[10px] uppercase text-slate-500">Loan Principal Settlement</TableCell>{calculations.cashFlow.map(c => <TableCell key={c.year} className="text-right pr-8 font-code text-xs text-rose-600">{c.loanRepayment.toLocaleString()}</TableCell>)}</TableRow>
+                          <TableRow className="h-20 bg-[#001F3D] text-white"><TableCell className="px-8 text-[11px] font-bold uppercase">Closing Cash Flow Balance</TableCell>{calculations.cashFlow.map(c => <TableCell key={c.year} className="text-right pr-8 font-display text-sm font-bold text-emerald-400">₹ {c.closingCash.toLocaleString()}</TableCell>)}</TableRow>
+                       </TableBody>
+                    </Table>
+                 </Card>
+
+                 {/* Term Loan Repayment Schedule */}
+                 <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
+                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
+                       <Clock className="h-5 w-5 text-primary" />
+                       <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Term Loan Repayment Schedule</h3>
+                    </div>
+                    <Table>
+                       <TableHeader>
+                          <TableRow className="bg-white">
+                             <TableHead className="font-bold text-[9px] uppercase py-4 px-8">Fiscal Year</TableHead>
+                             <TableHead className="text-right font-bold text-[9px] uppercase">Opening Balance</TableHead>
+                             <TableHead className="text-right font-bold text-[9px] uppercase">Interest (₹)</TableHead>
+                             <TableHead className="text-right font-bold text-[9px] uppercase">Principal (₹)</TableHead>
+                             <TableHead className="text-right font-bold text-[9px] uppercase pr-8">Closing Balance</TableHead>
+                          </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                          {calculations.loanRepayment.map(r => (
+                             <TableRow key={r.year} className="h-16 border-b border-slate-50 hover:bg-slate-50/30">
+                                <TableCell className="px-8 font-bold text-[11px] uppercase text-slate-500">{r.year}</TableCell>
+                                <TableCell className="text-right font-code text-xs">{r.opening.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-code text-xs text-rose-500">{r.interest.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-code text-xs text-emerald-600">{r.principal.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-code text-xs font-bold text-[#001F3D] pr-8">{r.closing.toLocaleString()}</TableCell>
+                             </TableRow>
+                          ))}
+                       </TableBody>
+                    </Table>
                  </Card>
               </div>
            </div>

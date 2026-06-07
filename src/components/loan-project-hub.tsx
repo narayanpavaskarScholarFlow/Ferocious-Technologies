@@ -79,7 +79,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -212,13 +212,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investFurniture: 300000,
     investPreOp: 200000,
     // Projection Config
-    growthTarget: 15,
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
     entrepreneurContribution: 0,
   });
 
-  // Hydration and Overwrite prevention
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   // Load saved data when available
@@ -353,7 +351,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
-    // Item-wise targets based on target turnover
+    // Item-wise targets
     const productItemBreakup = proprietaryProducts.map(p => {
       const price = parseFloat((p.price || '0').replace(/,/g, '')) || 0;
       const annualQty = parseFloat((p.annualTargetQty || '0').replace(/,/g, '')) || 0;
@@ -380,7 +378,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       };
     });
 
-    // 5-Year Projection Matrix with Variable Yearly Growth
+    // 5-Year Projection Matrix
     const projections: any[] = [];
     let currentCapacityRevenue = targetTurnover * 12;
 
@@ -390,14 +388,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       
       let yearlyRevenue = 0;
       if (y === 1) {
-        // Base year with ramp up logic
         let baseYearRev = 0;
         for (let m = 1; m <= 12; m++) {
           const rampFactor = m <= 6 ? 0.3 + (m * 0.1) : 1.0; 
           baseYearRev += targetTurnover * rampFactor;
         }
         yearlyRevenue = baseYearRev * growthMultiplier;
-        // The "Full Potential" baseline for next year's growth is targetTurnover * 12 * current growth
         currentCapacityRevenue = targetTurnover * 12 * growthMultiplier;
       } else {
         yearlyRevenue = currentCapacityRevenue * growthMultiplier;
@@ -1004,7 +1000,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </TabsContent>
 
         <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:m-0 print:p-0 flex flex-col gap-8">
-           {/* Zoom Controls Hub */}
            <div className="flex items-center justify-center gap-6 p-3 bg-white/90 backdrop-blur-xl border border-slate-200 rounded-full w-fit mx-auto sticky top-6 z-50 no-print shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-10 w-10 rounded-full text-slate-400 hover:text-primary hover:bg-primary/5"><ZoomOut className="h-4 w-4" /></Button>
@@ -1026,7 +1021,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <div className="space-y-6 relative z-10">
                            <div className="flex justify-center mb-16">
                              <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl bg-white flex items-center justify-center p-4">
-                                <Image src={brandLogo || defaultBrandLogo} alt="Logo" fill className="object-contain p-4" data-ai-hint="lion technology logo" />
+                                <Image src={brandLogo} alt="Logo" fill className="object-contain p-4" data-ai-hint="lion technology logo" />
                              </div>
                            </div>
                            <div className="space-y-4">
@@ -1115,7 +1110,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )}
 
-                     {/* Catalogues Section */}
+                     {/* Section 04: Industrial Capability Matrix */}
                      {(checklist.productLine || checklist.services) && (
                        <div className="space-y-16 pt-20 page-break">
                           <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
@@ -1134,7 +1129,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Market: {p.market}</p>
                                           <div className="flex gap-4 pt-2">
                                              <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Unit Price</p><p className="text-[11px] font-bold text-[#001F3D]">₹ {p.price}</p></div>
-                                             <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Target Qty</p><p className="text-[11px] font-bold text-[#001F3D]">{p.annualTargetQty}</p></div>
+                                             <div className="space-y-1"><p className="text-[7px] font-bold text-slate-400 uppercase">Annual Load</p><p className="text-[11px] font-bold text-[#001F3D]">{p.annualTargetQty}</p></div>
                                           </div>
                                        </div>
                                     </div>
@@ -1294,7 +1289,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                      {/* Footer */}
                      <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
-                        <div className="space-y-4 text-left"><div className="h-16 w-16 bg-white rounded-2xl relative p-2 shadow-xl"><Image src={brandLogo || defaultBrandLogo} alt="Logo" fill className="object-contain p-2" /></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">End of Strategic Report</p><p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_STRAT_SYNC_2.4</p></div></div>
+                        <div className="space-y-4 text-left"><div className="h-16 w-16 bg-white rounded-2xl relative p-2 shadow-xl"><Image src={brandLogo} alt="Logo" fill className="object-contain p-2" /></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">End of Strategic Report</p><p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_STRAT_SYNC_2.4</p></div></div>
                         <div className="text-right space-y-8 w-full md:w-80"><div className="space-y-12"><div className="h-[1px] bg-slate-200 w-full" /><div className="space-y-1"><p className="text-xs font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</p><p className="text-[9px] font-bold text-slate-400 uppercase">Lead Strategist Node</p></div></div></div>
                      </div>
 
@@ -1323,7 +1318,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
           <ScrollArea className="flex-1 p-10">
             <div className="space-y-12">
-              {/* Financial Logic Node */}
               <div className="space-y-6">
                 <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Profit Architecture Logic</h4>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1346,9 +1340,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 </div>
               </div>
 
-              {/* Yield Distribution Matrix */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                 {/* Proprietary Product Split */}
                  <div className="space-y-6">
                     <div className="flex justify-between items-center">
                        <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Proprietary Yield Node</h4>
@@ -1373,7 +1365,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </Card>
                  </div>
 
-                 {/* Industrial Service Split */}
                  <div className="space-y-6">
                     <div className="flex justify-between items-center">
                        <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-accent">Service Capacity Node</h4>

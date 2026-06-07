@@ -38,7 +38,10 @@ import {
   History,
   FileCheck,
   Zap,
-  Info
+  Info,
+  UserCircle,
+  GraduationCap,
+  Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -90,6 +93,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     aboutUs: true,
     vision: true,
     mission: true,
+    entrepreneurDetails: true,
     productLine: true,
     services: true,
     financialProjections: true,
@@ -99,13 +103,17 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const [foundationalData, setFormData] = useState({
     projectName: 'Precision VMC Machining & Tool Room Hub',
-    promoterName: 'Ferocious Tech Strategy Team',
+    promoterName: 'Jayant Patil',
     location: 'Pune, Maharashtra',
     totalLoanRequirement: '50,00,000',
     aboutProject: 'A specialized facility designed to scale the production of proprietary high-precision components and provide high-fidelity VMC machining services to Tier 1 aerospace and automotive clients.',
     aboutUs: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
     vision: 'To establish Ferocious Tech as the global benchmark for precision machining and innovative industrial tool-room solutions.',
     mission: 'Providing exceptional technical value through specialized engineering, uncompromising quality releases, and innovative product development.',
+    // Entrepreneur specific details
+    qualification: 'B.E. Mechanical / MBA Operations',
+    experience: '15+ Years in Tool Room & VMC Operations',
+    promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
   });
 
   // 02. Product Line State
@@ -287,6 +295,37 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </div>
 
+                 {/* Entrepreneur Section */}
+                 <div className="space-y-10 pt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-4 border-l-4 border-emerald-500 pl-6">
+                       <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><UserCircle className="h-6 w-6" /></div>
+                       <div>
+                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Entrepreneur / Promoter Profile</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Professional pedigree and industrial expertise.</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2"><GraduationCap className="h-3 w-3" /> Educational Qualification</Label>
+                          <Input placeholder="e.g. B.E. Mechanical" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.qualification} onChange={(e)=>updateField('qualification', e.target.value)} />
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2"><Award className="h-3 w-3" /> Total Experience</Label>
+                          <Input placeholder="e.g. 15 Years in Tooling" className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.experience} onChange={(e)=>updateField('experience', e.target.value)} />
+                       </div>
+                       <div className="md:col-span-2 space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter Background & Narrative</Label>
+                          <Textarea 
+                            className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
+                            placeholder="Detail the promoter's technical journey and project motivation..."
+                            value={foundationalData.promoterNarrative}
+                            onChange={(e) => updateField('promoterNarrative', e.target.value)}
+                          />
+                       </div>
+                    </div>
+                 </div>
+
                  <div className="space-y-10 pt-6 border-t border-slate-50">
                     <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
                        <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Target className="h-6 w-6" /></div>
@@ -350,6 +389,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
                                {key === 'productLine' ? 'Proprietary Products' : 
                                 key === 'services' ? 'Industrial Services' : 
+                                key === 'entrepreneurDetails' ? 'Entrepreneur Details' :
                                 key.replace(/([A-Z])/g, ' $1')}
                              </span>
                           </div>
@@ -635,12 +675,45 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </div>
                 </div>
 
+                {/* Section 01.5: Entrepreneur Details */}
+                {checklist.entrepreneurDetails && (
+                  <div className="space-y-16 pt-20">
+                    <div className="flex items-center gap-6">
+                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">1.5</div>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter & Entrepreneur Profile</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                       <div className="md:col-span-1 p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-6">
+                          <div className="h-24 w-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-[#001F3D] border-4 border-slate-200">
+                             <UserCircle className="h-12 w-12" />
+                          </div>
+                          <div>
+                             <h4 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.promoterName}</h4>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lead Entrepreneur</p>
+                          </div>
+                          <div className="w-full space-y-3">
+                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.qualification}</Badge>
+                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.experience}</Badge>
+                          </div>
+                       </div>
+                       <div className="md:col-span-2 p-10 bg-[#001F3D] text-white rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col justify-center">
+                          <div className="absolute top-0 right-0 p-8 opacity-[0.03]"><Award className="h-40 w-40" /></div>
+                          <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">Promoter Professional Narrative</h4>
+                          <p className="text-sm text-white/90 leading-relaxed font-medium italic indent-8">
+                            "{foundationalData.promoterNarrative}"
+                          </p>
+                       </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Section 02: Marketable Assets (Product Catalogue) */}
                 {checklist.productLine && (
                   <div className="space-y-16 pt-20">
                     <div className="flex items-center gap-6">
                         <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Portfolio</h3>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Catalogue</h3>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
@@ -671,12 +744,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </div>
                         ))}
                     </div>
-                    {proprietaryProducts.length === 0 && (
-                      <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200 opacity-30">
-                        <Box className="h-16 w-16 text-slate-300 mx-auto mb-6" />
-                        <p className="text-lg font-bold uppercase tracking-widest">Product Catalogue Null</p>
-                      </div>
-                    )}
                   </div>
                 )}
 

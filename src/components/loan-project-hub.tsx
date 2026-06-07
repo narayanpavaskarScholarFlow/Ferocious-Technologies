@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -266,7 +266,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // DEEP FINANCIAL ENGINE
   const calculations = useMemo(() => {
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0);
     const workingCapitalValue = monthlyOpEx * 3;
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const entrepreneurAmt = financials.entrepreneurContribution || 0;
@@ -274,8 +274,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     // Total Project Cost: LOAN + Entrepreneur + Working Capital
     const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
     
-    const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
-
     // EMI Scheduling
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
@@ -310,10 +308,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     let currentTNW = entrepreneurAmt;
     let currentCapacityRevenue = targetTurnover * 12;
     let accumulatedDepreciation = 0;
-    const depreciationRate = 0.15; // 15% on machinery/fixed assets
+    const depreciationRate = 0.15;
     const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0);
 
-    let openingCash = workingCapitalValue * 0.2; // Initial buffer
+    let openingCash = workingCapitalValue * 0.2;
 
     for (let y = 1; y <= 5; y++) {
       const growth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
@@ -329,7 +327,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         currentCapacityRevenue = yearRevenue;
       }
 
-      const yearOpEx = monthlyOpEx * 12 * (1 + (y * 0.05)); // 5% inflation
+      const yearOpEx = monthlyOpEx * 12 * (1 + (y * 0.05));
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
@@ -340,12 +338,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearTax = yearPBT > 0 ? yearPBT * 0.25 : 0;
       const yearPAT = yearPBT - yearTax;
       
-      currentTNW += yearPAT * 0.8; // Assume 20% drawings
+      currentTNW += yearPAT * 0.8;
       const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
       const yearTOL = yearTermLoan + yearCurrentLiabilities;
 
-      // DSCR Calculation
       const dscr = (yearPAT + yearDepreciation + yearInterest) / (yearInterest + yearPrincipal || 1);
 
       projections.push({
@@ -373,9 +370,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         currentAssets: yearRevenue * 0.15 
       });
 
-      // Cash Flow Calculation (As per User Image Format)
       const opProfitBeforeWC = yearPAT + yearInterest + yearDepreciation;
-      const changeInCL = yearCurrentLiabilities * 0.1; // Simulated increment
+      const changeInCL = yearCurrentLiabilities * 0.1;
       const financingActivities = -yearInterest - yearPrincipal;
       const closingCash = openingCash + opProfitBeforeWC + changeInCL + financingActivities;
 
@@ -402,7 +398,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       openingCash = closingCash;
     }
 
-    // MPBF Calculation (Method 1: 75% of Working Capital Gap)
     const currentAssets = targetTurnover * 12 * 0.25;
     const currentLiabilitiesExclBank = workingCapitalValue * 0.3;
     const wcGap = currentAssets - currentLiabilitiesExclBank;
@@ -410,7 +405,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     return {
       monthlyOpEx,
-      oneTimeTotal,
       workingCapitalValue,
       totalProjectCost,
       loanAmt,
@@ -441,7 +435,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           newS[idx].imageUrl = reader.result as string;
           setIndustrialServices(newS);
         }
-        toast({ title: "Visual Artifact Matrixed", description: "Image converted to data URI and synchronized." });
       };
       reader.readAsDataURL(file);
     }
@@ -551,7 +544,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">High-fidelity items designed for institutional scale.</p></div>
                  <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Product</Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                  {proprietaryProducts.map((p, idx) => (
                     <div key={p.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 relative">
                        <div className="flex flex-col gap-6">
@@ -582,7 +575,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Specialized technical operations for B2B sub-systems.</p></div>
                  <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Service</Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                  {industrialServices.map((s, idx) => (
                     <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 relative">
                        <div className="flex flex-col gap-6">
@@ -653,7 +646,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-widest">
                           <Factory className="h-4 w-4" /> One-Time Investment Matrix
                        </div>
-                       <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3 w-3" /> Edit Breakup</Button>
+                       <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5" /> Edit Breakup</Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-11" value={financials.investMachinery.toLocaleString()} /></div>
@@ -767,10 +760,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
               </div>
 
-              {/* CMA Data Integration Sections */}
               <div className="lg:col-span-12 space-y-12">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* MPBF Calculation */}
                     <Card className="p-8 bg-white border border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
                        <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-widest border-l-4 border-primary pl-4">
                           <Calculator className="h-4 w-4" /> MPBF Calculation (Method 1)
@@ -795,7 +786,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                     </Card>
 
-                    {/* DSCR Summary */}
                     <Card className="p-8 bg-white border border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
                        <div className="flex items-center gap-3 text-rose-500 font-bold text-xs uppercase tracking-widest border-l-4 border-rose-500 pl-4">
                           <Activity className="h-4 w-4" /> DSCR Matrix (Average)
@@ -810,7 +800,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </Card>
                  </div>
 
-                 {/* Key Ratios Matrix */}
                  <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
                     <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
                        <Scale className="h-5 w-5 text-primary" />
@@ -840,7 +829,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </Table>
                  </Card>
 
-                 {/* 5-Year Cash Flow Statement */}
                  <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
                     <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
                        <RefreshCw className="h-5 w-5 text-primary" />
@@ -866,7 +854,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </Table>
                  </Card>
 
-                 {/* Term Loan Repayment Schedule */}
                  <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
                     <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
                        <Clock className="h-5 w-5 text-primary" />
@@ -914,7 +901,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} className="print:transform-none print:w-full">
                 <div className="bg-white shadow-[0_0_80px_rgba(0,0,0,0.1)] p-20 min-h-[297mm] space-y-16 print:shadow-none print:p-12">
                    
-                   {/* Cover Page */}
                    <div className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 relative page-break">
                       <div className="flex justify-center mb-16">
                          <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white flex items-center justify-center p-4">
@@ -930,7 +916,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </div>
                    </div>
 
-                   {/* Section 01: About Project */}
                    {checklist.aboutProject && (
                      <div className="space-y-8 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary</h3></div>
@@ -938,7 +923,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 02: Vision & Mission */}
                    {(checklist.vision || checklist.mission) && (
                      <div className="grid grid-cols-2 gap-12 page-break">
                         {checklist.vision && (
@@ -956,7 +940,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 04: Product & Service Catalogue */}
                    {(checklist.productLine || checklist.services) && (
                      <div className="space-y-12 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
@@ -982,7 +965,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 06: Road Map */}
                    {checklist.roadMapNextFiveYears && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
@@ -1001,7 +983,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 07: Cash Flow Statement */}
                    {checklist.cashFlowStatement && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CMA Data: Cash Flow Statement</h3></div>
@@ -1026,7 +1007,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 08: Key Ratios */}
                    {checklist.keyRatios && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Key Ratios & Feasibility</h3></div>
@@ -1045,7 +1025,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 09: MPBF Calculation */}
                    {checklist.mpbfCalculation && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">09</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">MPBF Calculation</h3></div>
@@ -1061,7 +1040,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
-                   {/* Section 10: Term Loan Schedule */}
                    {checklist.amortizationSchedule && (
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">10</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Term Loan Repayment Schedule</h3></div>
@@ -1091,7 +1069,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Machinery Breakup Matrix Dialog */}
       <Dialog open={isMachineryBreakupOpen} onOpenChange={setIsMachineryBreakupOpen}>
         <DialogContent className="max-w-4xl h-[85vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
           <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center shrink-0">

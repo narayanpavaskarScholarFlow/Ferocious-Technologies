@@ -46,7 +46,9 @@ import {
   ArrowUpRight,
   TrendingDown,
   Activity,
-  FileCheck
+  FileCheck,
+  Settings2,
+  Gauge
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -275,13 +277,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const prodRatio = prodPotential / totalPotential;
     const svcRatio = svcPotential / totalPotential;
 
-    const monthlyOpEx = financials.expenseRent + financials.expenseSalaries + financials.expensePower + financials.expenseMaintenance + financials.expenseConsumables;
-    const targetTurnover = (monthlyOpEx + emi) / (1 - (financials.targetNetMargin / 100));
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
+    const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
     // 5-Year Projection Matrix
     const projections: any[] = [];
     for (let y = 1; y <= 5; y++) {
-      const growthFactor = Math.pow(1 + (financials.growthTarget / 100), y - 1);
+      const growthFactor = Math.pow(1 + ((financials.growthTarget || 15) / 100), y - 1);
       
       // Ramp-up logic for Year 1 (Months 1-6 focusing on marketing at 30% yield)
       let yearlyRevenue = 0;
@@ -312,7 +314,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     const total5YearProfit = projections.reduce((acc, p) => acc + p.profit, 0);
-    const totalInvestment = financials.capitalInvestment + financials.workingCapital;
+    const totalInvestment = (financials.capitalInvestment || 0) + (financials.workingCapital || 0);
     const roi = totalInvestment > 0 ? (total5YearProfit / totalInvestment) * 100 : 0;
 
     return {
@@ -619,7 +621,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        ))}
                        <div className="space-y-2">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Monthly OpEx</Label>
-                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={(financials.expenseRent + financials.expenseSalaries + financials.expensePower + financials.expenseMaintenance + financials.expenseConsumables).toLocaleString()} />
+                          <Input readOnly className="h-12 bg-emerald-50 text-emerald-700 border-none rounded-xl font-display font-bold" value={((financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0)).toLocaleString()} />
                        </div>
                     </div>
                  </Card>

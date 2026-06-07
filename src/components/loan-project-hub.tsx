@@ -42,7 +42,8 @@ import {
   UserCircle,
   GraduationCap,
   Award,
-  Shield
+  Shield,
+  Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -72,6 +73,16 @@ interface ProprietaryProduct {
   name: string;
   market: string;
   price: string;
+  annualTargetQty: string;
+  imageUrl: string;
+}
+
+interface IndustrialService {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  annualTargetQty: string;
   imageUrl: string;
 }
 
@@ -111,11 +122,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     aboutUs: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
     vision: 'To establish Ferocious Tech as the global benchmark for precision machining and innovative industrial tool-room solutions.',
     mission: 'Providing exceptional technical value through specialized engineering, uncompromising quality releases, and innovative product development.',
-    // Entrepreneur specific details
     qualification: 'B.E. Mechanical / MBA Operations',
     experience: '15+ Years in Tool Room & VMC Operations',
     promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
-    // Compliance nodes
     gstNumber: '27AAAAA0000A1Z5',
     msmeNumber: 'UDYAM-MH-00-0000000',
   });
@@ -127,6 +136,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       name: 'Precision Curved Conduit Connector', 
       market: 'Electrical / Construction', 
       price: '45.00',
+      annualTargetQty: '50,000',
       imageUrl: 'https://picsum.photos/seed/conduit/600/400' 
     },
     { 
@@ -134,13 +144,28 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       name: 'VMC Machined Engine Plate', 
       market: 'Automotive Tier 1', 
       price: '1,800.00',
+      annualTargetQty: '1,200',
       imageUrl: 'https://picsum.photos/seed/engineplate/600/400' 
     },
   ]);
 
-  const [services, setServices] = useState([
-    { id: '1', name: 'VMC Custom Machining', capacity: '2000 hours/year' },
-    { id: '2', name: 'Mould Design & Fabrication', capacity: '12 moulds/year' },
+  const [industrialServices, setIndustrialServices] = useState<IndustrialService[]>([
+    { 
+      id: 'S1', 
+      name: 'High-Precision VMC Job-Work', 
+      description: 'Specialized 3-axis and 4-axis VMC machining services for complex aerospace geometries.', 
+      price: '1,250.00',
+      annualTargetQty: '2,500 Hours',
+      imageUrl: 'https://picsum.photos/seed/milling/600/400'
+    },
+    { 
+      id: 'S2', 
+      name: 'Mould Design & Prototyping', 
+      description: 'End-to-end mould fabrication from DFM analysis to final polishing and testing.', 
+      price: '45,000.00',
+      annualTargetQty: '24 Moulds',
+      imageUrl: 'https://picsum.photos/seed/edm/600/400'
+    },
   ]);
 
   // 03. Financial Data State
@@ -156,7 +181,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     if (savedStrategy) {
       if (savedStrategy.foundationalData) setFormData(savedStrategy.foundationalData);
       if (savedStrategy.proprietaryProducts) setProprietaryProducts(savedStrategy.proprietaryProducts);
-      if (savedStrategy.services) setServices(savedStrategy.services);
+      if (savedStrategy.industrialServices) setIndustrialServices(savedStrategy.industrialServices);
       if (savedStrategy.financials) setFinancials(savedStrategy.financials);
       if (savedStrategy.checklist) setChecklist(savedStrategy.checklist);
     }
@@ -166,7 +191,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const data = {
       foundationalData,
       proprietaryProducts,
-      services,
+      industrialServices,
       financials,
       checklist,
       updatedAt: new Date().toISOString()
@@ -195,14 +220,29 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     name: '', 
     market: '', 
     price: '0.00', 
+    annualTargetQty: '0',
     imageUrl: 'https://picsum.photos/seed/default/600/400' 
   }]);
-  const handleAddService = () => setServices([...services, { id: Date.now().toString(), name: '', capacity: '' }]);
+
+  const handleAddService = () => setIndustrialServices([...industrialServices, { 
+    id: `SVC-${Date.now()}`, 
+    name: '', 
+    description: '', 
+    price: '0.00', 
+    annualTargetQty: '0',
+    imageUrl: 'https://picsum.photos/seed/service/600/400' 
+  }]);
 
   const updateProduct = (idx: number, field: keyof ProprietaryProduct, value: string) => {
     const newP = [...proprietaryProducts];
     newP[idx] = { ...newP[idx], [field]: value };
     setProprietaryProducts(newP);
+  };
+
+  const updateService = (idx: number, field: keyof IndustrialService, value: string) => {
+    const newS = [...industrialServices];
+    newS[idx] = { ...newS[idx], [field]: value };
+    setIndustrialServices(newS);
   };
 
   const handleProductImageUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,6 +252,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       reader.onloadend = () => {
         updateProduct(idx, 'imageUrl', reader.result as string);
         toast({ title: "Visual Matrix Cached", description: "Product image initialized for report." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleServiceImageUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateService(idx, 'imageUrl', reader.result as string);
+        toast({ title: "Service Artifact Cached", description: "Visual node synchronized." });
       };
       reader.readAsDataURL(file);
     }
@@ -259,11 +311,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <TabsTrigger value="financials" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
             03. Financials
           </TabsTrigger>
-          <TabsTrigger value="visuals" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
-            04. Design Matrix
-          </TabsTrigger>
           <TabsTrigger value="display" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
-            05. Final Preview
+            04. Final Preview
           </TabsTrigger>
         </TabsList>
 
@@ -427,9 +476,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </div>
         </TabsContent>
 
-        <TabsContent value="products" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
-           <div className="grid grid-cols-1 gap-8">
-              <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+        <TabsContent value="products" className="m-0 space-y-12 animate-in slide-in-from-bottom-2 duration-500 no-print">
+           <div className="grid grid-cols-1 gap-12">
+              <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
                  <div className="flex justify-between items-center border-l-4 border-primary pl-6">
                     <div>
                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
@@ -444,31 +493,38 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </Button>
                     </div>
                  </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {proprietaryProducts.map((p, idx) => (
-                       <div key={p.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl flex flex-col gap-6 group hover:border-primary/20 transition-all">
-                          <div className="flex gap-4">
-                             <div className="h-24 w-24 rounded-2xl overflow-hidden border border-white shadow-md relative shrink-0 bg-white flex items-center justify-center">
+                       <div key={p.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-8 group hover:border-primary/20 transition-all">
+                          <div className="flex gap-6">
+                             <div className="h-28 w-28 rounded-3xl overflow-hidden border border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center">
                                 {p.imageUrl ? (
-                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-1" />
+                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-2" />
                                 ) : (
-                                  <ImageIcon className="h-8 w-8 text-slate-200" />
+                                  <ImageIcon className="h-10 w-10 text-slate-200" />
                                 )}
                              </div>
-                             <div className="flex-1 space-y-3">
-                                <Input placeholder="Product Name..." className="bg-white border-none h-11 text-xs font-bold" value={p.name} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
-                                <Input placeholder="Target Market Sector..." className="bg-white border-none h-11 text-[10px] font-medium" value={p.market} onChange={(e) => updateProduct(idx, 'market', e.target.value)} />
+                             <div className="flex-1 space-y-4">
+                                <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
+                                <Input placeholder="Target Market Sector..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.market} onChange={(e) => updateProduct(idx, 'market', e.target.value)} />
                              </div>
                           </div>
-                          <div className="flex gap-4 items-end">
-                             <div className="flex-1 space-y-2">
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Unit Price (₹)</Label>
                                 <div className="relative">
-                                   <Input placeholder="0.00" className="bg-white border-none h-11 text-sm font-display font-bold pl-8" value={p.price} onChange={(e) => updateProduct(idx, 'price', e.target.value)} />
-                                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                                   <Input placeholder="0.00" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={p.price} onChange={(e) => updateProduct(idx, 'price', e.target.value)} />
+                                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                                 </div>
                              </div>
-                             <div className="flex-1 space-y-2">
+                             <div className="space-y-2">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Projection (Qty)</Label>
+                                <div className="relative">
+                                   <Input placeholder="e.g. 5,000" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={p.annualTargetQty} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
+                                   <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                </div>
+                             </div>
+                             <div className="col-span-2 space-y-2">
                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Technical Image Artifact</Label>
                                 <div className="relative">
                                   <input 
@@ -481,7 +537,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <label 
                                     htmlFor={`product-img-${p.id}`}
                                     className={cn(
-                                      "h-11 w-full flex items-center gap-3 px-4 rounded-xl text-[9px] font-bold uppercase tracking-widest cursor-pointer transition-all border border-dashed",
+                                      "h-12 w-full flex items-center gap-3 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all border border-dashed",
                                       p.imageUrl.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-primary/50"
                                     )}
                                   >
@@ -490,14 +546,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   </label>
                                 </div>
                              </div>
-                             <Button variant="ghost" size="icon" className="h-11 w-11 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => setProprietaryProducts(proprietaryProducts.filter(i => i.id !== p.id))}><Trash2 className="h-4 w-4" /></Button>
+                             <div className="col-span-2 flex justify-end">
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 font-bold uppercase text-[9px] gap-2 rounded-lg" onClick={() => setProprietaryProducts(proprietaryProducts.filter(i => i.id !== p.id))}>
+                                  <Trash2 className="h-3.5 w-3.5" /> Purge Node
+                                </Button>
+                             </div>
                           </div>
                        </div>
                     ))}
                  </div>
               </Card>
 
-              <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+              <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
                  <div className="flex justify-between items-center border-l-4 border-accent pl-6">
                     <div>
                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3>
@@ -507,20 +567,65 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <Plus className="h-4 w-4 mr-2" /> Add Service Node
                     </Button>
                  </div>
-                 <div className="space-y-4">
-                    {services.map((s, idx) => (
-                       <div key={s.id} className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl group">
-                          <Input placeholder="Service Description..." className="bg-white border-none h-12 text-xs font-bold" value={s.name} onChange={(e) => {
-                             const newS = [...services];
-                             newS[idx].name = e.target.value;
-                             setServices(newS);
-                          }} />
-                          <Input placeholder="Annual Capacity Output..." className="bg-white border-none h-12 text-xs font-bold" value={s.capacity} onChange={(e) => {
-                             const newS = [...services];
-                             newS[idx].capacity = e.target.value;
-                             setServices(newS);
-                          }} />
-                          <Button variant="ghost" size="icon" className="h-12 w-12 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => setServices(services.filter(i => i.id !== s.id))}><Trash2 className="h-4 w-4" /></Button>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {industrialServices.map((s, idx) => (
+                       <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-8 group hover:border-accent/20 transition-all">
+                          <div className="flex gap-6">
+                             <div className="h-28 w-28 rounded-3xl overflow-hidden border border-white shadow-xl relative shrink-0 bg-white flex items-center justify-center">
+                                {s.imageUrl ? (
+                                  <Image src={s.imageUrl} alt={s.name} fill className="object-contain p-2" />
+                                ) : (
+                                  <ImageIcon className="h-10 w-10 text-slate-200" />
+                                )}
+                             </div>
+                             <div className="flex-1 space-y-4">
+                                <Input placeholder="Service Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name} onChange={(e) => updateService(idx, 'name', e.target.value)} />
+                                <Textarea placeholder="Technical Service Description..." className="bg-white border-none min-h-[60px] text-[11px] font-medium shadow-sm resize-none" value={s.description} onChange={(e) => updateService(idx, 'description', e.target.value)} />
+                             </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Unit Price / Rate (₹)</Label>
+                                <div className="relative">
+                                   <Input placeholder="0.00" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={s.price} onChange={(e) => updateService(idx, 'price', e.target.value)} />
+                                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                </div>
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Target Projection</Label>
+                                <div className="relative">
+                                   <Input placeholder="e.g. 2,000 Hours" className="bg-white border-none h-12 text-sm font-display font-bold pl-8 shadow-sm" value={s.annualTargetQty} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
+                                   <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                                </div>
+                             </div>
+                             <div className="col-span-2 space-y-2">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Technical Image Artifact</Label>
+                                <div className="relative">
+                                  <input 
+                                    type="file" 
+                                    id={`service-img-${s.id}`} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={(e) => handleServiceImageUpload(idx, e)}
+                                  />
+                                  <label 
+                                    htmlFor={`service-img-${s.id}`}
+                                    className={cn(
+                                      "h-12 w-full flex items-center gap-3 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all border border-dashed",
+                                      s.imageUrl.startsWith('data:') ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-accent/50"
+                                    )}
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    {s.imageUrl.startsWith('data:') ? "Artifact Cached" : "Upload Visual"}
+                                  </label>
+                                </div>
+                             </div>
+                             <div className="col-span-2 flex justify-end">
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 font-bold uppercase text-[9px] gap-2 rounded-lg" onClick={() => setIndustrialServices(industrialServices.filter(i => i.id !== s.id))}>
+                                  <Trash2 className="h-3.5 w-3.5" /> Purge Service Node
+                                </Button>
+                             </div>
+                          </div>
                        </div>
                     ))}
                  </div>
@@ -597,17 +702,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
               </div>
            </div>
-        </TabsContent>
-
-        <TabsContent value="visuals" className="m-0 animate-in slide-in-from-bottom-2 duration-500 no-print">
-           <Card className="p-20 flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[3rem] bg-slate-50/50 text-center group hover:bg-white hover:border-primary/20 transition-all">
-              <div className="p-8 bg-white rounded-3xl shadow-xl mb-6 group-hover:scale-110 transition-transform"><ImageIcon className="h-16 w-16 text-primary" /></div>
-              <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Visual Artifact Registry</h3>
-              <p className="text-xs text-slate-400 mt-2 max-sm">Upload high-resolution photography of machining assets, existing products, and strategic workshop layouts for bank inspection.</p>
-              <Button className="mt-8 h-12 px-10 rounded-xl bg-[#001F3D] font-bold uppercase text-[10px] tracking-widest gap-3 shadow-xl">
-                 <Upload className="h-4 w-4" /> Initialize Upload Protocol
-              </Button>
-           </Card>
         </TabsContent>
 
         <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:m-0 print:p-0">
@@ -787,12 +881,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                       <Box className="h-2 w-2 text-primary" /> {p.market}
                                     </p>
                                 </div>
-                                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                                    <div className="flex flex-col">
-                                      <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Unit Valuation</span>
-                                      <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price}</span>
+                                <div className="space-y-4 pt-4 border-t border-slate-50">
+                                    <div className="flex justify-between items-end">
+                                      <div className="flex flex-col">
+                                        <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Unit Price</span>
+                                        <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price}</span>
+                                      </div>
+                                      <div className="text-right flex flex-col">
+                                        <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Annual Projection</span>
+                                        <span className="text-[10px] font-bold text-slate-700">{p.annualTargetQty} <span className="text-[8px] font-medium text-slate-400">Units</span></span>
+                                      </div>
                                     </div>
-                                    <Badge variant="outline" className="h-6 text-[7px] font-bold border-slate-100 bg-slate-50 text-slate-400 uppercase px-2">Market Ready</Badge>
+                                    <Badge variant="outline" className="h-6 w-full justify-center text-[7px] font-bold border-slate-100 bg-slate-50 text-slate-400 uppercase">Production Ready</Badge>
                                 </div>
                               </div>
                           </div>
@@ -801,27 +901,44 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   </div>
                 )}
 
-                {/* Section 03: Manufacturing Capabilities (Services) */}
+                {/* Section 03: Industrial Services Matrix (Detailed Catalogue Style) */}
                 {checklist.services && (
                   <div className="space-y-16 pt-20">
                     <div className="flex items-center gap-6">
                         <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">B2B Manufacturing Capacity</h3>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Services Catalogue</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6">
-                        {services.map((s, idx) => (
-                          <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl flex justify-between items-center group">
-                            <div className="flex items-center gap-6">
-                                <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-[#001F3D] shadow-sm font-display font-bold text-xl">{idx + 1}</div>
-                                <div>
-                                  <h5 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">{s.name || 'Protocol Neutral'}</h5>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Service ID: {s.id}</p>
-                                </div>
+                    <div className="grid grid-cols-1 gap-8">
+                        {industrialServices.map((s, idx) => (
+                          <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col md:flex-row gap-8 items-start group shadow-sm hover:shadow-md transition-all">
+                            <div className="h-32 w-32 bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-xl shrink-0 flex items-center justify-center relative">
+                                {s.imageUrl ? (
+                                  <Image src={s.imageUrl} alt={s.name} fill className="object-contain p-2" />
+                                ) : (
+                                  <Layers className="h-8 w-8 text-[#001F3D] opacity-20" />
+                                )}
                             </div>
-                            <div className="text-right">
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annual Capacity Output</p>
-                                <Badge className="bg-[#001F3D] text-white border-none px-6 py-1.5 rounded-full font-bold text-[10px] uppercase">{s.capacity}</Badge>
+                            <div className="flex-1 space-y-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{s.name || 'Undefined Protocol'}</h5>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Service ID: {s.id}</p>
+                                  </div>
+                                  <div className="text-right space-y-1">
+                                     <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Rate Projection</span>
+                                     <p className="text-xl font-display font-bold text-primary">₹ {s.price}</p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">{s.description}</p>
+                                <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center">
+                                   <div className="flex items-center gap-3">
+                                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Annual Capacity Target:</span>
+                                      <Badge className="bg-[#001F3D] text-white border-none rounded-full px-4 h-7 text-[9px] font-bold uppercase">{s.annualTargetQty}</Badge>
+                                   </div>
+                                   <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-600 text-[8px] font-bold uppercase">Revenue Generation Ready</Badge>
+                                </div>
                             </div>
                           </div>
                         ))}

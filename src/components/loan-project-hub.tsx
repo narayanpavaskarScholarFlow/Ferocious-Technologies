@@ -91,11 +91,6 @@ import {
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-
 interface ProprietaryProduct {
   id: string;
   name: string;
@@ -201,7 +196,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // 03. Financial Data State
   const [financials, setFinancials] = useState({
-    workingCapital: 0, // This will be calculated from OpEx
     loanROI: 9.5,
     loanTenure: 60,
     loanMoratorium: 6,
@@ -234,13 +228,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       }
       if (Array.isArray(savedStrategy.proprietaryProducts)) {
         setProprietaryProducts(savedStrategy.proprietaryProducts);
-      } else {
-        setProprietaryProducts([]);
       }
       if (Array.isArray(savedStrategy.industrialServices)) {
         setIndustrialServices(savedStrategy.industrialServices);
-      } else {
-        setIndustrialServices([]);
       }
       if (savedStrategy.financials) {
         setFinancials(prev => ({ ...prev, ...savedStrategy.financials }));
@@ -288,11 +278,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const monthlyOpEx = (financials.expenseRent || 0) + (financials.expenseSalaries || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
     
     // NEW: Working Capital is 3 months of OpEx
-    const calculatedWorkingCapital = monthlyOpEx * 3;
+    const workingCapitalValue = monthlyOpEx * 3;
 
     // Investment Calcs
     const oneTimeTotal = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investPreOp || 0);
-    const totalProjectCost = oneTimeTotal + calculatedWorkingCapital;
+    const totalProjectCost = oneTimeTotal + workingCapitalValue;
 
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     
@@ -509,7 +499,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20 print:pb-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2 no-print">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.3em]">
+          <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
             <Landmark className="h-4 w-4" />
             Industrial Loan Architect
           </div>
@@ -610,34 +600,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </div>
 
-                 <div className="space-y-10 pt-6 border-t border-slate-50">
-                    <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
-                       <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Target className="h-6 w-6" /></div>
-                       <div>
-                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Strategic Narrative Hub</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Detailed organizational and functional descriptors.</p>
-                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-8">
-                       <div className="space-y-3">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">About Project</Label>
-                          <Textarea className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed" value={foundationalData.aboutProject || ''} onChange={(e) => updateField('aboutProject', e.target.value)} />
-                       </div>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="space-y-3">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Vision Node</Label>
-                             <Textarea className="bg-slate-50 border-none rounded-2xl min-h-[80px] text-xs font-bold" value={foundationalData.vision || ''} onChange={(e) => updateField('vision', e.target.value)} />
-                          </div>
-                          <div className="space-y-3">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Mission Node</Label>
-                             <Textarea className="bg-slate-50 border-none rounded-2xl min-h-[80px] text-xs font-bold" value={foundationalData.mission || ''} onChange={(e) => updateField('mission', e.target.value)} />
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="pt-8 border-t border-slate-100 flex justify-end">
+                 <div className="space-y-10 pt-6 border-t border-slate-100 flex justify-end">
                    <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={() => handleSaveStrategy()}>
                      <Save className="h-4 w-4" /> Save Identity Node
                    </Button>

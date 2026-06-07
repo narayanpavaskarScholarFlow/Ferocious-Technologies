@@ -11,39 +11,30 @@ import {
   Landmark, 
   FileText, 
   Target, 
-  PieChart as PieIcon, 
-  LineChart as LineIcon,
   ImageIcon, 
-  Layout, 
   ChevronRight, 
   ChevronLeft,
   Plus,
   Trash2,
-  CheckCircle2,
   Printer,
   TrendingUp,
   DollarSign,
   Briefcase,
-  Factory,
-  Cpu,
   Save,
   Upload,
-  BarChart3,
   Box,
-  Tags,
   Compass,
-  Rocket,
   ShieldCheck,
-  Building2,
-  History,
-  FileCheck,
   Zap,
   Info,
   UserCircle,
   GraduationCap,
   Award,
   Shield,
-  Layers
+  Layers,
+  ZoomIn,
+  ZoomOut,
+  Maximize
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -94,6 +85,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
+  const [zoom, setZoom] = useState(1);
 
   // Firestore Persistence Node
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
@@ -214,15 +206,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   };
 
   const financialChartData = useMemo(() => [
-    { name: 'Fixed Assets', value: financials.capitalInvestment },
-    { name: 'Working Cap', value: financials.workingCapital },
+    { name: 'Fixed Assets', value: financials.capitalInvestment || 0 },
+    { name: 'Working Cap', value: financials.workingCapital || 0 },
   ], [financials]);
 
   const pnlChartData = useMemo(() => [
-    { month: 'Month 1', rev: financials.projectedMonthlyRevenue * 0.7, exp: financials.projectedMonthlyExpense },
-    { month: 'Month 2', rev: financials.projectedMonthlyRevenue * 0.85, exp: financials.projectedMonthlyExpense },
-    { month: 'Month 3', rev: financials.projectedMonthlyRevenue, exp: financials.projectedMonthlyExpense },
-    { month: 'Month 4', rev: financials.projectedMonthlyRevenue * 1.1, exp: financials.projectedMonthlyExpense },
+    { month: 'Month 1', rev: (financials.projectedMonthlyRevenue || 0) * 0.7, exp: financials.projectedMonthlyExpense || 0 },
+    { month: 'Month 2', rev: (financials.projectedMonthlyRevenue || 0) * 0.85, exp: financials.projectedMonthlyExpense || 0 },
+    { month: 'Month 3', rev: financials.projectedMonthlyRevenue || 0, exp: financials.projectedMonthlyExpense || 0 },
+    { month: 'Month 4', rev: (financials.projectedMonthlyRevenue || 0) * 1.1, exp: financials.projectedMonthlyExpense || 0 },
   ], [financials]);
 
   const handleAddProduct = () => setProprietaryProducts([...proprietaryProducts, { 
@@ -282,6 +274,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
+  const handleResetZoom = () => setZoom(1);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20 print:pb-0">
@@ -371,11 +367,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification Number</Label>
-                          <Input placeholder="e.g. 27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber || ''} onChange={(e)=>updateField('gstNumber', e.target.value)} />
+                          <Input placeholder="27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber || ''} onChange={(e)=>updateField('gstNumber', e.target.value)} />
                        </div>
                        <div className="space-y-3">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label>
-                          <Input placeholder="e.g. UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber || ''} onChange={(e)=>updateField('msmeNumber', e.target.value)} />
+                          <Input placeholder="UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber || ''} onChange={(e)=>updateField('msmeNumber', e.target.value)} />
                        </div>
                     </div>
                  </div>
@@ -403,7 +399,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter Background & Narrative</Label>
                           <Textarea 
                             className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
-                            placeholder="Detail the promoter's technical journey and project motivation..."
+                            placeholder="Detail the promoter's technical journey..."
                             value={foundationalData.promoterNarrative || ''}
                             onChange={(e) => updateField('promoterNarrative', e.target.value)}
                           />
@@ -425,7 +421,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">About Project</Label>
                           <Textarea 
                             className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
-                            placeholder="Detailed technical description of the proposed project..."
+                            placeholder="Detailed technical description..."
                             value={foundationalData.aboutProject || ''}
                             onChange={(e) => updateField('aboutProject', e.target.value)}
                           />
@@ -434,7 +430,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">About Us (Firm Profile)</Label>
                           <Textarea 
                             className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
-                            placeholder="History, technical expertise, and team pedigree..."
+                            placeholder="History, technical expertise..."
                             value={foundationalData.aboutUs || ''}
                             onChange={(e) => updateField('aboutUs', e.target.value)}
                           />
@@ -444,7 +440,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Vision Statement</Label>
                              <Textarea 
                                className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
-                               placeholder="The long-term aspiration and target node..."
+                               placeholder="The long-term aspiration..."
                                value={foundationalData.vision || ''}
                                onChange={(e) => updateField('vision', e.target.value)}
                              />
@@ -453,7 +449,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Mission Statement</Label>
                              <Textarea 
                                className="bg-slate-50 border-none rounded-2xl min-h-[100px] text-xs font-bold leading-relaxed focus-visible:ring-primary/20" 
-                               placeholder="Primary functional purpose and core protocols..."
+                               placeholder="Primary functional purpose..."
                                value={foundationalData.mission || ''}
                                onChange={(e) => updateField('mission', e.target.value)}
                              />
@@ -651,21 +647,21 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Fixed Capital (Machinery/Land)</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment ?? 0} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.capitalInvestment || 0} onChange={(e)=>setFinancials({...financials, capitalInvestment: Number(e.target.value)})} />
                           <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                        </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Working Capital Reserve</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital ?? 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-slate-50 border-none rounded-2xl text-2xl font-display font-bold text-[#001F3D] pl-10 shadow-inner" value={financials.workingCapital || 0} onChange={(e)=>setFinancials({...financials, workingCapital: Number(e.target.value)})} />
                           <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                        </div>
                     </div>
                     <div className="space-y-3">
                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proj. Monthly Revenue</Label>
                        <div className="relative">
-                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue ?? 0} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
+                          <Input type="number" className="h-16 bg-emerald-50 text-emerald-700 border-none rounded-2xl text-2xl font-display font-bold pl-10 shadow-inner" value={financials.projectedMonthlyRevenue || 0} onChange={(e)=>setFinancials({...financials, projectedMonthlyRevenue: Number(e.target.value)})} />
                           <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-300" />
                        </div>
                     </div>
@@ -714,338 +710,365 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </div>
         </TabsContent>
 
-        <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:m-0 print:p-0">
-           <div className="max-w-[1000px] mx-auto space-y-16 print:max-w-none print:w-full">
-             <Card className="p-16 md:p-24 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] space-y-20 print:shadow-none print:border-none print:p-0 print:m-0 print:rounded-none">
-                
-                {/* Formal Cover Page Matrix */}
-                <div className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-100 pb-20 relative">
-                   <div className="absolute top-0 right-0 p-10 opacity-[0.03] no-print">
-                      <Landmark className="h-96 w-96 text-[#001F3D]" />
-                   </div>
-                   
-                   <div className="space-y-6 relative z-10">
-                      <div className="flex justify-center mb-16">
-                        <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl bg-white flex items-center justify-center p-4">
-                           <Image 
-                            src={brandLogo} 
-                            alt="Ferocious Tech Logo" 
-                            fill 
-                            className="object-contain p-4"
-                            data-ai-hint="lion technology logo"
-                           />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                         <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">Official Submission</Badge>
-                         <h1 className="text-7xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">
-                            Project Feasibility <br />Report
-                         </h1>
-                         <div className="h-1.5 w-32 bg-red-600 mx-auto rounded-full mt-8" />
-                      </div>
-                      
-                      <div className="pt-12">
-                         <p className="text-2xl font-headline font-bold text-slate-400 uppercase tracking-[0.4em] mb-2">{foundationalData.projectName || '---'}</p>
-                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{foundationalData.location || '---'}</p>
-                      </div>
-                   </div>
-
-                   <div className="pt-20 grid grid-cols-2 gap-20 w-full max-w-2xl text-left border-t border-slate-50 mt-auto relative z-10">
-                      <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submitted by</p>
-                        <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{foundationalData.promoterName || '---'}</h4>
-                        <p className="text-xs font-bold text-slate-500 mt-1">FEROCIOUS TECH INDUSTRIAL GROUP</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submission Date</p>
-                        <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</h4>
-                        <Badge variant="outline" className="mt-2 border-slate-200 text-slate-400 font-code text-[9px] uppercase">Ref: FT_STRAT_2.4</Badge>
-                      </div>
-                   </div>
+        <TabsContent value="display" className="m-0 animate-in zoom-in-95 duration-700 print:m-0 print:p-0 flex flex-col gap-8">
+           {/* Zoom Controls Hub */}
+           <div className="flex items-center justify-center gap-6 p-3 bg-white/90 backdrop-blur-xl border border-slate-200 rounded-full w-fit mx-auto sticky top-6 z-50 no-print shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-10 w-10 rounded-full text-slate-400 hover:text-primary hover:bg-primary/5"><ZoomOut className="h-4 w-4" /></Button>
+                <div className="w-16 text-center">
+                  <span className="text-[11px] font-bold text-[#001F3D]">{Math.round(zoom * 100)}%</span>
                 </div>
+                <Button variant="ghost" size="icon" onClick={handleZoomIn} className="h-10 w-10 rounded-full text-slate-400 hover:text-primary hover:bg-primary/5"><ZoomIn className="h-4 w-4" /></Button>
+              </div>
+              <div className="h-6 w-px bg-slate-200" />
+              <Button variant="ghost" size="sm" onClick={handleResetZoom} className="h-9 px-6 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-primary gap-2">
+                <Maximize className="h-3.5 w-3.5" /> Reset View
+              </Button>
+           </div>
 
-                {/* Section 01: Strategic Narrative Hub */}
-                <div className="space-y-16 pt-20">
-                   <div className="flex items-center gap-6">
-                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary & Vision</h3>
-                   </div>
-
-                   <div className="space-y-12">
-                      {checklist.aboutProject && (
-                        <div className="space-y-6">
-                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">The Initiative</h4>
-                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutProject || '---'}</p>
+           <div className="overflow-x-auto overflow-y-visible pb-20 hide-scrollbar flex justify-center">
+             <div 
+                style={{ 
+                  transform: `scale(${zoom})`, 
+                  transformOrigin: 'top center',
+                  width: '100%',
+                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                className="print:transform-none"
+             >
+                <div className="max-w-[1000px] mx-auto space-y-16 print:max-w-none print:w-full">
+                  <Card className="p-16 md:p-24 bg-white border border-slate-200 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] rounded-[3rem] space-y-20 print:shadow-none print:border-none print:p-0 print:m-0 print:rounded-none">
+                     
+                     {/* Formal Cover Page Matrix */}
+                     <div className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-100 pb-20 relative">
+                        <div className="absolute top-0 right-0 p-10 opacity-[0.03] no-print">
+                           <Landmark className="h-96 w-96 text-[#001F3D]" />
                         </div>
-                      )}
-                      
-                      {checklist.aboutUs && (
-                        <div className="space-y-6">
-                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Organizational Pedigree</h4>
-                           <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutUs || '---'}</p>
+                        
+                        <div className="space-y-6 relative z-10">
+                           <div className="flex justify-center mb-16">
+                             <div className="relative w-48 h-48 rounded-[2.5rem] overflow-hidden group shadow-2xl bg-white flex items-center justify-center p-4">
+                                <Image 
+                                 src={brandLogo} 
+                                 alt="Ferocious Tech Logo" 
+                                 fill 
+                                 className="object-contain p-4"
+                                 data-ai-hint="lion technology logo"
+                                />
+                             </div>
+                           </div>
+                           
+                           <div className="space-y-4">
+                              <Badge className="bg-primary text-white border-none px-8 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] mb-4">Official Submission</Badge>
+                              <h1 className="text-7xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">
+                                 Project Feasibility <br />Report
+                              </h1>
+                              <div className="h-1.5 w-32 bg-red-600 mx-auto rounded-full mt-8" />
+                           </div>
+                           
+                           <div className="pt-12">
+                              <p className="text-2xl font-headline font-bold text-slate-400 uppercase tracking-[0.4em] mb-2">{foundationalData.projectName || '---'}</p>
+                              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{foundationalData.location || '---'}</p>
+                           </div>
                         </div>
-                      )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
-                         {checklist.vision && (
-                           <div className="p-10 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-6 relative overflow-hidden group">
-                              <Compass className="h-12 w-12 text-[#001F3D] opacity-10 absolute top-6 right-6" />
-                              <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Future Node (Vision)</h5>
-                              <p className="text-sm font-bold text-slate-700 leading-relaxed italic">"{foundationalData.vision || '---'}"</p>
+                        <div className="pt-20 grid grid-cols-2 gap-20 w-full max-w-2xl text-left border-t border-slate-50 mt-auto relative z-10">
+                           <div>
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submitted by</p>
+                             <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{foundationalData.promoterName || '---'}</h4>
+                             <p className="text-xs font-bold text-slate-500 mt-1">FEROCIOUS TECH INDUSTRIAL GROUP</p>
                            </div>
-                         )}
-                         {checklist.mission && (
-                           <div className="p-10 bg-[#001F3D] text-white rounded-[2.5rem] space-y-6 relative overflow-hidden group">
-                              <ShieldCheck className="h-12 w-12 text-white opacity-10 absolute top-6 right-6" />
-                              <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Core Protocol (Mission)</h5>
-                              <p className="text-sm font-bold text-white/90 leading-relaxed italic">"{foundationalData.mission || '---'}"</p>
+                           <div className="text-right">
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Submission Date</p>
+                             <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</h4>
+                             <Badge variant="outline" className="mt-2 border-slate-200 text-slate-400 font-code text-[9px] uppercase">Ref: FT_STRAT_2.4</Badge>
                            </div>
-                         )}
-                      </div>
-                   </div>
-                </div>
+                        </div>
+                     </div>
 
-                {/* Section 01.5: Entrepreneur Details */}
-                {checklist.entrepreneurDetails && (
-                  <div className="space-y-16 pt-20">
-                    <div className="flex items-center gap-6">
-                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">1.5</div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter & Entrepreneur Profile</h3>
-                    </div>
+                     {/* Section 01: Strategic Narrative Hub */}
+                     <div className="space-y-16 pt-20">
+                        <div className="flex items-center gap-6">
+                           <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div>
+                           <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary & Vision</h3>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                       <div className="md:col-span-1 p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-6">
-                          <div className="h-24 w-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-[#001F3D] border-4 border-slate-200">
-                             <UserCircle className="h-12 w-12" />
-                          </div>
-                          <div>
-                             <h4 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.promoterName || '---'}</h4>
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lead Entrepreneur</p>
-                          </div>
-                          <div className="w-full space-y-3">
-                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.qualification || '---'}</Badge>
-                             <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.experience || '---'}</Badge>
-                          </div>
-                       </div>
-                       <div className="md:col-span-2 p-10 bg-[#001F3D] text-white rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col justify-center">
-                          <div className="absolute top-0 right-0 p-8 opacity-[0.03]"><Award className="h-40 w-40" /></div>
-                          <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">Promoter Professional Narrative</h4>
-                          <p className="text-sm text-white/90 leading-relaxed font-medium italic indent-8">
-                            "{foundationalData.promoterNarrative || '---'}"
-                          </p>
-                       </div>
-                    </div>
-                  </div>
-                )}
+                        <div className="space-y-12">
+                           {checklist.aboutProject && (
+                             <div className="space-y-6">
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">The Initiative</h4>
+                                <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutProject || '---'}</p>
+                             </div>
+                           )}
+                           
+                           {checklist.aboutUs && (
+                             <div className="space-y-6">
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Organizational Pedigree</h4>
+                                <p className="text-sm text-slate-600 font-medium leading-relaxed indent-12 text-justify">{foundationalData.aboutUs || '---'}</p>
+                             </div>
+                           )}
 
-                {/* Section Compliance: License & Registrations */}
-                {checklist.licenseGst && (
-                  <div className="space-y-16 pt-20">
-                    <div className="flex items-center gap-6">
-                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">C</div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Compliance & Registration Matrix</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
-                          <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Shield className="h-8 w-8" /></div>
-                          <div>
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GSTIN Identification</p>
-                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.gstNumber || '---'}</h4>
-                          </div>
-                       </div>
-                       <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
-                          <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600"><FileText className="h-8 w-8" /></div>
-                          <div>
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MSME Udyam Registration</p>
-                             <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.msmeNumber || '---'}</h4>
-                          </div>
-                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Section 02: Marketable Assets (Product Catalogue) */}
-                {checklist.productLine && (
-                  <div className="space-y-16 pt-20">
-                    <div className="flex items-center gap-6">
-                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Catalogue</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-                        {proprietaryProducts.map(p => (
-                          <div key={p.id} className="p-5 bg-white border border-slate-100 rounded-3xl flex flex-col gap-5 shadow-md hover:shadow-xl transition-all group border-b-4 border-b-slate-200">
-                              <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner bg-slate-50 flex items-center justify-center p-3">
-                                {p.imageUrl ? (
-                                  <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-4 mix-blend-multiply" />
-                                ) : (
-                                  <ImageIcon className="h-8 w-8 text-slate-200" />
-                                )}
-                              </div>
-                              <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <h5 className="text-[11px] font-bold text-[#001F3D] uppercase tracking-tight leading-tight line-clamp-2 min-h-[2.4em]">{p.name || 'Undefined Node'}</h5>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.1em] flex items-center gap-1.5 mt-1">
-                                      <Box className="h-2 w-2 text-primary" /> {p.market || '---'}
-                                    </p>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
+                              {checklist.vision && (
+                                <div className="p-10 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-6 relative overflow-hidden group">
+                                   <Compass className="h-12 w-12 text-[#001F3D] opacity-10 absolute top-6 right-6" />
+                                   <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Future Node (Vision)</h5>
+                                   <p className="text-sm font-bold text-slate-700 leading-relaxed italic">"{foundationalData.vision || '---'}"</p>
                                 </div>
-                                <div className="space-y-4 pt-4 border-t border-slate-50">
-                                    <div className="flex justify-between items-end">
-                                      <div className="flex flex-col">
-                                        <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Unit Price</span>
-                                        <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price || '0.00'}</span>
-                                      </div>
-                                      <div className="text-right flex flex-col">
-                                        <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Annual Projection</span>
-                                        <span className="text-[10px] font-bold text-slate-700">{p.annualTargetQty || '0'} <span className="text-[8px] font-medium text-slate-400">Units</span></span>
-                                      </div>
-                                    </div>
-                                    <Badge variant="outline" className="h-6 w-full justify-center text-[7px] font-bold border-slate-100 bg-slate-50 text-slate-400 uppercase">Production Ready</Badge>
+                              )}
+                              {checklist.mission && (
+                                <div className="p-10 bg-[#001F3D] text-white rounded-[2.5rem] space-y-6 relative overflow-hidden group">
+                                   <ShieldCheck className="h-12 w-12 text-white opacity-10 absolute top-6 right-6" />
+                                   <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Core Protocol (Mission)</h5>
+                                   <p className="text-sm font-bold text-white/90 leading-relaxed italic">"{foundationalData.mission || '---'}"</p>
                                 </div>
-                              </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
+                              )}
+                           </div>
+                        </div>
+                     </div>
 
-                {/* Section 03: Industrial Services Matrix (Detailed Catalogue Style) */}
-                {checklist.services && (
-                  <div className="space-y-16 pt-20">
-                    <div className="flex items-center gap-6">
-                        <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Services Catalogue</h3>
-                    </div>
+                     {/* Section 01.5: Entrepreneur Details */}
+                     {checklist.entrepreneurDetails && (
+                       <div className="space-y-16 pt-20">
+                         <div className="flex items-center gap-6">
+                             <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">1.5</div>
+                             <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Promoter & Entrepreneur Profile</h3>
+                         </div>
 
-                    <div className="grid grid-cols-1 gap-8">
-                        {industrialServices.map((s, idx) => (
-                          <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col md:flex-row gap-8 items-start group shadow-sm hover:shadow-md transition-all">
-                            <div className="h-32 w-32 bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-xl shrink-0 flex items-center justify-center relative">
-                                {s.imageUrl ? (
-                                  <Image src={s.imageUrl} alt={s.name} fill className="object-contain p-2" />
-                                ) : (
-                                  <Layers className="h-8 w-8 text-[#001F3D] opacity-20" />
-                                )}
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="md:col-span-1 p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-6">
+                               <div className="h-24 w-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-[#001F3D] border-4 border-slate-200">
+                                  <UserCircle className="h-12 w-12" />
+                               </div>
+                               <div>
+                                  <h4 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.promoterName || '---'}</h4>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lead Entrepreneur</p>
+                               </div>
+                               <div className="w-full space-y-3">
+                                  <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.qualification || '---'}</Badge>
+                                  <Badge variant="outline" className="w-full h-8 justify-center rounded-xl bg-white border-slate-200 text-slate-600 text-[8px] font-bold uppercase">{foundationalData.experience || '---'}</Badge>
+                               </div>
                             </div>
-                            <div className="flex-1 space-y-4">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{s.name || 'Undefined Protocol'}</h5>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Service ID: {s.id}</p>
-                                  </div>
-                                  <div className="text-right space-y-1">
-                                     <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Rate Projection</span>
-                                     <p className="text-xl font-display font-bold text-primary">₹ {s.price || '0.00'}</p>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">{s.description || '---'}</p>
-                                <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center">
-                                   <div className="flex items-center gap-3">
-                                      <TrendingUp className="h-4 w-4 text-emerald-500" />
-                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Annual Capacity Target:</span>
-                                      <Badge className="bg-[#001F3D] text-white border-none rounded-full px-4 h-7 text-[9px] font-bold uppercase">{s.annualTargetQty || '0'}</Badge>
+                            <div className="md:col-span-2 p-10 bg-[#001F3D] text-white rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col justify-center">
+                               <div className="absolute top-0 right-0 p-8 opacity-[0.03]"><Award className="h-40 w-40" /></div>
+                               <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40 mb-6">Promoter Professional Narrative</h4>
+                               <p className="text-sm text-white/90 leading-relaxed font-medium italic indent-8">
+                                 "{foundationalData.promoterNarrative || '---'}"
+                               </p>
+                            </div>
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Section Compliance: License & Registrations */}
+                     {checklist.licenseGst && (
+                       <div className="space-y-16 pt-20">
+                         <div className="flex items-center gap-6">
+                             <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">C</div>
+                             <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Compliance & Registration Matrix</h3>
+                         </div>
+
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
+                               <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Shield className="h-8 w-8" /></div>
+                               <div>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GSTIN Identification</p>
+                                  <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.gstNumber || '---'}</h4>
+                               </div>
+                            </div>
+                            <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center gap-6">
+                               <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600"><FileText className="h-8 w-8" /></div>
+                               <div>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MSME Udyam Registration</p>
+                                  <h4 className="text-lg font-code font-bold text-[#001F3D] mt-1">{foundationalData.msmeNumber || '---'}</h4>
+                               </div>
+                            </div>
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Section 02: Marketable Assets (Product Catalogue) */}
+                     {checklist.productLine && (
+                       <div className="space-y-16 pt-20">
+                         <div className="flex items-center gap-6">
+                             <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div>
+                             <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Product Catalogue</h3>
+                         </div>
+                         
+                         <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                             {proprietaryProducts.map(p => (
+                               <div key={p.id} className="p-5 bg-white border border-slate-100 rounded-3xl flex flex-col gap-5 shadow-md hover:shadow-xl transition-all group border-b-4 border-b-slate-200">
+                                   <div className="aspect-square w-full rounded-2xl overflow-hidden relative border shadow-inner bg-slate-50 flex items-center justify-center p-3">
+                                     {p.imageUrl ? (
+                                       <Image src={p.imageUrl} alt={p.name} fill className="object-contain p-4 mix-blend-multiply" />
+                                     ) : (
+                                       <ImageIcon className="h-8 w-8 text-slate-200" />
+                                     )}
                                    </div>
-                                   <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-600 text-[8px] font-bold uppercase">Revenue Generation Ready</Badge>
-                                </div>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Section 04: Financial Feasibility Matrix */}
-                <div className="space-y-16 pt-20 page-break">
-                   <div className="flex items-center gap-6">
-                      <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Financial Intelligence Matrix</h3>
-                   </div>
-
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                      <div className="space-y-8">
-                         <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Capital Allocation</h4>
-                         <div className="p-10 bg-slate-900 text-white rounded-[2.5rem] space-y-10 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-8 opacity-10"><DollarSign className="h-32 w-32" /></div>
-                            <div className="space-y-2 relative z-10">
-                               <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Total Loan Requirement</p>
-                               <h3 className="text-5xl font-display font-bold text-white tracking-tighter">₹ {foundationalData.totalLoanRequirement || '0'}</h3>
-                            </div>
-                            <div className="space-y-6 pt-10 border-t border-white/10 relative z-10">
-                               <div className="flex justify-between items-center">
-                                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Fixed Asset Investment</span>
-                                  <span className="text-sm font-bold text-white">₹ {(financials.capitalInvestment ?? 0).toLocaleString()}</span>
+                                   <div className="space-y-4">
+                                     <div className="space-y-1">
+                                         <h5 className="text-[11px] font-bold text-[#001F3D] uppercase tracking-tight leading-tight line-clamp-2 min-h-[2.4em]">{p.name || 'Undefined Node'}</h5>
+                                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.1em] flex items-center gap-1.5 mt-1">
+                                           <Box className="h-2 w-2 text-primary" /> {p.market || '---'}
+                                         </p>
+                                     </div>
+                                     <div className="space-y-4 pt-4 border-t border-slate-50">
+                                         <div className="flex justify-between items-end">
+                                           <div className="flex flex-col">
+                                             <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Unit Price</span>
+                                             <span className="text-sm font-display font-bold text-primary tracking-tight">₹ {p.price || '0.00'}</span>
+                                           </div>
+                                           <div className="text-right flex flex-col">
+                                             <span className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Annual Projection</span>
+                                             <span className="text-[10px] font-bold text-slate-700">{p.annualTargetQty || '0'} <span className="text-[8px] font-medium text-slate-400">Units</span></span>
+                                           </div>
+                                         </div>
+                                         <Badge variant="outline" className="h-6 w-full justify-center text-[7px] font-bold border-slate-100 bg-slate-50 text-slate-400 uppercase">Production Ready</Badge>
+                                     </div>
+                                   </div>
                                </div>
-                               <div className="flex justify-between items-center">
-                                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Working Capital Reserve</span>
-                                  <span className="text-sm font-bold text-white">₹ {(financials.workingCapital ?? 0).toLocaleString()}</span>
+                             ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Section 03: Industrial Services Matrix (Detailed Catalogue Style) */}
+                     {checklist.services && (
+                       <div className="space-y-16 pt-20">
+                         <div className="flex items-center gap-6">
+                             <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div>
+                             <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Services Catalogue</h3>
+                         </div>
+
+                         <div className="grid grid-cols-1 gap-8">
+                             {industrialServices.map((s, idx) => (
+                               <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col md:flex-row gap-8 items-start group shadow-sm hover:shadow-md transition-all">
+                                 <div className="h-32 w-32 bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-xl shrink-0 flex items-center justify-center relative">
+                                     {s.imageUrl ? (
+                                       <Image src={s.imageUrl} alt={s.name} fill className="object-contain p-2" />
+                                     ) : (
+                                       <Layers className="h-8 w-8 text-[#001F3D] opacity-20" />
+                                     )}
+                                 </div>
+                                 <div className="flex-1 space-y-4">
+                                     <div className="flex justify-between items-start">
+                                       <div>
+                                         <h5 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{s.name || 'Undefined Protocol'}</h5>
+                                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Service ID: {s.id}</p>
+                                       </div>
+                                       <div className="text-right space-y-1">
+                                          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Rate Projection</span>
+                                          <p className="text-xl font-display font-bold text-primary">₹ {s.price || '0.00'}</p>
+                                       </div>
+                                     </div>
+                                     <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">{s.description || '---'}</p>
+                                     <div className="pt-4 border-t border-slate-200/50 flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                           <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Annual Capacity Target:</span>
+                                           <Badge className="bg-[#001F3D] text-white border-none rounded-full px-4 h-7 text-[9px] font-bold uppercase">{s.annualTargetQty || '0'}</Badge>
+                                        </div>
+                                        <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-600 text-[8px] font-bold uppercase">Revenue Generation Ready</Badge>
+                                     </div>
+                                 </div>
                                </div>
-                            </div>
+                             ))}
                          </div>
-                      </div>
+                       </div>
+                     )}
 
-                      <div className="space-y-8">
-                         <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Revenue Yield Curve</h4>
-                         <div className="h-64 w-full bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 shadow-inner">
-                            <ResponsiveContainer width="100%" height="100%">
-                               <BarChart data={pnlChartData}>
-                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
-                                  <YAxis hide />
-                                  <Bar dataKey="rev" fill="#001F3D" radius={[4, 4, 0, 0]} />
-                                  <Bar dataKey="exp" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                               </BarChart>
-                            </ResponsiveContainer>
-                         </div>
-                         <div className="flex justify-center gap-10">
-                            <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#001F3D]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Revenue</span></div>
-                            <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#f43f5e]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Expense</span></div>
-                         </div>
-                      </div>
-                   </div>
+                     {/* Section 04: Financial Feasibility Matrix */}
+                     <div className="space-y-16 pt-20 page-break">
+                        <div className="flex items-center gap-6">
+                           <div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div>
+                           <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Financial Intelligence Matrix</h3>
+                        </div>
 
-                   <div className="p-10 border-2 border-slate-100 rounded-[2.5rem] space-y-6">
-                      <div className="flex items-center gap-3">
-                         <Info className="h-4 w-4 text-primary" />
-                         <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Feasibility Disclosure</p>
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">
-                         The figures presented in this matrix represent precision industrial projections based on current market dynamics in the VMC machining sector. The estimated <b className="text-[#001F3D]">monthly revenue node of ₹ {(financials.projectedMonthlyRevenue ?? 0).toLocaleString()}</b> is synchronized with projected machine utilization rates of 85% OEE across the proposed asset fleet.
-                      </p>
-                   </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                           <div className="space-y-8">
+                              <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Capital Allocation</h4>
+                              <div className="p-10 bg-slate-900 text-white rounded-[2.5rem] space-y-10 relative overflow-hidden">
+                                 <div className="absolute top-0 right-0 p-8 opacity-10"><DollarSign className="h-32 w-32" /></div>
+                                 <div className="space-y-2 relative z-10">
+                                    <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Total Loan Requirement</p>
+                                    <h3 className="text-5xl font-display font-bold text-white tracking-tighter">₹ {foundationalData.totalLoanRequirement || '0'}</h3>
+                                 </div>
+                                 <div className="space-y-6 pt-10 border-t border-white/10 relative z-10">
+                                    <div className="flex justify-between items-center">
+                                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Fixed Asset Investment</span>
+                                       <span className="text-sm font-bold text-white">₹ {(financials.capitalInvestment || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Working Capital Reserve</span>
+                                       <span className="text-sm font-bold text-white">₹ {(financials.workingCapital || 0).toLocaleString()}</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="space-y-8">
+                              <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-6">Revenue Yield Curve</h4>
+                              <div className="h-64 w-full bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 shadow-inner">
+                                 <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={pnlChartData}>
+                                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                       <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                                       <YAxis hide />
+                                       <Bar dataKey="rev" fill="#001F3D" radius={[4, 4, 0, 0]} />
+                                       <Bar dataKey="exp" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                 </ResponsiveContainer>
+                              </div>
+                              <div className="flex justify-center gap-10">
+                                 <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#001F3D]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Revenue</span></div>
+                                 <div className="flex items-center gap-3"><div className="h-2 w-6 rounded-full bg-[#f43f5e]" /><span className="text-[10px] font-bold text-slate-400 uppercase">Expense</span></div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="p-10 border-2 border-slate-100 rounded-[2.5rem] space-y-6">
+                           <div className="flex items-center gap-3">
+                              <Info className="h-4 w-4 text-primary" />
+                              <p className="text-[10px] font-bold text-[#001F3D] uppercase tracking-widest">Feasibility Disclosure</p>
+                           </div>
+                           <p className="text-xs text-slate-500 font-medium leading-relaxed text-justify">
+                              The figures presented in this matrix represent precision industrial projections based on current market dynamics in the VMC machining sector. The estimated <b className="text-[#001F3D]">monthly revenue node of ₹ {(financials.projectedMonthlyRevenue || 0).toLocaleString()}</b> is synchronized with projected machine utilization rates of 85% OEE across the proposed asset fleet.
+                           </p>
+                        </div>
+                     </div>
+
+                     {/* Final Footer Protocol */}
+                     <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
+                        <div className="space-y-4 text-left">
+                           <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden p-2 relative">
+                             <Image 
+                               src={brandLogo} 
+                               alt="Ferocious Tech Logo" 
+                               fill
+                               className="object-contain p-2"
+                               data-ai-hint="lion technology logo"
+                             />
+                           </div>
+                           <div>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End of Report</p>
+                             <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_PROTOCOL_SYNC_2.4</p>
+                           </div>
+                        </div>
+
+                        <div className="text-right space-y-8 w-full md:w-80">
+                           <div className="space-y-12">
+                              <div className="h-[1px] bg-slate-200 w-full" />
+                              <div className="space-y-1">
+                                 <p className="text-xs font-bold text-[#001F3D] uppercase tracking-widest">{foundationalData.promoterName || '---'}</p>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signatory node</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                  </Card>
                 </div>
-
-                {/* Final Footer Protocol */}
-                <div className="pt-32 border-t-2 border-slate-900 flex flex-col md:flex-row justify-between items-end gap-10">
-                   <div className="space-y-4 text-left">
-                      <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden p-2 relative">
-                        <Image 
-                          src={brandLogo} 
-                          alt="Ferocious Tech Logo" 
-                          fill
-                          className="object-contain p-2"
-                          data-ai-hint="lion technology logo"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End of Report</p>
-                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.4em] mt-1">FEROCIOUS_TECH_PROTOCOL_SYNC_2.4</p>
-                      </div>
-                   </div>
-
-                   <div className="text-right space-y-8 w-full md:w-80">
-                      <div className="space-y-12">
-                         <div className="h-[1px] bg-slate-200 w-full" />
-                         <div className="space-y-1">
-                            <p className="text-xs font-bold text-[#001F3D] uppercase tracking-widest">{foundationalData.promoterName || '---'}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signatory node</p>
-                         </div>
-                      </div>
-                   </div>
-                </div>
-
-             </Card>
+             </div>
            </div>
         </TabsContent>
       </Tabs>

@@ -122,6 +122,11 @@ interface LoanProjectHubProps {
   brandLogo?: string;
 }
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const db = useFirestore();
   const { toast } = useToast();
@@ -1147,12 +1152,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
-                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ Actuals)</th>{calculations.projections.map(p => <th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ Actuals)</th>{calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                               </thead>
                               <tbody>
-                                 <tr className="border-b border-slate-200 font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p => <td className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p => <td className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.ebitda || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p => <td className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0">₹ {(p.pat || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-200 font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.ebitda || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0">₹ {(p.pat || 0).toLocaleString()}</td>)}</tr>
                               </tbody>
                            </table>
                         </div>
@@ -1197,18 +1202,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
-                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ In Actual)</th>{calculations.cashFlow.map(c => <th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{c.year}</th>)}</tr>
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ In Actual)</th>{calculations.cashFlow.map(c => <th key={c.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{c.year}</th>)}</tr>
                               </thead>
                               <tbody>
                                  <tr className="bg-slate-100"><td colSpan={6} className="p-3 text-[10px] font-bold uppercase text-primary">A. Cash Flow from Operating Activities</td></tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Net Profit After Tax</td>{calculations.cashFlow.map(c => <td className="p-4 text-[10px] text-right border-r border-slate-200">{(c.npat || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Interest Expense</td>{calculations.cashFlow.map(c => <td className="p-4 text-[10px] text-right border-r border-slate-200">{(c.interest || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Depreciation</td>{calculations.cashFlow.map(c => <td className="p-4 text-[10px] text-right border-r border-slate-200">{(c.depreciation || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="bg-slate-50 font-bold border-b border-slate-900"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Operating Profit before WC</td>{calculations.cashFlow.map(c => <td className="p-4 text-[10px] text-right border-r border-slate-200">{(c.opProfit || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Net Profit After Tax</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.npat || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Interest Expense</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.interest || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Depreciation</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.depreciation || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="bg-slate-50 font-bold border-b border-slate-900"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Operating Profit before WC</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.opProfit || 0).toLocaleString()}</td>)}</tr>
                                  <tr className="bg-slate-100"><td colSpan={6} className="p-3 text-[10px] font-bold uppercase text-primary">B. Cash Flow from Financing Activities</td></tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Loan Repaid (Principal)</td>{calculations.cashFlow.map(c => <td className="p-4 text-[10px] text-right border-r border-slate-200">{(c.loanRepayment || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Add: Opening Cash Balance</td>{calculations.cashFlow.map(c => <td className="p-4 text-[10px] text-right border-r border-slate-200">{(c.openingCash || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="bg-[#001F3D] text-white font-bold"><td className="p-4 text-[11px] uppercase border-r border-white/20">Closing Cash Balance</td>{calculations.cashFlow.map(c => <td className="p-4 text-[11px] text-right border-r border-white/20">₹ {(c.closingCash || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Loan Repaid (Principal)</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.loanRepayment || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Add: Opening Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.openingCash || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="bg-[#001F3D] text-white font-bold"><td className="p-4 text-[11px] uppercase border-r border-white/20">Closing Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[11px] text-right border-r border-white/20">₹ {(c.closingCash || 0).toLocaleString()}</td>)}</tr>
                               </tbody>
                            </table>
                         </div>
@@ -1221,12 +1226,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
-                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Ratio Matrix</th>{calculations.projections.map(p => <th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
+                                 <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Ratio Matrix</th>{calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                               </thead>
                               <tbody>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Debt-Equity (TOL/TNW)</td>{calculations.projections.map(p => <td className="p-4 text-[10px] text-right border-r border-slate-200">{p.ratio || '0.00'}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Net Profit Margin (%)</td>{calculations.projections.map(p => <td className="p-4 text-[10px] text-right border-r border-slate-200">{p.margin || '0.0'}%</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">DSCR</td>{calculations.projections.map(p => <td className="p-4 text-[10px] text-right border-r border-slate-200">{p.dscr || '0.00'}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Debt-Equity (TOL/TNW)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200">{p.ratio || '0.00'}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Net Profit Margin (%)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200">{p.margin || '0.0'}%</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">DSCR</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200">{p.dscr || '0.00'}</td>)}</tr>
                               </tbody>
                            </table>
                         </div>
@@ -1258,7 +1263,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </thead>
                               <tbody>
                                  {calculations.loanRepayment.map(r => (
-                                   <tr className="border-b border-slate-100">
+                                   <tr key={r.year} className="border-b border-slate-100">
                                       <td className="p-4 text-[10px] font-bold uppercase border-r border-slate-200">{r.year}</td>
                                       <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.opening || 0).toLocaleString()}</td>
                                       <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.interest || 0).toLocaleString()}</td>

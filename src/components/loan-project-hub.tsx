@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,6 +131,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
+  const [activeEditingSection, setActiveEditingSection] = useState<string>('aboutUs');
   const [zoom, setZoom] = useState(1);
   const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
 
@@ -139,7 +140,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const { data: savedStrategy } = useDoc<any>(strategyRef);
 
   // 01. Input Matrix State
-  const [checklist, setChecklist] = useState({
+  const [checklist, setChecklist] = useState<Record<string, boolean>>({
     aboutUs: true,
     vision: true,
     mission: true,
@@ -172,60 +173,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
     marketAnalysisDetails: "India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure. Electrical conductive products, including copper and aluminum-based precision components, form the backbone of this transformation. Global supply chain shifts are creating significant opportunities for localized production of silver-plated contacts for high-voltage switchgear and specialized alloys for 5G telecommunication hardware.",
     toolingMarketAnalysisDetails: "The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores. With the expansion of localized manufacturing in Electronics (Mobile Phones), Aerospace, and Automotive sectors, the demand for specialized jigs, fixtures, and high-fidelity molds has reached an inflection point. Demand is particularly acute for high-cavity hot runner molds for consumer electronics and multi-stage progressive press tools for the next generation of electric vehicle chassis components.",
+    cgtmseNotes: "The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix. This allow for a collateral-free loan facility based on the viability of the manufacturing node. Guarantee fee (AGF) will be serviced as per the annual schedule mandated by the Trust, ensuring the loan node remains covered under the global security umbrella."
   });
 
   const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
-    { 
-      id: '1', 
-      name: 'Precision Curved Conduit Connector', 
-      market: 'Electrical / Construction', 
-      price: '45.00',
-      annualTargetQty: '50,000',
-      imageUrl: 'https://picsum.photos/seed/conduit/600/400' 
-    },
-    { 
-      id: '2', 
-      name: 'VMC Machined Engine Plate', 
-      market: 'Automotive Tier 1', 
-      price: '1,800.00',
-      annualTargetQty: '1,200',
-      imageUrl: 'https://picsum.photos/seed/engineplate/600/400' 
-    },
-    { 
-      id: '3', 
-      name: 'High-Purity Copper Busbar', 
-      market: 'Switchgear / Energy', 
-      price: '2,500.00',
-      annualTargetQty: '800',
-      imageUrl: 'https://picsum.photos/seed/copper/600/400' 
-    },
+    { id: '1', name: 'Precision Curved Conduit Connector', market: 'Electrical / Construction', price: '45.00', annualTargetQty: '50,000', imageUrl: 'https://picsum.photos/seed/conduit/600/400' },
+    { id: '2', name: 'VMC Machined Engine Plate', market: 'Automotive Tier 1', price: '1,800.00', annualTargetQty: '1,200', imageUrl: 'https://picsum.photos/seed/engineplate/600/400' },
+    { id: '3', name: 'High-Purity Copper Busbar', market: 'Switchgear / Energy', price: '2,500.00', annualTargetQty: '800', imageUrl: 'https://picsum.photos/seed/copper/600/400' },
   ]);
 
   const [industrialServices, setIndustrialServices] = useState<IndustrialService[]>([
-    { 
-      id: 'S1', 
-      name: 'High-Precision VMC Job-Work', 
-      description: 'Specialized 3-axis and 4-axis VMC machining services for complex aerospace geometries.', 
-      price: '1,250.00',
-      annualTargetQty: '2,500',
-      imageUrl: 'https://picsum.photos/seed/milling/600/400'
-    },
-    { 
-      id: 'S2', 
-      name: 'Mould Design & Prototyping', 
-      description: 'End-to-end mould fabrication from Dfm analysis to final polishing and testing.', 
-      price: '45,000.00',
-      annualTargetQty: '24',
-      imageUrl: 'https://picsum.photos/seed/edm/600/400'
-    },
-    { 
-      id: 'S3', 
-      name: 'Jig & Fixture Certification', 
-      description: 'CMM verified fixture manufacturing for Tier 1 assembly lines.', 
-      price: '15,000.00',
-      annualTargetQty: '48',
-      imageUrl: 'https://picsum.photos/seed/jig/600/400'
-    },
+    { id: 'S1', name: 'High-Precision VMC Job-Work', description: 'Specialized 3-axis and 4-axis VMC machining services for complex aerospace geometries.', price: '1,250.00', annualTargetQty: '2,500', imageUrl: 'https://picsum.photos/seed/milling/600/400' },
+    { id: 'S2', name: 'Mould Design & Prototyping', description: 'End-to-end mould fabrication from Dfm analysis to final polishing and testing.', price: '45,000.00', annualTargetQty: '24', imageUrl: 'https://picsum.photos/seed/edm/600/400' },
+    { id: 'S3', name: 'Jig & Fixture Certification', description: 'CMM verified fixture manufacturing for Tier 1 assembly lines.', price: '15,000.00', annualTargetQty: '48', imageUrl: 'https://picsum.photos/seed/jig/600/400' },
   ]);
 
   const [machineryItems, setMachineryItems] = useState<MachineryItem[]>([
@@ -439,7 +399,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       mpbf,
       roi: (projections.reduce((acc, p) => acc + p.pat, 0) / totalProjectCost * 100)
     };
-  }, [foundationalData.totalLoanRequirement, financials]);
+  }, [foundationalData.totalLoanRequirement, financials, foundationalData.targetNetMargin]);
 
   const handleImageUpload = (idx: number, type: 'product' | 'service', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -482,6 +442,156 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     setFinancials(prev => ({ ...prev, investMachinery: grandTotal }));
   };
 
+  const renderActiveEditor = () => {
+    switch(activeEditingSection) {
+      case 'aboutUs':
+        return (
+          <div className="space-y-6">
+            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">About Us / Industrial Narrative</Label>
+            <Textarea 
+              className="bg-slate-50 border-none min-h-[250px] text-xs font-medium rounded-2xl p-6 leading-relaxed" 
+              placeholder="Enter comprehensive company narrative..."
+              value={foundationalData.aboutUs || ''} 
+              onChange={(e)=>setFormData({...foundationalData, aboutUs: e.target.value})} 
+            />
+          </div>
+        );
+      case 'vision':
+        return (
+          <div className="space-y-6">
+            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Corporate Vision</Label>
+            <Textarea 
+              className="bg-slate-50 border-none min-h-[150px] text-sm italic font-medium rounded-2xl p-6" 
+              placeholder="What is your long-term goal?"
+              value={foundationalData.vision || ''} 
+              onChange={(e)=>setFormData({...foundationalData, vision: e.target.value})} 
+            />
+          </div>
+        );
+      case 'mission':
+        return (
+          <div className="space-y-6">
+            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Corporate Mission</Label>
+            <Textarea 
+              className="bg-slate-50 border-none min-h-[150px] text-sm italic font-medium rounded-2xl p-6" 
+              placeholder="How will you achieve your vision?"
+              value={foundationalData.mission || ''} 
+              onChange={(e)=>setFormData({...foundationalData, mission: e.target.value})} 
+            />
+          </div>
+        );
+      case 'entrepreneurDetails':
+        return (
+          <div className="space-y-10">
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Promoter Name</Label>
+                <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName || ''} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Location / Node</Label>
+                <Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.location || ''} onChange={(e)=>setFormData({...foundationalData, location: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Qualification</Label>
+                <Input className="h-14 bg-slate-50 border-none rounded-2xl" value={foundationalData.qualification || ''} onChange={(e)=>setFormData({...foundationalData, qualification: e.target.value})} />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Experience (Years)</Label>
+                <Input className="h-14 bg-slate-50 border-none rounded-2xl" value={foundationalData.experience || ''} onChange={(e)=>setFormData({...foundationalData, experience: e.target.value})} />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Professional Narrative</Label>
+              <Textarea className="bg-slate-50 border-none min-h-[120px] rounded-2xl" value={foundationalData.promoterNarrative || ''} onChange={(e)=>setFormData({...foundationalData, promoterNarrative: e.target.value})} />
+            </div>
+          </div>
+        );
+      case 'marketAnalysis':
+        return (
+          <div className="space-y-6">
+            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Electrical Conductive Market Details</Label>
+            <Textarea 
+              className="bg-slate-50 border-none min-h-[350px] text-xs font-medium rounded-2xl p-6 leading-relaxed" 
+              value={foundationalData.marketAnalysisDetails || ''} 
+              onChange={(e)=>setFormData({...foundationalData, marketAnalysisDetails: e.target.value})} 
+            />
+          </div>
+        );
+      case 'toolingMarketAnalysis':
+        return (
+          <div className="space-y-6">
+            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Tooling, Jig & Fixture Market Details</Label>
+            <Textarea 
+              className="bg-slate-50 border-none min-h-[350px] text-xs font-medium rounded-2xl p-6 leading-relaxed" 
+              value={foundationalData.toolingMarketAnalysisDetails || ''} 
+              onChange={(e)=>setFormData({...foundationalData, toolingMarketAnalysisDetails: e.target.value})} 
+            />
+          </div>
+        );
+      case 'cgtmseScheme':
+        return (
+          <div className="space-y-6">
+            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">CGTMSE Scheme Protocol Notes</Label>
+            <Textarea 
+              className="bg-slate-50 border-none min-h-[200px] text-xs font-medium rounded-2xl p-6 leading-relaxed" 
+              value={foundationalData.cgtmseNotes || ''} 
+              onChange={(e)=>setFormData({...foundationalData, cgtmseNotes: e.target.value})} 
+            />
+          </div>
+        );
+      case 'productLine':
+        return (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center"><h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proprietary Product Matrix</h4><Button onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} variant="outline" size="sm" className="h-8 text-[9px] uppercase font-bold">+ Append Item</Button></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {proprietaryProducts.map((p, i) => (
+                <div key={p.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4 relative">
+                  <div className="h-16 w-16 bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input placeholder="Product Name..." className="h-8 text-[11px] font-bold bg-white border-none" value={p.name || ''} onChange={(e)=>updateProduct(i, 'name', e.target.value)} />
+                    <Input placeholder="Annual Qty..." className="h-7 text-[10px] bg-white border-none" value={p.annualTargetQty || ''} onChange={(e)=>updateProduct(i, 'annualTargetQty', e.target.value)} />
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_, idx)=>idx !== i))}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'services':
+        return (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center"><h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Industrial Services Matrix</h4><Button onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} variant="outline" size="sm" className="h-8 text-[9px] uppercase font-bold">+ Append Node</Button></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {industrialServices.map((s, i) => (
+                <div key={s.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4 relative">
+                  <div className="h-16 w-16 bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input placeholder="Service Identity..." className="h-8 text-[11px] font-bold bg-white border-none" value={s.name || ''} onChange={(e)=>updateService(i, 'name', e.target.value)} />
+                    <Input placeholder="Target Count..." className="h-7 text-[10px] bg-white border-none" value={s.annualTargetQty || ''} onChange={(e)=>updateService(i, 'annualTargetQty', e.target.value)} />
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300" onClick={()=>setIndustrialServices(industrialServices.filter((_, idx)=>idx !== i))}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-20 text-center opacity-30 flex flex-col items-center gap-6">
+            <Monitor className="h-16 w-16" />
+            <p className="text-sm font-bold uppercase tracking-widest">Select a feasibility node from the sidebar to initialize the strategic editor.</p>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20 print:pb-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2 no-print">
@@ -520,67 +630,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
                          <div className="p-3 bg-primary/10 rounded-2xl text-primary"><FileText className="h-6 w-6" /></div>
                          <div>
-                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Foundational Context</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Identity and technical narratives.</p>
+                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Project Foundational Identity</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Active Section Editor: <span className="text-primary">{activeEditingSection.replace(/([A-Z])/g, ' $1').toUpperCase()}</span></p>
                          </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-8">
-                         <div className="space-y-3">
-                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">About Us Narrative</Label>
-                           <Textarea 
-                            className="bg-slate-50 border-none min-h-[120px] text-xs font-medium rounded-2xl" 
-                            value={foundationalData.aboutUs} 
-                            onChange={(e)=>setFormData({...foundationalData, aboutUs: e.target.value})} 
-                           />
-                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-3">
-                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Our Vision</Label>
-                              <Textarea className="bg-slate-50 border-none min-h-[80px] text-xs font-medium rounded-2xl" value={foundationalData.vision} onChange={(e)=>setFormData({...foundationalData, vision: e.target.value})} />
-                            </div>
-                            <div className="space-y-3">
-                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Our Mission</Label>
-                              <Textarea className="bg-slate-50 border-none min-h-[80px] text-xs font-medium rounded-2xl" value={foundationalData.mission} onChange={(e)=>setFormData({...foundationalData, mission: e.target.value})} />
-                            </div>
-                         </div>
-                      </div>
-                   </div>
-                </Card>
-
-                <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
-                   <div className="space-y-10">
-                      <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
-                         <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Globe className="h-6 w-6" /></div>
-                         <div>
-                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Market Intelligence Matrix</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional justification for sectoral demand.</p>
-                         </div>
-                      </div>
-
-                      <div className="space-y-10">
-                        <div className="space-y-4">
-                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                             <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Electrical Conductive Market Analysis
-                           </Label>
-                           <Textarea 
-                            className="bg-slate-50 border-none min-h-[180px] text-xs font-medium rounded-2xl leading-relaxed" 
-                            value={foundationalData.marketAnalysisDetails} 
-                            onChange={(e)=>setFormData({...foundationalData, marketAnalysisDetails: e.target.value})} 
-                           />
-                        </div>
-
-                        <div className="space-y-4">
-                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                             <Settings2 className="h-3.5 w-3.5 text-accent" /> Special Tooling, Die & Mold Market Analysis
-                           </Label>
-                           <Textarea 
-                            className="bg-slate-50 border-none min-h-[180px] text-xs font-medium rounded-2xl leading-relaxed" 
-                            value={foundationalData.toolingMarketAnalysisDetails} 
-                            onChange={(e)=>setFormData({...foundationalData, toolingMarketAnalysisDetails: e.target.value})} 
-                           />
-                        </div>
-                      </div>
+                      {renderActiveEditor()}
                    </div>
                 </Card>
               </div>
@@ -590,10 +645,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40 mb-10 relative z-10">Report Composition Matrix</h3>
                  <div className="space-y-4 relative z-10">
                     {Object.entries(checklist).map(([key, val]) => (
-                       <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key as keyof typeof checklist]: !val})}>
-                          <Checkbox checked={val} className="border-white/20 data-[state=checked]:bg-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
-                            {key.replace(/([A-Z])/g, ' $1').replace('market Analysis', 'Conductive Market').replace('tooling Market Analysis', 'Tooling Market')}
+                       <div 
+                        key={key} 
+                        className={cn(
+                          "flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer group",
+                          activeEditingSection === key ? "bg-white/10 border-white/30 shadow-lg" : "bg-white/5 border-white/10 hover:bg-white/10"
+                        )}
+                        onClick={() => setActiveEditingSection(key)}
+                       >
+                          <Checkbox 
+                            checked={val} 
+                            className="border-white/20 data-[state=checked]:bg-primary" 
+                            onCheckedChange={() => setChecklist({...checklist, [key]: !val})}
+                            onClick={(e) => e.stopPropagation()} 
+                          />
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest transition-colors",
+                            activeEditingSection === key ? "text-white" : "text-white/60 group-hover:text-white"
+                          )}>
+                            {key.replace(/([A-Z])/g, ' $1').replace('market Analysis', 'Conductive Market').replace('tooling Market Analysis', 'Tooling Market').replace('dscr Matrix', 'DSCR Matrix')}
                           </span>
                        </div>
                     ))}
@@ -1103,10 +1173,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                </div>
                             </Card>
                           </div>
-                          
-                          <div className="p-6 bg-slate-50 border-l-8 border-[#001F3D] italic text-xs text-slate-500">
-                            "The transition towards 'Make in India' and localized supply chains for aerospace-grade conductive alloys presents a high-entry-barrier opportunity for precision VMC units equipped with advanced quality protocols."
-                          </div>
                         </div>
                      </div>
                    )}
@@ -1137,10 +1203,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <div className="flex justify-between pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 5 (FY30)</span><span className="text-sm font-bold text-emerald-400">32,300</span></div>
                                </div>
                             </Card>
-                          </div>
-                          
-                          <div className="p-6 bg-slate-50 border-l-8 border-primary italic text-xs text-slate-500">
-                            "The injection of PLI schemes for electronics and the rapid modernization of Tier 1 automotive suppliers creates a critical supply-gap for organized, high-precision tool rooms capable of 5-axis equivalent complexity."
                           </div>
                         </div>
                      </div>
@@ -1186,11 +1248,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                            </div>
                            <div className="space-y-6">
-                              <p className="text-sm text-slate-600 leading-relaxed">The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix. This allow for a collateral-free loan facility based on the viability of the manufacturing node.</p>
-                              <div className="p-6 bg-[#001F3D] text-white space-y-4">
-                                 <h5 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Compliance Note</h5>
-                                 <p className="text-xs italic">"Guarantee fee (AGF) will be serviced as per the annual schedule mandated by the Trust, ensuring the loan node remains covered under the global security umbrella."</p>
-                              </div>
+                              <p className="text-sm text-slate-600 leading-relaxed">{foundationalData.cgtmseNotes}</p>
                            </div>
                         </Card>
                      </div>

@@ -509,19 +509,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Proposed Project Name</Label><Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.projectName || ''} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Promoter / Applicant Node</Label><Input className="h-14 bg-slate-50 border-none rounded-2xl font-bold" value={foundationalData.promoterName || ''} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} /></div>
-                    </div>
-
-                    <div className="space-y-4"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Project Abstract</Label><Textarea className="bg-slate-50 border-none min-h-[100px] text-xs font-medium rounded-2xl" value={foundationalData.aboutProject || ''} onChange={(e)=>setFormData({...foundationalData, aboutProject: e.target.value})} /></div>
-                 </div>
-
-                 <div className="space-y-10 pt-6 border-t border-slate-50">
-                    <div className="flex items-center gap-4 border-l-4 border-emerald-500 pl-6">
-                       <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><Shield className="h-6 w-6" /></div>
-                       <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Regulatory & Compliance</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Official licensing and MSME identifiers.</p></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification</Label><Input placeholder="27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber || ''} onChange={(e)=>setFormData({...foundationalData, gstNumber: e.target.value})} /></div>
                        <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label><Input placeholder="UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber || ''} onChange={(e)=>setFormData({...foundationalData, msmeNumber: e.target.value})} /></div>
                     </div>

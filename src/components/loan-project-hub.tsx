@@ -143,11 +143,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     services: true,
     marketAnalysis: true,
     toolingMarketAnalysis: true,
+    roadMapNextFiveYears: true,
+    cgtmseScheme: true,
     financialProjections: true,
     oneTimeInvestment: true,
     amortizationSchedule: true,
-    roadMapNextFiveYears: true,
-    cgtmseScheme: true,
     cashFlowStatement: true,
     keyRatios: true,
     mpbfCalculation: true,
@@ -165,8 +165,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     qualification: 'B.E. Mechanical / MBA Operations',
     experience: '15+ Years in Tool Room & VMC Operations',
     promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
-    gstNumber: '27AAAAA0000A1Z5',
-    msmeNumber: 'UDYAM-MH-00-0000000',
+    marketAnalysisDetails: "India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure. Electrical conductive products, including copper and aluminum-based precision components, form the backbone of this transformation. Global supply chain shifts are creating significant opportunities for localized production of silver-plated contacts for high-voltage switchgear and specialized alloys for 5G telecommunication hardware.",
+    toolingMarketAnalysisDetails: "The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores. With the expansion of localized manufacturing in Electronics (Mobile Phones), Aerospace, and Automotive sectors, the demand for specialized jigs, fixtures, and high-fidelity molds has reached an inflection point. Demand is particularly acute for high-cavity hot runner molds for consumer electronics and multi-stage progressive press tools for the next generation of electric vehicle chassis components.",
   });
 
   const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
@@ -186,6 +186,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       annualTargetQty: '1,200',
       imageUrl: 'https://picsum.photos/seed/engineplate/600/400' 
     },
+    { 
+      id: '3', 
+      name: 'High-Purity Copper Busbar', 
+      market: 'Switchgear / Energy', 
+      price: '2,500.00',
+      annualTargetQty: '800',
+      imageUrl: 'https://picsum.photos/seed/copper/600/400' 
+    },
   ]);
 
   const [industrialServices, setIndustrialServices] = useState<IndustrialService[]>([
@@ -204,6 +212,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       price: '45,000.00',
       annualTargetQty: '24',
       imageUrl: 'https://picsum.photos/seed/edm/600/400'
+    },
+    { 
+      id: 'S3', 
+      name: 'Jig & Fixture Certification', 
+      description: 'CMM verified fixture manufacturing for Tier 1 assembly lines.', 
+      price: '15,000.00',
+      annualTargetQty: '48',
+      imageUrl: 'https://picsum.photos/seed/jig/600/400'
     },
   ]);
 
@@ -273,10 +289,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const entrepreneurAmt = financials.entrepreneurContribution || 0;
     
-    // Total Project Cost: LOAN + Entrepreneur + Working Capital
     const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
     
-    // EMI Scheduling
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
     const moratorium = financials.loanMoratorium;
@@ -301,7 +315,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
     const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
-    // 5-Year Projection Matrix
     const projections: any[] = [];
     const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
@@ -496,25 +509,87 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
         <TabsContent value="input" className="m-0 space-y-8 animate-in slide-in-from-bottom-2 duration-500 no-print">
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <Card className="lg:col-span-8 p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
-                 <div className="space-y-10">
-                    <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
-                       <div className="p-3 bg-primary/10 rounded-2xl text-primary"><FileText className="h-6 w-6" /></div>
-                       <div>
-                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Project Foundational Identity</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Primary metadata for institutional feasibility ledger.</p>
-                       </div>
-                    </div>
-                 </div>
-              </Card>
+              <div className="lg:col-span-8 space-y-8">
+                <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
+                   <div className="space-y-10">
+                      <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                         <div className="p-3 bg-primary/10 rounded-2xl text-primary"><FileText className="h-6 w-6" /></div>
+                         <div>
+                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Foundational Context</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Identity and technical narratives.</p>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-8">
+                         <div className="space-y-3">
+                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">About Us Narrative</Label>
+                           <Textarea 
+                            className="bg-slate-50 border-none min-h-[120px] text-xs font-medium rounded-2xl" 
+                            value={foundationalData.aboutUs} 
+                            onChange={(e)=>setFormData({...foundationalData, aboutUs: e.target.value})} 
+                           />
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-3">
+                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Our Vision</Label>
+                              <Textarea className="bg-slate-50 border-none min-h-[80px] text-xs font-medium rounded-2xl" value={foundationalData.vision} onChange={(e)=>setFormData({...foundationalData, vision: e.target.value})} />
+                            </div>
+                            <div className="space-y-3">
+                              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Our Mission</Label>
+                              <Textarea className="bg-slate-50 border-none min-h-[80px] text-xs font-medium rounded-2xl" value={foundationalData.mission} onChange={(e)=>setFormData({...foundationalData, mission: e.target.value})} />
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                </Card>
+
+                <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-12">
+                   <div className="space-y-10">
+                      <div className="flex items-center gap-4 border-l-4 border-accent pl-6">
+                         <div className="p-3 bg-accent/10 rounded-2xl text-accent"><Globe className="h-6 w-6" /></div>
+                         <div>
+                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Market Intelligence Matrix</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional justification for sectoral demand.</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-10">
+                        <div className="space-y-4">
+                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                             <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Electrical Conductive Market Analysis
+                           </Label>
+                           <Textarea 
+                            className="bg-slate-50 border-none min-h-[180px] text-xs font-medium rounded-2xl leading-relaxed" 
+                            value={foundationalData.marketAnalysisDetails} 
+                            onChange={(e)=>setFormData({...foundationalData, marketAnalysisDetails: e.target.value})} 
+                           />
+                        </div>
+
+                        <div className="space-y-4">
+                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                             <Settings2 className="h-3.5 w-3.5 text-accent" /> Special Tooling, Die & Mold Market Analysis
+                           </Label>
+                           <Textarea 
+                            className="bg-slate-50 border-none min-h-[180px] text-xs font-medium rounded-2xl leading-relaxed" 
+                            value={foundationalData.toolingMarketAnalysisDetails} 
+                            onChange={(e)=>setFormData({...foundationalData, toolingMarketAnalysisDetails: e.target.value})} 
+                           />
+                        </div>
+                      </div>
+                   </div>
+                </Card>
+              </div>
 
               <Card className="lg:col-span-4 p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative h-fit sticky top-24">
-                 <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40 mb-10">Report Composition Matrix</h3>
-                 <div className="space-y-4">
+                 <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+                 <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40 mb-10 relative z-10">Report Composition Matrix</h3>
+                 <div className="space-y-4 relative z-10">
                     {Object.entries(checklist).map(([key, val]) => (
                        <div key={key} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setChecklist({...checklist, [key as keyof typeof checklist]: !val})}>
                           <Checkbox checked={val} className="border-white/20 data-[state=checked]:bg-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
+                            {key.replace(/([A-Z])/g, ' $1').replace('market Analysis', 'Conductive Market').replace('tooling Market Analysis', 'Tooling Market')}
+                          </span>
                        </div>
                     ))}
                  </div>
@@ -1000,7 +1075,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      <div className="space-y-10 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Electrical Conductive Product Market Analysis</h3></div>
                         <div className="space-y-8">
-                          <p className="text-sm text-slate-600 leading-relaxed font-medium">India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure. Electrical conductive products, including copper and aluminum-based precision components, form the backbone of this transformation.</p>
+                          <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.marketAnalysisDetails}</p>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-50/30">
@@ -1035,7 +1110,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      <div className="space-y-10 pt-20 page-break">
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Special Tooling, Die & Mold Market Analysis</h3></div>
                         <div className="space-y-8">
-                          <p className="text-sm text-slate-600 leading-relaxed font-medium">The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores. With the expansion of localized manufacturing in Electronics (Mobile Phones), Aerospace, and Automotive sectors, the demand for specialized jigs, fixtures, and high-fidelity molds has reached an inflection point.</p>
+                          <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.toolingMarketAnalysisDetails}</p>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-50/30">

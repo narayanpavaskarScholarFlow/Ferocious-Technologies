@@ -792,6 +792,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
   };
 
+  const currentProjectedPAT = useMemo(() => {
+    return calculations.projections[0]?.pat || 0;
+  }, [calculations]);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20 print:pb-0">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2 no-print">
@@ -1016,6 +1020,32 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Year-by-year yield trajectory.</p>
                        </div>
                     </div>
+
+                    <div className="border-2 border-slate-900 overflow-hidden rounded-sm shadow-xl bg-white mb-10">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-50 border-b-2 border-slate-900">
+                          <tr>
+                            <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Fiscal Metrics (₹ Actuals)</th>
+                            {calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-slate-200 font-bold">
+                            <td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>
+                            {calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue || 0).toLocaleString()}</td>)}
+                          </tr>
+                          <tr className="border-b border-slate-100">
+                            <td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">EBITDA</td>
+                            {calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.ebitda || 0).toLocaleString()}</td>)}
+                          </tr>
+                          <tr className="bg-slate-100 font-bold">
+                            <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
+                            {calculations.projections.map(p => <td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0 text-emerald-600">₹ {(p.pat || 0).toLocaleString()}</td>)}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                        {[0, 1, 2, 3, 4].map((i) => (
                           <div key={i} className="space-y-3 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm group hover:border-primary/50 transition-all">
@@ -1170,7 +1200,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <Card className="overflow-hidden border border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
                     <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
                        <RefreshCcw className="h-5 w-5 text-primary" />
-                       <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">5-Year Cash Flow Matrix</h3>
+                       <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">5-Year Cash Flow Statement</h3>
                     </div>
                     <Table>
                        <TableHeader>

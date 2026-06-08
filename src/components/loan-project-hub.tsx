@@ -548,18 +548,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       case 'productLine':
         return (
           <div className="space-y-8">
-            <div className="flex justify-between items-center"><h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proprietary Product Matrix</h4><Button onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} variant="outline" size="sm" className="h-8 text-[9px] uppercase font-bold">+ Append Item</Button></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proprietary Product Matrix</h4>
+              <div className="flex gap-2">
+                <Button onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} variant="outline" size="sm" className="h-8 text-[9px] uppercase font-bold">+ Append Item</Button>
+                <Button onClick={() => handleSaveStrategy()} className="h-8 text-[9px] uppercase font-bold bg-[#001F3D] hover:bg-black text-white gap-2"><Save className="h-3 w-3" /> Save Matrix</Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {proprietaryProducts.map((p, i) => (
-                <div key={p.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4 relative">
-                  <div className="h-16 w-16 bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
+                <div key={p.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-4 relative">
+                  <div className="h-24 w-full bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input placeholder="Product Name..." className="h-8 text-[11px] font-bold bg-white border-none" value={p.name || ''} onChange={(e)=>updateProduct(i, 'name', e.target.value)} />
-                    <Input placeholder="Annual Qty..." className="h-7 text-[10px] bg-white border-none" value={p.annualTargetQty || ''} onChange={(e)=>updateProduct(i, 'annualTargetQty', e.target.value)} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input placeholder="Price (₹)..." className="h-7 text-[9px] bg-white border-none" value={p.price || ''} onChange={(e)=>updateProduct(i, 'price', e.target.value)} />
+                      <Input placeholder="Annual Qty..." className="h-7 text-[9px] bg-white border-none" value={p.annualTargetQty || ''} onChange={(e)=>updateProduct(i, 'annualTargetQty', e.target.value)} />
+                    </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_, idx)=>idx !== i))}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 text-slate-300 hover:text-red-500" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_, idx)=>idx !== i))}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               ))}
             </div>
@@ -568,18 +577,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       case 'services':
         return (
           <div className="space-y-8">
-            <div className="flex justify-between items-center"><h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Industrial Services Matrix</h4><Button onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} variant="outline" size="sm" className="h-8 text-[9px] uppercase font-bold">+ Append Node</Button></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Industrial Services Matrix</h4>
+              <div className="flex gap-2">
+                <Button onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} variant="outline" size="sm" className="h-8 text-[9px] uppercase font-bold">+ Append Node</Button>
+                <Button onClick={() => handleSaveStrategy()} className="h-8 text-[9px] uppercase font-bold bg-[#001F3D] hover:bg-black text-white gap-2"><Save className="h-3 w-3" /> Save Matrix</Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {industrialServices.map((s, i) => (
-                <div key={s.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4 relative">
-                  <div className="h-16 w-16 bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                    {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
+                <div key={s.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-4 relative">
+                  <div className="h-24 w-full bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input placeholder="Service Identity..." className="h-8 text-[11px] font-bold bg-white border-none" value={s.name || ''} onChange={(e)=>updateService(i, 'name', e.target.value)} />
-                    <Input placeholder="Target Count..." className="h-7 text-[10px] bg-white border-none" value={s.annualTargetQty || ''} onChange={(e)=>updateService(i, 'annualTargetQty', e.target.value)} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input placeholder="Rate (₹)..." className="h-7 text-[9px] bg-white border-none" value={s.price || ''} onChange={(e)=>updateService(i, 'price', e.target.value)} />
+                      <Input placeholder="Target Count..." className="h-7 text-[9px] bg-white border-none" value={s.annualTargetQty || ''} onChange={(e)=>updateService(i, 'annualTargetQty', e.target.value)} />
+                    </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300" onClick={()=>setIndustrialServices(industrialServices.filter((_, idx)=>idx !== i))}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 text-slate-300 hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_, idx)=>idx !== i))}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               ))}
             </div>
@@ -880,7 +898,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
               <div className="flex justify-between items-center border-l-4 border-primary pl-6">
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">High-fidelity items designed for institutional scale.</p></div>
-                 <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Product</Button>
+                 <div className="flex gap-2">
+                    <Button className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Product</Button>
+                    <Button className="bg-[#001F3D] hover:bg-black text-white font-bold text-[9px] uppercase h-10 px-8 rounded-xl shadow-xl gap-2" onClick={() => handleSaveStrategy()}><Save className="h-3.5 w-3.5" /> Save Catalog</Button>
+                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                  {proprietaryProducts.map((p, idx) => (
@@ -899,7 +920,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </div>
                           <div className="space-y-4">
                              <Input placeholder="Product Name..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={p.name || ''} onChange={(e) => updateProduct(idx, 'name', e.target.value)} />
-                             <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={p.annualTargetQty || ''} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
+                             <div className="grid grid-cols-2 gap-3">
+                                <Input placeholder="Price (₹)..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={p.price || ''} onChange={(e) => updateProduct(idx, 'price', e.target.value)} />
+                                <Input placeholder="Annual Qty..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={p.annualTargetQty || ''} onChange={(e) => updateProduct(idx, 'annualTargetQty', e.target.value)} />
+                             </div>
                           </div>
                        </div>
                        <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setProprietaryProducts(proprietaryProducts.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
@@ -911,7 +935,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
               <div className="flex justify-between items-center border-l-4 border-emerald-500 pl-6">
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Specialized technical operations for B2B sub-systems.</p></div>
-                 <Button className="bg-[#001F3D] text-white font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Service</Button>
+                 <div className="flex gap-2">
+                    <Button className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Service</Button>
+                    <Button className="bg-[#001F3D] hover:bg-black text-white font-bold text-[9px] uppercase h-10 px-8 rounded-xl shadow-xl gap-2" onClick={() => handleSaveStrategy()}><Save className="h-3.5 w-3.5" /> Save Catalog</Button>
+                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                  {industrialServices.map((s, idx) => (
@@ -930,7 +957,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </div>
                           <div className="space-y-4">
                              <Input placeholder="Service Identity..." className="bg-white border-none h-12 text-sm font-bold shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
-                             <Input placeholder="Annual Projection (Qty)..." className="bg-white border-none h-10 text-[11px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
+                             <div className="grid grid-cols-2 gap-3">
+                                <Input placeholder="Rate (₹)..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.price || ''} onChange={(e) => updateService(idx, 'price', e.target.value)} />
+                                <Input placeholder="Target Count..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
+                             </div>
                           </div>
                        </div>
                        <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setIndustrialServices(industrialServices.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
@@ -1315,7 +1345,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         {checklist.productLine && proprietaryProducts.length > 0 && (
                           <div className="space-y-8">
                              <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Proprietary Product Line</h4>
-                             <div className="grid grid-cols-2 gap-8">
+                             <div className="grid grid-cols-3 gap-8">
                                 {proprietaryProducts.map(p => (
                                   <div key={p.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
                                      <div className="aspect-video relative bg-white flex items-center justify-center p-4">
@@ -1328,13 +1358,36 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   </div>
                                 ))}
                              </div>
+                             
+                             <div className="mt-8 border-2 border-slate-900 rounded-sm overflow-hidden">
+                                <table className="w-full text-left border-collapse">
+                                   <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                      <tr>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Si No.</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Part Name</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-right">Price Per Part (₹)</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase text-right">Target Annual Qty</th>
+                                      </tr>
+                                   </thead>
+                                   <tbody>
+                                      {proprietaryProducts.map((p, idx) => (
+                                        <tr key={p.id} className="border-b border-slate-100">
+                                           <td className="p-3 text-[10px] border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
+                                           <td className="p-3 text-[10px] font-bold uppercase border-r border-slate-200">{p.name}</td>
+                                           <td className="p-3 text-[10px] text-right border-r border-slate-200">₹ {parseFloat(p.price).toLocaleString()}</td>
+                                           <td className="p-3 text-[10px] text-right">{p.annualTargetQty}</td>
+                                        </tr>
+                                      ))}
+                                   </tbody>
+                                </table>
+                             </div>
                           </div>
                         )}
                         
                         {checklist.services && industrialServices.length > 0 && (
                           <div className="space-y-8 pt-8">
                              <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-600 border-l-4 border-emerald-500 pl-4">Industrial Technical Services</h4>
-                             <div className="grid grid-cols-2 gap-8">
+                             <div className="grid grid-cols-3 gap-8">
                                 {industrialServices.map(s => (
                                   <div key={s.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
                                      <div className="aspect-video relative bg-white flex items-center justify-center p-4">
@@ -1347,6 +1400,29 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                      </div>
                                   </div>
                                 ))}
+                             </div>
+
+                             <div className="mt-8 border-2 border-slate-900 rounded-sm overflow-hidden">
+                                <table className="w-full text-left border-collapse">
+                                   <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                      <tr>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Si No.</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Service Identity</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-right">Unit Rate (₹)</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase text-right">Target Annual Count</th>
+                                      </tr>
+                                   </thead>
+                                   <tbody>
+                                      {industrialServices.map((s, idx) => (
+                                        <tr key={s.id} className="border-b border-slate-100">
+                                           <td className="p-3 text-[10px] border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
+                                           <td className="p-3 text-[10px] font-bold uppercase border-r border-slate-200">{s.name}</td>
+                                           <td className="p-3 text-[10px] text-right border-r border-slate-200">₹ {parseFloat(s.price).toLocaleString()}</td>
+                                           <td className="p-3 text-[10px] text-right">{s.annualTargetQty}</td>
+                                        </tr>
+                                      ))}
+                                   </tbody>
+                                </table>
                              </div>
                           </div>
                         )}

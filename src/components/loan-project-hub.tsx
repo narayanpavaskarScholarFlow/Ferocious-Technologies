@@ -56,7 +56,8 @@ import {
   Star,
   Maximize2,
   RefreshCw,
-  Globe
+  Globe,
+  Palette
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -219,7 +220,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     expensePersonnel: 100000, 
     expensePower: 100000,
     expenseMaintenance: 50000,
-    expenseConsumables: 80000, // Salary renamed logically
+    expenseConsumables: 80000,
     investMachinery: 4500000,
     investCivil: 1000000,
     investElectrical: 500000,

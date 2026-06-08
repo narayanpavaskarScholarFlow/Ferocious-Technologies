@@ -900,7 +900,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">High-fidelity items designed for institutional scale.</p></div>
                  <div className="flex gap-2">
                     <Button className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Product</Button>
-                    <Button className="bg-[#001F3D] hover:bg-black text-white font-bold text-[9px] uppercase h-10 px-8 rounded-xl shadow-xl gap-2" onClick={() => handleSaveStrategy()}><Save className="h-3.5 w-3.5" /> Save Catalog</Button>
+                    <Button className="bg-[#001F3D] hover:bg-black text-white font-bold text-[9px] uppercase h-10 px-8 rounded-xl shadow-xl gap-2" onClick={() => handleSaveStrategy()}><Save className="h-3.5 w-3.5" /> Save Matrix</Button>
                  </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -937,7 +937,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Services Matrix</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Specialized technical operations for B2B sub-systems.</p></div>
                  <div className="flex gap-2">
                     <Button className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase h-10 px-6 rounded-xl" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Service</Button>
-                    <Button className="bg-[#001F3D] hover:bg-black text-white font-bold text-[9px] uppercase h-10 px-8 rounded-xl shadow-xl gap-2" onClick={() => handleSaveStrategy()}><Save className="h-3.5 w-3.5" /> Save Catalog</Button>
+                    <Button className="bg-[#001F3D] hover:bg-black text-white font-bold text-[9px] uppercase h-10 px-8 rounded-xl shadow-xl gap-2" onClick={() => handleSaveStrategy()}><Save className="h-3.5 w-3.5" /> Save Matrix</Button>
                  </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1648,13 +1648,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
       <Dialog open={isMachineryBreakupOpen} onOpenChange={setIsMachineryBreakupOpen}>
         <DialogContent className="max-w-4xl h-[85vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
-          <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center shrink-0">
+          <DialogHeader className="p-8 bg-[#001F3D] text-white flex flex-row justify-between items-center shrink-0 space-y-0">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20"><Factory className="h-8 w-8" /></div>
-              <div><h3 className="text-2xl font-display font-bold uppercase tracking-tight">Plant & Machinery Breakup</h3><p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital Expenditure Quotation Ledger v2.4</p></div>
+              <div className="text-left">
+                <DialogTitle className="text-2xl font-display font-bold uppercase tracking-tight text-white">Plant & Machinery Breakup</DialogTitle>
+                <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital Expenditure Quotation Ledger v2.4</DialogDescription>
+              </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsMachineryBreakupOpen(false)} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full"><X className="h-6 w-6" /></Button>
-          </div>
+          </DialogHeader>
+          
           <ScrollArea className="flex-1 p-10">
             <div className="space-y-10">
               <div className="flex justify-between items-center px-1"><h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Asset Itemization Matrix</h4><Button variant="ghost" size="sm" className="h-8 text-primary font-bold text-[9px] uppercase tracking-widest gap-2 hover:bg-primary/5" onClick={() => setMachineryItems([...machineryItems, { id: `M-${Date.now()}`, name: '', qty: 1, rate: 0, total: 0 }])}><Plus className="h-3.5 w-3.5" /> Append Asset Node</Button></div>

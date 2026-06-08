@@ -135,7 +135,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState({
-    aboutProject: true,
     aboutUs: true,
     vision: true,
     mission: true,
@@ -160,7 +159,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     promoterName: 'Jayant Patil',
     location: 'Pune, Maharashtra',
     totalLoanRequirement: '50,00,000',
-    aboutProject: 'A specialized facility designed to scale the production of proprietary high-precision components and provide high-fidelity VMC machining services to Tier 1 aerospace and automotive clients.',
     aboutUs: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
     vision: 'To establish Ferocious Tech as the global benchmark for precision machining and innovative industrial tool-room solutions.',
     mission: 'Providing exceptional technical value through specialized engineering, uncompromising quality releases, and innovative product development.',
@@ -506,11 +504,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Project Foundational Identity</h3>
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Primary metadata for institutional feasibility ledger.</p>
                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Identification</Label><Input placeholder="27AAAAA0000A1Z5" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.gstNumber || ''} onChange={(e)=>setFormData({...foundationalData, gstNumber: e.target.value})} /></div>
-                       <div className="space-y-3"><Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">MSME Udyam Number</Label><Input placeholder="UDYAM-MH-00-0000000" className="h-14 bg-slate-50 border-none rounded-2xl font-bold uppercase" value={foundationalData.msmeNumber || ''} onChange={(e)=>setFormData({...foundationalData, msmeNumber: e.target.value})} /></div>
                     </div>
                  </div>
               </Card>
@@ -911,13 +904,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </div>
                    </div>
 
-                   {checklist.aboutProject && (
-                     <div className="space-y-8 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">01</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary</h3></div>
-                        <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.aboutProject}</p>
-                     </div>
-                   )}
-
                    {(checklist.vision || checklist.mission) && (
                      <div className="grid grid-cols-2 gap-12 page-break">
                         {checklist.vision && (
@@ -937,14 +923,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.aboutUs && (
                      <div className="space-y-8 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Context (About Us)</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">02</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Context (About Us)</h3></div>
                         <p className="text-sm text-slate-600 leading-relaxed font-medium">{foundationalData.aboutUs}</p>
                      </div>
                    )}
 
                    {(checklist.productLine || checklist.services) && (
                      <div className="space-y-12 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
                         
                         {checklist.productLine && proprietaryProducts.length > 0 && (
                           <div className="space-y-8">
@@ -989,7 +975,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.entrepreneurDetails && (
                      <div className="space-y-10 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Entrepreneur Profile</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">04</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Entrepreneur Profile</h3></div>
                         <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-8">
                            <div className="flex items-center gap-6">
                               <div className="h-20 w-20 rounded-full bg-[#001F3D] text-white flex items-center justify-center text-3xl font-bold">{foundationalData.promoterName?.charAt(0)}</div>
@@ -1012,7 +998,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.marketAnalysis && (
                      <div className="space-y-10 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Electrical Conductive Product Market Analysis</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">05</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Electrical Conductive Product Market Analysis</h3></div>
                         <div className="space-y-8">
                           <p className="text-sm text-slate-600 leading-relaxed font-medium">India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure. Electrical conductive products, including copper and aluminum-based precision components, form the backbone of this transformation.</p>
                           
@@ -1047,7 +1033,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.toolingMarketAnalysis && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06B</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Special Tooling, Die & Mold Market Analysis</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Special Tooling, Die & Mold Market Analysis</h3></div>
                         <div className="space-y-8">
                           <p className="text-sm text-slate-600 leading-relaxed font-medium">The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores. With the expansion of localized manufacturing in Electronics (Mobile Phones), Aerospace, and Automotive sectors, the demand for specialized jigs, fixtures, and high-fidelity molds has reached an inflection point.</p>
                           

@@ -55,7 +55,8 @@ import {
   User,
   Star,
   Maximize2,
-  RefreshCw
+  RefreshCw,
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -140,6 +141,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     entrepreneurDetails: true,
     productLine: true,
     services: true,
+    marketAnalysis: true,
     financialProjections: true,
     oneTimeInvestment: true,
     amortizationSchedule: true,
@@ -214,10 +216,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanTenure: 60,
     loanMoratorium: 6,
     expenseRent: 150000,
-    expensePersonnel: 100000, // Now "Salary"
+    expensePersonnel: 100000, 
     expensePower: 100000,
     expenseMaintenance: 50000,
-    expenseConsumables: 0, // Removed/Not used per latest request
+    expenseConsumables: 80000, // Salary renamed logically
     investMachinery: 4500000,
     investCivil: 1000000,
     investElectrical: 500000,
@@ -266,7 +268,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // DEEP FINANCIAL ENGINE
   const calculations = useMemo(() => {
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0);
+    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
     const workingCapitalValue = monthlyOpEx * 3;
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
     const entrepreneurAmt = financials.entrepreneurContribution || 0;
@@ -389,7 +391,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
       loanRepayment.push({
         year: `Year ${y}`,
-        opening: schedule[(y-1)*12]?.balance + schedule[(y-1)*12]?.principal || loanAmt,
+        opening: (schedule[(y-1)*12]?.balance + schedule[(y-1)*12]?.principal) || (y === 1 ? loanAmt : 0),
         interest: yearInterest,
         principal: yearPrincipal,
         closing: yearTermLoan
@@ -1019,9 +1021,44 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      </div>
                    )}
 
+                   {checklist.marketAnalysis && (
+                     <div className="space-y-10 page-break">
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Electrical Conductive Product Market Analysis</h3></div>
+                        <div className="space-y-8">
+                          <p className="text-sm text-slate-600 leading-relaxed font-medium">India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure. Electrical conductive products, including copper and aluminum-based precision components, form the backbone of this transformation.</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-50/30">
+                               <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-[#001F3D] mb-6 border-l-4 border-[#001F3D] pl-4">Current Market Landscape (FY24-25)</h4>
+                               <div className="space-y-4">
+                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Total Addressable Market</span><span className="text-sm font-bold">₹ 14,500 Cr</span></div>
+                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Organized Sector Share</span><span className="text-sm font-bold">62%</span></div>
+                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Projected Annual Growth</span><span className="text-sm font-bold text-emerald-600">12.5% CAGR</span></div>
+                               </div>
+                            </Card>
+
+                            <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-900 text-white">
+                               <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-white/40 mb-6 border-l-4 border-primary pl-4">Next 5 Years Forecast (₹ Cr)</h4>
+                               <div className="space-y-4">
+                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 1 (FY26)</span><span className="text-sm font-bold text-emerald-400">16,240</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 2 (FY27)</span><span className="text-sm font-bold text-emerald-400">18,180</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 3 (FY28)</span><span className="text-sm font-bold text-emerald-400">20,360</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 4 (FY29)</span><span className="text-sm font-bold text-emerald-400">22,800</span></div>
+                                  <div className="flex justify-between pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 5 (FY30)</span><span className="text-sm font-bold text-emerald-400">25,500</span></div>
+                               </div>
+                            </Card>
+                          </div>
+                          
+                          <div className="p-6 bg-slate-50 border-l-8 border-[#001F3D] italic text-xs text-slate-500">
+                            "The transition towards 'Make in India' and localized supply chains for aerospace-grade conductive alloys presents a high-entry-barrier opportunity for precision VMC units equipped with advanced quality protocols."
+                          </div>
+                        </div>
+                     </div>
+                   )}
+
                    {checklist.roadMapNextFiveYears && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">06</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
@@ -1039,7 +1076,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.cgtmseScheme && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CGTMSE Scheme Protocol</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CGTMSE Scheme Protocol</h3></div>
                         <Card className="p-10 border-2 border-slate-900 rounded-none space-y-10">
                            <div className="grid grid-cols-3 gap-6">
                               <div className="p-6 bg-slate-50 border border-slate-200 space-y-4">
@@ -1071,7 +1108,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.cashFlowStatement && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">08</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CMA Data: Cash Flow Statement</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">09</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">CMA Data: Cash Flow Statement</h3></div>
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
@@ -1095,7 +1132,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.keyRatios && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">09</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Key Ratios & Feasibility</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">10</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Key Ratios & Feasibility</h3></div>
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">
@@ -1113,7 +1150,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.mpbfCalculation && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">10</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">MPBF Calculation</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">11</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">MPBF Calculation</h3></div>
                         <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-6">
                            <p className="text-xs font-bold uppercase text-slate-500">Method 1: 75% of Working Capital Gap</p>
                            <div className="space-y-4">
@@ -1128,7 +1165,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {checklist.amortizationSchedule && (
                      <div className="space-y-10 pt-20 page-break">
-                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">11</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Term Loan Repayment Schedule</h3></div>
+                        <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">12</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Term Loan Repayment Schedule</h3></div>
                         <div className="border-2 border-slate-900 overflow-hidden">
                            <table className="w-full text-left border-collapse">
                               <thead className="bg-slate-50 border-b-2 border-slate-900">

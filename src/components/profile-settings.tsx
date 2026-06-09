@@ -69,7 +69,8 @@ import {
   PackageCheck,
   Maximize2,
   Trash2,
-  Globe
+  Globe,
+  Upload
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -162,8 +163,22 @@ export function ProfileSettings({
     lastName: currentUserData?.lastName || '',
     email: currentUserData?.email || '',
     phone: currentUserData?.phone || '',
-    password: currentUserData?.password || ''
+    password: currentUserData?.password || '',
+    image: currentUserData?.image || ''
   });
+
+  useEffect(() => {
+    if (currentUserData) {
+      setPersonalInfo({
+        firstName: currentUserData.firstName || '',
+        lastName: currentUserData.lastName || '',
+        email: currentUserData.email || '',
+        phone: currentUserData.phone || '',
+        password: currentUserData.password || '',
+        image: currentUserData.image || ''
+      });
+    }
+  }, [currentUserData]);
 
   useEffect(() => {
     if (selectedMatrixUserId) {
@@ -183,6 +198,18 @@ export function ProfileSettings({
     };
     onSaveUser(updated);
     toast({ title: "Profile Synchronized", description: "Identity metadata updated in master ledger." });
+  };
+
+  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPersonalInfo(prev => ({ ...prev, image: reader.result as string }));
+        toast({ title: "Identity Matrix Updated", description: "Profile photo cached. Click Save to commit." });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleUpdateUI = (key: keyof UISettings, value: any) => {
@@ -285,8 +312,14 @@ export function ProfileSettings({
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             <div className="relative z-10 space-y-12">
                <div className="flex items-center gap-6">
-                 <div className="h-24 w-24 rounded-3xl bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden group">
-                   {currentUserData?.image ? <img src={currentUserData.image} alt="" className="h-full w-full object-cover" /> : <User className="h-10 w-10 text-slate-300" />}
+                 <div className="relative group">
+                   <div className="h-24 w-24 rounded-3xl bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-all group-hover:opacity-80">
+                     {personalInfo.image ? <img src={personalInfo.image} alt="" className="h-full w-full object-cover" /> : <User className="h-10 w-10 text-slate-300" />}
+                   </div>
+                   <input type="file" id="profile-image-upload" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
+                   <label htmlFor="profile-image-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-20 border-2 border-white">
+                      <Camera className="h-4 w-4" />
+                   </label>
                  </div>
                  <div>
                    <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase">{currentUserData?.name}</h3>

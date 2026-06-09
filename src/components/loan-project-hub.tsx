@@ -43,7 +43,8 @@ import {
   Scale,
   Edit3,
   Maximize2,
-  RefreshCcw
+  RefreshCcw,
+  Hammer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -159,7 +160,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     experience: '15+ Years in Tool Room & VMC Operations',
     promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
     marketAnalysisDetails: "India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure. Electrical conductive products, including copper and aluminum-based precision components, form the backbone of this transformation. Global supply chain shifts are creating significant opportunities for localized production of silver-plated contacts for high-voltage switchgear and specialized alloys for 5G telecommunication hardware.",
-    toolingMarketAnalysisDetails: "The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores. With the expansion of localized manufacturing in Electronics (Mobile Phones), Aerospace, and Automotive sectors, the demand for specialized jigs, fixtures, and high-fidelity molds has reached an inflection point. Demand is particularly acute for high-cavity hot runner molds for consumer electronics and multi-stage progressive press tools for the next generation of electric vehicle chassis components.",
+    toolingMarketAnalysisDetails: "The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores. With the expansion of localized manufacturing in Electronics (Mobile Phones), Aerospace, and Automotive sectors, the demand for specialized jigs, fixtures, and high-fidelity molds has reached an exponent point. Demand is particularly acute for high-cavity hot runner molds for consumer electronics and multi-stage progressive press tools for the next generation of electric vehicle chassis components.",
     cgtmseNotes: "The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix. This allow for a collateral-free loan facility based on the viability of the manufacturing node. Guarantee fee (AGF) will be serviced as per the annual schedule mandated by the Trust, ensuring the loan node remains covered under the global security umbrella."
   });
 
@@ -189,6 +190,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     expenseMaintenance: 50000,
     expenseConsumables: 80000,
     investMachinery: 4500000,
+    investMoulds: 500000,
     investCivil: 1000000,
     investElectrical: 500000,
     investFurniture: 300000,
@@ -234,10 +236,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     return () => clearTimeout(timeout);
   }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, isDataLoaded, handleSaveStrategy]);
 
-  // DEEP FINANCIAL ENGINE - REFINED LOGIC
+  // DEEP FINANCIAL ENGINE - 90/10 FUNDING LOGIC
   const calculations = useMemo(() => {
     // 1. Fixed Assets (One-Time Investment Matrix)
-    const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
+    const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investMoulds || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
     
     // 2. Monthly OpEx Base (Strictly excluding EMI)
     const monthlyOpExBase = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
@@ -248,7 +250,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     // 4. Total Project Cost = CAPEX + Working Capital Reserve
     const totalProjectCost = fixedAssetsAtCost + workingCapitalValue;
     
-    // 5. Loan & Contribution Allocation (90/10 Split)
+    // 5. Loan & Contribution Allocation (Strict 90/10 Split)
     const derivedLoanAmt = totalProjectCost * 0.9;
     const derivedEntrepreneurAmt = totalProjectCost * 0.1;
 
@@ -277,7 +279,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     // 8. Target Turnover (Covers OpEx Base + EMI + Target Margin)
-    const targetTurnover = (monthlyOpExBase + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
+    const targetTurnover = (monthlyOpExBase + emi) / (1 - (20 / 100));
 
     // 9. Projections & Pro-Forma Ledger
     const projections: any[] = [];
@@ -305,7 +307,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         currentCapacityRevenue = yearRevenue;
       }
 
-      // Total OpEx includes the base OpEx and the EMI service node
       const yearOpEx = (monthlyOpExBase + emi) * 12 * (1 + (y * 0.05));
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
@@ -398,7 +399,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       mpbf,
       roi: (projections.reduce((acc, p) => acc + p.pat, 0) / totalProjectCost * 100)
     };
-  }, [financials, foundationalData.targetNetMargin]);
+  }, [financials]);
 
   const handleImageUpload = (idx: number, type: 'product' | 'service', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -601,6 +602,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-12 font-bold" value={(financials.investMachinery || 0).toLocaleString()} /></div>
+               <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Mould Manufacturing</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investMoulds || 0} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} /></div>
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Civil / Interior</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investCivil || 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Electrical</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investElectrical || 0} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} /></div>
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Furniture</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investFurniture || 0} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} /></div>
@@ -672,11 +674,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   <div className="flex-1 space-y-3">
                     <Input placeholder="Service Identity..." className="h-10 text-[11px] font-bold bg-white border-none shadow-sm" value={s.name || ''} onChange={(e)=>updateService(i, 'name', e.target.value)} />
                     <div className="grid grid-cols-2 gap-3">
-                      <Input placeholder="Rate (₹)..." className="h-8 text-[9px] bg-white border-none shadow-sm" value={s.price || ''} onChange={(e)=>updateService(i, 'price', e.target.value)} />
-                      <Input placeholder="Target Count..." className="h-8 text-[9px] bg-white border-none shadow-sm" value={s.annualTargetQty || ''} onChange={(e)=>updateService(i, 'annualTargetQty', e.target.value)} />
+                      <Input placeholder="Rate (₹)..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.price || ''} onChange={(e) => updateService(i, 'price', e.target.value)} />
+                      <Input placeholder="Target Count..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(i, 'annualTargetQty', e.target.value)} />
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 text-slate-300 hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_, idx)=>idx !== i))}><Trash2 className="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setIndustrialServices(industrialServices.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>
@@ -997,7 +999,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Input readOnly className="h-12 bg-emerald-50 border-none font-bold text-emerald-700" value={(calculations.loanAmt || 0).toLocaleString('en-IN')} />
                        </div>
                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-primary">Entrepreneur Contribution (10%)</Label>
+                          <Label className="text-[9px] font-bold uppercase text-primary">Entrepreneur Amount (10%)</Label>
                           <Input readOnly className="h-12 bg-primary/5 border-none font-bold text-primary" value={(calculations.entrepreneurAmt || 0).toLocaleString('en-IN')} />
                        </div>
                     </div>
@@ -1020,10 +1022,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-widest">
                           <Factory className="h-4 w-4" /> One-Time Investment Matrix
                        </div>
-                       <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5" /> Edit Breakup</Button>
+                       <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase tracking-widest gap-2" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5" /> Edit Breakdown</Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-11 font-bold" value={(financials.investMachinery || 0).toLocaleString()} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Mould Manufacturing</Label><Input type="number" className="bg-slate-50 h-11 rounded-xl" value={financials.investMoulds || 0} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Civil / Interior</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investCivil || 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Electrical</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investElectrical || 0} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Furniture</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investFurniture || 0} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} /></div>

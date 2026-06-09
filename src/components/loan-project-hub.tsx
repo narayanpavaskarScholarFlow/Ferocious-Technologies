@@ -44,7 +44,8 @@ import {
   Edit3,
   Maximize2,
   RefreshCcw,
-  Hammer
+  Hammer,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -139,13 +140,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     toolingMarketAnalysis: true,
     roadMapNextFiveYears: true,
     cgtmseScheme: true,
-    financialProjections: true,
     oneTimeInvestment: true,
-    amortizationSchedule: true,
     cashFlowStatement: true,
     keyRatios: true,
     mpbfCalculation: true,
-    dscrMatrix: true
+    dscrMatrix: true,
+    amortizationSchedule: true
   });
 
   const [foundationalData, setFormData] = useState({
@@ -185,7 +185,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanTenure: 60,
     loanMoratorium: 6,
     expenseRent: 150000,
-    expensePersonnel: 100000, 
+    expensePersonnel: 300000, 
     expensePower: 100000,
     expenseMaintenance: 50000,
     expenseConsumables: 80000,
@@ -227,34 +227,39 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       updatedAt: new Date().toISOString()
     };
     setDocumentNonBlocking(strategyRef, data, { merge: true });
-    if (!silent) toast({ title: "Strategy Matrix Committed", description: "All financial nodes and schedules synchronized." });
+    if (!silent) toast({ title: "Strategy Matrix Committed", description: "All strategic nodes synchronized with master ledger." });
   }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, strategyRef, toast]);
 
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    const timeout = setTimeout(() => handleSaveStrategy(true), 2000);
-    return () => clearTimeout(timeout);
-  }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, isDataLoaded, handleSaveStrategy]);
-
-  // DEEP FINANCIAL ENGINE - 90/10 FUNDING LOGIC
+  // Deep Financial Engine - 90/10 Split with Working Capital Protocol
   const calculations = useMemo(() => {
-    // 1. Fixed Assets (One-Time Investment Matrix)
-    const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investMoulds || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
+    // 1. CAPEX (Fixed Assets) - Including Mould Manufacturing
+    const fixedAssetsAtCost = (financials.investMachinery || 0) + 
+                            (financials.investMoulds || 0) + 
+                            (financials.investCivil || 0) + 
+                            (financials.investElectrical || 0) + 
+                            (financials.investFurniture || 0) + 
+                            (financials.investSoftware || 0) + 
+                            (financials.investSystem || 0) + 
+                            (financials.investAdvance || 0);
     
-    // 2. Monthly OpEx Base (Strictly excluding EMI)
-    const monthlyOpExBase = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
+    // 2. Base Monthly OpEx (Strictly excluding EMI)
+    const monthlyOpExBase = (financials.expenseRent || 0) + 
+                           (financials.expensePersonnel || 0) + 
+                           (financials.expensePower || 0) + 
+                           (financials.expenseMaintenance || 0) + 
+                           (financials.expenseConsumables || 0);
     
-    // 3. Working Capital Reserve (3 Months OpEx Base)
+    // 3. Working Capital Reserve (3 Months Base OpEx)
     const workingCapitalValue = monthlyOpExBase * 3;
     
-    // 4. Total Project Cost = CAPEX + Working Capital Reserve
+    // 4. Total Project Cost
     const totalProjectCost = fixedAssetsAtCost + workingCapitalValue;
     
-    // 5. Loan & Contribution Allocation (Strict 90/10 Split)
+    // 5. 90/10 Funding Split
     const derivedLoanAmt = totalProjectCost * 0.9;
     const derivedEntrepreneurAmt = totalProjectCost * 0.1;
 
-    // 6. EMI Calculation (based on 90% loan)
+    // 6. EMI Calculation (on derived loan amount)
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
     const moratorium = financials.loanMoratorium;
@@ -278,10 +283,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       schedule.push({ month: m, payment: isMoratorium ? 0 : emi, interest, principal, balance: remainingBalance, status: isMoratorium ? 'Moratorium' : 'Repayment' });
     }
 
-    // 8. Target Turnover (Covers OpEx Base + EMI + Target Margin)
-    const targetTurnover = (monthlyOpExBase + emi) / (1 - (20 / 100));
+    // 8. Target Turnover (Covers Base OpEx + EMI + 20% Net Margin)
+    const totalMonthlyCommitment = monthlyOpExBase + emi;
+    const targetTurnover = totalMonthlyCommitment / (1 - (financials.targetNetMargin / 100));
 
-    // 9. Projections & Pro-Forma Ledger
+    // 9. CMA Projections Matrix
     const projections: any[] = [];
     const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
@@ -299,7 +305,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       
       let yearRevenue = 0;
       if (y === 1) {
-        for (let m = 1; m <= 12; m++) yearRevenue += targetTurnover * (m <= 6 ? 0.4 + (m * 0.1) : 1.0);
+        // Ramp up in Year 1
+        for (let m = 1; m <= 12; m++) yearRevenue += targetTurnover * (m <= 6 ? 0.5 + (m * 0.1) : 1.1);
         yearRevenue *= revMultiplier;
         currentCapacityRevenue = targetTurnover * 12 * revMultiplier;
       } else {
@@ -307,7 +314,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         currentCapacityRevenue = yearRevenue;
       }
 
-      const yearOpEx = (monthlyOpExBase + emi) * 12 * (1 + (y * 0.05));
+      const yearOpEx = totalMonthlyCommitment * 12 * (1 + (y * 0.05));
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
@@ -318,7 +325,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearTax = yearPBT > 0 ? yearPBT * 0.25 : 0;
       const yearPAT = yearPBT - yearTax;
       
-      currentTNW += yearPAT * 0.8;
+      currentTNW += yearPAT * 0.8; // Retained earnings
       const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
       const yearTOL = yearTermLoan + yearCurrentLiabilities;
@@ -602,7 +609,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-12 font-bold" value={(financials.investMachinery || 0).toLocaleString()} /></div>
-               <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Mould Manufacturing</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investMoulds || 0} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} /></div>
+               <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Mould Manufacturing Cost</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investMoulds || 0} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} /></div>
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Civil / Interior</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investCivil || 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Electrical</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investElectrical || 0} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} /></div>
                <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Furniture</Label><Input type="number" className="bg-slate-50 h-12 rounded-xl" value={financials.investFurniture || 0} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} /></div>
@@ -667,7 +674,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {industrialServices.map((s, i) => (
-                <div key={s.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-4 relative">
+                <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 relative">
                   <div className="h-24 w-full bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                     {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
                   </div>
@@ -1026,7 +1033,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Plant & Machinery</Label><Input readOnly className="bg-slate-100/50 h-11 font-bold" value={(financials.investMachinery || 0).toLocaleString()} /></div>
-                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Mould Manufacturing</Label><Input type="number" className="bg-slate-50 h-11 rounded-xl" value={financials.investMoulds || 0} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} /></div>
+                       <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Mould Manufacturing Cost</Label><Input type="number" className="bg-slate-50 h-11 rounded-xl" value={financials.investMoulds || 0} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Civil / Interior</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investCivil || 0} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Electrical</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investElectrical || 0} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} /></div>
                        <div className="space-y-2"><Label className="text-[8px] font-bold uppercase text-slate-400">Furniture</Label><Input type="number" className="bg-slate-50 h-11" value={financials.investFurniture || 0} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} /></div>

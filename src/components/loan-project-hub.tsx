@@ -252,13 +252,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   // DEEP FINANCIAL ENGINE
   const calculations = useMemo(() => {
-    const monthlyOpEx = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
-    const workingCapitalValue = monthlyOpEx * 3;
+    // 1. Fixed Assets (One-Time Investment Matrix)
+    const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
+    
+    // 2. Monthly OpEx Base (Excluding EMI)
+    const monthlyOpExBase = (financials.expenseRent || 0) + (financials.expensePersonnel || 0) + (financials.expensePower || 0) + (financials.expenseMaintenance || 0) + (financials.expenseConsumables || 0);
+    
+    // 3. Working Capital Reserve (3 Months OpEx Base)
+    const workingCapitalValue = monthlyOpExBase * 3;
+    
+    // 4. Total Project Cost = CAPEX + Working Capital Reserve
+    const totalProjectCost = fixedAssetsAtCost + workingCapitalValue;
+    
+    // 5. Loan & EMI Calculation
     const loanAmt = parseFloat((foundationalData.totalLoanRequirement || '0').replace(/,/g, '')) || 0;
-    const entrepreneurAmt = financials.entrepreneurContribution || 0;
-    
-    const totalProjectCost = loanAmt + entrepreneurAmt + workingCapitalValue;
-    
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
     const moratorium = financials.loanMoratorium;
@@ -271,6 +278,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       emi = loanAmt / activeTenure;
     }
 
+    // 6. Amortization Schedule
     const schedule: any[] = [];
     let remainingBalance = loanAmt;
     for (let m = 1; m <= totalTenure; m++) {
@@ -281,19 +289,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       schedule.push({ month: m, payment: isMoratorium ? 0 : emi, interest, principal, balance: remainingBalance, status: isMoratorium ? 'Moratorium' : 'Repayment' });
     }
 
-    const targetTurnover = (monthlyOpEx + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
+    // 7. Target Turnover (Covers OpEx Base + EMI + Target Margin)
+    const targetTurnover = (monthlyOpExBase + emi) / (1 - ((financials.targetNetMargin || 20) / 100));
 
+    // 8. Projections & Pro-Forma Ledger
     const projections: any[] = [];
     const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
     const loanRepayment: any[] = [];
 
-    let currentTNW = entrepreneurAmt;
+    let currentTNW = financials.entrepreneurContribution || (totalProjectCost - loanAmt);
     let currentCapacityRevenue = targetTurnover * 12;
     let accumulatedDepreciation = 0;
     const depreciationRate = 0.15;
-    const fixedAssetsAtCost = (financials.investMachinery || 0) + (financials.investCivil || 0) + (financials.investElectrical || 0) + (financials.investFurniture || 0) + (financials.investSoftware || 0) + (financials.investSystem || 0) + (financials.investAdvance || 0);
-
     let openingCash = workingCapitalValue * 0.2;
 
     for (let y = 1; y <= 5; y++) {
@@ -310,7 +318,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         currentCapacityRevenue = yearRevenue;
       }
 
-      const yearOpEx = monthlyOpEx * 12 * (1 + (y * 0.05));
+      const yearOpEx = monthlyOpExBase * 12 * (1 + (y * 0.05));
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
@@ -387,11 +395,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const mpbf = wcGap * 0.75;
 
     return {
-      monthlyOpEx,
+      monthlyOpEx: monthlyOpExBase,
       workingCapitalValue,
       totalProjectCost,
       loanAmt,
-      entrepreneurAmt,
+      entrepreneurAmt: financials.entrepreneurContribution,
       emi,
       schedule,
       targetTurnover,

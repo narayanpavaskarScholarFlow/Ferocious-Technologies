@@ -46,7 +46,9 @@ import {
   RefreshCcw,
   Hammer,
   ShieldAlert,
-  Info
+  Info,
+  BarChart3,
+  LineChart as LineChartIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -290,7 +292,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     const projections: any[] = [];
-    const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
     const loanRepayment: any[] = [];
 
@@ -746,7 +747,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Maximum Permissible Bank Finance (Method 1).</p>
                 </div>
              </div>
-             <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-6">
+             <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-4">
                 <div className="space-y-4">
                    <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.projections[0].revenue * 0.25 || 0).toLocaleString('en-IN')}</span></div>
                    <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>B. Current Liabilities (Excl. Bank)</span> <span>₹ {(calculations.workingCapitalValue * 0.3 || 0).toLocaleString('en-IN')}</span></div>
@@ -1048,7 +1049,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
               </div>
 
-              <div className="lg:col-span-12 space-y-8">
+              <div className="lg:col-span-12 space-y-12">
                  <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
                     <div className="p-3 bg-white rounded-2xl text-primary shadow-sm border border-slate-100"><TrendingUp className="h-6 w-6" /></div>
                     <div>
@@ -1082,12 +1083,172 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </table>
                  </div>
 
+                 {/* High-Fidelity Performance Matrix (Charts) */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8 group hover:border-primary/30 transition-all">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary"><BarChart3 className="h-4 w-4" /></div>
+                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Projected Sales & Profitability</h4>
+                         </div>
+                         <Badge variant="outline" className="text-[8px] font-bold uppercase bg-slate-50 border-slate-100">Dynamic_Matrix</Badge>
+                      </div>
+                      <div className="h-[240px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={calculations.projections}>
+                            <defs>
+                              <linearGradient id="colorRevFin" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                              <linearGradient id="colorPatFin" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} dy={10} />
+                            <YAxis hide />
+                            <ChartTooltip 
+                              content={({active, payload}) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="bg-[#001F3D] text-white p-4 rounded-2xl shadow-2xl border-none animate-in zoom-in-95">
+                                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-2">{payload[0].payload.year}</p>
+                                      <div className="space-y-1">
+                                        <p className="text-sm font-bold flex justify-between gap-6"><span>Revenue:</span> <span className="text-primary">₹ {payload[0].value?.toLocaleString()}</span></p>
+                                        <p className="text-sm font-bold flex justify-between gap-6"><span>PAT:</span> <span className="text-emerald-400">₹ {payload[1]?.value?.toLocaleString()}</span></p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRevFin)" />
+                            <Area type="monotone" dataKey="pat" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPatFin)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+
+                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8 group hover:border-emerald-500/30 transition-all">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><LineChartIcon className="h-4 w-4" /></div>
+                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TOL/TNW Ratio Trendline</h4>
+                         </div>
+                         <Badge variant="outline" className="text-[8px] font-bold uppercase bg-slate-50 border-slate-100">Solvency_Index</Badge>
+                      </div>
+                      <div className="h-[240px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={calculations.projections}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} />
+                            <ChartTooltip 
+                              content={({active, payload}) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="bg-[#001F3D] text-white p-4 rounded-2xl shadow-2xl border-none">
+                                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-1">{payload[0].payload.year}</p>
+                                      <p className="text-xl font-display font-bold text-emerald-400">{payload[0].value}</p>
+                                      <p className="text-[8px] font-bold uppercase text-white/20 mt-1">Debt-to-Equity Multiplier</p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Line type="monotone" dataKey="ratio" stroke="#10b981" strokeWidth={4} dot={{fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 8, strokeWidth: 0}} animationDuration={2000} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+                 </div>
+
+                 {/* Detailed CMA Matrices Clusters */}
+                 <div className="grid grid-cols-1 gap-12 pt-8">
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4 border-l-4 border-emerald-500 pl-6">
+                        <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><RefreshCcw className="h-6 w-6" /></div>
+                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">CMA Data: Cash Flow Statement</h3>
+                      </div>
+                      <div className="border-2 border-slate-900 overflow-hidden rounded-sm bg-white shadow-lg">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-slate-50 border-b-2 border-slate-900">
+                            <tr>
+                              <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ Actual)</th>
+                              {calculations.cashFlow.map(c => <th key={c.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{c.year}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Net Profit After Tax</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.npat || 0).toLocaleString('en-IN')}</td>)}</tr>
+                            <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Interest Node</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.interest || 0).toLocaleString('en-IN')}</td>)}</tr>
+                            <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Depreciation</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.depreciation || 0).toLocaleString('en-IN')}</td>)}</tr>
+                            <tr className="bg-[#001F3D] text-white font-bold h-16">
+                              <td className="p-4 text-[11px] uppercase border-r border-white/10">Closing Cash Balance</td>
+                              {calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[11px] text-right border-r border-white/10 last:border-0 text-emerald-400">₹ {(c.closingCash || 0).toLocaleString('en-IN')}</td>)}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-6">
+                          <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                            <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Scale className="h-6 w-6" /></div>
+                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Key Ratios Matrix</h3>
+                          </div>
+                          <div className="border-2 border-slate-900 overflow-hidden rounded-sm bg-white shadow-md">
+                            <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                <tr>
+                                  <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Ratio</th>
+                                  {calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-center border-r border-slate-200 last:border-0">{p.year}</th>)}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold border-r border-slate-200 uppercase">TOL/TNW</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-center border-r border-slate-200">{p.ratio}</td>)}</tr>
+                                <tr className="border-b border-slate-100"><td className="p-4 text-[10px] font-bold border-r border-slate-200 uppercase">NP Margin %</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-center border-r border-slate-200 text-emerald-600">{p.margin}%</td>)}</tr>
+                                <tr><td className="p-4 text-[10px] font-bold border-r border-slate-200 uppercase">DSCR</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-center border-r border-slate-200 text-primary">{p.dscr}</td>)}</tr>
+                              </tbody>
+                            </table>
+                          </div>
+                       </div>
+
+                       <div className="space-y-6">
+                          <div className="flex items-center gap-4 border-l-4 border-rose-500 pl-6">
+                            <div className="p-3 bg-rose-50 rounded-2xl text-rose-600"><Clock className="h-6 w-6" /></div>
+                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Repayment Matrix</h3>
+                          </div>
+                          <div className="border-2 border-slate-900 overflow-hidden rounded-sm bg-white shadow-md">
+                            <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                <tr>
+                                  <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Period</th>
+                                  <th className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200">Interest</th>
+                                  <th className="p-4 text-[9px] font-bold uppercase text-right">Principal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {calculations.loanRepayment.map(r => (
+                                  <tr key={r.year} className="border-b border-slate-100">
+                                    <td className="p-4 text-[10px] font-bold uppercase border-r border-slate-200">{r.year}</td>
+                                    <td className="p-4 text-[10px] text-right border-r border-slate-200 text-rose-500">{(r.interest || 0).toLocaleString('en-IN')}</td>
+                                    <td className="p-4 text-[10px] text-right text-emerald-600">{(r.principal || 0).toLocaleString('en-IN')}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="lg:col-span-12">
                  <Card className="p-8 bg-slate-50 border border-slate-200 rounded-[2.5rem] space-y-8">
                     <div className="flex items-center gap-4">
                        <div className="p-3 bg-white rounded-2xl text-primary shadow-sm"><Activity className="h-6 w-6" /></div>
                        <div>
-                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Growth Parameters</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Year-over-year yield trajectory.</p>
+                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Global Growth Parameters</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Year-over-year yield trajectory nodes.</p>
                        </div>
                     </div>
 
@@ -1107,18 +1268,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                              />
                           </div>
                        ))}
-                    </div>
-
-                    <div className="h-[250px] w-full mt-10">
-                       <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={calculations.projections}>
-                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                             <XAxis dataKey="year" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
-                             <YAxis hide />
-                             <ChartTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '1rem', border: 'none', shadow: 'none', backgroundColor: '#001F3D', color: '#fff'}} />
-                             <Bar dataKey="growth" name="Target Growth %" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                       </ResponsiveContainer>
                     </div>
                  </Card>
               </div>
@@ -1204,10 +1353,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <table className="w-full text-left border-collapse">
                                    <thead className="bg-slate-50 border-b-2 border-slate-900">
                                       <tr>
-                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Si No.</th>
-                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Part Name</th>
-                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-right">Price Per Part (₹)</th>
-                                         <th className="p-3 text-[9px] font-bold uppercase text-right">Target annual qty</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[10%]">Si No.</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[40%]">Part Name</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] text-right w-[25%]">Price Per Part (₹)</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase text-right text-[#001F3D] w-[25%]">Target annual qty</th>
                                       </tr>
                                    </thead>
                                    <tbody>
@@ -1246,10 +1395,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <table className="w-full text-left border-collapse">
                                    <thead className="bg-slate-50 border-b-2 border-slate-900">
                                       <tr>
-                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Si No.</th>
-                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200">Service Identity</th>
-                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-right">Unit Rate (₹)</th>
-                                         <th className="p-3 text-[9px] font-bold uppercase text-right">Target annual qty</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[10%]">Si No.</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] w-[40%]">Service Identity</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D] text-right w-[25%]">Unit Rate (₹)</th>
+                                         <th className="p-3 text-[9px] font-bold uppercase text-right text-[#001F3D] w-[25%]">Target annual qty</th>
                                       </tr>
                                    </thead>
                                    <tbody>

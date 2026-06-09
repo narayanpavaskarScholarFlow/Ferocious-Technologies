@@ -573,8 +573,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               ))}
             </div>
             <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
-              <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
-                <Save className="h-5 w-5" /> Commit Matrix to Ledger
+              <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group">
+                <Save className="h-5 w-5 transition-transform group-hover:scale-110" /> Commit Matrix to Ledger
               </Button>
             </div>
           </div>
@@ -607,8 +607,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               ))}
             </div>
             <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
-              <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
-                <Save className="h-5 w-5" /> Commit Matrix to Ledger
+              <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group">
+                <Save className="h-5 w-5 transition-transform group-hover:scale-110" /> Commit Matrix to Ledger
               </Button>
             </div>
           </div>
@@ -941,8 +941,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  ))}
               </div>
               <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
-                <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
-                  <Save className="h-5 w-5" /> Commit Matrix to Ledger
+                <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group">
+                  <Save className="h-5 w-5 transition-transform group-hover:scale-110" /> Commit Matrix to Ledger
                 </Button>
               </div>
            </Card>
@@ -983,8 +983,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  ))}
               </div>
               <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
-                <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
-                  <Save className="h-5 w-5" /> Commit Matrix to Ledger
+                <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group">
+                  <Save className="h-5 w-5 transition-transform group-hover:scale-110" /> Commit Matrix to Ledger
                 </Button>
               </div>
            </Card>
@@ -1365,11 +1365,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         {checklist.productLine && proprietaryProducts.length > 0 && (
                           <div className="space-y-8">
                              <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Proprietary Product Line</h4>
-                             <div className="grid grid-cols-4 gap-8">
+                             <div className="grid grid-cols-3 gap-8">
                                 {proprietaryProducts.map(p => (
                                   <div key={p.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
                                      <div className="aspect-video relative bg-white flex items-center justify-center p-4">
-                                        {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-12 w-12 text-slate-100" />}
+                                        {p.imageUrl ? <img src={p.imageUrl} alt="" className="mx-auto h-full w-[70%] object-contain" /> : <ImageIcon className="h-12 w-12 text-slate-100" />}
                                      </div>
                                      <div className="p-5 space-y-2">
                                         <p className="text-[11px] font-bold text-[#001F3D] uppercase">{p.name}</p>
@@ -1394,7 +1394,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                         <tr key={p.id} className="border-b border-slate-100">
                                            <td className="p-3 text-[10px] border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
                                            <td className="p-3 text-[10px] font-bold uppercase border-r border-slate-200">{p.name}</td>
-                                           <td className="p-3 text-[10px] text-right border-r border-slate-200">₹ {parseFloat(p.price).toLocaleString()}</td>
+                                           <td className="p-3 text-[10px] text-right border-r border-slate-200">₹ {parseFloat(p.price).toLocaleString('en-IN')}</td>
                                            <td className="p-3 text-[10px] text-right">{p.annualTargetQty}</td>
                                         </tr>
                                       ))}
@@ -1407,11 +1407,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         {checklist.services && industrialServices.length > 0 && (
                           <div className="space-y-8 pt-8">
                              <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-600 border-l-4 border-emerald-500 pl-4">Industrial Technical Services</h4>
-                             <div className="grid grid-cols-4 gap-8">
+                             <div className="grid grid-cols-3 gap-8">
                                 {industrialServices.map(s => (
                                   <div key={s.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
                                      <div className="aspect-video relative bg-white flex items-center justify-center p-4">
-                                        {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-12 w-12 text-slate-100" />}
+                                        {s.imageUrl ? <img src={s.imageUrl} alt="" className="mx-auto h-full w-[70%] object-contain" /> : <Settings2 className="h-12 w-12 text-slate-100" />}
                                      </div>
                                      <div className="p-5 space-y-2">
                                         <p className="text-[11px] font-bold text-[#001F3D] uppercase">{s.name}</p>
@@ -1436,7 +1436,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                         <tr key={s.id} className="border-b border-slate-100">
                                            <td className="p-3 text-[10px] border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
                                            <td className="p-3 text-[10px] font-bold uppercase border-r border-slate-200">{s.name}</td>
-                                           <td className="p-3 text-[10px] text-right border-r border-slate-200">₹ {parseFloat(s.price).toLocaleString()}</td>
+                                           <td className="p-3 text-[10px] text-right border-r border-slate-200">₹ {parseFloat(s.price).toLocaleString('en-IN')}</td>
                                            <td className="p-3 text-[10px] text-right">{s.annualTargetQty}</td>
                                         </tr>
                                       ))}
@@ -1481,20 +1481,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-50/30">
                                <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-[#001F3D] mb-6 border-l-4 border-[#001F3D] pl-4">Current Market Landscape (FY24-25)</h4>
                                <div className="space-y-4">
-                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Total Addressable Market</span><span className="text-sm font-bold">₹ 14,500 Cr</span></div>
-                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Organized Sector Share</span><span className="text-sm font-bold">62%</span></div>
-                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Projected Annual Growth</span><span className="text-sm font-bold text-emerald-600">12.5% CAGR</span></div>
+                                  <div className="flex justify-between border-b pb-2 text-[10px] font-bold text-slate-500 uppercase"><span>Total Addressable Market</span><span className="text-sm font-bold">₹ 14,500 Cr</span></div>
+                                  <div className="flex justify-between border-b pb-2 text-[10px] font-bold text-slate-500 uppercase"><span>Organized Sector Share</span><span className="text-sm font-bold">62%</span></div>
+                                  <div className="flex justify-between border-b pb-2 text-[10px] font-bold text-slate-500 uppercase"><span>Projected Annual Growth</span><span className="text-sm font-bold text-emerald-600">12.5% CAGR</span></div>
                                </div>
                             </Card>
 
                             <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-900 text-white">
                                <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-white/40 mb-6 border-l-4 border-primary pl-4">Next 5 Years Forecast (₹ Cr)</h4>
                                <div className="space-y-4">
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 1 (FY26)</span><span className="text-sm font-bold text-emerald-400">16,240</span></div>
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 2 (FY27)</span><span className="text-sm font-bold text-emerald-400">18,180</span></div>
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 3 (FY28)</span><span className="text-sm font-bold text-emerald-400">20,360</span></div>
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 4 (FY29)</span><span className="text-sm font-bold text-emerald-400">22,800</span></div>
-                                  <div className="flex justify-between pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 5 (FY30)</span><span className="text-sm font-bold text-emerald-400">25,500</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 1 (FY26)</span><span className="text-sm font-bold text-emerald-400">16,240</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 2 (FY27)</span><span className="text-sm font-bold text-emerald-400">18,180</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 3 (FY28)</span><span className="text-sm font-bold text-emerald-400">20,360</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 4 (FY29)</span><span className="text-sm font-bold text-emerald-400">22,800</span></div>
+                                  <div className="flex justify-between pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 5 (FY30)</span><span className="text-sm font-bold text-emerald-400">25,500</span></div>
                                </div>
                             </Card>
                           </div>
@@ -1512,20 +1512,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-50/30">
                                <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-[#001F3D] mb-6 border-l-4 border-[#001F3D] pl-4">Market Identity (FY24-25)</h4>
                                <div className="space-y-4">
-                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Tooling Sector Valuation</span><span className="text-sm font-bold">₹ 18,500 Cr</span></div>
-                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Organized Unit Density</span><span className="text-sm font-bold">35%</span></div>
-                                  <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Sector Growth Rate</span><span className="text-sm font-bold text-emerald-600">11.8% CAGR</span></div>
+                                  <div className="flex justify-between border-b pb-2 text-[10px] font-bold text-slate-500 uppercase"><span>Tooling Sector Valuation</span><span className="text-sm font-bold">₹ 18,500 Cr</span></div>
+                                  <div className="flex justify-between border-b pb-2 text-[10px] font-bold text-slate-500 uppercase"><span>Organized Unit Density</span><span className="text-sm font-bold">35%</span></div>
+                                  <div className="flex justify-between border-b pb-2 text-[10px] font-bold text-slate-500 uppercase"><span>Sector Growth Rate</span><span className="text-sm font-bold text-emerald-600">11.8% CAGR</span></div>
                                </div>
                             </Card>
 
                             <Card className="p-8 border-2 border-slate-900 rounded-none bg-slate-900 text-white">
                                <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-white/40 mb-6 border-l-4 border-primary pl-4">Growth Matrix (₹ Cr)</h4>
                                <div className="space-y-4">
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 1 (FY26)</span><span className="text-sm font-bold text-emerald-400">20,680</span></div>
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 2 (FY27)</span><span className="text-sm font-bold text-emerald-400">23,120</span></div>
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 3 (FY28)</span><span className="text-sm font-bold text-emerald-400">25,850</span></div>
-                                  <div className="flex justify-between border-b border-white/10 pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 4 (FY29)</span><span className="text-sm font-bold text-emerald-400">28,900</span></div>
-                                  <div className="flex justify-between pb-2"><span className="text-[10px] font-bold text-white/40 uppercase">Year 5 (FY30)</span><span className="text-sm font-bold text-emerald-400">32,300</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 1 (FY26)</span><span className="text-sm font-bold text-emerald-400">20,680</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 2 (FY27)</span><span className="text-sm font-bold text-emerald-400">23,120</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 3 (FY28)</span><span className="text-sm font-bold text-emerald-400">25,850</span></div>
+                                  <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 4 (FY29)</span><span className="text-sm font-bold text-emerald-400">28,900</span></div>
+                                  <div className="flex justify-between pb-2 text-[10px] font-bold text-white/40 uppercase"><span>Year 5 (FY30)</span><span className="text-sm font-bold text-emerald-400">32,300</span></div>
                                </div>
                             </Card>
                           </div>
@@ -1542,9 +1542,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                  <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ Actuals)</th>{calculations.projections.map(p => <th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                               </thead>
                               <tbody>
-                                 <tr className="border-b border-slate-200 font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.ebitda || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0">₹ {(p.pat || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-200 font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] text-slate-600 uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.ebitda || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p => <td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0">₹ {(p.pat || 0).toLocaleString('en-IN')}</td>)}</tr>
                               </tbody>
                            </table>
                         </div>
@@ -1589,14 +1589,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </thead>
                               <tbody>
                                  <tr className="bg-slate-100"><td colSpan={6} className="p-3 text-[10px] font-bold uppercase text-primary">A. Cash Flow from Operating Activities</td></tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Net Profit After Tax</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.npat || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Interest Expense</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.interest || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Depreciation</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.depreciation || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="bg-slate-50 font-bold border-b border-slate-900"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Operating Profit before WC</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.opProfit || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Net Profit After Tax</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.npat || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Interest Expense</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.interest || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Add: Depreciation</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.depreciation || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="bg-slate-50 font-bold border-b border-slate-900"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Operating Profit before WC</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.opProfit || 0).toLocaleString('en-IN')}</td>)}</tr>
                                  <tr className="bg-slate-100"><td colSpan={6} className="p-3 text-[10px] font-bold uppercase text-primary">B. Cash Flow from Financing Activities</td></tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Loan Repaid (Principal)</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.loanRepayment || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Add: Opening Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.openingCash || 0).toLocaleString()}</td>)}</tr>
-                                 <tr className="bg-[#001F3D] text-white font-bold"><td className="p-4 text-[11px] uppercase border-r border-white/20">Closing Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[11px] text-right border-r border-white/20">₹ {(c.closingCash || 0).toLocaleString()}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">- Loan Repaid (Principal)</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.loanRepayment || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="border-b border-slate-100"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Add: Opening Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[10px] text-right border-r border-slate-200">{(c.openingCash || 0).toLocaleString('en-IN')}</td>)}</tr>
+                                 <tr className="bg-[#001F3D] text-white font-bold"><td className="p-4 text-[11px] uppercase border-r border-white/20">Closing Cash Balance</td>{calculations.cashFlow.map(c => <td key={c.year} className="p-4 text-[11px] text-right border-r border-white/20">₹ {(c.closingCash || 0).toLocaleString('en-IN')}</td>)}</tr>
                               </tbody>
                            </table>
                         </div>
@@ -1627,10 +1627,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-6">
                            <p className="text-xs font-bold uppercase text-slate-500">Method 1: 75% of Working Capital Gap</p>
                            <div className="space-y-4">
-                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.targetTurnover * 12 * 0.25 || 0).toLocaleString()}</span></div>
-                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>B. Current Liabilities (Excl. Bank)</span> <span>₹ {(calculations.workingCapitalValue * 0.3 || 0).toLocaleString()}</span></div>
-                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {((calculations.targetTurnover * 12 * 0.25 || 0) - (calculations.workingCapitalValue * 0.3 || 0)).toLocaleString()}</span></div>
-                              <div className="flex justify-between pt-4 text-lg font-display font-bold uppercase text-[#001F3D]"><span>D. Maximum Permissible Bank Finance (75% of C)</span> <span>₹ {(calculations.mpbf || 0).toLocaleString()}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.targetTurnover * 12 * 0.25 || 0).toLocaleString('en-IN')}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>B. Current Liabilities (Excl. Bank)</span> <span>₹ {(calculations.workingCapitalValue * 0.3 || 0).toLocaleString('en-IN')}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {((calculations.targetTurnover * 12 * 0.25 || 0) - (calculations.workingCapitalValue * 0.3 || 0)).toLocaleString('en-IN')}</span></div>
+                              <div className="flex justify-between pt-4 text-lg font-display font-bold uppercase text-[#001F3D]"><span>D. Maximum Permissible Bank Finance (75% of C)</span> <span>₹ {(calculations.mpbf || 0).toLocaleString('en-IN')}</span></div>
                            </div>
                         </Card>
                      </div>
@@ -1648,10 +1648,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                  {calculations.loanRepayment.map(r => (
                                    <tr key={r.year} className="border-b border-slate-100">
                                       <td className="p-4 text-[10px] font-bold uppercase border-r border-slate-200">{r.year}</td>
-                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.opening || 0).toLocaleString()}</td>
-                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.interest || 0).toLocaleString()}</td>
-                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.principal || 0).toLocaleString()}</td>
-                                      <td className="p-4 text-[10px] font-bold text-right">{(r.closing || 0).toLocaleString()}</td>
+                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.opening || 0).toLocaleString('en-IN')}</td>
+                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.interest || 0).toLocaleString('en-IN')}</td>
+                                      <td className="p-4 text-[10px] text-right border-r border-slate-200">{(r.principal || 0).toLocaleString('en-IN')}</td>
+                                      <td className="p-4 text-[10px] font-bold text-right">{(r.closing || 0).toLocaleString('en-IN')}</td>
                                    </tr>
                                  ))}
                               </tbody>
@@ -1689,7 +1689,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             <td className="p-4"><Input placeholder="e.g. VMC HAAS VF-2" className="h-10 bg-transparent border-none text-[11px] font-bold uppercase" value={item.name || ''} onChange={(e)=>updateMachineryItem(idx, 'name', e.target.value)} /></td>
                             <td className="p-4"><Input type="number" className="h-10 bg-transparent border-none text-center text-xs font-bold" value={item.qty ?? 1} onChange={(e)=>updateMachineryItem(idx, 'qty', e.target.value)} /></td>
                             <td className="p-4"><Input type="number" className="h-10 bg-transparent border-none text-right text-xs font-display font-bold" value={item.rate ?? 0} onChange={(e)=>updateMachineryItem(idx, 'rate', e.target.value)} /></td>
-                            <td className="p-4 text-right"><span className="text-[11px] font-display font-bold text-[#001F3D]">₹ {(item.total ?? 0).toLocaleString()}</span></td>
+                            <td className="p-4 text-right"><span className="text-[11px] font-display font-bold text-[#001F3D]">₹ {(item.total ?? 0).toLocaleString('en-IN')}</span></td>
                             <td className="p-4"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100" onClick={() => setMachineryItems(machineryItems.filter((_, i)=>i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button></td>
                          </tr>
                        ))}
@@ -1699,7 +1699,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
           </ScrollArea>
           <DialogFooter className="p-8 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
-             <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Gross Quotation Value</p><p className="text-2xl font-display font-bold text-primary">₹ {(financials.investMachinery || 0).toLocaleString()}</p></div>
+             <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Gross Quotation Value</p><p className="text-2xl font-display font-bold text-primary">₹ {(financials.investMachinery || 0).toLocaleString('en-IN')}</p></div>
              <Button className="h-12 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl" onClick={() => setIsMachineryBreakupOpen(false)}>Commit Breakup Matrix <ChevronRight className="h-3.5 w-3.5 ml-2" /></Button>
           </DialogFooter>
         </DialogContent>

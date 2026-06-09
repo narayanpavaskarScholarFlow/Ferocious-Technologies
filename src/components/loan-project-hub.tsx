@@ -127,6 +127,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [zoom, setZoom] = useState(1);
   const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
   const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
+  const [pendingDrawingFile, setPendingDrawingFile] = useState<string | undefined>();
 
   // Firestore Persistence Node
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
@@ -195,8 +196,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const [financials, setFinancials] = useState({
     loanROI: 9.5,
-    loanTenure: 84, // 7 Years per image
-    loanMoratorium: 3, // 3 Months per image
+    loanTenure: 84, // 7 Years
+    loanMoratorium: 3, // 3 Months
     expenseRent: 150000,
     expensePersonnel: 300000, 
     expensePower: 100000,
@@ -243,7 +244,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     if (!silent) toast({ title: "Strategy Matrix Committed", description: "All strategic nodes synchronized with master ledger." });
   }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, strategyRef, toast]);
 
-  // Financial Engine
+  // Financial Engine with 90/10 Logic and Sequential EMI
   const calculations = useMemo(() => {
     const fixedAssetsAtCost = (financials.investMachinery || 0) + 
                             (financials.investMoulds || 0) + 
@@ -260,12 +261,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                            (financials.expenseMaintenance || 0) + 
                            (financials.expenseConsumables || 0);
     
+    // Working Capital Reserve = 3 months OpEx (without EMI)
     const workingCapitalValue = monthlyOpExBase * 3;
+    
+    // Total Project Cost = CAPEX + WC Reserve
     const totalProjectCost = fixedAssetsAtCost + workingCapitalValue;
     
-    const termLoan = fixedAssetsAtCost * 0.9;
-    const wcLoan = workingCapitalValue * 0.9;
-    const totalLoanAmt = termLoan + wcLoan;
+    // 90/10 Funding Protocol
+    const totalLoanAmt = totalProjectCost * 0.9;
     const entrepreneurAmt = totalProjectCost * 0.1;
 
     const monthlyRate = (financials.loanROI / 100) / 12;
@@ -273,6 +276,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const moratorium = financials.loanMoratorium;
     const activeRepaymentTenure = totalTenure - moratorium;
 
+    // EMI Calculation on 90% loan
     let emi = 0;
     if (activeRepaymentTenure > 0 && monthlyRate > 0) {
       emi = (totalLoanAmt * monthlyRate * Math.pow(1 + monthlyRate, activeRepaymentTenure)) / (Math.pow(1 + monthlyRate, activeRepaymentTenure) - 1);
@@ -304,8 +308,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     for (let y = 1; y <= 5; y++) {
       const growth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
       const revMultiplier = Math.pow(1 + (growth / 100), y - 1);
+      
+      // Ramp-up logic: Year 1 at 70% target, then scaling
       const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.7) : (totalCapacityAnnualRevenue * revMultiplier);
+      
+      // Expenses = Base OpEx + Calculated EMI
       const yearOpEx = (monthlyOpExBase + emi) * 12 * (1 + (y * 0.05));
+      
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
@@ -358,8 +367,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       workingCapitalValue,
       totalProjectCost,
       loanAmt: totalLoanAmt,
-      termLoan,
-      wcLoan,
       entrepreneurAmt,
       emi,
       projections,
@@ -434,12 +441,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              </div>
           </div>
         );
-      case 'aboutUs':
-        return <Textarea className="bg-slate-50 border-none min-h-[300px] rounded-2xl p-6" value={foundationalData.aboutUs} onChange={(e)=>setFormData({...foundationalData, aboutUs: e.target.value})} />;
-      case 'vision':
-        return <Textarea className="bg-slate-50 border-none min-h-[150px] rounded-2xl p-6 italic" value={foundationalData.vision} onChange={(e)=>setFormData({...foundationalData, vision: e.target.value})} />;
-      case 'mission':
-        return <Textarea className="bg-slate-50 border-none min-h-[150px] rounded-2xl p-6 italic" value={foundationalData.mission} onChange={(e)=>setFormData({...foundationalData, mission: e.target.value})} />;
       case 'roadMapNextFiveYears':
         return (
           <div className="space-y-10 animate-in fade-in duration-500">
@@ -468,13 +469,39 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              <div className="flex justify-between items-center"><h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Asset Matrix</h3><Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5 mr-2" /> Edit Breakup</Button></div>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Machinery</Label><Input readOnly className="bg-slate-100 h-11" value={financials.investMachinery.toLocaleString()} /></div>
-                <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Moulds</Label><Input type="number" className="h-11" value={financials.investMoulds} onChange={(e)=>setFinancials({...financials,investMoulds:Number(e.target.value)})} /></div>
+                <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Moulds (CAPEX)</Label><Input type="number" className="h-11" value={financials.investMoulds} onChange={(e)=>setFinancials({...financials,investMoulds:Number(e.target.value)})} /></div>
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Civil</Label><Input type="number" className="h-11" value={financials.investCivil} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></div>
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Electrical</Label><Input type="number" className="h-11" value={financials.investElectrical} onChange={(e)=>setFinancials({...financials,investElectrical:Number(e.target.value)})} /></div>
              </div>
           </div>
         );
-      default: return <div className="p-20 text-center opacity-30 uppercase font-bold text-xs">Select Node to Initialize Editor</div>;
+      case 'productLine':
+        return (
+          <div className="space-y-10">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               {proprietaryProducts.map((p, idx) => (
+                 <Card key={p.id} className="p-6 bg-slate-50 border rounded-2xl relative">
+                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-slate-300 hover:text-red-500" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <Input placeholder="Name" value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} />
+                        <Input placeholder="Market" value={p.market} onChange={(e)=>updateProduct(idx,'market',e.target.value)} />
+                      </div>
+                      <div className="space-y-4">
+                        <Input placeholder="Price (₹)" value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} />
+                        <Input placeholder="Target Qty" value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} />
+                      </div>
+                    </div>
+                 </Card>
+               ))}
+             </div>
+             <div className="flex gap-4">
+               <Button variant="outline" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Append Product</Button>
+               <Button className="bg-[#001F3D] text-white" onClick={() => handleSaveStrategy()}>Commit Product Matrix</Button>
+             </div>
+          </div>
+        );
+      default: return <Textarea className="bg-slate-50 border-none min-h-[300px] rounded-2xl p-6" value={(foundationalData as any)[activeEditingSection]} onChange={(e)=>setFormData({...foundationalData, [activeEditingSection]: e.target.value})} />;
     }
   };
 
@@ -548,7 +575,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  ))}
               </div>
-              <div className="pt-8 border-t flex justify-center"><Button className="h-14 px-12 bg-[#001F3D] text-white rounded-2xl font-bold uppercase text-[10px]" onClick={()=>handleSaveStrategy()}><Save className="h-4 w-4 mr-2" /> Commit Matrix</Button></div>
+              <div className="pt-8 border-t flex justify-center"><Button className="h-14 px-12 bg-[#001F3D] text-white rounded-2xl font-bold uppercase text-[10px]" onClick={()=>handleSaveStrategy()}><Save className="h-4 w-4 mr-2" /> Commit Matrix to Ledger</Button></div>
            </Card>
         </TabsContent>
 
@@ -561,7 +588,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Executive Summary snapshot</h3>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Snap-Node v2.4</p>
                  </div>
-                 <Badge className="bg-[#001F3D] text-white h-8 px-6 uppercase font-bold text-[10px] tracking-widest">Live_Matrix_Active</Badge>
+                 <Badge className="bg-[#001F3D] text-white h-8 px-6 uppercase font-bold text-[10px] tracking-widest">90% Bank / 10% Owner</Badge>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
@@ -574,11 +601,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </div>
                  <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl space-y-4">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Term Loan Matrix</p>
-                    <p className="text-3xl font-display font-bold text-emerald-600">₹ {calculations.termLoan.toLocaleString('en-IN')}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Monthly Debt Service (EMI)</p>
+                    <p className="text-3xl font-display font-bold text-emerald-600">₹ {calculations.emi.toLocaleString('en-IN', {maximumFractionDigits:0})}</p>
                     <div className="flex justify-between pt-4 border-t border-slate-200 items-center">
-                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">WC Loan (90%)</span>
-                       <span className="text-xs font-bold text-[#001F3D]">₹ {calculations.wcLoan.toLocaleString('en-IN')}</span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Calculated on 90% Loan</span>
+                       <span className="text-xs font-bold text-[#001F3D]">{financials.loanTenure / 12} Years</span>
                     </div>
                  </div>
                  <div className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-3xl space-y-6 relative overflow-hidden group">
@@ -586,7 +613,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="relative z-10">
                       <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">Average DSCR</p>
                       <p className="text-5xl font-display font-bold tracking-tighter">{calculations.avgDSCR}</p>
-                      <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest mt-4">Calculated over 5-year repayment window</p>
+                      <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest mt-4">Profit + Depr + Int / Installment</p>
                     </div>
                  </div>
               </div>
@@ -669,13 +696,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </div>
 
-                 {/* Section 01: Executive Summary (Pixel-Perfect implementation of provided image) */}
+                 {/* Section 01: Executive Summary */}
                  {checklist.executiveSummary && (
                    <div className="space-y-12 page-break">
                       <h2 className="text-4xl font-display font-bold text-[#8B5CF6] tracking-tight">Executive Summary</h2>
                       
                       <div className="space-y-10">
-                        {/* Business Details Sub-matrix */}
+                        {/* Business Details Matrix */}
                         <div className="space-y-6">
                            <div className="border-b-2 border-[#3B82F6] pb-2">
                               <h3 className="text-xl font-display font-bold text-[#3B82F6] uppercase tracking-tight">Business Details</h3>
@@ -690,23 +717,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Business Industry</span><span className="text-sm text-slate-900 font-medium">{foundationalData.businessIndustry}</span></div>
                                     <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Nature of Business</span><span className="text-sm text-slate-900 font-medium">{foundationalData.natureOfBusiness}</span></div>
                                  </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-20 mt-8">
                                  <div className="space-y-4">
                                     <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Legal Constitution</span><span className="text-sm text-slate-900 font-medium">{foundationalData.legalConstitution}</span></div>
-                                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Address</span><span className="text-sm text-slate-900 font-medium whitespace-pre-wrap">{foundationalData.businessAddress}</span></div>
+                                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Location</span><span className="text-sm text-slate-900 font-medium">{foundationalData.location}</span></div>
                                  </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-20 mt-8">
-                                 <div className="space-y-4">
-                                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Pin Code</span><span className="text-sm text-slate-900 font-medium">{foundationalData.pinCode}</span></div>
-                                    <div className="flex flex-col"><span className="text-sm font-medium text-slate-700">Contact Phone</span><span className="text-sm text-slate-900 font-medium">{foundationalData.contactPhone}</span></div>
-                                 </div>
+                              <div className="flex flex-col mt-4">
+                                 <span className="text-sm font-medium text-slate-700">Address</span>
+                                 <span className="text-sm text-slate-900 font-medium whitespace-pre-wrap">{foundationalData.businessAddress}</span>
                               </div>
                            </div>
                         </div>
 
-                        {/* Project & Loan Details Sub-matrix */}
+                        {/* Project & Loan Details Matrix */}
                         <div className="space-y-6 pt-10">
                            <div className="border-b-2 border-[#3B82F6] pb-2">
                               <h3 className="text-xl font-display font-bold text-[#3B82F6] uppercase tracking-tight">Project & Loan Details</h3>
@@ -717,7 +740,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                  <span className="text-sm font-bold text-slate-900">₹ {calculations.fixedCapital.toLocaleString('en-IN')}</span>
                               </div>
                               <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                                 <span className="text-sm font-medium text-slate-700">Working Capital to be Invested</span>
+                                 <span className="text-sm font-medium text-slate-700">Working Capital Reserve (3m)</span>
                                  <span className="text-sm font-bold text-slate-900">₹ {calculations.workingCapitalValue.toLocaleString('en-IN')}</span>
                               </div>
                               <div className="flex justify-between items-center py-1 border-b-2 border-slate-900">
@@ -726,17 +749,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                               
                               <div className="pt-8 space-y-3">
-                                 <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                                    <span className="text-sm font-medium text-slate-700">Term Loan</span>
-                                    <span className="text-sm font-bold text-slate-900">₹ {calculations.termLoan.toLocaleString('en-IN')}</span>
-                                 </div>
-                                 <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                                    <span className="text-sm font-medium text-slate-700">Working Capital Loan</span>
-                                    <span className="text-sm font-bold text-slate-900">₹ {calculations.wcLoan.toLocaleString('en-IN')}</span>
-                                 </div>
                                  <div className="flex justify-between items-center py-1 border-b-2 border-slate-900">
-                                    <span className="text-sm font-bold text-slate-900 uppercase">Total Loan Amount Needed</span>
-                                    <span className="text-sm font-bold text-slate-900">₹ {calculations.loanAmt.toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-bold text-slate-900 uppercase">Bank Loan (90%)</span>
+                                    <span className="text-sm font-bold text-emerald-600">₹ {calculations.loanAmt.toLocaleString('en-IN')}</span>
+                                 </div>
+                                 <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                                    <span className="text-sm font-medium text-slate-700">Entrepreneur Amount (10%)</span>
+                                    <span className="text-sm font-bold text-slate-900">₹ {calculations.entrepreneurAmt.toLocaleString('en-IN')}</span>
                                  </div>
                               </div>
 
@@ -745,15 +764,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     <span className="text-sm font-medium text-slate-700">Loan Duration</span>
                                     <span className="text-sm font-bold text-slate-900">{financials.loanTenure / 12} Years</span>
                                  </div>
-                                 <div className="flex justify-between items-center border-b border-slate-100 py-1">
-                                    <span className="text-sm font-medium text-slate-700">Moratorium Period</span>
-                                    <span className="text-sm font-bold text-slate-900">{financials.loanMoratorium} months</span>
-                                 </div>
                                  <div className="flex justify-between items-center border-b-2 border-slate-900 py-1">
-                                    <span className="text-sm font-bold text-slate-900 uppercase">Type of Loan Needed</span>
-                                    <span className="text-sm font-bold text-slate-900 uppercase">{foundationalData.typeOfLoanNeeded}</span>
-                                 </div>
-                                 <div className="flex justify-between items-center py-1">
                                     <span className="text-sm font-bold text-slate-900 uppercase">Average DSCR</span>
                                     <span className="text-sm font-bold text-[#3B82F6]">{calculations.avgDSCR}</span>
                                  </div>
@@ -764,11 +775,88 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </div>
                  )}
 
-                 {/* Sections 02-12 follow existing implementation... */}
-                 {checklist.vision && <div className="space-y-6 page-break">
-                    <h3 className="text-xl font-bold uppercase border-l-4 border-primary pl-4">Our Vision</h3>
-                    <p className="text-sm text-slate-500 italic">"{foundationalData.vision}"</p>
-                 </div>}
+                 {/* Sections 03 & 03B: Catalogues */}
+                 {checklist.productLine && (
+                   <div className="space-y-12 page-break">
+                      <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix</h3></div>
+                      <div className="grid grid-cols-3 gap-10">
+                         {proprietaryProducts.map(p => (
+                            <div key={p.id} className="flex flex-col gap-4">
+                               <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden border bg-white shadow-sm flex items-center justify-center p-4">
+                                  {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-10 w-10 text-slate-100" />}
+                               </div>
+                               <div>
+                                  <p className="text-xs font-bold text-slate-900 uppercase">{p.name}</p>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">₹ {p.price} / Unit</p>
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                      <div className="pt-10">
+                        <table className="w-full text-left border-2 border-slate-900">
+                          <thead className="bg-slate-50 border-b-2 border-slate-900">
+                            <tr>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 w-12">Si No.</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900">Part Name</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-right">Price Per Part (₹)</th>
+                              <th className="p-3 text-[9px] font-bold uppercase text-right">Target annual qty</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {proprietaryProducts.map((p, idx) => (
+                              <tr key={p.id} className="border-b border-slate-200 last:border-0">
+                                <td className="p-3 text-xs border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
+                                <td className="p-3 text-xs border-r border-slate-200 font-bold uppercase">{p.name}</td>
+                                <td className="p-3 text-xs border-r border-slate-200 text-right font-display">{parseFloat(p.price).toLocaleString('en-IN')}</td>
+                                <td className="p-3 text-xs text-right font-display">{p.annualTargetQty}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                   </div>
+                 )}
+
+                 {checklist.services && (
+                   <div className="space-y-12 page-break">
+                      <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03B</div><h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Technical Services</h3></div>
+                      <div className="grid grid-cols-3 gap-10">
+                         {industrialServices.map(s => (
+                            <div key={s.id} className="flex flex-col gap-4">
+                               <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden border bg-white shadow-sm flex items-center justify-center p-4">
+                                  {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-10 w-10 text-slate-100" />}
+                               </div>
+                               <div>
+                                  <p className="text-xs font-bold text-slate-900 uppercase">{s.name}</p>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">₹ {s.price} / Node</p>
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                      <div className="pt-10">
+                        <table className="w-full text-left border-2 border-slate-900">
+                          <thead className="bg-slate-50 border-b-2 border-slate-900">
+                            <tr>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 w-12">Si No.</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900">Service Identity</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-right">Price Per Unit (₹)</th>
+                              <th className="p-3 text-[9px] font-bold uppercase text-right">Target annual qty</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {industrialServices.map((s, idx) => (
+                              <tr key={s.id} className="border-b border-slate-200 last:border-0">
+                                <td className="p-3 text-xs border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
+                                <td className="p-3 text-xs border-r border-slate-200 font-bold uppercase">{s.name}</td>
+                                <td className="p-3 text-xs border-r border-slate-200 text-right font-display">{parseFloat(s.price).toLocaleString('en-IN')}</td>
+                                <td className="p-3 text-xs text-right font-display">{s.annualTargetQty}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                   </div>
+                 )}
 
                  {checklist.roadMapNextFiveYears && (
                    <div className="space-y-8 pt-20 page-break">
@@ -830,7 +918,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
         <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col">
           <DialogHeader className="p-4 bg-slate-900/50 border-b flex items-center justify-between shrink-0"><DialogTitle className="text-white uppercase font-bold text-sm">Blueprint Viewer</DialogTitle><Button variant="ghost" size="icon" onClick={()=>setIsZoomDialogOpen(false)} className="text-white"><X className="h-6 w-6" /></Button></DialogHeader>
-          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto"><img src={pendingDrawingFile} alt="" className="max-w-full max-h-full object-contain" /></div>
+          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto">{pendingDrawingFile && <img src={pendingDrawingFile} alt="" className="max-w-full max-h-full object-contain" />}</div>
         </DialogContent>
       </Dialog>
     </div>

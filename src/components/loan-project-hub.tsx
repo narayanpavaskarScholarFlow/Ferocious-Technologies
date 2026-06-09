@@ -971,9 +971,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden border bg-white shadow-sm flex items-center justify-center p-4">
                                   {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-10 w-10 text-slate-100" />}
                                </div>
-                               <div>
-                                  <p className="text-xs font-bold text-slate-900 uppercase">{p.name}</p>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">₹ {p.price} / Unit</p>
+                               <div className="px-2">
+                                  <p className="text-[11px] font-bold text-slate-900 uppercase leading-tight line-clamp-1">{p.name}</p>
+                                  <div className="flex justify-between items-center mt-2 border-t border-slate-100 pt-2">
+                                     <div className="flex flex-col">
+                                        <span className="text-[7px] text-slate-400 font-bold uppercase tracking-tighter">Price (₹)</span>
+                                        <span className="text-[10px] font-bold text-primary">₹ {parseFloat(p.price).toLocaleString('en-IN')}</span>
+                                     </div>
+                                     <div className="flex flex-col items-end">
+                                        <span className="text-[7px] text-slate-400 font-bold uppercase tracking-tighter">Target Qty</span>
+                                        <span className="text-[10px] font-bold text-[#001F3D]">{p.annualTargetQty}</span>
+                                     </div>
+                                  </div>
                                </div>
                             </div>
                          ))}
@@ -982,18 +991,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <table className="w-full text-left border-2 border-slate-900">
                           <thead className="bg-slate-50 border-b-2 border-slate-900">
                             <tr>
-                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 w-12">Si No.</th>
-                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900">Part Name</th>
-                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-right">Price Per Part (₹)</th>
-                              <th className="p-3 text-[9px] font-bold uppercase text-right">Target annual qty</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 w-12 text-[#001F3D]">Si No.</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-[#001F3D]">Part Name</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-right text-[#001F3D]">Price (₹)</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-slate-900 text-right text-[#001F3D]">Target annual qty</th>
                             </tr>
                           </thead>
                           <tbody>
                             {proprietaryProducts.map((p, idx) => (
-                              <tr key={p.id} className="border-b border-slate-200 last:border-0">
-                                <td className="p-3 text-xs border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
-                                <td className="p-3 text-xs border-r border-slate-200 font-bold uppercase">{p.name}</td>
-                                <td className="p-3 text-xs border-r border-slate-200 text-right font-display">{parseFloat(p.price).toLocaleString('en-IN')}</td>
+                              <tr key={p.id} className="border-b border-slate-900 last:border-0">
+                                <td className="p-3 text-xs border-r border-slate-900 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
+                                <td className="p-3 text-xs border-r border-slate-900 font-bold uppercase">{p.name}</td>
+                                <td className="p-3 text-xs border-r border-slate-900 text-right font-display">{parseFloat(p.price).toLocaleString('en-IN')}</td>
                                 <td className="p-3 text-xs text-right font-display">{p.annualTargetQty}</td>
                               </tr>
                             ))}
@@ -1012,9 +1021,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden border bg-white shadow-sm flex items-center justify-center p-4">
                                   {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-10 w-10 text-slate-100" />}
                                </div>
-                               <div>
-                                  <p className="text-xs font-bold text-slate-900 uppercase">{s.name}</p>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">₹ {s.price} / Node</p>
+                               <div className="px-2">
+                                  <p className="text-[11px] font-bold text-slate-900 uppercase leading-tight line-clamp-1">{s.name}</p>
+                                  <div className="flex justify-between items-center mt-2 border-t border-slate-100 pt-2">
+                                     <div className="flex flex-col">
+                                        <span className="text-[7px] text-slate-400 font-bold uppercase tracking-tighter">Price (₹)</span>
+                                        <span className="text-[10px] font-bold text-primary">₹ {parseFloat(s.price).toLocaleString('en-IN')}</span>
+                                     </div>
+                                     <div className="flex flex-col items-end">
+                                        <span className="text-[7px] text-slate-400 font-bold uppercase tracking-tighter">Target Node</span>
+                                        <span className="text-[10px] font-bold text-[#001F3D]">{s.annualTargetQty}</span>
+                                     </div>
+                                  </div>
                                </div>
                             </div>
                          ))}
@@ -1023,18 +1041,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <table className="w-full text-left border-2 border-slate-900">
                           <thead className="bg-slate-50 border-b-2 border-slate-900">
                             <tr>
-                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 w-12">Si No.</th>
-                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900">Service Identity</th>
-                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-right">Price Per Unit (₹)</th>
-                              <th className="p-3 text-[9px] font-bold uppercase text-right">Target annual qty</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 w-12 text-[#001F3D]">Si No.</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-[#001F3D]">Service Identity</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-r border-slate-900 text-right text-[#001F3D]">Rate (₹)</th>
+                              <th className="p-3 text-[9px] font-bold uppercase border-slate-900 text-right text-[#001F3D]">Target Load</th>
                             </tr>
                           </thead>
                           <tbody>
                             {industrialServices.map((s, idx) => (
-                              <tr key={s.id} className="border-b border-slate-200 last:border-0">
-                                <td className="p-3 text-xs border-r border-slate-200">{(idx + 1).toString().padStart(2, '0')}</td>
-                                <td className="p-3 text-xs border-r border-slate-200 font-bold uppercase">{s.name}</td>
-                                <td className="p-3 text-xs border-r border-slate-200 text-right font-display">{parseFloat(s.price).toLocaleString('en-IN')}</td>
+                              <tr key={s.id} className="border-b border-slate-900 last:border-0">
+                                <td className="p-3 text-xs border-r border-slate-900 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
+                                <td className="p-3 text-xs border-r border-slate-900 font-bold uppercase">{s.name}</td>
+                                <td className="p-3 text-xs border-r border-slate-900 text-right font-display">{parseFloat(s.price).toLocaleString('en-IN')}</td>
                                 <td className="p-3 text-xs text-right font-display">{s.annualTargetQty}</td>
                               </tr>
                             ))}

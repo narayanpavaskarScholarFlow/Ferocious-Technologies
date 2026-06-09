@@ -572,6 +572,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 </div>
               ))}
             </div>
+            <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
+              <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
+                <Save className="h-5 w-5" /> Commit Matrix to Ledger
+              </Button>
+            </div>
           </div>
         );
       case 'services':
@@ -600,6 +605,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 text-slate-300 hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_, idx)=>idx !== i))}><Trash2 className="h-3 w-3" /></Button>
                 </div>
               ))}
+            </div>
+            <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
+              <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
+                <Save className="h-5 w-5" /> Commit Matrix to Ledger
+              </Button>
             </div>
           </div>
         );
@@ -930,6 +940,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  ))}
               </div>
+              <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
+                <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
+                  <Save className="h-5 w-5" /> Commit Matrix to Ledger
+                </Button>
+              </div>
            </Card>
 
            <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
@@ -966,6 +981,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setIndustrialServices(industrialServices.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                  ))}
+              </div>
+              <div className="pt-10 flex justify-center border-t border-slate-100 mt-10">
+                <Button onClick={() => handleSaveStrategy()} className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3">
+                  <Save className="h-5 w-5" /> Commit Matrix to Ledger
+                </Button>
               </div>
            </Card>
         </TabsContent>
@@ -1345,7 +1365,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         {checklist.productLine && proprietaryProducts.length > 0 && (
                           <div className="space-y-8">
                              <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-primary border-l-4 border-primary pl-4">Proprietary Product Line</h4>
-                             <div className="grid grid-cols-3 gap-8">
+                             <div className="grid grid-cols-4 gap-8">
                                 {proprietaryProducts.map(p => (
                                   <div key={p.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
                                      <div className="aspect-video relative bg-white flex items-center justify-center p-4">
@@ -1353,7 +1373,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                      </div>
                                      <div className="p-5 space-y-2">
                                         <p className="text-[11px] font-bold text-[#001F3D] uppercase">{p.name}</p>
-                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.annualTargetQty} Projected Units / Year</p>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.annualTargetQty} Units/Year</p>
                                      </div>
                                   </div>
                                 ))}
@@ -1387,7 +1407,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         {checklist.services && industrialServices.length > 0 && (
                           <div className="space-y-8 pt-8">
                              <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-600 border-l-4 border-emerald-500 pl-4">Industrial Technical Services</h4>
-                             <div className="grid grid-cols-3 gap-8">
+                             <div className="grid grid-cols-4 gap-8">
                                 {industrialServices.map(s => (
                                   <div key={s.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col bg-slate-50/50">
                                      <div className="aspect-video relative bg-white flex items-center justify-center p-4">
@@ -1395,8 +1415,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                      </div>
                                      <div className="p-5 space-y-2">
                                         <p className="text-[11px] font-bold text-[#001F3D] uppercase">{s.name}</p>
-                                        <p className="text-[10px] text-slate-500 line-clamp-2">{s.description}</p>
-                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2">{s.annualTargetQty} Projected Units / Year</p>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2">{s.annualTargetQty} Units/Year</p>
                                      </div>
                                   </div>
                                 ))}

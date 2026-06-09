@@ -49,7 +49,8 @@ import {
   Info,
   BarChart3,
   LineChart as LineChartIcon,
-  ClipboardList
+  ClipboardList,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -136,6 +137,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   // 01. Input Matrix State
   const [checklist, setChecklist] = useState<Record<string, boolean>>({
     executiveSummary: true,
+    projectDetails: true,
+    meansOfFinance: true,
     aboutUs: true,
     vision: true,
     mission: true,
@@ -195,7 +198,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   ]);
 
   const [financials, setFinancials] = useState({
-    loanROI: 9.5,
+    loanROI: 10.75,
     loanTenure: 84, // 7 Years
     loanMoratorium: 3, // 3 Months
     expenseRent: 150000,
@@ -309,12 +312,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const growth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
       const revMultiplier = Math.pow(1 + (growth / 100), y - 1);
       
-      // Ramp-up logic: Year 1 at 70% target, then scaling
       const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.7) : (totalCapacityAnnualRevenue * revMultiplier);
-      
-      // Expenses = Base OpEx + Calculated EMI
       const yearOpEx = (monthlyOpExBase + emi) * 12 * (1 + (y * 0.05));
-      
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
@@ -605,7 +604,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <p className="text-3xl font-display font-bold text-emerald-600">₹ {calculations.emi.toLocaleString('en-IN', {maximumFractionDigits:0})}</p>
                     <div className="flex justify-between pt-4 border-t border-slate-200 items-center">
                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Calculated on 90% Loan</span>
-                       <span className="text-xs font-bold text-[#001F3D]">{financials.loanTenure / 12} Years</span>
+                       <span className="text-xs font-bold text-[#001F3D]">{financials.loanROI}% ROI</span>
                     </div>
                  </div>
                  <div className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-3xl space-y-6 relative overflow-hidden group">
@@ -613,11 +612,88 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="relative z-10">
                       <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">Average DSCR</p>
                       <p className="text-5xl font-display font-bold tracking-tighter">{calculations.avgDSCR}</p>
-                      <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest mt-4">Profit + Depr + Int / Installment</p>
+                      <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest mt-4">Debt Service Coverage Ratio</p>
                     </div>
                  </div>
               </div>
            </Card>
+
+           {/* Project Detail & Cost of Finance Matrix */}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
+                <h3 className="text-xl font-display font-bold text-[#8B5CF6] uppercase tracking-tight">Project Details</h3>
+                <div className="flex justify-between items-center border-b pb-4">
+                   <span className="text-sm font-bold text-[#3B82F6] uppercase">Cost of Project</span>
+                   <span className="text-lg font-display font-bold text-[#3B82F6]">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="space-y-4">
+                   <p className="text-xs font-bold text-slate-900 uppercase">Project Cost BreakUp</p>
+                   <table className="w-full text-left border-collapse">
+                      <tbody className="text-xs">
+                         <tr className="border-b border-slate-50"><td className="py-2 text-slate-500 font-medium">Machinery</td><td className="py-2 text-right font-bold text-slate-700">₹ {financials.investMachinery.toLocaleString('en-IN')}</td></tr>
+                         <tr className="border-b border-slate-50"><td className="py-2 text-slate-500 font-medium">Moulds</td><td className="py-2 text-right font-bold text-slate-700">₹ {financials.investMoulds.toLocaleString('en-IN')}</td></tr>
+                         <tr className="border-b border-slate-50"><td className="py-2 text-slate-500 font-medium">Civil & Setup</td><td className="py-2 text-right font-bold text-slate-700">₹ {(financials.investCivil + financials.investElectrical).toLocaleString('en-IN')}</td></tr>
+                         <tr className="border-b border-slate-50"><td className="py-2 text-slate-500 font-medium">Other Fixed Assets</td><td className="py-2 text-right font-bold text-slate-700">₹ {(financials.investFurniture + financials.investSoftware + financials.investSystem + financials.investAdvance).toLocaleString('en-IN')}</td></tr>
+                         <tr><td className="py-2 text-slate-500 font-medium">Working Capital Reserve</td><td className="py-2 text-right font-bold text-slate-700">₹ {calculations.workingCapitalValue.toLocaleString('en-IN')}</td></tr>
+                      </tbody>
+                   </table>
+                </div>
+              </Card>
+
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl space-y-8">
+                <h3 className="text-xl font-display font-bold text-[#8B5CF6] uppercase tracking-tight">Means & Cost of Finance</h3>
+                <div className="border border-slate-900 overflow-hidden rounded-sm">
+                   <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 border-b border-slate-900">
+                         <tr className="text-[9px] font-bold uppercase text-[#3B82F6]">
+                            <th className="p-3 border-r border-slate-900">Source</th>
+                            <th className="p-3 text-center border-r border-slate-900">Share</th>
+                            <th className="p-3 text-right border-r border-slate-900">Amount (₹)</th>
+                            <th className="p-3 text-right">Interest</th>
+                         </tr>
+                      </thead>
+                      <tbody className="text-[10px]">
+                         <tr className="border-b border-slate-200">
+                            <td className="p-3 border-r border-slate-900 font-medium">Own Capital</td>
+                            <td className="p-3 text-center border-r border-slate-900 font-bold">10%</td>
+                            <td className="p-3 text-right border-r border-slate-900 font-bold">{(calculations.entrepreneurAmt).toLocaleString('en-IN')}</td>
+                            <td className="p-3 text-right text-slate-400">N/A</td>
+                         </tr>
+                         <tr className="border-b border-slate-200">
+                            <td className="p-3 border-r border-slate-900 font-medium text-slate-400 italic">Loan from Friends</td>
+                            <td className="p-3 text-center border-r border-slate-900 text-slate-400">0%</td>
+                            <td className="p-3 text-right border-r border-slate-900 text-slate-400">0</td>
+                            <td className="p-3 text-right text-slate-400">N/A</td>
+                         </tr>
+                         <tr className="border-b border-slate-900 font-bold bg-slate-50/30">
+                            <td className="p-3 border-r border-slate-900">Total Own Funds</td>
+                            <td className="p-3 text-center border-r border-slate-900">10%</td>
+                            <td className="p-3 text-right border-r border-slate-900">{(calculations.entrepreneurAmt).toLocaleString('en-IN')}</td>
+                            <td className="p-3 text-right text-slate-400">N/A</td>
+                         </tr>
+                         <tr className="border-b border-slate-200">
+                            <td className="p-3 border-r border-slate-900 font-medium">Term Loan</td>
+                            <td className="p-3 text-center border-r border-slate-900 font-bold">{( (calculations.fixedCapital * 0.9) / calculations.totalProjectCost * 100).toFixed(0)}%</td>
+                            <td className="p-3 text-right border-r border-slate-900 font-bold">{(calculations.fixedCapital * 0.9).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                            <td className="p-3 text-right font-bold text-emerald-600">{financials.loanROI}%</td>
+                         </tr>
+                         <tr className="border-b border-slate-900">
+                            <td className="p-3 border-r border-slate-900 font-medium">Working Capital Limit</td>
+                            <td className="p-3 text-center border-r border-slate-900 font-bold">{( (calculations.workingCapitalValue * 0.9) / calculations.totalProjectCost * 100).toFixed(0)}%</td>
+                            <td className="p-3 text-right border-r border-slate-900 font-bold">{(calculations.workingCapitalValue * 0.9).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                            <td className="p-3 text-right font-bold text-emerald-600">{financials.loanROI}%</td>
+                         </tr>
+                         <tr className="font-bold bg-slate-50/50">
+                            <td className="p-3 border-r border-slate-900 text-right uppercase">Total</td>
+                            <td className="p-3 text-center border-r border-slate-900">100%</td>
+                            <td className="p-3 text-right border-r border-slate-900">{calculations.totalProjectCost.toLocaleString('en-IN')}</td>
+                            <td className="p-3 text-right">---</td>
+                         </tr>
+                      </tbody>
+                   </table>
+                </div>
+              </Card>
+           </div>
 
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-12">
@@ -771,6 +847,116 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                            </div>
                         </div>
+                      </div>
+                   </div>
+                 )}
+
+                 {/* Section: Project Detail (Breakup) */}
+                 {checklist.projectDetails && (
+                   <div className="space-y-12 page-break pt-20">
+                      <h2 className="text-4xl font-display font-bold text-[#8B5CF6] tracking-tight">Project Details</h2>
+                      <div className="flex justify-between items-center border-b-2 border-[#3B82F6] pb-2">
+                        <h3 className="text-xl font-display font-bold text-[#3B82F6] uppercase tracking-tight">Cost of Project</h3>
+                        <span className="text-xl font-display font-bold text-[#3B82F6]">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="space-y-6">
+                        <h4 className="text-lg font-bold text-slate-900 uppercase">Project Cost BreakUp</h4>
+                        <table className="w-full text-left border-2 border-slate-900">
+                          <thead className="bg-slate-50 border-b border-slate-900">
+                            <tr className="text-[10px] font-bold uppercase">
+                              <th className="p-3 border-r border-slate-900">Heads of Expenditure</th>
+                              <th className="p-3 text-right">Amount (₹ Actuals)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-xs">
+                            <tr className="border-b border-slate-300">
+                              <td className="p-3 border-r border-slate-900 font-medium">Machinery & Equipment</td>
+                              <td className="p-3 text-right font-bold">₹ {financials.investMachinery.toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="p-3 border-r border-slate-900 font-medium">Moulds & Tooling (CAPEX)</td>
+                              <td className="p-3 text-right font-bold">₹ {financials.investMoulds.toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="p-3 border-r border-slate-900 font-medium">Civil Works & Interior</td>
+                              <td className="p-3 text-right font-bold">₹ {financials.investCivil.toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="p-3 border-r border-slate-900 font-medium">Electrical Installation</td>
+                              <td className="p-3 text-right font-bold">₹ {financials.investElectrical.toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="p-3 border-r border-slate-900 font-medium">Other Fixed Assets (IT/Furniture)</td>
+                              <td className="p-3 text-right font-bold">₹ {(financials.investFurniture + financials.investSoftware + financials.investSystem + financials.investAdvance).toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr className="bg-slate-50 font-bold border-t-2 border-slate-900">
+                              <td className="p-3 border-r border-slate-900 text-slate-700">Working Capital Reserve (3 Months)</td>
+                              <td className="p-3 text-right text-slate-700">₹ {calculations.workingCapitalValue.toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
+                              <td className="p-3 border-r border-slate-900 uppercase">Total Project Cost</td>
+                              <td className="p-3 text-right">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                   </div>
+                 )}
+
+                 {/* Section: Means & Cost of Finance */}
+                 {checklist.meansOfFinance && (
+                   <div className="space-y-12 page-break pt-20">
+                      <h2 className="text-4xl font-display font-bold text-[#8B5CF6] tracking-tight">Means & Cost of Finance</h2>
+                      <div className="border-2 border-slate-900 overflow-hidden rounded-sm">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-slate-50 border-b-2 border-slate-900">
+                            <tr className="text-[10px] font-bold uppercase text-[#3B82F6]">
+                              <th className="p-4 border-r border-slate-900">Source of Finance</th>
+                              <th className="p-4 text-center border-r border-slate-900 w-24">Share (%)</th>
+                              <th className="p-4 text-right border-r border-slate-900">Amount (₹)</th>
+                              <th className="p-4 text-center w-32">Interest Rate</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-xs">
+                            <tr className="border-b border-slate-300">
+                              <td className="p-4 border-r border-slate-900 font-medium">Own Capital / Promoter Equity</td>
+                              <td className="p-4 text-center border-r border-slate-900 font-bold">10%</td>
+                              <td className="p-4 text-right border-r border-slate-900 font-bold">{(calculations.entrepreneurAmt).toLocaleString('en-IN')}</td>
+                              <td className="p-4 text-center text-slate-400">N/A</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="p-4 border-r border-slate-900 font-medium text-slate-400 italic">Loan from Friends & Family</td>
+                              <td className="p-4 text-center border-r border-slate-900 text-slate-400">0%</td>
+                              <td className="p-4 text-right border-r border-slate-900 text-slate-400">0</td>
+                              <td className="p-4 text-center text-slate-400">N/A</td>
+                            </tr>
+                            <tr className="bg-slate-50 border-b-2 border-slate-900 font-bold">
+                              <td className="p-4 border-r border-slate-900 uppercase text-slate-700">Total Own Funds</td>
+                              <td className="p-4 text-center border-r border-slate-900 text-slate-700">10%</td>
+                              <td className="p-4 text-right border-r border-slate-900 text-slate-700">{(calculations.entrepreneurAmt).toLocaleString('en-IN')}</td>
+                              <td className="p-4 text-center text-slate-400">N/A</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="p-4 border-r border-slate-900 font-medium">Term Loan (Machinery & Fixed Assets)</td>
+                              <td className="p-4 text-center border-r border-slate-900 font-bold">{( (calculations.fixedCapital * 0.9) / calculations.totalProjectCost * 100).toFixed(0)}%</td>
+                              <td className="p-4 text-right border-r border-slate-900 font-bold">{(calculations.fixedCapital * 0.9).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                              <td className="p-4 text-center font-bold text-emerald-600">{financials.loanROI}%</td>
+                            </tr>
+                            <tr className="border-b border-slate-900">
+                              <td className="p-4 border-r border-slate-900 font-medium">Working Capital Limit (Cash Credit)</td>
+                              <td className="p-4 text-center border-r border-slate-900 font-bold">{( (calculations.workingCapitalValue * 0.9) / calculations.totalProjectCost * 100).toFixed(0)}%</td>
+                              <td className="p-4 text-right border-r border-slate-900 font-bold">{(calculations.workingCapitalValue * 0.9).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                              <td className="p-4 text-center font-bold text-emerald-600">{financials.loanROI}%</td>
+                            </tr>
+                            <tr className="bg-slate-100 font-black">
+                              <td className="p-4 border-r border-slate-900 text-right uppercase text-sm">Grand Total</td>
+                              <td className="p-4 text-center border-r border-slate-900 text-sm">100%</td>
+                              <td className="p-4 text-right border-r border-slate-900 text-sm">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td>
+                              <td className="p-4 text-center text-slate-400">---</td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                    </div>
                  )}

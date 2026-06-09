@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -151,6 +152,9 @@ export function ProfileSettings({
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Buffer state for UI settings to allow explicit save
+  const [localUI, setLocalUI] = useState<UISettings>(uiSettings);
+
   // Access Matrix State
   const [selectedMatrixUserId, setSelectedMatrixUserId] = useState<string | null>(null);
   const [matrixPermissions, setMatrixPermissions] = useState<Record<string, PermissionLevel>>({});
@@ -179,6 +183,11 @@ export function ProfileSettings({
       });
     }
   }, [currentUserData]);
+
+  // Sync local UI buffer when prop changes (on component mount or prop update)
+  useEffect(() => {
+    setLocalUI(uiSettings);
+  }, [uiSettings]);
 
   useEffect(() => {
     if (selectedMatrixUserId) {
@@ -212,12 +221,16 @@ export function ProfileSettings({
     }
   };
 
-  const handleUpdateUI = (key: keyof UISettings, value: any) => {
-    const updated = { ...uiSettings, [key]: value };
-    onUpdateUISettings(updated);
+  const updateLocalUIField = (key: keyof UISettings, value: any) => {
+    setLocalUI(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleCommitUISettings = () => {
+    onUpdateUISettings(localUI);
     if (currentUserData) {
-      onSaveUser({ ...currentUserData, uiSettings: updated });
+      onSaveUser({ ...currentUserData, uiSettings: localUI });
     }
+    toast({ title: "UI Architecture Synchronized", description: "Global configuration committed to master ledger." });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,20 +238,20 @@ export function ProfileSettings({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        handleUpdateUI('brandLogo', reader.result as string);
-        toast({ title: "Brand Identity Synchronized", description: "Global logo updated in master settings." });
+        updateLocalUIField('brandLogo', reader.result as string);
+        toast({ title: "Logo Metadata Cached", description: "Click Save Global Protocol to synchronize branding." });
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleDeleteLogo = () => {
-    handleUpdateUI('brandLogo', undefined);
-    toast({ title: "Brand Identity Reset", description: "Logo reverted to system default artifact." });
+    updateLocalUIField('brandLogo', undefined);
+    toast({ title: "Logo Reference Purged", description: "Click Save to reset to system default." });
   };
 
-  const handleUpdateBillingTable = (field: string, value: number) => {
-    const currentBilling = uiSettings.billingTableSettings || {
+  const handleUpdateBillingTableLocal = (field: string, value: number) => {
+    const currentBilling = localUI.billingTableSettings || {
       colWidths: { description: 300, hsn: 100, qty: 80, unit: 100, price: 140, discount: 80, gst: 80, total: 160 },
       rowHeight: 48
     };
@@ -253,12 +266,7 @@ export function ProfileSettings({
       };
     }
 
-    handleUpdateUI('billingTableSettings', updatedBilling);
-  };
-
-  const handleUpdateGlobalSeq = (key: 'woPrefix' | 'woNextNumber', value: any) => {
-    handleUpdateUI(key, value);
-    toast({ title: "Global Sequence Synchronized", description: `Sequence protocol ${key} updated for future nodes.` });
+    updateLocalUIField('billingTableSettings', updatedBilling);
   };
 
   const handleMatrixPermissionUpdate = (nodeId: string, level: PermissionLevel) => {
@@ -330,24 +338,24 @@ export function ProfileSettings({
                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">First Name</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl" value={personalInfo.firstName} onChange={(e)=>setPersonalInfo({...personalInfo, firstName: e.target.value})} />
+                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.firstName} onChange={(e)=>setPersonalInfo({...personalInfo, firstName: e.target.value})} />
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Last Name</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl" value={personalInfo.lastName} onChange={(e)=>setPersonalInfo({...personalInfo, lastName: e.target.value})} />
+                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.lastName} onChange={(e)=>setPersonalInfo({...personalInfo, lastName: e.target.value})} />
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Identity</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl" value={personalInfo.email} onChange={(e)=>setPersonalInfo({...personalInfo, email: e.target.value})} />
+                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.email} onChange={(e)=>setPersonalInfo({...personalInfo, email: e.target.value})} />
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Contact Node</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl" value={personalInfo.phone} onChange={(e)=>setPersonalInfo({...personalInfo, phone: e.target.value})} />
+                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.phone} onChange={(e)=>setPersonalInfo({...personalInfo, phone: e.target.value})} />
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Security Key</Label>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 border-none rounded-xl pr-12" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
+                      <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 border-none rounded-xl pr-12 font-bold" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
                       <button onClick={()=>setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary">
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -482,14 +490,14 @@ export function ProfileSettings({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                   <div className="space-y-8">
                     <div className="space-y-6">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">Base Font Size (px) <span>{uiSettings.fontSize}px</span></Label>
-                      <Slider value={[uiSettings.fontSize]} min={11} max={16} step={1} onValueChange={([v]) => handleUpdateUI('fontSize', v)} />
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">Base Font Size (px) <span>{localUI.fontSize}px</span></Label>
+                      <Slider value={[localUI.fontSize]} min={11} max={16} step={1} onValueChange={([v]) => updateLocalUIField('fontSize', v)} />
                     </div>
                     <div className="space-y-6">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Primary Brand Core</Label>
                       <div className="grid grid-cols-6 gap-3">
                         {THEME_COLORS.map(color => (
-                          <button key={color.value} onClick={() => handleUpdateUI('primaryColor', color.value)} className={cn("h-10 w-full rounded-xl transition-all border-4", uiSettings.primaryColor === color.value ? "border-white ring-2 ring-slate-900" : "border-transparent", color.color)} />
+                          <button key={color.value} onClick={() => updateLocalUIField('primaryColor', color.value)} className={cn("h-10 w-full rounded-xl transition-all border-4", localUI.primaryColor === color.value ? "border-white ring-2 ring-slate-900" : "border-transparent", color.color)} />
                         ))}
                       </div>
                     </div>
@@ -499,7 +507,7 @@ export function ProfileSettings({
                       <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                         <div className="relative group">
                            <div className="h-20 w-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-2 shadow-sm">
-                              <img src={uiSettings.brandLogo || defaultBrandLogo} alt="Corporate Logo" className="h-full w-full object-contain" />
+                              <img src={localUI.brandLogo || defaultBrandLogo} alt="Corporate Logo" className="h-full w-full object-contain" />
                            </div>
                            <input type="file" id="logo-upload" className="hidden" accept="image/*" onChange={handleLogoUpload} />
                            <label htmlFor="logo-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
@@ -509,9 +517,9 @@ export function ProfileSettings({
                         <div className="flex-1 space-y-2">
                            <p className="text-[11px] font-bold text-[#001F3D] uppercase">Global Corporate Identity</p>
                            <p className="text-[9px] text-slate-400 font-medium leading-relaxed">This logo will be synchronized across the command matrix, reports, and security gateway.</p>
-                           {uiSettings.brandLogo && (
+                           {localUI.brandLogo && (
                              <Button variant="ghost" size="sm" className="h-7 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 text-[9px] font-bold uppercase tracking-widest gap-2 mt-2" onClick={handleDeleteLogo}>
-                               <Trash2 className="h-3 w-3" /> Reset to Default
+                               <Trash2 className="h-3 w-3" /> Reset Local
                              </Button>
                            )}
                         </div>
@@ -525,15 +533,21 @@ export function ProfileSettings({
                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                              <span className="text-[8px] font-bold text-slate-400 uppercase">WO Prefix</span>
-                             <Input className="h-11 bg-slate-50 border-none font-code font-bold" value={uiSettings.woPrefix} onChange={(e) => handleUpdateGlobalSeq('woPrefix', e.target.value)} />
+                             <Input className="h-11 bg-slate-50 border-none font-code font-bold" value={localUI.woPrefix} onChange={(e) => updateLocalUIField('woPrefix', e.target.value)} />
                           </div>
                           <div className="space-y-2">
                              <span className="text-[8px] font-bold text-slate-400 uppercase">Next Seq Number</span>
-                             <Input type="number" className="h-11 bg-slate-50 border-none font-code font-bold" value={uiSettings.woNextNumber} onChange={(e) => handleUpdateGlobalSeq('woNextNumber', Number(e.target.value))} />
+                             <Input type="number" className="h-11 bg-slate-50 border-none font-code font-bold" value={localUI.woNextNumber} onChange={(e) => updateLocalUIField('woNextNumber', Number(e.target.value))} />
                           </div>
                        </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="pt-10 border-t flex justify-end">
+                   <Button className="h-14 bg-[#001F3D] hover:bg-black text-white px-12 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleCommitUISettings}>
+                     <Save className="h-4 w-4" /> Save Global UI Protocol
+                   </Button>
                 </div>
               </Card>
             </TabsContent>
@@ -562,12 +576,12 @@ export function ProfileSettings({
                        ].map(node => (
                          <div key={node.id} className="space-y-5">
                             <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">
-                               {node.label} <span>{uiSettings.billingTableSettings?.colWidths?.[node.id as keyof typeof uiSettings.billingTableSettings.colWidths] || 100}px</span>
+                               {node.label} <span>{localUI.billingTableSettings?.colWidths?.[node.id as keyof typeof localUI.billingTableSettings.colWidths] || 100}px</span>
                             </Label>
                             <Slider 
-                              value={[uiSettings.billingTableSettings?.colWidths?.[node.id as keyof typeof uiSettings.billingTableSettings.colWidths] || 100]} 
+                              value={[localUI.billingTableSettings?.colWidths?.[node.id as keyof typeof localUI.billingTableSettings.colWidths] || 100]} 
                               min={60} max={600} step={10} 
-                              onValueChange={([v]) => handleUpdateBillingTable(node.id, v)} 
+                              onValueChange={([v]) => handleUpdateBillingTableLocal(node.id, v)} 
                             />
                          </div>
                        ))}
@@ -575,14 +589,20 @@ export function ProfileSettings({
 
                     <div className="pt-10 border-t space-y-6">
                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">
-                          Global Entry Row Height <span>{uiSettings.billingTableSettings?.rowHeight || 48}px</span>
+                          Global Entry Row Height <span>{localUI.billingTableSettings?.rowHeight || 48}px</span>
                        </Label>
                        <Slider 
-                        value={[uiSettings.billingTableSettings?.rowHeight || 48]} 
+                        value={[localUI.billingTableSettings?.rowHeight || 48]} 
                         min={32} max={120} step={4} 
-                        onValueChange={([v]) => handleUpdateBillingTable('rowHeight', v)} 
+                        onValueChange={([v]) => handleUpdateBillingTableLocal('rowHeight', v)} 
                        />
                     </div>
+                  </div>
+
+                  <div className="pt-10 border-t flex justify-end">
+                     <Button className="h-14 bg-emerald-600 hover:bg-emerald-700 text-white px-12 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleCommitUISettings}>
+                       <Save className="h-4 w-4" /> Save Financial Matrix Scaling
+                     </Button>
                   </div>
                </Card>
             </TabsContent>

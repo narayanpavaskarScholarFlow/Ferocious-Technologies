@@ -45,7 +45,8 @@ import {
   Maximize2,
   RefreshCcw,
   Hammer,
-  ShieldAlert
+  ShieldAlert,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -230,9 +231,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     if (!silent) toast({ title: "Strategy Matrix Committed", description: "All strategic nodes synchronized with master ledger." });
   }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, strategyRef, toast]);
 
-  // Deep Financial Engine - 90/10 Split with Working Capital Protocol
+  // Deep Financial Engine - Product Driven Revenue Matrix
   const calculations = useMemo(() => {
-    // 1. CAPEX (Fixed Assets) - Including Mould Manufacturing
+    // 1. CAPEX (Fixed Assets)
     const fixedAssetsAtCost = (financials.investMachinery || 0) + 
                             (financials.investMoulds || 0) + 
                             (financials.investCivil || 0) + 
@@ -242,7 +243,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             (financials.investSystem || 0) + 
                             (financials.investAdvance || 0);
     
-    // 2. Base Monthly OpEx (Strictly excluding EMI)
+    // 2. Base Monthly OpEx (Excluding EMI)
     const monthlyOpExBase = (financials.expenseRent || 0) + 
                            (financials.expensePersonnel || 0) + 
                            (financials.expensePower || 0) + 
@@ -259,7 +260,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const derivedLoanAmt = totalProjectCost * 0.9;
     const derivedEntrepreneurAmt = totalProjectCost * 0.1;
 
-    // 6. EMI Calculation (on derived loan amount)
+    // 6. EMI Calculation
     const monthlyRate = (financials.loanROI / 100) / 12;
     const totalTenure = financials.loanTenure;
     const moratorium = financials.loanMoratorium;
@@ -272,7 +273,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       emi = derivedLoanAmt / activeTenure;
     }
 
-    // 7. Amortization Schedule
+    // 7. PRODUCT DRIVEN REVENUE (Capacity Calculations)
+    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.replace(/,/g, '')) || 0), 0);
+    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.replace(/,/g, '')) || 0), 0);
+    const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
+
+    // 8. Projections Matrix
     const schedule: any[] = [];
     let remainingBalance = derivedLoanAmt;
     for (let m = 1; m <= totalTenure; m++) {
@@ -283,37 +289,24 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       schedule.push({ month: m, payment: isMoratorium ? 0 : emi, interest, principal, balance: remainingBalance, status: isMoratorium ? 'Moratorium' : 'Repayment' });
     }
 
-    // 8. Target Turnover (Covers Base OpEx + EMI + 20% Net Margin)
-    const totalMonthlyCommitment = monthlyOpExBase + emi;
-    const targetTurnover = totalMonthlyCommitment / (1 - (financials.targetNetMargin / 100));
-
-    // 9. CMA Projections Matrix
     const projections: any[] = [];
     const balanceSheet: any[] = [];
     const cashFlow: any[] = [];
     const loanRepayment: any[] = [];
 
     let currentTNW = derivedEntrepreneurAmt;
-    let currentCapacityRevenue = targetTurnover * 12;
     let accumulatedDepreciation = 0;
     const depreciationRate = 0.15;
     let openingCash = workingCapitalValue * 0.2;
 
     for (let y = 1; y <= 5; y++) {
       const growth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
-      const revMultiplier = 1 + (growth / 100);
+      const revMultiplier = Math.pow(1 + (growth / 100), y - 1);
       
-      let yearRevenue = 0;
-      if (y === 1) {
-        // Ramp up in Year 1
-        for (let m = 1; m <= 12; m++) yearRevenue += targetTurnover * (m <= 6 ? 0.5 + (m * 0.1) : 1.1);
-        yearRevenue *= revMultiplier;
-        currentCapacityRevenue = targetTurnover * 12 * revMultiplier;
-      } else {
-        yearRevenue = currentCapacityRevenue * revMultiplier;
-        currentCapacityRevenue = yearRevenue;
-      }
-
+      // Revenue logic: Year 1 is 70% of capacity targets, then grows
+      const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.7) : (totalCapacityAnnualRevenue * revMultiplier);
+      
+      const totalMonthlyCommitment = monthlyOpExBase + emi;
       const yearOpEx = totalMonthlyCommitment * 12 * (1 + (y * 0.05));
       const yearEBITDA = yearRevenue - yearOpEx;
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
@@ -325,7 +318,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearTax = yearPBT > 0 ? yearPBT * 0.25 : 0;
       const yearPAT = yearPBT - yearTax;
       
-      currentTNW += yearPAT * 0.8; // Retained earnings
+      currentTNW += yearPAT * 0.8;
       const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
       const yearTOL = yearTermLoan + yearCurrentLiabilities;
@@ -345,16 +338,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         ratio: (yearTOL / currentTNW).toFixed(2),
         dscr: dscr.toFixed(2),
         growth: growth
-      });
-
-      balanceSheet.push({
-        year: `Year ${y}`,
-        tnw: currentTNW,
-        loan: yearTermLoan,
-        currentLiabilities: yearCurrentLiabilities,
-        totalSources: currentTNW + yearTermLoan + yearCurrentLiabilities,
-        netFixedAssets: Math.max(0, fixedAssetsAtCost - accumulatedDepreciation),
-        currentAssets: yearRevenue * 0.15 
       });
 
       const opProfitBeforeWC = yearPAT + yearInterest + yearDepreciation;
@@ -385,11 +368,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       openingCash = closingCash;
     }
 
-    const currentAssets = targetTurnover * 12 * 0.25;
-    const currentLiabilitiesExclBank = workingCapitalValue * 0.3;
-    const wcGap = currentAssets - currentLiabilitiesExclBank;
-    const mpbf = wcGap * 0.75;
-
     return {
       monthlyOpEx: monthlyOpExBase,
       workingCapitalValue,
@@ -398,15 +376,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       entrepreneurAmt: derivedEntrepreneurAmt,
       emi,
       schedule,
-      targetTurnover,
+      totalCapacityAnnualRevenue,
+      annualProductRevenue,
+      annualServiceRevenue,
       projections,
-      balanceSheet,
       cashFlow,
       loanRepayment,
-      mpbf,
+      mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75), // Estimating MPBF based on projected sales
       roi: (projections.reduce((acc, p) => acc + p.pat, 0) / totalProjectCost * 100)
     };
-  }, [financials]);
+  }, [financials, proprietaryProducts, industrialServices]);
 
   const handleImageUpload = (idx: number, type: 'product' | 'service', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -673,16 +652,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {industrialServices.map((s, i) => (
+              {industrialServices.map((s, idx) => (
                 <div key={s.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex flex-col gap-6 relative">
                   <div className="h-24 w-full bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                     {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain p-2" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
                   </div>
                   <div className="flex-1 space-y-3">
-                    <Input placeholder="Service Identity..." className="h-10 text-[11px] font-bold bg-white border-none shadow-sm" value={s.name || ''} onChange={(e)=>updateService(i, 'name', e.target.value)} />
+                    <Input placeholder="Service Identity..." className="h-10 text-[11px] font-bold bg-white border-none shadow-sm" value={s.name || ''} onChange={(e) => updateService(idx, 'name', e.target.value)} />
                     <div className="grid grid-cols-2 gap-3">
-                      <Input placeholder="Rate (₹)..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.price || ''} onChange={(e) => updateService(i, 'price', e.target.value)} />
-                      <Input placeholder="Target Count..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(i, 'annualTargetQty', e.target.value)} />
+                      <Input placeholder="Rate (₹)..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.price || ''} onChange={(e) => updateService(idx, 'price', e.target.value)} />
+                      <Input placeholder="Target Count..." className="bg-white border-none h-10 text-[10px] font-medium shadow-sm" value={s.annualTargetQty || ''} onChange={(e) => updateService(idx, 'annualTargetQty', e.target.value)} />
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-200 hover:text-red-500" onClick={() => setIndustrialServices(industrialServices.filter((_, i) => i !== idx))}><Trash2 className="h-4 w-4" /></Button>
@@ -769,9 +748,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              </div>
              <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-6">
                 <div className="space-y-4">
-                   <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.targetTurnover * 12 * 0.25 || 0).toLocaleString('en-IN')}</span></div>
+                   <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.projections[0].revenue * 0.25 || 0).toLocaleString('en-IN')}</span></div>
                    <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>B. Current Liabilities (Excl. Bank)</span> <span>₹ {(calculations.workingCapitalValue * 0.3 || 0).toLocaleString('en-IN')}</span></div>
-                   <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {((calculations.targetTurnover * 12 * 0.25 || 0) - (calculations.workingCapitalValue * 0.3 || 0)).toLocaleString('en-IN')}</span></div>
+                   <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {((calculations.projections[0].revenue * 0.25 || 0) - (calculations.workingCapitalValue * 0.3 || 0)).toLocaleString('en-IN')}</span></div>
                    <div className="flex justify-between pt-6 text-2xl font-display font-bold uppercase text-[#001F3D]"><span>Max Bank Finance (75% of C)</span> <span className="text-emerald-600">₹ {(calculations.mpbf || 0).toLocaleString('en-IN')}</span></div>
                 </div>
              </Card>
@@ -1013,12 +992,24 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </Card>
 
                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-6">
-                    <div className="flex items-center gap-3 text-rose-500 font-bold text-[10px] uppercase tracking-widest border-l-4 border-rose-500 pl-4">
-                       <Receipt className="h-4 w-4" /> Loan Parameters
+                    <div className="flex items-center gap-3 text-emerald-500 font-bold text-[10px] uppercase tracking-widest border-l-4 border-emerald-500 pl-4">
+                       <Zap className="h-4 w-4" /> Calculated Capacity Yield
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">ROI (%)</Label><Input type="number" className="bg-slate-50 h-11" value={financials.loanROI || 0} onChange={(e)=>setFinancials({...financials, loanROI: Number(e.target.value)})} /></div>
-                       <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-500">Tenure (M)</Label><Input type="number" className="bg-slate-50 h-11" value={financials.loanTenure || 0} onChange={(e)=>setFinancials({...financials, loanTenure: Number(e.target.value)})} /></div>
+                    <div className="space-y-6">
+                       <div className="space-y-1">
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Calculated Annual Revenue</p>
+                          <p className="text-3xl font-display font-bold text-[#001F3D]">₹ {calculations.totalCapacityAnnualRevenue.toLocaleString('en-IN')}</p>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                          <div>
+                            <p className="text-[8px] text-slate-400 uppercase font-bold">Products</p>
+                            <p className="text-sm font-bold text-primary">₹ {calculations.annualProductRevenue.toLocaleString('en-IN')}</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] text-slate-400 uppercase font-bold">Services</p>
+                            <p className="text-sm font-bold text-emerald-600">₹ {calculations.annualServiceRevenue.toLocaleString('en-IN')}</p>
+                          </div>
+                       </div>
                     </div>
                  </Card>
               </div>
@@ -1062,7 +1053,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="p-3 bg-white rounded-2xl text-primary shadow-sm border border-slate-100"><TrendingUp className="h-6 w-6" /></div>
                     <div>
                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Road Map for next five years</h3>
-                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Calculated operational trajectory nodes.</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Calculated operational trajectory nodes based on product sales.</p>
                     </div>
                  </div>
                  
@@ -1457,9 +1448,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <Card className="p-10 border-2 border-slate-900 rounded-none bg-slate-50/30 space-y-6">
                            <p className="text-xs font-bold uppercase text-slate-500">Method 1: 75% of Working Capital Gap</p>
                            <div className="space-y-4">
-                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.targetTurnover * 12 * 0.25 || 0).toLocaleString('en-IN')}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>A. Total Current Assets (Projected)</span> <span>₹ {(calculations.projections[0].revenue * 0.25 || 0).toLocaleString('en-IN')}</span></div>
                               <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase"><span>B. Current Liabilities (Excl. Bank)</span> <span>₹ {(calculations.workingCapitalValue * 0.3 || 0).toLocaleString('en-IN')}</span></div>
-                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {((calculations.targetTurnover * 12 * 0.25 || 0) - (calculations.workingCapitalValue * 0.3 || 0)).toLocaleString('en-IN')}</span></div>
+                              <div className="flex justify-between border-b pb-2 text-[11px] font-bold uppercase text-primary"><span>C. Working Capital Gap (A - B)</span> <span>₹ {((calculations.projections[0].revenue * 0.25 || 0) - (calculations.workingCapitalValue * 0.3 || 0)).toLocaleString('en-IN')}</span></div>
                               <div className="flex justify-between pt-4 text-lg font-display font-bold uppercase text-[#001F3D]"><span>D. Maximum Permissible Bank Finance (75% of C)</span> <span>₹ {(calculations.mpbf || 0).toLocaleString('en-IN')}</span></div>
                            </div>
                         </Card>
@@ -1551,7 +1542,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </Button>
           </DialogHeader>
           <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto">
-            {/* Visual simulation - no file context in current state for zoom, but componentized for future use */}
             <div className="text-white/20 uppercase font-bold text-xs">Awaiting Matrix Feed</div>
           </div>
         </DialogContent>

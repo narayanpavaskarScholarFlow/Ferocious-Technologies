@@ -53,7 +53,8 @@ import {
   Check,
   Building2,
   CreditCard,
-  Briefcase
+  Briefcase,
+  Monitor
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 

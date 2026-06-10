@@ -316,12 +316,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const revMultiplier = Math.pow(1 + (growth / 100), y - 1);
       
       const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.7) : (totalCapacityAnnualRevenue * revMultiplier);
-      const yearOpEx = (monthlyOpExBase + emi) * 12 * (1 + (y * 0.05));
-      const yearEBITDA = yearRevenue - yearOpEx;
+      const yearOpExBase = monthlyOpExBase * 12 * (1 + (y * 0.05));
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
       const yearInterest = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.interest, 0);
       const yearPrincipal = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.principal, 0);
+      
+      const yearEBITDA = yearRevenue - yearOpExBase;
       const yearPBT = yearEBITDA - yearDepreciation - yearInterest;
       const yearPAT = yearPBT > 0 ? yearPBT * 0.25 : 0;
       
@@ -778,6 +779,84 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </Card>
               </div>
+
+              {/* 5-YEAR CASH FLOW STATEMENT */}
+              <div className="space-y-6 pt-10">
+                <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-6">
+                   <div className="p-3 bg-white rounded-2xl text-blue-600 shadow-sm border"><RefreshCcw className="h-6 w-6" /></div>
+                   <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">5-Year Cash Flow Statement</h3>
+                </div>
+                <div className="border border-slate-200 overflow-hidden rounded-[1.5rem] bg-white shadow-xl">
+                   <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 border-b border-slate-100">
+                         <tr>
+                            <th className="p-6 text-[9px] font-bold uppercase text-slate-400 border-r w-[20%]">Particulars (₹ Actuals)</th>
+                            {calculations.projections.map(p=><th key={p.year} className="p-6 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
+                         </tr>
+                      </thead>
+                      <tbody>
+                         <tr className="bg-slate-50/30"><td className="p-4 px-6 text-[9px] font-bold uppercase text-blue-600 border-r" colSpan={6}>A. Operating Activities</td></tr>
+                         <tr className="border-b border-slate-50">
+                            <td className="p-4 px-8 text-[11px] font-medium text-slate-500 uppercase border-r">Net Profit After Tax</td>
+                            {calculations.cashFlow.map(c=><td key={c.year} className="p-4 text-[11px] font-bold text-slate-700 text-right border-r last:border-0">{(c.npat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         </tr>
+                         <tr className="border-b border-slate-50">
+                            <td className="p-4 px-8 text-[11px] font-medium text-slate-500 uppercase border-r">Interest Node</td>
+                            {calculations.cashFlow.map(c=><td key={c.year} className="p-4 text-[11px] font-bold text-slate-700 text-right border-r last:border-0">{(c.interest||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         </tr>
+                         <tr className="border-b border-slate-50">
+                            <td className="p-4 px-8 text-[11px] font-medium text-slate-500 uppercase border-r">Depreciation</td>
+                            {calculations.cashFlow.map(c=><td key={c.year} className="p-4 text-[11px] font-bold text-slate-700 text-right border-r last:border-0">{(c.depreciation||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         </tr>
+                         <tr className="border-b border-slate-100 font-bold bg-slate-50/20">
+                            <td className="p-4 px-6 text-[11px] font-bold text-slate-900 uppercase border-r">Op. Profit before WC</td>
+                            {calculations.cashFlow.map(c=><td key={c.year} className="p-4 text-[11px] font-bold text-slate-900 text-right border-r last:border-0">{(c.opProfit||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         </tr>
+                         <tr className="bg-slate-50/30"><td className="p-4 px-6 text-[9px] font-bold uppercase text-red-600 border-r" colSpan={6}>B. Financing Activities</td></tr>
+                         <tr className="border-b border-slate-50">
+                            <td className="p-4 px-8 text-[11px] font-medium text-slate-500 uppercase border-r">Loan Principal Settlement</td>
+                            {calculations.cashFlow.map(c=><td key={c.year} className="p-4 text-[11px] font-bold text-red-600 text-right border-r last:border-0">{(c.loanRepayment||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         </tr>
+                         <tr className="bg-[#001F3D] text-white">
+                            <td className="p-6 px-6 text-[12px] font-bold uppercase tracking-widest border-r border-white/10">Closing Cash Flow Balance</td>
+                            {calculations.cashFlow.map(c=><td key={c.year} className="p-6 text-[14px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {(c.closingCash||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         </tr>
+                      </tbody>
+                   </table>
+                </div>
+              </div>
+
+              {/* TERM LOAN REPAYMENT SCHEDULE */}
+              <div className="space-y-6 pt-10">
+                <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                   <div className="p-3 bg-white rounded-2xl text-primary shadow-sm border"><Clock className="h-6 w-6" /></div>
+                   <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Term Loan Repayment Schedule</h3>
+                </div>
+                <div className="border border-slate-200 overflow-hidden rounded-[1.5rem] bg-white shadow-xl">
+                   <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 border-b border-slate-100">
+                         <tr>
+                            <th className="p-6 text-[9px] font-bold uppercase text-slate-400 border-r">Fiscal Year</th>
+                            <th className="p-6 text-[9px] font-bold uppercase text-right border-r">Opening Balance</th>
+                            <th className="p-6 text-[9px] font-bold uppercase text-right border-r text-red-600">Interest (₹)</th>
+                            <th className="p-6 text-[9px] font-bold uppercase text-right border-r text-red-600">Principal (₹)</th>
+                            <th className="p-6 text-[9px] font-bold uppercase text-right">Closing Balance</th>
+                         </tr>
+                      </thead>
+                      <tbody>
+                         {calculations.loanRepayment.map((lr) => (
+                           <tr key={lr.year} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                              <td className="p-5 px-6 text-[11px] font-bold text-slate-500 uppercase border-r">{lr.year}</td>
+                              <td className="p-5 text-[12px] font-bold text-slate-700 text-right border-r">{(lr.opening||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                              <td className="p-5 text-[12px] font-bold text-red-600 text-right border-r">{(lr.interest||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                              <td className="p-5 text-[12px] font-bold text-red-600 text-right border-r">{(lr.principal||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                              <td className="p-5 text-[13px] font-display font-bold text-[#001F3D] text-right">{(lr.closing||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                           </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
+              </div>
            </div>
         </TabsContent>
 
@@ -1055,9 +1134,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 text-[#001F3D]">Particulars (₹ Actuals)</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                             </thead>
                             <tbody>
-                               <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
-                               <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.ebitda||0).toLocaleString('en-IN')}</td>)}</tr>
-                               <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
+                               <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
+                               <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r border-slate-200">EBITDA</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.ebitda||0).toLocaleString('en-IN')}</td>)}</tr>
+                               <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
                             </tbody>
                          </table>
                       </div>

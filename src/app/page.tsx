@@ -96,6 +96,7 @@ function IndustrialERPInternal() {
   const [activeWorkOrderId, setActiveWorkOrderId] = useState<string | null>(null);
   const [selectedDetailUserId, setSelectedDetailUserId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [uiSettings, setUISettings] = useState<UISettings>(DEFAULT_UI_SETTINGS);
 
@@ -238,6 +239,7 @@ function IndustrialERPInternal() {
   const handleViewChange = (view: ViewType) => {
     if (!hasAccess(view)) return;
     setCurrentView(view);
+    setIsMobileMenuOpen(false);
   };
 
   const handleLogin = (user: string) => {
@@ -328,6 +330,7 @@ function IndustrialERPInternal() {
       "flex min-h-screen bg-background text-slate-900 font-body overflow-hidden print:h-auto print:block print:bg-white",
       uiSettings.labelCase === 'uppercase' ? "labels-uppercase" : "labels-capitalize"
     )}>
+      {/* Desktop Sidebar */}
       <div className={cn("hidden lg:block print:hidden transition-all duration-500", isSlimSidebar ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 
@@ -342,26 +345,49 @@ function IndustrialERPInternal() {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:block">
-        <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
+        <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-4 md:px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
+          <div className="flex items-center gap-2 md:gap-6">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-[280px] bg-[#001F3D] border-none">
+                <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
+                <SheetDescription className="sr-only">Access all command nodes and operational ledgers.</SheetDescription>
+                <SidebarNav 
+                  currentView={currentView} 
+                  onViewChange={handleViewChange} 
+                  permissions={permissions} 
+                  isSlim={false}
+                  customTitles={uiSettings.customTitles}
+                  userRole={currentUser === 'Master Admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
+                  isReportingManager={isReportingManager}
+                  brandLogo={brandLogo}
+                />
+              </SheetContent>
+            </Sheet>
+
+            <div className="flex items-center gap-2 md:gap-3">
               <Image 
                 src={brandLogo} 
                 alt="Ferocious Tech" 
-                width={32} 
-                height={32} 
-                className="rounded-lg object-contain"
+                width={28} 
+                height={28} 
+                className="rounded-lg object-contain md:w-[32px] md:h-[32px]"
                 data-ai-hint="lion technology logo"
               />
-              <h1 className="font-headline font-bold text-lg tracking-tight text-[#001F3D]">
+              <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-[#001F3D]">
                 FEROCIOUS<span className="text-primary">TECH</span>
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-             <div className="text-right hidden md:block">
-                <p className="text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
-                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || (currentUser === 'Master Admin' ? 'Master Admin' : 'User')}</p>
+
+          <div className="flex items-center gap-3 md:gap-4">
+             <div className="text-right hidden sm:block">
+                <p className="text-[10px] md:text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
+                <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || (currentUser === 'Master Admin' ? 'Master Admin' : 'User')}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -379,7 +405,7 @@ function IndustrialERPInternal() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full p-6 print:p-0">
+        <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 print:p-0">
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'loan-project' && <LoanProjectHub brandLogo={brandLogo} />}

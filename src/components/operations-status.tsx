@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -412,16 +411,16 @@ export function OperationsStatus({
              <FileSpreadsheet className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-headline font-bold uppercase text-slate-900">Spreadsheet</h2>
+            <h2 className="text-base md:text-lg font-headline font-bold uppercase text-slate-900">Spreadsheet</h2>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <Select 
             value={selectedWorkOrder || undefined} 
             onValueChange={handleSelectChange}
           >
-            <SelectTrigger className="w-[200px] h-9 bg-white text-[10px] font-bold uppercase border-slate-200 rounded-lg">
+            <SelectTrigger className="w-full sm:w-[200px] h-9 bg-white text-[10px] font-bold uppercase border-slate-200 rounded-lg">
               <SelectValue placeholder="Select WO..." />
             </SelectTrigger>
             <SelectContent>
@@ -438,7 +437,7 @@ export function OperationsStatus({
 
       <Card className="overflow-hidden border-slate-200 bg-white rounded-xl shadow-sm">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[800px]">
             <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="font-bold text-[9px] uppercase text-slate-400 py-3 px-4 w-20">Seq.</TableHead>
@@ -532,11 +531,11 @@ export function OperationsStatus({
                         
                         {isExpanded && !isNA && (
                           <TableRow className="bg-slate-50/20">
-                            <TableCell colSpan={6} className="pl-12 py-4">
+                            <TableCell colSpan={6} className="pl-6 md:pl-12 py-4">
                               <div className="space-y-3">
                                 {op.subTasks.map((task, sIdx) => (
                                   <div key={task.id} className={cn(
-                                    "flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 transition-opacity",
+                                    "flex flex-wrap items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 transition-opacity",
                                     (task.status === 'Completed' || task.isCompleted) && "opacity-60"
                                   )}>
                                     <div className="px-2">
@@ -549,14 +548,14 @@ export function OperationsStatus({
                                       defaultValue={task.name}
                                       onBlur={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
                                       className={cn(
-                                        "h-7 bg-slate-50 border-none text-[10px] font-bold flex-1",
+                                        "h-7 bg-slate-50 border-none text-[10px] font-bold flex-1 min-w-[120px]",
                                         (task.status === 'Completed' || task.isCompleted) && "line-through"
                                       )} 
                                     />
                                     <DatePicker value={task.startDate} onChange={(val) => handleUpdateSubTask(idx, sIdx, { startDate: val })} className="h-7 w-28 text-[9px]" />
                                     <Select value={task.machineId} onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}>
                                       <SelectTrigger className="h-7 w-32 text-[9px] bg-slate-50 border-none"><SelectValue placeholder="Resource" /></SelectTrigger>
-                                      <SelectContent>
+                                      <SelectContent className="max-h-[300px]">
                                         {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-[9px] font-bold uppercase">{m.name}</SelectItem>)}
                                         {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[9px] font-bold uppercase">{u.name}</SelectItem>)}
                                       </SelectContent>
@@ -580,9 +579,9 @@ export function OperationsStatus({
                   })}
                   <TableRow>
                     <TableCell colSpan={6} className="p-4 bg-slate-50/30">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Select value={newOpName} onValueChange={setNewOpName}>
-                          <SelectTrigger className="h-9 bg-white text-[10px] font-bold uppercase"><SelectValue placeholder="New Operation..." /></SelectTrigger>
+                          <SelectTrigger className="h-9 bg-white text-[10px] font-bold uppercase sm:w-[200px]"><SelectValue placeholder="New Operation..." /></SelectTrigger>
                           <SelectContent>
                             {INITIAL_STEPS.map(step => <SelectItem key={step} value={step} className="text-[10px] font-bold uppercase">{step}</SelectItem>)}
                           </SelectContent>

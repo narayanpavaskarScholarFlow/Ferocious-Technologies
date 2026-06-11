@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo } from 'react';
@@ -111,7 +110,7 @@ export function ShopFloorOverview({
     <div className="space-y-6 animate-in fade-in duration-500">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
         <div className="flex flex-col">
-          <h2 className="text-3xl font-headline font-bold tracking-tight text-[#001F3D]">
+          <h2 className="text-2xl md:text-3xl font-headline font-bold tracking-tight text-[#001F3D]">
             {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400">{title.split(' ').slice(-1)}</span>
           </h2>
           <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest mt-1">MASTER_CTRL_ALPHA_READY</p>
@@ -124,7 +123,7 @@ export function ShopFloorOverview({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {kpiData.map((kpi) => {
           const Icon = kpi.icon;
           return (
@@ -144,16 +143,16 @@ export function ShopFloorOverview({
               
               <div>
                 <p className="text-[9px] uppercase font-bold tracking-widest text-slate-400 mb-1">{kpi.label}</p>
-                <h3 className="text-3xl font-headline font-bold text-[#001F3D]">{kpi.total}</h3>
+                <h3 className="text-2xl md:text-3xl font-headline font-bold text-[#001F3D]">{kpi.total}</h3>
                 
                 <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-50">
                   <div>
                     <p className="text-[8px] text-slate-400 uppercase font-bold">{kpi.sub1}</p>
-                    <p className="text-lg font-bold text-[#001F3D]">{kpi.sub1Val}</p>
+                    <p className="text-base md:text-lg font-bold text-[#001F3D]">{kpi.sub1Val}</p>
                   </div>
                   <div>
                     <p className="text-[8px] text-slate-400 uppercase font-bold">{kpi.sub2}</p>
-                    <p className="text-lg font-bold text-[#001F3D]">{kpi.sub2Val}</p>
+                    <p className="text-base md:text-lg font-bold text-[#001F3D]">{kpi.sub2Val}</p>
                   </div>
                 </div>
               </div>
@@ -177,11 +176,11 @@ export function ShopFloorOverview({
               </div>
             </div>
             <div className="space-y-4 relative z-10">
-              <h3 className="text-2xl font-display font-bold text-amber-900">{awaitingVerification.length} <span className="text-sm">Threads</span></h3>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-amber-900">{awaitingVerification.length} <span className="text-sm">Threads</span></h3>
               <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
                 Orders operationally completed but awaiting final DC/Invoice or QC certification.
               </p>
-              <div className="pt-4 flex gap-2">
+              <div className="pt-4 flex flex-wrap gap-2">
                 {awaitingVerification.slice(0, 3).map(o => (
                   <Badge key={o.id} variant="outline" className="bg-white border-amber-200 text-amber-700 text-[8px] font-bold">#{o.id}</Badge>
                 ))}
@@ -193,7 +192,7 @@ export function ShopFloorOverview({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="lg:col-span-6 p-8 bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-8">
+        <Card className="lg:col-span-6 p-6 md:p-8 bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/5 rounded-lg text-primary"><TrendingUp className="h-4 w-4" /></div>
@@ -202,7 +201,7 @@ export function ShopFloorOverview({
             <Badge variant="outline" className="text-[8px] font-bold uppercase bg-slate-50">Live_Feed</Badge>
           </div>
 
-          <div className="h-[280px] w-full">
+          <div className="h-[240px] md:h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={YIELD_VELOCITY_DATA}>
                 <defs>
@@ -244,7 +243,7 @@ export function ShopFloorOverview({
           </div>
         </Card>
 
-        <Card className="lg:col-span-6 p-8 bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-8 relative overflow-hidden group">
+        <Card className="lg:col-span-6 p-6 md:p-8 bg-white border border-slate-100 shadow-sm rounded-[2rem] space-y-8 relative overflow-hidden group">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><Activity className="h-4 w-4" /></div>
@@ -256,7 +255,7 @@ export function ShopFloorOverview({
             </div>
           </div>
 
-          <div className="h-[280px] w-full">
+          <div className="h-[240px] md:h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={DAILY_UTILIZATION_DATA}>
                 <defs>
@@ -307,15 +306,15 @@ export function ShopFloorOverview({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-8 bg-[#001F3D] text-white border-none shadow-lg rounded-[2rem] flex flex-col justify-between group cursor-pointer" onClick={onNavigateToMachine}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <Card className="p-6 md:p-8 bg-[#001F3D] text-white border-none shadow-lg rounded-[2rem] flex flex-col justify-between group cursor-pointer" onClick={onNavigateToMachine}>
           <div className="space-y-6">
             <div className="p-3 bg-white/10 rounded-xl w-fit">
               <Cpu className="h-6 w-6 text-primary" />
             </div>
             <div className="space-y-2">
               <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Global Fleet Efficiency</p>
-              <h3 className="text-5xl font-display font-bold tracking-tighter">{orders.length > 0 ? '84.2' : '0.0'}<span className="text-xl ml-1 text-white/20">%</span></h3>
+              <h3 className="text-3xl md:text-5xl font-display font-bold tracking-tighter">{orders.length > 0 ? '84.2' : '0.0'}<span className="text-lg md:text-xl ml-1 text-white/20">%</span></h3>
             </div>
           </div>
           <div className="pt-8 border-t border-white/10 flex justify-between items-center group-hover:text-primary transition-colors">
@@ -324,24 +323,24 @@ export function ShopFloorOverview({
           </div>
         </Card>
 
-        <Card className="p-8 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 shadow-xl shadow-blue-900/5">
-          <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shrink-0">
-            <ShieldCheck className="h-8 w-8" />
+        <Card className="p-6 md:p-8 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 shadow-xl shadow-blue-900/5">
+          <div className="h-12 w-12 md:h-16 md:w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shrink-0">
+            <ShieldCheck className="h-6 w-6 md:h-8 md:w-8" />
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Security Health</p>
-            <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">Ledger Protocol Active</p>
+            <p className="text-base md:text-lg font-bold text-[#001F3D] uppercase leading-tight">Ledger Protocol Active</p>
             <p className="text-[10px] text-emerald-600 font-bold uppercase mt-1">Verified Node</p>
           </div>
         </Card>
 
-        <Card className="p-8 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 shadow-xl shadow-blue-900/5">
-          <div className="h-16 w-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary shrink-0">
-            <Clock className="h-8 w-8" />
+        <Card className="p-6 md:p-8 bg-white border border-slate-100 rounded-[2rem] flex items-center gap-6 shadow-xl shadow-blue-900/5">
+          <div className="h-12 w-12 md:h-16 md:w-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary shrink-0">
+            <Clock className="h-6 w-6 md:h-8 md:w-8" />
           </div>
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monitoring Threads</p>
-            <p className="text-lg font-bold text-[#001F3D] uppercase leading-tight">{orders.length} Managed Jobs</p>
+            <p className="text-base md:text-lg font-bold text-[#001F3D] uppercase leading-tight">{orders.length} Managed Jobs</p>
             <p className="text-[10px] text-primary font-bold uppercase mt-1">Real-time Telemetry</p>
           </div>
         </Card>

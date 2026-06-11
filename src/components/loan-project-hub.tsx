@@ -395,7 +395,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const Watermark = () => (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden print:visible">
       <div className="relative w-[20%] aspect-square">
-         {brandLogo && <Image src={brandLogo} alt="" fill className="object-contain" />}
+         {brandLogo && <Image src={brandLogo} alt="Corporate Identity Watermark" fill className="object-contain" />}
       </div>
     </div>
   );
@@ -966,7 +966,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    <div className="min-h-[80vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
                       <Watermark />
                       <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4">
-                         <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo/400/400'} alt="Logo" fill className="object-contain p-4" />
+                         <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo-v2/400/400'} alt="Logo" fill className="object-contain p-4" />
                       </div>
                       <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">Techno-Economic <br />Feasibility Analysis</h1>
                       <div className="h-1.5 w-24 md:w-32 bg-red-600 mx-auto rounded-full mt-8" />
@@ -1342,12 +1342,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
         <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col">
           <DialogHeader className="p-4 bg-slate-900/50 border-b flex items-center justify-between shrink-0"><DialogTitle className="text-white uppercase font-bold text-sm">Blueprint Viewer</DialogTitle><Button variant="ghost" size="icon" onClick={()=>setIsZoomDialogOpen(false)} className="text-white"><X className="h-6 w-6" /></Button></DialogHeader>
-          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto">
-            {pendingDrawingFile && <img src={pendingDrawingFile} alt="" className="max-w-full max-h-full object-contain" />}
-          </div>
+          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto">{pendingDrawingFile && <img src={pendingDrawingFile} alt="" className="max-w-full max-h-full object-contain" />}</div>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-

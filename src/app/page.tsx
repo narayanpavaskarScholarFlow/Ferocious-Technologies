@@ -157,8 +157,12 @@ function IndustrialERPInternal() {
   }, [currentUser, usersData]);
 
   const masterAdmin = useMemo(() => {
-    return usersData.find(u => u.name?.toLowerCase() === 'master admin' || u.role === 'Master Admin');
-  }, [usersData]);
+    // Priority: 1. Current user if they are Master Admin, 2. Find by role, 3. Find by exact name
+    if (currentUserData?.role === 'Master Admin' || currentUserData?.name?.toLowerCase() === 'master admin') {
+      return currentUserData;
+    }
+    return usersData.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin');
+  }, [usersData, currentUserData]);
 
   const globalSystemSettings = useMemo(() => {
     const settings = masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
@@ -172,6 +176,7 @@ function IndustrialERPInternal() {
   }, [masterAdmin]);
 
   const brandLogo = useMemo(() => {
+    // Priority: Master Admin custom logo > Default placeholder
     return globalSystemSettings.brandLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
   }, [globalSystemSettings]);
 

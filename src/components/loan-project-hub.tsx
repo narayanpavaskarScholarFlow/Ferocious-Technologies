@@ -792,7 +792,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Total Monthly OpEx</Label>
-                          <div className="h-12 bg-emerald-50 rounded-xl flex items-center px-4 font-display font-bold text-emerald-700 shadow-inner">₹ {calculations.monthlyOpEx.toLocaleString()}</div>
+                          <div className="h-12 bg-emerald-50 rounded-xl flex items-center px-4 font-display font-bold text-emerald-700 shadow-inner">₹ {(calculations.monthlyOpEx + calculations.emi).toLocaleString('en-IN', {maximumFractionDigits: 0})}</div>
                        </div>
                     </div>
                  </Card>
@@ -1051,7 +1051,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <div className="grid grid-cols-1 gap-6 pt-10">
                                    <div className="flex justify-between items-center border-b border-slate-100 py-1">
                                       <span className="text-sm font-medium text-slate-700">Loan Duration</span>
-                                      <span className="text-sm font-bold text-slate-900">{financials.loanTenure / 12} Years</span>
+                                      <span className="text-sm font-bold text-slate-900">{financials.loanROI / 12} Years</span>
                                    </div>
                                    <div className="flex justify-between items-center border-b-2 border-slate-900 py-1">
                                       <span className="text-sm font-bold text-slate-900 uppercase">Average DSCR</span>
@@ -1216,7 +1216,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </thead>
                               <tbody>
                                 {proprietaryProducts.map((p, idx) => (
-                                  <tr className="border-b border-slate-300 last:border-0">
+                                  <tr className="border-b border-slate-300 last:border-0" key={p.id}>
                                     <td className="p-3 text-xs border-r border-slate-900 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
                                     <td className="p-3 text-xs border-r border-slate-900 font-bold uppercase">{p.name}</td>
                                     <td className="p-3 text-xs border-r border-slate-900 text-right font-display">{parseFloat(p.price).toLocaleString('en-IN')}</td>
@@ -1270,7 +1270,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </thead>
                               <tbody>
                                 {industrialServices.map((s, idx) => (
-                                  <tr className="border-b border-slate-300 last:border-0">
+                                  <tr className="border-b border-slate-300 last:border-0" key={s.id}>
                                     <td className="p-3 text-xs border-r border-slate-900 font-medium">{(idx + 1).toString().padStart(2, '0')}</td>
                                     <td className="p-3 text-xs border-r border-slate-900 font-bold uppercase">{s.name}</td>
                                     <td className="p-3 text-xs border-r border-slate-900 text-right font-display">{parseFloat(s.price).toLocaleString('en-IN')}</td>

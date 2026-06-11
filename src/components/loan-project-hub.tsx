@@ -734,7 +734,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-2"><Factory className="h-3 w-3" /> Plant & Machinery</Label>
-                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.investMachinery} onChange={(e)=>setFinancials({...financials, investMachinery: Number(e.target.value)})} />
+                          <div className="flex gap-2">
+                             <Input readOnly className="h-12 bg-slate-100 border-none rounded-xl font-bold flex-1" value={financials.investMachinery.toLocaleString()} />
+                             <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-slate-200" onClick={() => setIsMachineryBreakupOpen(true)}><Plus className="h-4 w-4" /></Button>
+                          </div>
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-2"><Monitor className="h-3 w-3" /> Furniture / Office</Label>
@@ -767,7 +770,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.expenseRent} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} />
                        </div>
                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-400">Personnel</Label>
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Shed Advance</Label>
                           <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.expensePersonnel} onChange={(e)=>setFinancials({...financials, expensePersonnel: Number(e.target.value)})} />
                        </div>
                        <div className="space-y-2">
@@ -827,7 +830,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-xl mb-12">
                  <table className="w-full text-left min-w-[800px]">
                     <thead className="bg-slate-50 border-b-2 border-slate-900">
-                       <tr><th className="p-4 text-[9px] font-bold uppercase border-r">Particulars (₹ Actuals)</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
+                       <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars (₹ Actuals)</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                     </thead>
                     <tbody>
                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>

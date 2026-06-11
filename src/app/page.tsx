@@ -157,12 +157,14 @@ function IndustrialERPInternal() {
   }, [currentUser, usersData]);
 
   const masterAdmin = useMemo(() => {
-    // Priority: 1. Current user if they are Master Admin, 2. Find by role, 3. Find by exact name
-    if (currentUserData?.role === 'Master Admin' || currentUserData?.name?.toLowerCase() === 'master admin') {
-      return currentUserData;
-    }
-    return usersData.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin');
-  }, [usersData, currentUserData]);
+    return usersData.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin');
+  }, [usersData]);
+
+  const brandLogo = useMemo(() => {
+    // Priority: Master Admin custom logo > Default placeholder
+    const masterLogo = masterAdmin?.uiSettings?.brandLogo;
+    return masterLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
+  }, [masterAdmin]);
 
   const globalSystemSettings = useMemo(() => {
     const settings = masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
@@ -174,11 +176,6 @@ function IndustrialERPInternal() {
       brandLogo: settings.brandLogo
     };
   }, [masterAdmin]);
-
-  const brandLogo = useMemo(() => {
-    // Priority: Master Admin custom logo > Default placeholder
-    return globalSystemSettings.brandLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
-  }, [globalSystemSettings]);
 
   useEffect(() => {
     const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };

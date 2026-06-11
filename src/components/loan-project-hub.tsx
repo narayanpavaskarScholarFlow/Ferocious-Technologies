@@ -599,7 +599,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  ))}
               </div>
-              <div className="pt-8 border-t flex justify-center"><Button className="w-full sm:w-auto h-14 px-12 bg-[#001F3D] text-white rounded-2xl font-bold uppercase text-[10px]" onClick={()=>handleSaveStrategy()}><Save className="h-4 w-4 mr-2" /> Commit Product Matrix</Button></div>
+              <div className="pt-8 border-t flex justify-center"><Button className="w-full sm:w-auto h-14 px-12 bg-[#001F3D] text-white rounded-2xl font-bold uppercase text-[10px]" onClick={()=>handleSaveStrategy()}> <Save className="h-4 w-4 mr-2" /> Commit Product Matrix</Button></div>
            </Card>
 
            <Card className="p-6 md:p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
@@ -729,7 +729,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-2"><Monitor className="h-3 w-3" /> Furniture / Office</Label>
-                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.investFurniture} onChange={(e)=>setFormData({...foundationalData, investFurniture: e.target.value})} />
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.investFurniture} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-2"><Building2 className="h-3 w-3" /> Civil / Interior</Label>

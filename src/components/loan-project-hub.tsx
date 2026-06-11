@@ -392,6 +392,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     setIndustrialServices(newS);
   };
 
+  const Watermark = () => (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden print:visible">
+      <div className="relative w-[20%] aspect-square">
+         {brandLogo && <Image src={brandLogo} alt="" fill className="object-contain" />}
+      </div>
+    </div>
+  );
+
   const renderActiveEditor = () => {
     switch(activeEditingSection) {
       case 'executiveSummary':
@@ -819,7 +827,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-xl mb-12">
                  <table className="w-full text-left min-w-[800px]">
                     <thead className="bg-slate-50 border-b-2 border-slate-900">
-                       <tr><th className="p-4 text-[9px] font-bold uppercase border-r">Particulars (₹ Actuals)</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}</tr>
+                       <tr><th className="p-4 text-[9px] font-bold uppercase border-r">Particulars (₹ Actuals)</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                     </thead>
                     <tbody>
                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
@@ -953,19 +961,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            <div className="w-full overflow-x-auto pb-20 px-4 scrollbar-hide">
               <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} className="mx-auto print:transform-none print:w-full">
                 <div className="bg-white shadow-2xl p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative">
-                   {/* Watermark Protocol */}
-                   <div 
-                     className="absolute inset-0 pointer-events-none opacity-[0.03] z-0" 
-                     style={{ 
-                       backgroundImage: brandLogo ? `url(${brandLogo})` : 'none',
-                       backgroundSize: '200px 200px',
-                       backgroundRepeat: 'repeat',
-                       backgroundPosition: 'center'
-                     }} 
-                   />
-
+                   
                    {/* Page 00: Cover */}
                    <div className="min-h-[80vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
+                      <Watermark />
                       <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4">
                          <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo/400/400'} alt="Logo" fill className="object-contain p-4" />
                       </div>
@@ -979,7 +978,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {/* Section 01: Executive Summary */}
                    {checklist.executiveSummary && (
-                     <div className="space-y-12 page-break relative z-10">
+                     <div className="space-y-12 page-break relative z-10 py-10 min-h-[297mm]">
+                        <Watermark />
                         <h2 className="text-3xl md:text-4xl font-display font-bold text-[#8B5CF6] tracking-tight">Executive Summary</h2>
                         
                         <div className="space-y-10">
@@ -1058,7 +1058,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {/* Section: Project Detail (Breakup) */}
                    {checklist.projectDetails && (
-                     <div className="space-y-12 page-break pt-20 relative z-10">
+                     <div className="space-y-12 page-break pt-20 relative z-10 min-h-[297mm]">
+                        <Watermark />
                         <h2 className="text-3xl md:text-4xl font-display font-bold text-[#8B5CF6] tracking-tight">Project Details</h2>
                         <div className="flex justify-between items-center border-b-2 border-[#3B82F6] pb-2">
                           <h3 className="text-lg md:text-xl font-display font-bold text-[#3B82F6] uppercase tracking-tight">Cost of Project</h3>
@@ -1113,7 +1114,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {/* Section: Means & Cost of Finance */}
                    {checklist.meansOfFinance && (
-                     <div className="space-y-12 page-break pt-20 relative z-10">
+                     <div className="space-y-12 page-break pt-20 relative z-10 min-h-[297mm]">
+                        <Watermark />
                         <h2 className="text-3xl md:text-4xl font-display font-bold text-[#8B5CF6] tracking-tight">Means & Cost of Finance</h2>
                         <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
                           <table className="w-full text-left border-collapse min-w-[600px]">
@@ -1164,7 +1166,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {/* Sections 03: Catalogues (Products) */}
                    {checklist.productLine && (
-                     <div className="space-y-12 page-break relative z-10">
+                     <div className="space-y-12 page-break relative z-10 min-h-[297mm] pt-10">
+                        <Watermark />
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">03</div><h3 className="text-xl md:text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Capability Matrix (Products)</h3></div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 md:gap-10">
                            {proprietaryProducts.map(p => (
@@ -1217,7 +1220,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                    {/* Section 03B: Industrial Services */}
                    {checklist.services && (
-                     <div className="space-y-12 page-break pt-20 relative z-10">
+                     <div className="space-y-12 page-break pt-20 relative z-10 min-h-[297mm]">
+                        <Watermark />
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center font-display font-bold text-lg">03B</div><h3 className="text-xl md:text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Industrial Technical Services</h3></div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 md:gap-10">
                            {industrialServices.map(s => (
@@ -1269,7 +1273,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    )}
 
                    {checklist.roadMapNextFiveYears && (
-                     <div className="space-y-8 pt-20 page-break relative z-10">
+                     <div className="space-y-8 pt-20 page-break relative z-10 min-h-[297mm]">
+                        <Watermark />
                         <div className="flex items-center gap-6"><div className="h-10 w-10 rounded-xl bg-[#001F3D] text-white flex items-center justify-center font-display font-bold text-lg">07</div><h3 className="text-xl md:text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Road Map for next five years</h3></div>
                         <div className="overflow-x-auto border-2 border-slate-900">
                            <table className="w-full text-left border-collapse min-w-[800px]">
@@ -1345,3 +1350,4 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
+

@@ -178,7 +178,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     promoterNarrative: 'Highly technical leadership with a proven track record in precision engineering and industrial process automation. Dedicated to establishing excellence in VMC machining protocols.',
     marketAnalysisDetails: "India's electrical sector is witnessing an unprecedented surge, driven by the government's mandate for 100% rural electrification, railway modernization (Kavach system), and the rapid expansion of EV charging infrastructure.",
     toolingMarketAnalysisDetails: "The Indian Tooling Industry is the strategic foundation of the manufacturing sector, valued at approximately ₹18,500 Crores.",
-    cgtmseNotes: "The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix."
+    cgtmseNotes: "The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix.",
+    cgtmseHeader: "CGTMSE Scheme Protocol"
   });
 
   const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
@@ -201,7 +202,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanTenure: 84, // 7 Years
     loanMoratorium: 6, // 6 Months
     expenseRent: 35000,
-    expensePersonnel: 400000, 
     expensePower: 20000,
     expenseMaintenance: 50000,
     expenseConsumables: 100000,
@@ -212,7 +212,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investPreOp: 200000,
     investSoftware: 200000,
     investSystem: 150000,
-    investAdvance: 400000,
+    investShedAdvance: 400000, // Moved from OpEx to One-Time
     investMoulds: 500000,
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
@@ -254,10 +254,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             (financials.investElectrical || 0) + 
                             (financials.investFurniture || 0) + 
                             (financials.investPreOp || 0) +
-                            (financials.investMoulds || 0);
+                            (financials.investMoulds || 0) +
+                            (financials.investShedAdvance || 0);
     
     const monthlyOpExBase = (financials.expenseRent || 0) + 
-                           (financials.expensePersonnel || 0) + 
                            (financials.expensePower || 0) + 
                            (financials.expenseMaintenance || 0) + 
                            (financials.expenseConsumables || 0);
@@ -471,6 +471,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              <div className="flex justify-between items-center"><h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Asset Matrix</h3><Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5 mr-2" /> Edit Breakup</Button></div>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Machinery</Label><Input readOnly className="bg-slate-100 h-11" value={financials.investMachinery.toLocaleString()} /></div>
+                <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Shed Advance</Label><Input type="number" className="h-11" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials,investShedAdvance:Number(e.target.value)})} /></div>
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Mould Manufacturing</Label><Input type="number" className="h-11" value={financials.investMoulds} onChange={(e)=>setFinancials({...financials,investMoulds:Number(e.target.value)})} /></div>
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Civil</Label><Input type="number" className="h-11" value={financials.investCivil} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></div>
                 <div className="space-y-2"><Label className="text-[8px] font-bold text-slate-400 uppercase">Electrical</Label><Input type="number" className="h-11" value={financials.investElectrical} onChange={(e)=>setFinancials({...financials,investElectrical:Number(e.target.value)})} /></div>
@@ -740,6 +741,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </div>
                        </div>
                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-2"><CreditCard className="h-3 w-3" /> Shed Advance</Label>
+                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials, investShedAdvance: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-2"><Monitor className="h-3 w-3" /> Furniture / Office</Label>
                           <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.investFurniture} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} />
                        </div>
@@ -768,10 +773,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Rent / Lease</Label>
                           <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.expenseRent} onChange={(e)=>setFinancials({...financials, expenseRent: Number(e.target.value)})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-400">Shed Advance</Label>
-                          <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={financials.expensePersonnel} onChange={(e)=>setFinancials({...financials, expensePersonnel: Number(e.target.value)})} />
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Power & Util</Label>
@@ -1085,6 +1086,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <td className="p-3 text-right font-bold">₹ {financials.investMachinery.toLocaleString('en-IN')}</td>
                                 </tr>
                                 <tr className="border-b border-slate-300">
+                                  <td className="p-3 border-r border-slate-900 font-medium">Shed Advance</td>
+                                  <td className="p-3 text-right font-bold">₹ {financials.investShedAdvance.toLocaleString('en-IN')}</td>
+                                </tr>
+                                <tr className="border-b border-slate-300">
                                   <td className="p-3 border-r border-slate-900 font-medium">Moulds & Tooling (CAPEX)</td>
                                   <td className="p-3 text-right font-bold">₹ {financials.investMoulds.toLocaleString('en-IN')}</td>
                                 </tr>
@@ -1098,7 +1103,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 </tr>
                                 <tr className="border-b border-slate-300">
                                   <td className="p-3 border-r border-slate-900 font-medium">Other Fixed Assets (IT/Furniture)</td>
-                                  <td className="p-3 text-right font-bold">₹ {(financials.investFurniture + financials.investSoftware + financials.investSystem + financials.investAdvance).toLocaleString('en-IN')}</td>
+                                  <td className="p-3 text-right font-bold">₹ {(financials.investFurniture + financials.investSoftware + financials.investSystem + financials.investPreOp).toLocaleString('en-IN')}</td>
                                 </tr>
                                 <tr className="bg-slate-50 font-bold border-t-2 border-slate-900">
                                   <td className="p-3 border-r border-slate-900 text-slate-700">Working Capital Reserve (3 Months)</td>

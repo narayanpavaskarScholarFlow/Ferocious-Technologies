@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -152,11 +153,11 @@ function IndustrialERPInternal() {
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
     if (!currentUser || !usersData) return null;
-    return usersData.find(u => u.name === currentUser || u.email === currentUser);
+    return usersData.find(u => u.name?.toLowerCase() === currentUser.toLowerCase() || u.email?.toLowerCase() === currentUser.toLowerCase() || u.username?.toLowerCase() === currentUser.toLowerCase());
   }, [currentUser, usersData]);
 
   const masterAdmin = useMemo(() => {
-    return usersData.find(u => u.name === 'Master Admin');
+    return usersData.find(u => u.name?.toLowerCase() === 'master admin' || u.role === 'Master Admin');
   }, [usersData]);
 
   const globalSystemSettings = useMemo(() => {
@@ -192,7 +193,7 @@ function IndustrialERPInternal() {
   }, [usersData, currentUser]);
 
   const permissions = useMemo(() => {
-    const isMasterAdminUser = currentUser === 'Master Admin';
+    const isMasterAdminUser = currentUser?.toLowerCase() === 'master admin';
     const isHR = currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
 
     if (isMasterAdminUser || isHR) {
@@ -222,7 +223,7 @@ function IndustrialERPInternal() {
   }, [currentUser, currentUserData]);
 
   const hasAccess = useCallback((view: string): boolean => {
-    if (currentUser === 'Master Admin') return true;
+    if (currentUser?.toLowerCase() === 'master admin') return true;
     if (view === 'my-portal' || view === 'settings' || view === 'user-detail') return true;
     const level = permissions[view];
     return level && level !== 'none';
@@ -338,7 +339,7 @@ function IndustrialERPInternal() {
           permissions={permissions} 
           isSlim={isSlimSidebar}
           customTitles={uiSettings.customTitles}
-          userRole={currentUser === 'Master Admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
+          userRole={currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
           isReportingManager={isReportingManager}
           brandLogo={brandLogo}
         />
@@ -362,7 +363,7 @@ function IndustrialERPInternal() {
                   permissions={permissions} 
                   isSlim={false}
                   customTitles={uiSettings.customTitles}
-                  userRole={currentUser === 'Master Admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
+                  userRole={currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
                   isReportingManager={isReportingManager}
                   brandLogo={brandLogo}
                 />
@@ -370,14 +371,17 @@ function IndustrialERPInternal() {
             </Sheet>
 
             <div className="flex items-center gap-2 md:gap-3">
-              <Image 
-                src={brandLogo} 
-                alt="Ferocious Tech" 
-                width={28} 
-                height={28} 
-                className="rounded-lg object-contain md:w-[32px] md:h-[32px]"
-                data-ai-hint="lion technology logo"
-              />
+              {brandLogo && (
+                <div className="relative w-7 h-7 md:w-8 md:h-8">
+                  <Image 
+                    src={brandLogo} 
+                    alt="Ferocious Tech" 
+                    fill
+                    className="rounded-lg object-contain"
+                    data-ai-hint="lion technology logo"
+                  />
+                </div>
+              )}
               <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-[#001F3D]">
                 FEROCIOUS<span className="text-primary">TECH</span>
               </h1>
@@ -387,7 +391,7 @@ function IndustrialERPInternal() {
           <div className="flex items-center gap-3 md:gap-4">
              <div className="text-right hidden sm:block">
                 <p className="text-[10px] md:text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
-                <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || (currentUser === 'Master Admin' ? 'Master Admin' : 'User')}</p>
+                <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || (currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : 'User')}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>

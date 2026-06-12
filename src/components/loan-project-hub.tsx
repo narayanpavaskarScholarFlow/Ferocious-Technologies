@@ -120,7 +120,6 @@ interface LoanProjectHubProps {
   brandLogo?: string;
 }
 
-// Define the absolute sequence for the report
 const REPORT_SEQUENCE = [
   { id: 'executiveSummary', label: '01. Executive Summary' },
   { id: 'aboutCompany', label: '02. About Company' },
@@ -164,14 +163,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
   const [pendingDrawingFile, setPendingDrawingFile] = useState<string | undefined>();
 
-  // Firestore Persistence Node
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
   const { data: savedStrategy } = useDoc<any>(strategyRef);
 
-  // Initialize checklist based on sequence
   const initialChecklist: Record<string, boolean> = {};
   REPORT_SEQUENCE.forEach(item => { initialChecklist[item.id] = true; });
-
   const [checklist, setChecklist] = useState<Record<string, boolean>>(initialChecklist);
 
   const [foundationalData, setFormData] = useState({
@@ -191,6 +187,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     aboutCompany: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
     visionMission: 'VISION: To establish Ferocious Tech as the global benchmark for precision machining.\nMISSION: Providing exceptional technical value through specialized engineering.',
     promoterProfile: 'Jayant Patil - B.E. Mechanical / MBA Operations. 15+ Years in Tool Room & VMC Operations. Highly technical leadership with a proven track record in precision engineering.',
+    projectDetails: 'The proposed project involves the setup of a high-fidelity VMC Machining Center and Tool Room in Pune.',
+    productServices: 'Combined Proprietary Products and Industrial Services matrix.',
     marketAnalysis: "India's electrical sector is witnessing an unprecedented surge. The Indian Tooling Industry is valued at approximately ₹18,500 Crores.",
     swotAnalysis: "STRENGTHS: High technical expertise, Advanced VMC fleet.\nWEAKNESSES: New establishment phase.\nOPPORTUNITIES: EV sector growth.\nTHREATS: Raw material price volatility.",
     businessModel: "Revenue-driven B2B model focusing on high-precision job work and proprietary industrial connectors.",
@@ -199,9 +197,21 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     orgStructure: "Lean organizational matrix consisting of a Promoter, Shift Supervisors, VMC Operators, and Quality Leads.",
     marketingStrategy: "Direct industrial liaison, digital cataloging, and exhibition presence at IMTEX and related trade nodes.",
     techIntegration: "System uses Firebase and Next.js for real-time manufacturing execution system (MES) and inventory synchronization.",
+    projectCost: 'One-time capital investment details.',
+    meansOfFinance: '90/10 Debt-Equity financing structure.',
+    workingCapitalRequirement: 'Liquidity reserve for 3 months operational buffer.',
+    financialProjections: '5-year performance and yield analysis.',
+    cashFlowStatement: 'Annual operational and financing liquidity analysis.',
+    turnoverAnalysis: 'Revenue realization and growth targets.',
+    breakevenAnalysis: 'Operational threshold for profitability.',
+    dscrMatrix: 'Debt Service Coverage Ratio analysis for institutional stability.',
+    keyRatios: 'Liquidity, Solvency, and Profitability ratios.',
+    mpbfCalculation: 'Maximum Permissible Bank Finance assessment.',
+    amortizationSchedule: 'Monthly and annual debt settlement timeline.',
     riskMitigation: "Comprehensive insurance coverage, multi-vendor raw material sourcing, and dynamic debt-service reserves.",
     govtSchemes: "The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix.",
     licensesRegistrations: "Udyam Registration, GST, ISO 9001:2015 compliance, and local municipal NOCs verified.",
+    roadmap: '5-year strategic evolution plan.',
     conclusion: "Based on the Techno-Economic analysis, the project demonstrates high viability with strong debt-service coverage and technical stability."
   });
 
@@ -222,13 +232,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const [financials, setFinancials] = useState({
     loanROI: 10.75,
-    loanTenure: 84, // 7 Years
-    loanMoratorium: 6, // 6 Months
+    loanTenure: 84,
+    loanMoratorium: 6,
     expenseRent: 35000,
     expensePower: 20000,
     expenseMaintenance: 50000,
     expenseConsumables: 100000,
-    investMachinery: 6000000,
+    investMachinery: 4500000,
     investCivil: 150000,
     investElectrical: 50000,
     investFurniture: 30000,
@@ -270,7 +280,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     if (!silent) toast({ title: "Strategy Matrix Committed", description: "All strategic nodes synchronized with master ledger." });
   }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, strategyRef, toast]);
 
-  // Financial Engine
   const calculations = useMemo(() => {
     const fixedAssetsAtCost = (financials.investMachinery || 0) + 
                             (financials.investCivil || 0) + 
@@ -418,7 +427,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const Watermark = () => (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden print:visible">
       <div className="relative w-[20%] aspect-square">
-         {brandLogo && <Image src={brandLogo} alt="Corporate Identity Watermark" fill className="object-contain" />}
+         {brandLogo && <img src={brandLogo} alt="Corporate Identity Watermark" className="w-full h-full object-contain" />}
       </div>
     </div>
   );
@@ -470,7 +479,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    <tbody>
                       <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
                       <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r">EBITDA</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.ebitda||0).toLocaleString('en-IN')}</td>)}</tr>
-                      <tr className="bg-slate-50 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
+                      <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
                    </tbody>
                 </table>
              </div>
@@ -655,11 +664,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} className="mx-auto print:transform-none print:w-full">
                 <div className="bg-white shadow-2xl p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative">
                    
-                   {/* Cover Page */}
                    <div className="min-h-[80vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
                       <Watermark />
                       <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4">
-                         <Image src={brandLogo || 'https://picsum.photos/seed/ferocious-logo-v2/400/400'} alt="Logo" fill className="object-contain p-4" />
+                         {brandLogo && <img src={brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
                       </div>
                       <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">Techno-Economic <br />Feasibility Analysis</h1>
                       <div className="h-1.5 w-24 md:w-32 bg-red-600 mx-auto rounded-full mt-8" />
@@ -669,7 +677,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </div>
                    </div>
 
-                   {/* Render Sequence Sections */}
                    {REPORT_SEQUENCE.map((section) => (
                      checklist[section.id] && (
                        <div key={section.id} className="space-y-8 page-break relative z-10 py-10 min-h-[297mm]">
@@ -677,7 +684,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          <h2 className="text-2xl md:text-3xl font-display font-bold text-[#8B5CF6] tracking-tight uppercase border-b-2 border-[#8B5CF6] pb-2">{section.label}</h2>
                          
                          <div className="space-y-6">
-                            {/* Specialized Renders for specific IDs */}
                             {section.id === 'projectCost' && (
                               <div className="space-y-6">
                                 <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
@@ -759,7 +765,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
-                            {/* Standard Text Content for other nodes */}
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                                 <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{(foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix."}</p>
@@ -769,7 +774,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
                      )
                    ))}
-
                 </div>
               </div>
            </div>
@@ -827,3 +831,4 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
+

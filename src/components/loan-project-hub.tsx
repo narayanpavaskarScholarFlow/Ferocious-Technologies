@@ -56,7 +56,17 @@ import {
   CreditCard,
   Briefcase,
   Monitor,
-  LayoutGrid
+  LayoutGrid,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Quote,
+  Undo,
+  Redo,
+  TableProperties,
+  MoreVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -90,6 +100,16 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+
+// Tiptap Imports for Rich Text
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import UnderlineExtension from '@tiptap/extension-underline';
+import TiptapTable from '@tiptap/extension-table';
+import TableRowExtension from '@tiptap/extension-table-row';
+import TableCellExtension from '@tiptap/extension-table-cell';
+import TableHeaderExtension from '@tiptap/extension-table-header';
+import Link from '@tiptap/extension-link';
 
 interface ProprietaryProduct {
   id: string;
@@ -154,6 +174,89 @@ const REPORT_SEQUENCE = [
   { id: 'roadmap', label: '29. Roadmap (5 Years)' },
   { id: 'conclusion', label: '30. Conclusion' }
 ];
+
+// High-Fidelity Rich Text Editor Component
+const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onChange: (val: string) => void, placeholder?: string }) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      UnderlineExtension,
+      Link.configure({ openOnClick: false }),
+      TiptapTable.configure({ resizable: true }),
+      TableRowExtension,
+      TableHeaderExtension,
+      TableCellExtension,
+    ],
+    content: value,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] p-6 text-slate-700 font-medium leading-relaxed',
+      },
+    },
+  });
+
+  // Keep editor content in sync with external value changes
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value);
+    }
+  }, [value, editor]);
+
+  if (!editor) return null;
+
+  return (
+    <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-inner bg-white">
+      {/* Dark Professional Toolbar matching reference */}
+      <div className="bg-slate-900 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800">
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Bold className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+            <Underline className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bulletList') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+            <List className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('orderedList') && "bg-white/20")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            <TableIcon className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().addRowAfter().run()}>
+            <Plus className="h-3 w-3" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().deleteTable().run()}>
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()}>
+            <Undo className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()}>
+            <Redo className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <EditorContent editor={editor} className="tiptap-editor-container" />
+    </div>
+  );
+};
 
 export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const db = useFirestore();
@@ -556,7 +659,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </tbody>
                 </table>
              </div>
-             <p className="text-[10px] text-slate-400 italic">* Values synchronized with CAPEX matrix and 90/10 protocol.</p>
           </div>
         );
       case 'productServices':
@@ -714,19 +816,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
                    <Label className="text-[10px] font-bold uppercase text-emerald-700 mb-3 block">Strengths</Label>
-                   <Textarea className="bg-white border-none h-40 text-xs font-medium" value={foundationalData.swotAnalysis.split('WEAKNESSES:')[0].replace('STRENGTHS:', '').trim()} placeholder="Internal technical advantages..." />
+                   <RichTextEditor value={foundationalData.swotAnalysis.split('WEAKNESSES:')[0].replace('STRENGTHS:', '').trim()} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `STRENGTHS: ${val} WEAKNESSES: ${foundationalData.swotAnalysis.split('WEAKNESSES:')[1] || ''}`})} />
                 </div>
                 <div className="p-6 bg-rose-50 rounded-3xl border border-rose-100">
                    <Label className="text-[10px] font-bold uppercase text-rose-700 mb-3 block">Weaknesses</Label>
-                   <Textarea className="bg-white border-none h-40 text-xs font-medium" value={foundationalData.swotAnalysis.split('OPPORTUNITIES:')[0].split('WEAKNESSES:')[1]?.trim()} placeholder="Internal limitations..." />
+                   <RichTextEditor value={foundationalData.swotAnalysis.split('OPPORTUNITIES:')[0].split('WEAKNESSES:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('WEAKNESSES:')[0]} WEAKNESSES: ${val} OPPORTUNITIES: ${foundationalData.swotAnalysis.split('OPPORTUNITIES:')[1] || ''}`})} />
                 </div>
                 <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
                    <Label className="text-[10px] font-bold uppercase text-blue-700 mb-3 block">Opportunities</Label>
-                   <Textarea className="bg-white border-none h-40 text-xs font-medium" value={foundationalData.swotAnalysis.split('THREATS:')[0].split('OPPORTUNITIES:')[1]?.trim()} placeholder="Market potential nodes..." />
+                   <RichTextEditor value={foundationalData.swotAnalysis.split('THREATS:')[0].split('OPPORTUNITIES:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('OPPORTUNITIES:')[0]} OPPORTUNITIES: ${val} THREATS: ${foundationalData.swotAnalysis.split('THREATS:')[1] || ''}`})} />
                 </div>
                 <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100">
                    <Label className="text-[10px] font-bold uppercase text-amber-700 mb-3 block">Threats</Label>
-                   <Textarea className="bg-white border-none h-40 text-xs font-medium" value={foundationalData.swotAnalysis.split('THREATS:')[1]?.trim()} placeholder="External risk factors..." />
+                   <RichTextEditor value={foundationalData.swotAnalysis.split('THREATS:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('THREATS:')[0]} THREATS: ${val}`})} />
                 </div>
              </div>
           </div>
@@ -836,10 +938,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">{REPORT_SEQUENCE.find(s=>s.id === sectionId)?.label}</h3>
-            <Textarea 
-              className="bg-slate-50 border-none min-h-[400px] rounded-3xl p-8 text-sm font-medium leading-relaxed shadow-inner focus-visible:ring-primary/20" 
+            <RichTextEditor 
               value={(foundationalData as any)[sectionId]} 
-              onChange={(e)=>setFormData({...foundationalData, [sectionId]: e.target.value})} 
+              onChange={(val)=>setFormData({...foundationalData, [sectionId]: val})} 
             />
             <div className="p-4 bg-primary/5 rounded-2xl flex items-start gap-4 border border-primary/10">
                <Info className="h-4 w-4 text-primary mt-0.5" />
@@ -1256,7 +1357,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{(foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix."}</p>
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>

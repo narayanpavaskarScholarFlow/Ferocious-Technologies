@@ -157,7 +157,7 @@ export function ProfileSettings({
   const [matrixPermissions, setMatrixPermissions] = useState<Record<string, PermissionLevel>>({});
 
   const isMasterAdmin = currentUser?.toLowerCase() === 'master admin';
-  const masterAdminRecord = useMemo(() => users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin'), [users]);
+  const masterAdminRecord = useMemo(() => users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin'), [users]);
   const defaultBrandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const [personalInfo, setPersonalInfo] = useState({
@@ -224,10 +224,19 @@ export function ProfileSettings({
 
   const handleCommitUISettings = () => {
     onUpdateUISettings(localUI);
-    // Determine target document for global UI settings (Master Admin record)
-    const targetAdmin = masterAdminRecord || currentUserData;
+    // Find the Master Admin record to save global settings
+    const targetAdmin = masterAdminRecord || users.find(u => u.name === currentUser) || currentUserData;
+    
     if (targetAdmin) {
-      onSaveUser({ ...targetAdmin, uiSettings: localUI });
+      // Create a clean update object
+      const adminUpdate: SystemUser = {
+        ...targetAdmin,
+        uiSettings: {
+          ...uiSettings, // Start with current global settings
+          ...localUI     // Apply new local changes
+        }
+      };
+      onSaveUser(adminUpdate);
       toast({ title: "UI Architecture Synchronized", description: "Global configuration committed to master ledger." });
     } else {
       toast({ variant: "destructive", title: "Protocol Error", description: "Administrative node not identified for global commit." });
@@ -237,7 +246,7 @@ export function ProfileSettings({
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Basic size check for Firestore document limit
+      // 800KB Limit to ensure stable Firestore sync
       if (file.size > 800000) {
         toast({ variant: "destructive", title: "Image Matrix Overflow", description: "Please use a logo under 800KB for institutional synchronization." });
         return;

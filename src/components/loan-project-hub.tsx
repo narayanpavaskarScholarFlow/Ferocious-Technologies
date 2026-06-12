@@ -122,6 +122,7 @@ interface LoanProjectHubProps {
 }
 
 const REPORT_SEQUENCE = [
+  { id: 'coverDetails', label: '00. Cover Metadata' },
   { id: 'executiveSummary', label: '01. Executive Summary' },
   { id: 'aboutCompany', label: '02. About Company' },
   { id: 'visionMission', label: '03. Vision & Mission' },
@@ -158,7 +159,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
-  const [activeEditingSection, setActiveEditingSection] = useState<string>('executiveSummary');
+  const [activeEditingSection, setActiveEditingSection] = useState<string>('coverDetails');
   const [zoom, setZoom] = useState(1);
   const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
   const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
@@ -173,6 +174,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const [foundationalData, setFormData] = useState({
     projectName: 'Precision VMC Machining & Tool Room Hub',
+    reportMainTitle: 'Techno-Economic Feasibility Analysis',
+    reportSubTitle: 'Detailed Project Report (DPR) v2.4',
     businessFirmName: 'Ferocious Tech',
     businessIndustry: 'Manufacturing',
     natureOfBusiness: 'Manufacturing and service',
@@ -435,6 +438,32 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const renderActiveEditor = () => {
     switch(activeEditingSection) {
+      case 'coverDetails':
+        return (
+          <div className="space-y-10 animate-in fade-in duration-500">
+             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Cover Metadata Architecture</h3>
+             <div className="space-y-8">
+                <div className="space-y-3">
+                   <Label className="text-[10px] font-bold uppercase text-slate-500">Report Main Title</Label>
+                   <Input value={foundationalData.reportMainTitle} onChange={(e)=>setFormData({...foundationalData, reportMainTitle: e.target.value})} className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold uppercase" />
+                </div>
+                <div className="space-y-3">
+                   <Label className="text-[10px] font-bold uppercase text-slate-500">Subtitle / Version</Label>
+                   <Input value={foundationalData.reportSubTitle} onChange={(e)=>setFormData({...foundationalData, reportSubTitle: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-medium" />
+                </div>
+                <div className="grid grid-cols-2 gap-8">
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Project Entity Name</Label>
+                      <Input value={foundationalData.projectName} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
+                   </div>
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Promoter Name</Label>
+                      <Input value={foundationalData.promoterName} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
       case 'projectCost':
         return (
           <div className="space-y-10 animate-in fade-in duration-500">
@@ -618,7 +647,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </tr>
                    </thead>
                    <tbody>
-                      <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Operational Revenue (Yield)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                      <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                       <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                       <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
                          <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
@@ -1026,10 +1055,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 <div className="bg-white shadow-2xl p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative">
                    <div className="min-h-[80vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
                       <Watermark />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="absolute top-4 right-4 no-print text-[#001F3D] hover:bg-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg"
+                        onClick={() => {
+                          setActiveEditingSection('coverDetails');
+                          setActiveTab('input');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      >
+                         <Edit3 className="h-3.5 w-3.5" /> Edit Cover Meta
+                      </Button>
                       <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4">
                          {brandLogo && <img src={brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
                       </div>
-                      <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">Techno-Economic <br />Feasibility Analysis</h1>
+                      <div className="space-y-4">
+                         <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">{foundationalData.reportMainTitle}</h1>
+                         <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.4em]">{foundationalData.reportSubTitle}</p>
+                      </div>
                       <div className="h-1.5 w-24 md:w-32 bg-red-600 mx-auto rounded-full mt-8" />
                       <div className="pt-20 grid grid-cols-1 sm:grid-cols-2 gap-10 md:gap-20 w-full max-w-2xl text-left border-t border-slate-100">
                          <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Project Entity</p><h4 className="text-base md:text-lg font-bold text-[#001F3D] uppercase">{foundationalData.projectName}</h4></div>
@@ -1038,7 +1082,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </div>
 
                    {REPORT_SEQUENCE.map((section) => (
-                     checklist[section.id] && (
+                     checklist[section.id] && section.id !== 'coverDetails' && (
                        <div key={section.id} className="space-y-8 page-break relative z-10 py-10 min-h-[297mm]">
                          <Watermark />
                          <div className="flex justify-between items-center border-b-2 border-[#8B5CF6] pb-2 mb-8">
@@ -1139,7 +1183,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
-                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices'].includes(section.id) && (
+                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                                 <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{(foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix."}</p>
                               </div>

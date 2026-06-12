@@ -55,7 +55,8 @@ import {
   Building2,
   CreditCard,
   Briefcase,
-  Monitor
+  Monitor,
+  LayoutGrid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -513,6 +514,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         <div className="overflow-x-auto pb-4">
           <TabsList className="bg-slate-100 p-1.5 rounded-full mb-2 h-14 inline-flex border border-slate-200 shadow-sm gap-2 min-w-max">
             <TabsTrigger value="input" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">01. Identity Matrix</TabsTrigger>
+            <TabsTrigger value="catalogues" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">02. Catalogues</TabsTrigger>
             <TabsTrigger value="financials" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">Financial Projection</TabsTrigger>
             <TabsTrigger value="display" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">04. Preview</TabsTrigger>
           </TabsList>
@@ -541,6 +543,80 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       ))}
                   </div>
                  </ScrollArea>
+              </Card>
+           </div>
+        </TabsContent>
+
+        <TabsContent value="catalogues" className="m-0 space-y-10 animate-in slide-in-from-bottom-2 duration-500">
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Product Catalog Entry */}
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                 <div className="flex justify-between items-center border-l-4 border-primary pl-6">
+                    <div>
+                      <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Direct manufactured yields.</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase gap-2" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                       <Plus className="h-3 w-3" /> Append Node
+                    </Button>
+                 </div>
+                 <div className="space-y-4">
+                    {proprietaryProducts.map((p, idx) => (
+                      <div key={p.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-primary/20">
+                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0"><img src={p.imageUrl || 'https://picsum.photos/seed/tool/200/200'} className="w-full h-full object-cover" alt="" /></div>
+                         <div className="flex-1 grid grid-cols-2 gap-4">
+                            <div className="col-span-2 space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Part Name</Label>
+                               <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Price (₹)</Label>
+                               <Input value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Qty</Label>
+                               <Input value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                         </div>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    ))}
+                 </div>
+              </Card>
+
+              {/* Service Catalog Entry */}
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                 <div className="flex justify-between items-center border-l-4 border-accent pl-6">
+                    <div>
+                      <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Technical Services</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">External job work and specialized services.</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-accent font-bold text-[9px] uppercase gap-2" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                       <Plus className="h-3 w-3" /> Append Node
+                    </Button>
+                 </div>
+                 <div className="space-y-4">
+                    {industrialServices.map((s, idx) => (
+                      <div key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
+                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0"><img src={s.imageUrl || 'https://picsum.photos/seed/service/200/200'} className="w-full h-full object-cover" alt="" /></div>
+                         <div className="flex-1 grid grid-cols-2 gap-4">
+                            <div className="col-span-2 space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Service Node</Label>
+                               <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹)</Label>
+                               <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Units</Label>
+                               <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                         </div>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    ))}
+                 </div>
               </Card>
            </div>
         </TabsContent>
@@ -831,4 +907,3 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,6 +68,52 @@
     padding-top: var(--table-cell-padding, 0.5rem) !important;
     padding-bottom: var(--table-cell-padding, 0.5rem) !important;
   }
+}
+
+/* Tiptap Industrial Table Matrix Styling */
+.tiptap-editor-container table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.tiptap-editor-container table td,
+.tiptap-editor-container table th {
+  min-width: 1em;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap-editor-container table th {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.tiptap-editor-container .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(99, 102, 241, 0.1);
+  pointer-events: none;
+}
+
+.tiptap-editor-container .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #6366f1;
+  pointer-events: none;
 }
 
 .premium-card {

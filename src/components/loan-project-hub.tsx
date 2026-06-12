@@ -100,6 +100,14 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // Tiptap Imports for Rich Text
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -232,16 +240,32 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
           </Button>
         </div>
 
+        {/* Enhanced Table Matrix Protocol */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
-            <TableIcon className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().addRowAfter().run()}>
-            <Plus className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().deleteTable().run()}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10">
+                <TableProperties className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 bg-slate-900 border-slate-800 text-white p-1 rounded-xl">
+              <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">
+                 <Plus className="h-3 w-3" /> Insert 3x3 Matrix
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Row Below</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Row Above</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10 text-red-400">Purge Current Row</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Col After</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Col Before</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10 text-red-400">Purge Current Col</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-red-500/20 text-red-500">
+                <Trash2 className="h-3 w-3" /> Delete Table Matrix
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="flex items-center gap-1">
@@ -699,7 +723,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-3 w-3" /></Button>
                       <div className="flex gap-4 mb-4">
                         <div className="relative h-16 w-16 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center group/img">
-                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300" />}
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
                            <input type="file" id={`s-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-4 w-4 text-white" />
@@ -824,7 +848,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 </div>
                 <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
                    <Label className="text-[10px] font-bold uppercase text-blue-700 mb-3 block">Opportunities</Label>
-                   <RichTextEditor value={foundationalData.swotAnalysis.split('THREATS:')[0].split('OPPORTUNITIES:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('OPPORTUNITIES:')[0]} OPPORTUNITIES: ${val} THREATS: ${foundationalData.swotAnalysis.split('THREATS:')[1] || ''}`})} />
+                   <RichTextEditor value={foundationalData.swotAnalysis.split('THREATS:')[0].split('OPPORTUNITIES:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('WEAKNESSES:')[0]} OPPORTUNITIES: ${val} THREATS: ${foundationalData.swotAnalysis.split('THREATS:')[1] || ''}`})} />
                 </div>
                 <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100">
                    <Label className="text-[10px] font-bold uppercase text-amber-700 mb-3 block">Threats</Label>
@@ -1005,7 +1029,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </div>
         </TabsContent>
 
-        <TabsContent value="catalogues" className="m-0 space-y-10 animate-in slide-in-from-bottom-2 duration-500">
+        <TabsContent value="catalogues" className="m-0 space-y-10">
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                  <div className="flex justify-between items-center border-l-4 border-primary pl-6">

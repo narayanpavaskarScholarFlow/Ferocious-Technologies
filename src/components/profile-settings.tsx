@@ -224,8 +224,26 @@ export function ProfileSettings({
 
   const handleCommitUISettings = () => {
     onUpdateUISettings(localUI);
+    
     // Find the Master Admin record to save global settings
-    const targetAdmin = masterAdminRecord || users.find(u => u.name === currentUser) || currentUserData;
+    let targetAdmin = masterAdminRecord || users.find(u => u.name === currentUser) || currentUserData;
+    
+    // Safety Fallback: If no database record found but current user is identified as Master Admin
+    if (!targetAdmin && currentUser?.toLowerCase() === 'master admin') {
+      targetAdmin = {
+        id: 'admin-master-node',
+        username: 'admin',
+        firstName: 'Master',
+        lastName: 'Admin',
+        name: 'Master Admin',
+        email: 'admin@ferocious.tech',
+        role: 'Master Admin',
+        dept: 'Admin',
+        permissions: {},
+        lastLogin: new Date().toISOString(),
+        status: 'active'
+      } as SystemUser;
+    }
     
     if (targetAdmin) {
       // Create a clean update object

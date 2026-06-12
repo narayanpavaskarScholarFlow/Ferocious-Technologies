@@ -515,7 +515,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <TabsList className="bg-slate-100 p-1.5 rounded-full mb-2 h-14 inline-flex border border-slate-200 shadow-sm gap-2 min-w-max">
             <TabsTrigger value="input" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">01. Identity Matrix</TabsTrigger>
             <TabsTrigger value="catalogues" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">02. Catalogues</TabsTrigger>
-            <TabsTrigger value="financials" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">Financial Projection</TabsTrigger>
+            <TabsTrigger value="financials" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">03. Financial Projection</TabsTrigger>
             <TabsTrigger value="display" className="rounded-full px-6 md:px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white">04. Preview</TabsTrigger>
           </TabsList>
         </div>
@@ -531,14 +531,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     {renderActiveEditor()}
                  </Card>
               </div>
-              <Card className="lg:col-span-4 p-6 md:p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] h-fit sticky top-24">
-                 <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40 mb-8">Report Matrix</h3>
-                 <ScrollArea className="max-h-[600px] pr-4">
-                  <div className="space-y-3">
+              <Card className="lg:col-span-4 p-6 md:p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] h-fit lg:h-[calc(100vh-200px)] sticky top-24 flex flex-col">
+                 <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-white/40 mb-8 shrink-0">Report Matrix</h3>
+                 <ScrollArea className="flex-1 pr-4 -mr-4">
+                  <div className="space-y-3 pb-6">
                       {REPORT_SEQUENCE.map((item) => (
-                        <div key={item.id} className={cn("flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer", activeEditingSection === item.id ? "bg-white/10 border-white/30" : "bg-white/5 border-white/10")} onClick={() => setActiveEditingSection(item.id)}>
-                            <Checkbox checked={checklist[item.id]} className="border-white/20" onCheckedChange={() => setChecklist({...checklist, [item.id]: !checklist[item.id]})} />
-                            <span className={cn("text-[10px] font-bold uppercase tracking-widest", activeEditingSection === item.id ? "text-white" : "text-white/60")}>{item.label}</span>
+                        <div key={item.id} className={cn("flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer group", activeEditingSection === item.id ? "bg-white/10 border-white/30" : "bg-white/5 border-white/10 hover:bg-white/10")} onClick={() => setActiveEditingSection(item.id)}>
+                            <Checkbox checked={checklist[item.id]} className="border-white/20 data-[state=checked]:bg-white data-[state=checked]:text-[#001F3D]" onCheckedChange={() => setChecklist({...checklist, [item.id]: !checklist[item.id]})} />
+                            <span className={cn("text-[10px] font-bold uppercase tracking-widest transition-colors", activeEditingSection === item.id ? "text-white" : "text-white/60 group-hover:text-white")}>{item.label}</span>
                         </div>
                       ))}
                   </div>

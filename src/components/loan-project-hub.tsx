@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,6 +160,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('input');
   const [activeEditingSection, setActiveEditingSection] = useState<string>('coverDetails');
+  const [editingSectionInPreview, setEditingSectionInPreview] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
   const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
@@ -428,6 +429,22 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     setIndustrialServices(newS);
   };
 
+  const handleImageUpload = (idx: number, type: 'product' | 'service', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'product') {
+          updateProduct(idx, 'imageUrl', reader.result as string);
+        } else {
+          updateService(idx, 'imageUrl', reader.result as string);
+        }
+        toast({ title: "Visual Node Cached", description: "Image synchronization pending master commit." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const Watermark = () => (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden print:visible">
       <div className="relative w-[20%] aspect-square">
@@ -436,8 +453,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 
-  const renderActiveEditor = () => {
-    switch(activeEditingSection) {
+  const renderActiveEditor = (sectionId: string) => {
+    switch(sectionId) {
       case 'coverDetails':
         return (
           <div className="space-y-10 animate-in fade-in duration-500">
@@ -551,7 +568,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {proprietaryProducts.map((p, idx) => (
                    <Card key={p.id} className="p-4 bg-slate-50 relative group border-slate-200">
                       <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-slate-300 group-hover:text-red-500" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-3 w-3" /></Button>
-                      <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Product Node Name" />
+                      <div className="flex gap-4 mb-4">
+                        <div className="relative h-16 w-16 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center group/img">
+                           {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="h-6 w-6 text-slate-300" />}
+                           <input type="file" id={`p-img-${p.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'product', e)} />
+                           <label htmlFor={`p-img-${p.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                              <Upload className="h-4 w-4 text-white" />
+                           </label>
+                        </div>
+                        <div className="flex-1">
+                          <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Product Node Name" />
+                          <Input value={p.market} onChange={(e)=>updateProduct(idx,'market',e.target.value)} className="h-6 text-[10px] bg-white" placeholder="Target Market" />
+                        </div>
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                          <Input value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} placeholder="Price (₹)" className="bg-white" />
                          <Input value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} placeholder="Target Qty" className="bg-white" />
@@ -566,7 +595,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {industrialServices.map((s, idx) => (
                    <Card key={s.id} className="p-4 bg-slate-50 relative group border-slate-200">
                       <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-3 w-3" /></Button>
-                      <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Service Node Name" />
+                      <div className="flex gap-4 mb-4">
+                        <div className="relative h-16 w-16 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center group/img">
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300" />}
+                           <input type="file" id={`s-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
+                           <label htmlFor={`s-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                              <Upload className="h-4 w-4 text-white" />
+                           </label>
+                        </div>
+                        <div className="flex-1">
+                          <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Service Node Name" />
+                          <Input value={s.description} onChange={(e)=>updateService(idx,'description',e.target.value)} className="h-6 text-[10px] bg-white" placeholder="Brief Capability" />
+                        </div>
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                          <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} placeholder="Rate (₹)" className="bg-white" />
                          <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} placeholder="Jobs / Yr" className="bg-white" />
@@ -794,11 +835,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       default: 
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">{REPORT_SEQUENCE.find(s=>s.id === activeEditingSection)?.label}</h3>
+            <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">{REPORT_SEQUENCE.find(s=>s.id === sectionId)?.label}</h3>
             <Textarea 
               className="bg-slate-50 border-none min-h-[400px] rounded-3xl p-8 text-sm font-medium leading-relaxed shadow-inner focus-visible:ring-primary/20" 
-              value={(foundationalData as any)[activeEditingSection]} 
-              onChange={(e)=>setFormData({...foundationalData, [activeEditingSection]: e.target.value})} 
+              value={(foundationalData as any)[sectionId]} 
+              onChange={(e)=>setFormData({...foundationalData, [sectionId]: e.target.value})} 
             />
             <div className="p-4 bg-primary/5 rounded-2xl flex items-start gap-4 border border-primary/10">
                <Info className="h-4 w-4 text-primary mt-0.5" />
@@ -825,7 +866,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-[#001F3D]">Strategy <span className="text-slate-400 font-medium">Engineer</span></h2>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-           <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4" /> Export Report</Button>
+           <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Export Report</Button>
            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 flex-1 sm:flex-none" onClick={() => handleSaveStrategy()}><Save className="h-4 w-4" /> Commit Strategy</Button>
         </div>
       </header>
@@ -844,7 +885,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8">
                  <Card className="p-6 md:p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem] space-y-10 min-h-[600px]">
-                    {renderActiveEditor()}
+                    {renderActiveEditor(activeEditingSection)}
                  </Card>
               </div>
               <Card className="lg:col-span-4 p-6 md:p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] h-fit lg:h-[calc(100vh-300px)] sticky top-24 flex flex-col">
@@ -878,7 +919,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div className="space-y-4">
                     {proprietaryProducts.map((p, idx) => (
                       <div key={p.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-primary/20">
-                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0"><img src={p.imageUrl || 'https://picsum.photos/seed/tool/200/200'} className="w-full h-full object-cover" alt="" /></div>
+                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
+                           {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover" alt="" /> : <ImageIcon className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
+                           <input type="file" id={`p-cat-img-${p.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'product', e)} />
+                           <label htmlFor={`p-cat-img-${p.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                              <Upload className="h-4 w-4 text-white" />
+                           </label>
+                         </div>
                          <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="col-span-2 space-y-1">
                                <Label className="text-[8px] font-bold uppercase text-slate-400">Part Name</Label>
@@ -912,7 +959,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div className="space-y-4">
                     {industrialServices.map((s, idx) => (
                       <div key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
-                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0"><img src={s.imageUrl || 'https://picsum.photos/seed/service/200/200'} className="w-full h-full object-cover" alt="" /></div>
+                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
+                           {s.imageUrl ? <img src={s.imageUrl} className="w-full h-full object-cover" alt="" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
+                           <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
+                           <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                              <Upload className="h-4 w-4 text-white" />
+                           </label>
+                         </div>
                          <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="col-span-2 space-y-1">
                                <Label className="text-[8px] font-bold uppercase text-slate-400">Service Node</Label>
@@ -1059,11 +1112,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         variant="ghost" 
                         size="sm" 
                         className="absolute top-4 right-4 no-print text-[#001F3D] hover:bg-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg"
-                        onClick={() => {
-                          setActiveEditingSection('coverDetails');
-                          setActiveTab('input');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={() => setEditingSectionInPreview('coverDetails')}
                       >
                          <Edit3 className="h-3.5 w-3.5" /> Edit Cover Meta
                       </Button>
@@ -1091,11 +1140,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               variant="ghost" 
                               size="sm" 
                               className="no-print text-[#8B5CF6] hover:bg-[#8B5CF6]/10 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg"
-                              onClick={() => {
-                                setActiveEditingSection(section.id);
-                                setActiveTab('input');
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }}
+                              onClick={() => setEditingSectionInPreview(section.id)}
                            >
                               <Edit3 className="h-3.5 w-3.5" /> Edit Matrix Node
                            </Button>
@@ -1171,13 +1216,39 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             )}
 
                             {section.id === 'productServices' && (
-                              <div className="space-y-8">
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                              <div className="space-y-12">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                   {proprietaryProducts.map(p => (
-                                    <div key={p.id} className="p-4 bg-slate-50 border rounded-xl"><p className="text-[10px] font-bold uppercase">{p.name}</p><p className="text-[8px] text-primary font-bold mt-1">₹ {parseFloat(p.price).toLocaleString()}</p></div>
+                                    <div key={p.id} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex gap-6">
+                                       <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
+                                          {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
+                                       </div>
+                                       <div className="flex-1 space-y-2">
+                                          <p className="text-[12px] font-bold uppercase text-[#001F3D]">{p.name}</p>
+                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.market}</p>
+                                          <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
+                                             <span className="text-[10px] font-display font-bold text-primary">₹ {parseFloat(p.price).toLocaleString()}</span>
+                                             <span className="text-[9px] font-bold text-slate-400">{p.annualTargetQty} units/yr</span>
+                                          </div>
+                                       </div>
+                                    </div>
                                   ))}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                   {industrialServices.map(s => (
-                                    <div key={s.id} className="p-4 bg-blue-50 border border-blue-100 rounded-xl"><p className="text-[10px] font-bold uppercase">{s.name}</p><p className="text-[8px] text-blue-600 font-bold mt-1">₹ {parseFloat(s.price).toLocaleString()}</p></div>
+                                    <div key={s.id} className="p-6 bg-blue-50 border border-blue-100 rounded-2xl flex gap-6">
+                                       <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
+                                          {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
+                                       </div>
+                                       <div className="flex-1 space-y-2">
+                                          <p className="text-[12px] font-bold uppercase text-blue-900">{s.name}</p>
+                                          <p className="text-[9px] font-medium text-slate-500 line-clamp-2">{s.description}</p>
+                                          <div className="flex justify-between items-center pt-2 border-t border-blue-100 mt-2">
+                                             <span className="text-[10px] font-display font-bold text-blue-600">₹ {parseFloat(s.price).toLocaleString()}</span>
+                                             <span className="text-[9px] font-bold text-slate-400">{s.annualTargetQty} jobs/yr</span>
+                                          </div>
+                                       </div>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -1197,6 +1268,33 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </div>
         </TabsContent>
       </Tabs>
+
+      {/* In-Place Preview Editor Modal */}
+      <Dialog open={!!editingSectionInPreview} onOpenChange={(open) => !open && setEditingSectionInPreview(null)}>
+        <DialogContent className="max-w-4xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col h-[85vh]">
+           <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-4">
+                 <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20"><Edit3 className="h-6 w-6" /></div>
+                 <div>
+                    <h3 className="text-2xl font-display font-bold uppercase tracking-tight">In-Place Protocol Editor</h3>
+                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Section: {REPORT_SEQUENCE.find(s=>s.id === editingSectionInPreview)?.label}</p>
+                 </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setEditingSectionInPreview(null)} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                <X className="h-6 w-6" />
+              </Button>
+           </div>
+           <ScrollArea className="flex-1 p-10 bg-white">
+              {editingSectionInPreview && renderActiveEditor(editingSectionInPreview)}
+           </ScrollArea>
+           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-between items-center shrink-0">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">All edits are live-synchronized with <br />the feasibility preview matrix.</p>
+              <Button className="bg-[#001F3D] hover:bg-black text-white h-12 px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={() => { handleSaveStrategy(); setEditingSectionInPreview(null); }}>
+                 <Save className="h-4 w-4" /> Commit & Close Matrix
+              </Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isMachineryBreakupOpen} onOpenChange={setIsMachineryBreakupOpen}>
         <DialogContent className="max-w-4xl h-[85vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">

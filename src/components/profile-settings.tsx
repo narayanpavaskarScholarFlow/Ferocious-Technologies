@@ -152,14 +152,12 @@ export function ProfileSettings({
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Buffer state for UI settings to allow explicit save
   const [localUI, setLocalUI] = useState<UISettings>(uiSettings);
-
-  // Access Matrix State
   const [selectedMatrixUserId, setSelectedMatrixUserId] = useState<string | null>(null);
   const [matrixPermissions, setMatrixPermissions] = useState<Record<string, PermissionLevel>>({});
 
-  const isMasterAdmin = currentUser === 'Master Admin';
+  const isMasterAdmin = currentUser?.toLowerCase() === 'master admin';
+  const masterAdminRecord = useMemo(() => users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin'), [users]);
   const defaultBrandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const [personalInfo, setPersonalInfo] = useState({
@@ -184,7 +182,6 @@ export function ProfileSettings({
     }
   }, [currentUserData]);
 
-  // Sync local UI buffer when prop changes (on component mount or prop update)
   useEffect(() => {
     setLocalUI(uiSettings);
   }, [uiSettings]);
@@ -227,15 +224,24 @@ export function ProfileSettings({
 
   const handleCommitUISettings = () => {
     onUpdateUISettings(localUI);
-    if (currentUserData) {
-      onSaveUser({ ...currentUserData, uiSettings: localUI });
+    // Determine target document for global UI settings (Master Admin record)
+    const targetAdmin = masterAdminRecord || currentUserData;
+    if (targetAdmin) {
+      onSaveUser({ ...targetAdmin, uiSettings: localUI });
+      toast({ title: "UI Architecture Synchronized", description: "Global configuration committed to master ledger." });
+    } else {
+      toast({ variant: "destructive", title: "Protocol Error", description: "Administrative node not identified for global commit." });
     }
-    toast({ title: "UI Architecture Synchronized", description: "Global configuration committed to master ledger." });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Basic size check for Firestore document limit
+      if (file.size > 800000) {
+        toast({ variant: "destructive", title: "Image Matrix Overflow", description: "Please use a logo under 800KB for institutional synchronization." });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         updateLocalUIField('brandLogo', reader.result as string);

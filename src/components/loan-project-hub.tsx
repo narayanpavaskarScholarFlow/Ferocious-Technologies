@@ -285,7 +285,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] p-8 text-slate-700 font-medium leading-relaxed bg-white',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] p-8 text-slate-700 font-medium leading-relaxed bg-white',
       },
     },
   });
@@ -310,21 +310,21 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
   if (!editor) return null;
 
   return (
-    <div className="border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white">
+    <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
       {/* MS Word-Style Premium Dynamic Toolbar */}
-      <div className="bg-slate-950 text-white p-3 flex flex-wrap items-center gap-1.5 border-b border-slate-800 sticky top-0 z-50">
+      <div className="bg-slate-950 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800 sticky top-0 z-50">
         
         {/* Typography Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 gap-2 px-3 text-white hover:bg-white/10 font-bold text-[10px] uppercase tracking-tighter">
-                <Type className="h-3.5 w-3.5" /> Font
+              <Button variant="ghost" size="sm" className="h-7 gap-2 px-2 text-white hover:bg-white/10 font-bold text-[9px] uppercase tracking-tighter">
+                <Type className="h-3 w-3" /> Font
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 text-white p-1">
               {FONT_FAMILIES.map(f => (
-                <DropdownMenuItem key={f.value} onClick={() => editor.chain().focus().setFontFamily(f.value).run()} className="rounded-lg h-9 text-xs font-medium hover:bg-white/10" style={{ fontFamily: f.value }}>
+                <DropdownMenuItem key={f.value} onClick={() => editor.chain().focus().setFontFamily(f.value).run()} className="rounded-lg h-8 text-[10px] font-medium hover:bg-white/10" style={{ fontFamily: f.value }}>
                   {f.name}
                 </DropdownMenuItem>
               ))}
@@ -333,13 +333,13 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 gap-2 px-3 text-white hover:bg-white/10 font-bold text-[10px] uppercase">
+              <Button variant="ghost" size="sm" className="h-7 gap-2 px-2 text-white hover:bg-white/10 font-bold text-[9px] uppercase">
                 Size
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-24 bg-slate-900 border-slate-800 text-white p-1">
+            <DropdownMenuContent className="w-20 bg-slate-900 border-slate-800 text-white p-1">
               {FONT_SIZES.map(s => (
-                <DropdownMenuItem key={s} onClick={() => (editor.chain().focus() as any).setFontSize(s).run()} className="rounded-lg h-8 text-xs font-bold text-center">
+                <DropdownMenuItem key={s} onClick={() => (editor.chain().focus() as any).setFontSize(s).run()} className="rounded-lg h-7 text-[10px] font-bold text-center">
                   {s}
                 </DropdownMenuItem>
               ))}
@@ -349,26 +349,26 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
 
         {/* Style Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}>
-            <Bold className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Bold className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} onClick={() => editor.chain().focus().toggleItalic().run()}>
-            <Italic className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <Italic className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
-            <Underline className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+            <Underline className="h-3.5 w-3.5" />
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Text Color">
-                <Baseline className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" title="Text Color">
+                <Baseline className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 p-2">
-              <div className="grid grid-cols-4 gap-2">
+            <DropdownMenuContent className="w-40 bg-slate-900 border-slate-800 p-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {COLOR_PALETTE.map(c => (
-                  <button key={c} onClick={() => editor.chain().focus().setColor(c).run()} className="h-6 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
+                  <button key={c} onClick={() => editor.chain().focus().setColor(c).run()} className="h-5 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
                 ))}
               </div>
             </DropdownMenuContent>
@@ -376,14 +376,14 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Box / Highlight Color">
-                <Highlighter className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" title="Box / Highlight Color">
+                <Highlighter className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 p-2">
-              <div className="grid grid-cols-4 gap-2">
+            <DropdownMenuContent className="w-40 bg-slate-900 border-slate-800 p-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {COLOR_PALETTE.map(c => (
-                  <button key={c} onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()} className="h-6 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
+                  <button key={c} onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()} className="h-5 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
                 ))}
               </div>
             </DropdownMenuContent>
@@ -392,14 +392,11 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
 
         {/* Structure Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 1 }) && "bg-white/20")} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
-            <Heading1 className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('heading', { level: 1 }) && "bg-white/20")} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+            <Heading1 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 2 }) && "bg-white/20")} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
-            <Heading2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'justify' }) && "bg-white/20")} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
-            <AlignJustify className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive({ textAlign: 'justify' }) && "bg-white/20")} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+            <AlignJustify className="h-3.5 w-3.5" />
           </Button>
         </div>
 
@@ -407,49 +404,31 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Table Matrix">
-                <TableProperties className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-slate-900 border-slate-800 text-white p-1">
-              <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10"><Plus className="h-3 w-3" /> Insert 3x3 Matrix</DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Row</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Col</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Insert Fixture" onClick={() => fileInputRef.current?.click()}>
-            <ImageIcon className="h-4 w-4" />
-          </Button>
-          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFixtureUpload} />
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Insert Shape">
-                <Box className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" title="Table Matrix">
+                <TableProperties className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 text-white p-1">
-              {SHAPES.map(s => (
-                <DropdownMenuItem key={s.id} onClick={() => editor.chain().focus().insertContent(s.content).run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-3">
-                  <s.icon className="h-3.5 w-3.5" /> {s.label}
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="rounded-lg h-8 text-[9px] font-bold uppercase gap-2 hover:bg-white/10"><Plus className="h-2.5 w-2.5" /> Insert Matrix</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} className="rounded-lg h-8 text-[9px] font-bold uppercase hover:bg-white/10">Add Row</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} className="rounded-lg h-8 text-[9px] font-bold uppercase hover:bg-white/10">Add Col</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" title="Insert Fixture" onClick={() => fileInputRef.current?.click()}>
+            <ImageIcon className="h-3.5 w-3.5" />
+          </Button>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFixtureUpload} />
         </div>
 
         {/* Global Group */}
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Clear Matrix Styling">
-            <Eraser className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()}>
+            <Undo className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()}>
-            <Undo className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()}>
-            <Redo className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()}>
+            <Redo className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
@@ -476,7 +455,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   REPORT_SEQUENCE.forEach(item => { initialChecklist[item.id] = true; });
   const [checklist, setChecklist] = useState<Record<string, boolean>>(initialChecklist);
 
-  const [foundationalData, setFormData] = useState({
+  const [foundationalData, setFormData] = useState<any>({
     projectName: 'Precision VMC Machining & Tool Room Hub',
     reportMainTitle: 'Techno-Economic Feasibility Analysis',
     reportSubTitle: 'Detailed Project Report (DPR) v2.4',
@@ -564,7 +543,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   useEffect(() => {
     if (savedStrategy && !isDataLoaded) {
-      if (savedStrategy.foundationalData) setFormData(prev => ({ ...prev, ...savedStrategy.foundationalData }));
+      if (savedStrategy.foundationalData) setFormData((prev: any) => ({ ...prev, ...savedStrategy.foundationalData }));
       if (Array.isArray(savedStrategy.proprietaryProducts)) setProprietaryProducts(savedStrategy.proprietaryProducts);
       if (Array.isArray(savedStrategy.industrialServices)) setIndustrialServices(savedStrategy.industrialServices);
       if (Array.isArray(savedStrategy.machineryItems)) setMachineryItems(savedStrategy.machineryItems);
@@ -757,6 +736,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 
+  const NoteWrapper = ({ sectionId, children }: { sectionId: string, children: React.ReactNode }) => (
+    <div className="space-y-6">
+       <div className="space-y-2">
+          <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest px-1">Header Annotation</Label>
+          <RichTextEditor value={foundationalData[sectionId] || ""} onChange={(val) => setFormData({...foundationalData, [sectionId]: val})} />
+       </div>
+       {children}
+       <div className="space-y-2">
+          <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest px-1">Footer Annotation</Label>
+          <RichTextEditor value={foundationalData[sectionId + '_footer'] || ""} onChange={(val) => setFormData({...foundationalData, [sectionId + '_footer']: val})} />
+       </div>
+    </div>
+  );
+
   const renderActiveEditor = (sectionId: string) => {
     switch(sectionId) {
       case 'coverDetails':
@@ -787,76 +780,80 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         );
       case 'projectCost':
         return (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Asset Matrix (CAPEX)</h3>
-                <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase" onClick={()=>setIsMachineryBreakupOpen(true)}>
-                   <Edit3 className="h-3.5 w-3.5 mr-2" /> Edit Machinery Breakup
-                </Button>
-             </div>
-             <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
-                <table className="w-full text-left">
-                   <thead className="bg-slate-50 border-b border-slate-900">
-                      <tr className="text-[10px] font-bold uppercase">
-                         <th className="p-3 border-r border-slate-900">Expenditure Node</th>
-                         <th className="p-3 text-right">Amount (₹)</th>
-                      </tr>
-                   </thead>
-                   <tbody className="text-xs">
-                      <tr className="border-b border-slate-300">
-                         <td className="p-3 border-r border-slate-900 font-medium">Plant & Machinery (VMC/CNC Fleet)</td>
-                         <td className="p-1 text-right font-bold"><Input readOnly className="bg-slate-100 h-9 border-none text-right" value={financials.investMachinery.toLocaleString()} /></td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
-                         <td className="p-3 border-r border-slate-900 font-medium">Shed Advance (Security Deposit)</td>
-                         <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials,investShedAdvance:Number(e.target.value)})} /></td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
-                         <td className="p-3 border-r border-slate-900 font-medium">Civil, Electrical & Infrastructure</td>
-                         <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investCivil + financials.investElectrical} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></td>
-                      </tr>
-                      <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
-                         <td className="p-3 border-r border-slate-900 uppercase">Total Fixed Capital (One-Time)</td>
-                         <td className="p-3 text-right text-lg text-[#001F3D]">₹ {calculations.fixedCapital.toLocaleString('en-IN')}</td>
-                      </tr>
-                   </tbody>
-                </table>
-             </div>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <div className="flex justify-between items-center px-1">
+                  <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest">Asset Matrix (CAPEX)</h3>
+                  <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase" onClick={()=>setIsMachineryBreakupOpen(true)}>
+                     <Edit3 className="h-3.5 w-3.5 mr-2" /> Edit Machinery Breakup
+                  </Button>
+               </div>
+               <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white shadow-sm">
+                  <table className="w-full text-left">
+                     <thead className="bg-slate-50 border-b border-slate-900">
+                        <tr className="text-[10px] font-bold uppercase">
+                           <th className="p-3 border-r border-slate-900">Expenditure Node</th>
+                           <th className="p-3 text-right">Amount (₹)</th>
+                        </tr>
+                     </thead>
+                     <tbody className="text-xs">
+                        <tr className="border-b border-slate-300">
+                           <td className="p-3 border-r border-slate-900 font-medium">Plant & Machinery (VMC/CNC Fleet)</td>
+                           <td className="p-1 text-right font-bold"><Input readOnly className="bg-slate-100 h-9 border-none text-right" value={financials.investMachinery.toLocaleString()} /></td>
+                        </tr>
+                        <tr className="border-b border-slate-300">
+                           <td className="p-3 border-r border-slate-900 font-medium">Shed Advance (Security Deposit)</td>
+                           <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials,investShedAdvance:Number(e.target.value)})} /></td>
+                        </tr>
+                        <tr className="border-b border-slate-300">
+                           <td className="p-3 border-r border-slate-900 font-medium">Civil, Electrical & Infrastructure</td>
+                           <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investCivil + financials.investElectrical} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></td>
+                        </tr>
+                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
+                           <td className="p-3 border-r border-slate-900 uppercase">Total Fixed Capital (One-Time)</td>
+                           <td className="p-3 text-right text-lg text-[#001F3D]">₹ {calculations.fixedCapital.toLocaleString('en-IN')}</td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'meansOfFinance':
         return (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-blue-600 pl-4">Institutional Funding Split</h3>
-             <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
-                <table className="w-full text-left border-collapse">
-                   <thead className="bg-slate-50 border-b-2 border-slate-900">
-                      <tr className="text-[10px] font-bold uppercase text-blue-600">
-                         <th className="p-4 border-r border-slate-900">Finance Source</th>
-                         <th className="p-4 text-center border-r border-slate-900 w-24">Share</th>
-                         <th className="p-4 text-right">Valuation (₹)</th>
-                      </tr>
-                   </thead>
-                   <tbody className="text-xs">
-                      <tr className="border-b border-slate-300">
-                         <td className="p-4 border-r border-slate-900 font-medium">Bank Term Loan (Industrial)</td>
-                         <td className="p-4 text-center border-r border-slate-900">90%</td>
-                         <td className="p-4 text-right font-bold">₹ {calculations.loanAmt.toLocaleString('en-IN')}</td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
-                         <td className="p-4 border-r border-slate-900 font-medium">Promoter Equity (Entrepreneur)</td>
-                         <td className="p-4 text-center border-r border-slate-900">10%</td>
-                         <td className="p-4 text-right font-bold">₹ {calculations.entrepreneurAmt.toLocaleString('en-IN')}</td>
-                      </tr>
-                      <tr className="bg-slate-100 font-black">
-                         <td className="p-4 border-r border-slate-900 text-right uppercase">Total Capital Provision</td>
-                         <td className="p-4 text-center border-r border-slate-900">100%</td>
-                         <td className="p-4 text-right text-lg text-primary">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td>
-                      </tr>
-                   </tbody>
-                </table>
-             </div>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Institutional Funding Split</h3>
+               <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                     <thead className="bg-slate-50 border-b-2 border-slate-900">
+                        <tr className="text-[10px] font-bold uppercase text-blue-600">
+                           <th className="p-4 border-r border-slate-900">Finance Source</th>
+                           <th className="p-4 text-center border-r border-slate-900 w-24">Share</th>
+                           <th className="p-4 text-right">Valuation (₹)</th>
+                        </tr>
+                     </thead>
+                     <tbody className="text-xs">
+                        <tr className="border-b border-slate-300">
+                           <td className="p-4 border-r border-slate-900 font-medium">Bank Term Loan (Industrial)</td>
+                           <td className="p-4 text-center border-r border-slate-900">90%</td>
+                           <td className="p-4 text-right font-bold">₹ {calculations.loanAmt.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr className="border-b border-slate-300">
+                           <td className="p-4 border-r border-slate-900 font-medium">Promoter Equity (Entrepreneur)</td>
+                           <td className="p-4 text-center border-r border-slate-900">10%</td>
+                           <td className="p-4 text-right font-bold">₹ {calculations.entrepreneurAmt.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr className="bg-slate-100 font-black">
+                           <td className="p-4 border-r border-slate-900 text-right uppercase">Total Capital Provision</td>
+                           <td className="p-4 text-center border-r border-slate-900">100%</td>
+                           <td className="p-4 text-right text-lg text-primary">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'productServices':
         return (
@@ -919,229 +916,207 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         );
       case 'cashFlowStatement':
         return (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-emerald-500 pl-4">Projected 5-Year Cash Flow Statement</h3>
-             <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-xl">
-                <table className="w-full text-left border-collapse min-w-[800px]">
-                   <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                         <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r w-[20%]">Cash Particulars</th>
-                         {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
-                      </tr>
-                   </thead>
-                   <tbody>
-                      <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Profit After Tax (PAT)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.npat.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Interest Paid</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Depreciation Addback</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="border-b bg-slate-100 font-bold"><td className="p-3 text-[10px] font-bold uppercase border-r">Gross Operating Cash</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.opProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50 text-red-600">(-) Loan Repayment</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0 text-red-600">₹ {Math.abs(c.loanRepayment).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="bg-[#001F3D] text-white font-bold">
-                         <td className="p-4 px-6 text-[10px] font-bold uppercase border-r border-white/10">Closing Cash Reserve</td>
-                         {calculations.cashFlow.map((c,i)=><td key={i} className="p-4 text-[12px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {(c.closingCash||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
-                      </tr>
-                   </tbody>
-                </table>
-             </div>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Projected 5-Year Cash Flow</h3>
+               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                     <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                           <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r w-[20%]">Cash Particulars</th>
+                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Profit After Tax (PAT)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.npat.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Interest Paid</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Depreciation Addback</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b bg-slate-100 font-bold"><td className="p-3 text-[10px] font-bold uppercase border-r">Gross Operating Cash</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.opProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50 text-red-600">(-) Loan Repayment</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0 text-red-600">₹ {Math.abs(c.loanRepayment).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="bg-[#001F3D] text-white font-bold">
+                           <td className="p-4 px-6 text-[10px] font-bold uppercase border-r border-white/10">Closing Cash Reserve</td>
+                           {calculations.cashFlow.map((c,i)=><td key={i} className="p-4 text-[12px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {(c.closingCash||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'amortizationSchedule':
         return (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-red-500 pl-4">Repayment & Amortization Registry</h3>
-             <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-xl">
-                <table className="w-full text-left border-collapse min-w-[800px]">
-                   <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr className="text-[9px] font-bold uppercase text-slate-400">
-                         <th className="p-4 border-r">Operational Year</th>
-                         <th className="p-4 text-right border-r">Opening Balance</th>
-                         <th className="p-4 text-right border-r text-red-600">Interest (Incurred)</th>
-                         <th className="p-4 text-right border-r text-red-600">Principal (Settled)</th>
-                         <th className="p-4 text-right">Closing Balance</th>
-                      </tr>
-                   </thead>
-                   <tbody>
-                      {calculations.loanRepayment.map((lr) => (
-                        <tr key={lr.year} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors">
-                           <td className="p-4 text-[10px] font-bold uppercase border-r">{lr.year}</td>
-                           <td className="p-4 text-right border-r text-slate-500 font-code">{(lr.opening||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
-                           <td className="p-4 text-right border-r text-red-600 font-code">{(lr.interest||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
-                           <td className="p-4 text-right border-r text-red-600 font-code">{(lr.principal||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
-                           <td className="p-4 text-right font-bold text-[#001F3D] font-display">{(lr.closing||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Repayment & Amortization Registry</h3>
+               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                     <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr className="text-[9px] font-bold uppercase text-slate-400">
+                           <th className="p-4 border-r">Operational Year</th>
+                           <th className="p-4 text-right border-r">Opening Balance</th>
+                           <th className="p-4 text-right border-r text-red-600">Interest (Incurred)</th>
+                           <th className="p-4 text-right border-r text-red-600">Principal (Settled)</th>
+                           <th className="p-4 text-right">Closing Balance</th>
                         </tr>
-                      ))}
-                   </tbody>
-                </table>
-             </div>
-          </div>
+                     </thead>
+                     <tbody>
+                        {calculations.loanRepayment.map((lr) => (
+                          <tr key={lr.year} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors">
+                             <td className="p-4 text-[10px] font-bold uppercase border-r">{lr.year}</td>
+                             <td className="p-4 text-right border-r text-slate-500 font-code">{(lr.opening||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                             <td className="p-4 text-right border-r text-red-600 font-code">{(lr.interest||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                             <td className="p-4 text-right border-r text-red-600 font-code">{(lr.principal||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                             <td className="p-4 text-right font-bold text-[#001F3D] font-display">{(lr.closing||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                          </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'roadmap':
         return (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">5-Year Strategic Yield Road Map</h3>
-             <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-xl">
-                <table className="w-full text-left min-w-[800px]">
-                   <thead className="bg-slate-50 border-b-2 border-slate-900">
-                      <tr>
-                         <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 w-[20%]">Performance Particulars</th>
-                         {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
-                      </tr>
-                   </thead>
-                   <tbody>
-                      <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
-                         <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
-                         {calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
-                      </tr>
-                   </tbody>
-                </table>
-             </div>
-             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 border-t">
-                {financials.yearlyGrowthTargets.map((gt, i)=>(
-                  <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-inner group hover:bg-white hover:border-primary/20 transition-all">
-                     <Label className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Year {i+1} Growth %</Label>
-                     <Input type="number" value={gt} onChange={(e)=>{const nt=[...financials.yearlyGrowthTargets];nt[i]=Number(e.target.value);setFinancials({...financials,yearlyGrowthTargets:nt})}} className="h-10 bg-white border-none font-bold text-center text-primary" />
-                  </div>
-                ))}
-             </div>
-          </div>
-        );
-      case 'swotAnalysis':
-        return (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Strategic SWOT Matrix</h3>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
-                   <Label className="text-[10px] font-bold uppercase text-emerald-700 mb-3 block">Strengths</Label>
-                   <RichTextEditor value={foundationalData.swotAnalysis.split('WEAKNESSES:')[0].replace('STRENGTHS:', '').trim()} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `STRENGTHS: ${val} WEAKNESSES: ${foundationalData.swotAnalysis.split('WEAKNESSES:')[1] || ''}`})} />
-                </div>
-                <div className="p-6 bg-rose-50 rounded-3xl border border-rose-100">
-                   <Label className="text-[10px] font-bold uppercase text-rose-700 mb-3 block">Weaknesses</Label>
-                   <RichTextEditor value={foundationalData.swotAnalysis.split('OPPORTUNITIES:')[0].split('WEAKNESSES:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('WEAKNESSES:')[0]} WEAKNESSES: ${val} OPPORTUNITIES: ${foundationalData.swotAnalysis.split('OPPORTUNITIES:')[1] || ''}`})} />
-                </div>
-                <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
-                   <Label className="text-[10px] font-bold uppercase text-blue-700 mb-3 block">Opportunities</Label>
-                   <RichTextEditor value={foundationalData.swotAnalysis.split('THREATS:')[0].split('OPPORTUNITIES:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('WEAKNESSES:')[0]} OPPORTUNITIES: ${val} THREATS: ${foundationalData.swotAnalysis.split('THREATS:')[1] || ''}`})} />
-                </div>
-                <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100">
-                   <Label className="text-[10px] font-bold uppercase text-amber-700 mb-3 block">Threats</Label>
-                   <RichTextEditor value={foundationalData.swotAnalysis.split('THREATS:')[1]?.trim() || ''} onChange={(val) => setFormData({...foundationalData, swotAnalysis: `${foundationalData.swotAnalysis.split('THREATS:')[0]} THREATS: ${val}`})} />
-                </div>
-             </div>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">5-Year Strategic Yield Road Map</h3>
+               <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-sm">
+                  <table className="w-full text-left min-w-[800px]">
+                     <thead className="bg-slate-50 border-b-2 border-slate-900">
+                        <tr>
+                           <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 w-[20%]">Performance Particulars</th>
+                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
+                           <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
+                           {calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'workingCapitalRequirement':
         return (
-          <div className="space-y-8 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-blue-500 pl-4">Working Capital & Liquidity Matrix</h3>
-             <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
-                <table className="w-full text-left">
-                   <thead className="bg-slate-50 border-b border-slate-900">
-                      <tr className="text-[10px] font-bold uppercase">
-                         <th className="p-4 border-r border-slate-900">Operational Burn Item</th>
-                         <th className="p-4 text-right">Monthly Burn (₹)</th>
-                      </tr>
-                   </thead>
-                   <tbody>
-                      <tr className="border-b border-slate-300">
-                         <td className="p-4 border-r border-slate-900">Premises Rental Node</td>
-                         <td className="p-4 text-right font-bold">₹ {financials.expenseRent.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
-                         <td className="p-4 border-r border-slate-900">Industrial Power & Utilities</td>
-                         <td className="p-4 text-right font-bold">₹ {financials.expensePower.toLocaleString()}</td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
-                         <td className="p-4 border-r border-slate-900">Tooling & Consumables Reserve</td>
-                         <td className="p-4 text-right font-bold">₹ {financials.expenseConsumables.toLocaleString()}</td>
-                      </tr>
-                      <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
-                         <td className="p-4 border-r border-slate-900 uppercase">3-Month Liquidity Requirement (Target)</td>
-                         <td className="p-4 text-right text-lg text-[#001F3D]">₹ {calculations.workingCapitalValue.toLocaleString()}</td>
-                      </tr>
-                   </tbody>
-                </table>
-             </div>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Working Capital & Liquidity Matrix</h3>
+               <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white shadow-sm">
+                  <table className="w-full text-left">
+                     <thead className="bg-slate-50 border-b border-slate-900">
+                        <tr className="text-[10px] font-bold uppercase">
+                           <th className="p-4 border-r border-slate-900">Operational Burn Item</th>
+                           <th className="p-4 text-right">Monthly Burn (₹)</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="border-b border-slate-300">
+                           <td className="p-4 border-r border-slate-900">Premises Rental Node</td>
+                           <td className="p-4 text-right font-bold">₹ {financials.expenseRent.toLocaleString()}</td>
+                        </tr>
+                        <tr className="border-b border-slate-300">
+                           <td className="p-4 border-r border-slate-900">Industrial Power & Utilities</td>
+                           <td className="p-4 text-right font-bold">₹ {financials.expensePower.toLocaleString()}</td>
+                        </tr>
+                        <tr className="border-b border-slate-300">
+                           <td className="p-4 border-r border-slate-900">Tooling & Consumables Reserve</td>
+                           <td className="p-4 text-right font-bold">₹ {financials.expenseConsumables.toLocaleString()}</td>
+                        </tr>
+                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
+                           <td className="p-4 border-r border-slate-900 uppercase">3-Month Liquidity Requirement (Target)</td>
+                           <td className="p-4 text-right text-lg text-[#001F3D]">₹ {calculations.workingCapitalValue.toLocaleString()}</td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'financialProjections':
         return (
-          <div className="space-y-8 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Institutional Financial Projections</h3>
-             <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-xl">
-                <table className="w-full text-left min-w-[800px]">
-                   <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                         <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r">Metric Node</th>
-                         {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
-                      </tr>
-                   </thead>
-                   <tbody>
-                      <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">Revenue (Yield)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] font-bold">₹ {p.revenue.toLocaleString()}</td>)}</tr>
-                      <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px]">₹ {p.ebitda.toLocaleString()}</td>)}</tr>
-                      <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">PAT (Net Margin)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] text-emerald-600 font-bold">₹ {p.pat.toLocaleString()}</td>)}</tr>
-                      <tr className="bg-[#001F3D] text-white"><td className="p-4 font-bold border-r border-white/10 text-[10px] uppercase">Net Margin %</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r border-white/10 text-[10px] font-display font-bold">{p.margin}%</td>)}</tr>
-                   </tbody>
-                </table>
-             </div>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Institutional Financial Projections</h3>
+               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
+                  <table className="w-full text-left min-w-[800px]">
+                     <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                           <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r">Metric Node</th>
+                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">Revenue (Yield)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] font-bold">₹ {p.revenue.toLocaleString()}</td>)}</tr>
+                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px]">₹ {p.ebitda.toLocaleString()}</td>)}</tr>
+                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">PAT (Net Margin)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] text-emerald-600 font-bold">₹ {p.pat.toLocaleString()}</td>)}</tr>
+                        <tr className="bg-[#001F3D] text-white"><td className="p-4 font-bold border-r border-white/10 text-[10px] uppercase">Net Margin %</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r border-white/10 text-[10px] font-display font-bold">{p.margin}%</td>)}</tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'dscrMatrix':
         return (
-          <div className="space-y-8 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-purple-500 pl-4">Debt Service Coverage Ratio (DSCR) Matrix</h3>
-             <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-xl">
-                <table className="w-full text-left min-w-[800px]">
-                   <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr className="text-[9px] font-bold uppercase text-slate-400">
-                         <th className="p-4 border-r">Institutional Node</th>
-                         {calculations.projections.map(p=><th key={p.year} className="p-4 text-right border-r last:border-0">{p.year}</th>)}
-                      </tr>
-                   </thead>
-                   <tbody>
-                      <tr className="bg-slate-100 font-bold"><td className="p-4 text-[10px] uppercase border-r">Yearly DSCR Value</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-primary">{p.dscr}</td>)}</tr>
-                   </tbody>
-                </table>
-             </div>
-             <Card className="p-6 bg-purple-50 border border-purple-100 rounded-2xl flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase text-purple-700">Consolidated Average DSCR Protocol</p>
-                <p className="text-3xl font-display font-bold text-purple-900">{calculations.avgDSCR}</p>
-             </Card>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Debt Service Coverage Ratio (DSCR) Matrix</h3>
+               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
+                  <table className="w-full text-left min-w-[800px]">
+                     <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr className="text-[9px] font-bold uppercase text-slate-400">
+                           <th className="p-4 border-r">Institutional Node</th>
+                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-right border-r last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="bg-slate-100 font-bold"><td className="p-4 text-[10px] uppercase border-r">Yearly DSCR Value</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-primary">{p.dscr}</td>)}</tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
         );
       case 'mpbfCalculation':
         return (
-          <div className="space-y-8 animate-in fade-in duration-500">
-             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-orange-500 pl-4">Maximum Permissible Bank Finance (MPBF)</h3>
-             <Card className="p-10 bg-white border-2 border-slate-900 rounded-sm relative overflow-hidden">
-                <div className="space-y-8 relative z-10">
-                   <div className="flex justify-between items-center py-4 border-b border-slate-100">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">Projected Annual Turnover</span>
-                      <span className="text-lg font-bold text-[#001F3D]">₹ {(totalCapacityAnnualRevenue || 0).toLocaleString()}</span>
-                   </div>
-                   <div className="flex justify-between items-center py-4 border-b border-slate-100">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">Working Capital Threshold (25% of Turnover)</span>
-                      <span className="text-lg font-bold text-slate-700">₹ {((totalCapacityAnnualRevenue || 0) * 0.25).toLocaleString()}</span>
-                   </div>
-                   <div className="flex justify-between items-center py-6 bg-slate-50 px-4 rounded-xl">
-                      <span className="text-xs font-black uppercase text-[#001F3D]">Eligible Bank Finance (MPBF Node)</span>
-                      <span className="text-2xl font-display font-bold text-orange-600">₹ {calculations.mpbf.toLocaleString()}</span>
-                   </div>
-                </div>
-             </Card>
-          </div>
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Maximum Permissible Bank Finance (MPBF)</h3>
+               <Card className="p-10 bg-white border-2 border-slate-900 rounded-sm relative overflow-hidden shadow-sm">
+                  <div className="space-y-8 relative z-10">
+                     <div className="flex justify-between items-center py-4 border-b border-slate-100">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Projected Annual Turnover</span>
+                        <span className="text-lg font-bold text-[#001F3D]">₹ {(totalCapacityAnnualRevenue || 0).toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between items-center py-4 border-b border-slate-100">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Working Capital Threshold (25% of Turnover)</span>
+                        <span className="text-lg font-bold text-slate-700">₹ {((totalCapacityAnnualRevenue || 0) * 0.25).toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between items-center py-6 bg-slate-50 px-4 rounded-xl">
+                        <span className="text-xs font-black uppercase text-[#001F3D]">Eligible Bank Finance (MPBF Node)</span>
+                        <span className="text-2xl font-display font-bold text-orange-600">₹ {calculations.mpbf.toLocaleString()}</span>
+                     </div>
+                  </div>
+               </Card>
+            </div>
+          </NoteWrapper>
         );
       default: 
         return (
           <div className="space-y-8 animate-in fade-in duration-1000">
             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">{REPORT_SEQUENCE.find(s=>s.id === sectionId)?.label}</h3>
             <RichTextEditor 
-              value={(foundationalData as any)[sectionId]} 
+              value={foundationalData[sectionId] || ""} 
               onChange={(val)=>setFormData({...foundationalData, [sectionId]: val})} 
             />
             <div className="p-4 bg-primary/5 rounded-2xl flex items-start gap-4 border border-primary/10">
                <Info className="h-4 w-4 text-primary mt-0.5" />
-               <p className="text-[10px] text-slate-500 leading-tight">This narrative node will be synchronized with the official feasibility report matrix and 20% centered watermark protocol.</p>
+               <p className="text-[10px] text-slate-500 leading-tight">This narrative node will be synchronized with the official feasibility report matrix and 60% centered watermark protocol.</p>
             </div>
           </div>
         );
@@ -1257,7 +1232,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div className="space-y-4">
                     {industrialServices.map((s, idx) => (
                       <div key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
-                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
+                         <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
@@ -1361,7 +1336,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               </div>
 
               <div className="lg:col-span-8 space-y-8">
-                 {/* 15. Project Cost (CAPEX Breakdown) */}
                  <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                     <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. One-Time Project Cost (CAPEX)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -1414,20 +1388,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Total Monthly OpEx</Label><div className="h-12 bg-emerald-50 rounded-xl flex items-center px-4 font-display font-bold text-emerald-700 shadow-inner">₹ {(calculations.monthlyOpEx + calculations.emi).toLocaleString('en-IN', {maximumFractionDigits: 0})}</div></div>
                     </div>
                  </Card>
-
-                 <div className="space-y-6 pt-10">
-                    <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-4 md:pl-6"><h3 className="text-lg md:text-xl font-display font-bold text-[#001F3D] uppercase">5-Year Cash Flow Statement</h3></div>
-                    <div className="border border-slate-200 overflow-x-auto rounded-[1.5rem] bg-white shadow-xl">
-                      <table className="w-full text-left border-collapse min-w-[800px]">
-                        <thead className="bg-slate-50 border-b border-slate-100">
-                          <tr><th className="p-6 text-[9px] font-bold uppercase text-slate-400 border-r w-[20%]">Particulars</th>{calculations.projections.map(p=><th key={p.year} className="p-6 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}</tr>
-                        </thead>
-                        <tbody>
-                          <tr className="bg-[#001F3D] text-white"><td className="p-6 px-6 text-[12px] font-bold uppercase tracking-widest border-r border-white/10">Closing Cash Flow Balance</td>{calculations.cashFlow.map(c=><td key={c.year} className="p-6 text-[14px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {(c.closingCash||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                        </tbody>
-                      </table>
-                    </div>
-                 </div>
               </div>
            </div>
         </TabsContent>
@@ -1487,9 +1447,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          </div>
                          
                          <div className="space-y-6">
+                            {/* Render Header Note if present */}
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && foundationalData[section.id] && (
+                               <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
+                            )}
+
                             {section.id === 'projectCost' && (
                               <div className="space-y-6">
-                                <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
+                                <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white">
                                   <table className="w-full text-left min-w-[500px]">
                                     <thead className="bg-slate-50 border-b border-slate-900"><tr className="text-[10px] font-bold uppercase"><th className="p-3 border-r border-slate-900">Expenditure</th><th className="p-3 text-right">Amount (₹)</th></tr></thead>
                                     <tbody className="text-xs">
@@ -1504,7 +1469,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             )}
 
                             {section.id === 'meansOfFinance' && (
-                              <div className="overflow-x-auto border-2 border-slate-900 rounded-sm">
+                              <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white">
                                 <table className="w-full text-left border-collapse min-w-[600px]">
                                   <thead className="bg-slate-50 border-b-2 border-slate-900"><tr className="text-[10px] font-bold uppercase text-[#3B82F6]"><th className="p-4 border-r border-slate-900">Source</th><th className="p-4 text-center border-r border-slate-900 w-24">Share</th><th className="p-4 text-right">Amount (₹)</th></tr></thead>
                                   <tbody className="text-xs">
@@ -1593,9 +1558,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
-                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails'].includes(section.id) && (
+                            {/* Render Footer Note if present */}
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && foundationalData[section.id + '_footer'] && (
+                               <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
+                            )}
+
+                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>

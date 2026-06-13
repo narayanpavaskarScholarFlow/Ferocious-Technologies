@@ -66,7 +66,17 @@ import {
   Undo,
   Redo,
   TableProperties,
-  MoreVertical
+  MoreVertical,
+  Strikethrough,
+  Heading1,
+  Heading2,
+  Heading3,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Minus,
+  Eraser
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -118,6 +128,7 @@ import TableRowExtension from '@tiptap/extension-table-row';
 import TableCellExtension from '@tiptap/extension-table-cell';
 import TableHeaderExtension from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
+import TextAlign from '@tiptap/extension-text-align';
 
 interface ProprietaryProduct {
   id: string;
@@ -189,6 +200,9 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
     extensions: [
       StarterKit,
       UnderlineExtension,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
       TableRowExtension,
@@ -217,34 +231,155 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
 
   return (
     <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-inner bg-white">
-      {/* Dark Professional Toolbar matching reference */}
-      <div className="bg-slate-900 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800">
+      {/* MS Word-Style Professional Toolbar */}
+      <div className="bg-slate-900 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800 sticky top-0 z-20">
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            title="Bold (Ctrl+B)"
+          >
             <Bold className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            title="Italic (Ctrl+I)"
+          >
             <Italic className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            title="Underline (Ctrl+U)"
+          >
             <Underline className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('strike') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            title="Strikethrough"
+          >
+            <Strikethrough className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bulletList') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 1 }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            title="Heading 1"
+          >
+            <Heading1 className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 2 }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            title="Heading 2"
+          >
+            <Heading2 className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 3 }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            title="Heading 3"
+          >
+            <Heading3 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'left' }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            title="Align Left"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'center' }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            title="Align Center"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'right' }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            title="Align Right"
+          >
+            <AlignRight className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'justify' }) && "bg-white/20")} 
+            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+            title="Justify"
+          >
+            <AlignJustify className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bulletList') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            title="Bullet List"
+          >
             <List className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('orderedList') && "bg-white/20")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('orderedList') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            title="Numbered List"
+          >
             <ListOrdered className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Enhanced Table Matrix Protocol */}
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button 
+            variant="ghost" size="icon" 
+            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('blockquote') && "bg-white/20")} 
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            title="Quote"
+          >
+            <Quote className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className="h-8 w-8 text-white hover:bg-white/10" 
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            title="Horizontal Divider"
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" size="icon" 
+            className="h-8 w-8 text-white hover:bg-white/10" 
+            onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+            title="Clear All Formatting"
+          >
+            <Eraser className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Table Matrix">
                 <TableProperties className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -269,10 +404,10 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()} title="Undo (Ctrl+Z)">
             <Undo className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()} title="Redo (Ctrl+Y)">
             <Redo className="h-4 w-4" />
           </Button>
         </div>

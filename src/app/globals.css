@@ -71,13 +71,21 @@
 }
 
 /* Tiptap Industrial Table Matrix Styling */
+.tiptap-editor-container {
+  @apply focus:outline-none;
+}
+
+.tiptap-editor-container img {
+  @apply max-w-full h-auto rounded-xl shadow-lg my-6 border border-slate-100;
+}
+
 .tiptap-editor-container table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
   margin: 1.5rem 0;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 2px solid #0f172a;
 }
 
 .tiptap-editor-container table td,
@@ -95,6 +103,7 @@
   text-align: left;
   background-color: #f8fafc;
   color: #0f172a;
+  border-bottom: 2px solid #0f172a;
 }
 
 .tiptap-editor-container .selectedCell:after {
@@ -114,6 +123,12 @@
   width: 4px;
   background-color: #6366f1;
   pointer-events: none;
+}
+
+/* Editor content preview styles (justify, spacing) */
+.editor-content-preview p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
 }
 
 .premium-card {

@@ -76,7 +76,15 @@ import {
   AlignRight,
   AlignJustify,
   Minus,
-  Eraser
+  Eraser,
+  Type,
+  Baseline,
+  Square,
+  Highlighter,
+  Palette,
+  Circle,
+  ArrowUpRight,
+  MousePointer2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -120,7 +128,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 // Tiptap Imports for Rich Text
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import UnderlineExtension from '@tiptap/extension-underline';
 import TiptapTable from '@tiptap/extension-table';
@@ -129,6 +137,43 @@ import TableCellExtension from '@tiptap/extension-table-cell';
 import TableHeaderExtension from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import FontFamily from '@tiptap/extension-font-family';
+import Highlight from '@tiptap/extension-highlight';
+import TiptapImage from '@tiptap/extension-image';
+
+// Custom Font Size Extension
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    }
+  },
+  addAttributes() {
+    return {
+      fontSize: {
+        default: null,
+        parseHTML: element => element.style.fontSize,
+        renderHTML: attributes => {
+          if (!attributes.fontSize) return {}
+          return { style: `font-size: ${attributes.fontSize}` }
+        },
+      },
+    }
+  },
+  addCommands() {
+    return {
+      setFontSize: fontSize => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize }).run()
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
+      },
+    }
+  },
+});
 
 interface ProprietaryProduct {
   id: string;
@@ -194,20 +239,46 @@ const REPORT_SEQUENCE = [
   { id: 'conclusion', label: '30. Conclusion' }
 ];
 
+const FONT_FAMILIES = [
+  { name: 'Standard Sans', value: 'Inter' },
+  { name: 'Space Grotesk', value: 'Space Grotesk' },
+  { name: 'Source Code', value: 'Source Code Pro' },
+  { name: 'Serif', value: 'serif' },
+  { name: 'Monospace', value: 'monospace' },
+];
+
+const FONT_SIZES = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px'];
+
+const COLOR_PALETTE = [
+  '#000000', '#475569', '#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6', '#ffffff'
+];
+
+const SHAPES = [
+  { id: 'rect', icon: Square, label: 'Rectangle', content: '<div style="width: 100px; height: 60px; border: 2px solid #6366f1; margin: 10px 0;"></div>' },
+  { id: 'circle', icon: Circle, label: 'Circle', content: '<div style="width: 60px; height: 60px; border: 2px solid #6366f1; border-radius: 50%; margin: 10px 0;"></div>' },
+  { id: 'arrow', icon: ArrowUpRight, label: 'Arrow', content: '<span style="font-size: 24px; color: #6366f1;">→</span>' },
+];
+
 // High-Fidelity Rich Text Editor Component
 const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onChange: (val: string) => void, placeholder?: string }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
       UnderlineExtension,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
       TableRowExtension,
       TableHeaderExtension,
       TableCellExtension,
+      TextStyle,
+      Color,
+      FontFamily,
+      FontSize,
+      Highlight.configure({ multicolor: true }),
+      TiptapImage.configure({ inline: true, allowBase64: true }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -215,167 +286,125 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] p-6 text-slate-700 font-medium leading-relaxed',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] p-8 text-slate-700 font-medium leading-relaxed bg-white',
       },
     },
   });
 
-  // Keep editor content in sync with external value changes
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value);
     }
   }, [value, editor]);
 
+  const handleFixtureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editor) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        editor.chain().focus().setImage({ src: reader.result as string }).run();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (!editor) return null;
 
   return (
-    <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-inner bg-white">
-      {/* MS Word-Style Professional Toolbar */}
-      <div className="bg-slate-900 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800 sticky top-0 z-20">
+    <div className="border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white">
+      {/* MS Word-Style Premium Dynamic Toolbar */}
+      <div className="bg-slate-950 text-white p-3 flex flex-wrap items-center gap-1.5 border-b border-slate-800 sticky top-0 z-50">
+        
+        {/* Typography Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            title="Bold (Ctrl+B)"
-          >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 gap-2 px-3 text-white hover:bg-white/10 font-bold text-[10px] uppercase tracking-tighter">
+                <Type className="h-3.5 w-3.5" /> Font
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 text-white p-1">
+              {FONT_FAMILIES.map(f => (
+                <DropdownMenuItem key={f.value} onClick={() => editor.chain().focus().setFontFamily(f.value).run()} className="rounded-lg h-9 text-xs font-medium hover:bg-white/10" style={{ fontFamily: f.value }}>
+                  {f.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 gap-2 px-3 text-white hover:bg-white/10 font-bold text-[10px] uppercase">
+                Size
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-24 bg-slate-900 border-slate-800 text-white p-1">
+              {FONT_SIZES.map(s => (
+                <DropdownMenuItem key={s} onClick={() => (editor.chain().focus() as any).setFontSize(s).run()} className="rounded-lg h-8 text-xs font-bold text-center">
+                  {s}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Style Group */}
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}>
             <Bold className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            title="Italic (Ctrl+I)"
-          >
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('italic') && "bg-white/20")} onClick={() => editor.chain().focus().toggleItalic().run()}>
             <Italic className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            title="Underline (Ctrl+U)"
-          >
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
             <Underline className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('strike') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            title="Strikethrough"
-          >
-            <Strikethrough className="h-4 w-4" />
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Text Color">
+                <Baseline className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 p-2">
+              <div className="grid grid-cols-4 gap-2">
+                {COLOR_PALETTE.map(c => (
+                  <button key={c} onClick={() => editor.chain().focus().setColor(c).run()} className="h-6 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Box / Highlight Color">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 p-2">
+              <div className="grid grid-cols-4 gap-2">
+                {COLOR_PALETTE.map(c => (
+                  <button key={c} onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()} className="h-6 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
+        {/* Structure Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 1 }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            title="Heading 1"
-          >
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 1 }) && "bg-white/20")} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
             <Heading1 className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 2 }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            title="Heading 2"
-          >
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 2 }) && "bg-white/20")} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
             <Heading2 className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('heading', { level: 3 }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            title="Heading 3"
-          >
-            <Heading3 className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'left' }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().setTextAlign('left').run()}
-            title="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'center' }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().setTextAlign('center').run()}
-            title="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'right' }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().setTextAlign('right').run()}
-            title="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'justify' }) && "bg-white/20")} 
-            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-            title="Justify"
-          >
+          <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive({ textAlign: 'justify' }) && "bg-white/20")} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
             <AlignJustify className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('bulletList') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            title="Bullet List"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('orderedList') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            title="Numbered List"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
-          <Button 
-            variant="ghost" size="icon" 
-            className={cn("h-8 w-8 text-white hover:bg-white/10", editor.isActive('blockquote') && "bg-white/20")} 
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            title="Quote"
-          >
-            <Quote className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className="h-8 w-8 text-white hover:bg-white/10" 
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            title="Horizontal Divider"
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" size="icon" 
-            className="h-8 w-8 text-white hover:bg-white/10" 
-            onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-            title="Clear All Formatting"
-          >
-            <Eraser className="h-4 w-4" />
-          </Button>
-        </div>
-
+        {/* Objects Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -383,31 +412,44 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
                 <TableProperties className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-slate-900 border-slate-800 text-white p-1 rounded-xl">
-              <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">
-                 <Plus className="h-3 w-3" /> Insert 3x3 Matrix
-              </DropdownMenuItem>
+            <DropdownMenuContent className="w-56 bg-slate-900 border-slate-800 text-white p-1">
+              <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10"><Plus className="h-3 w-3" /> Insert 3x3 Matrix</DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Row Below</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Row Above</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10 text-red-400">Purge Current Row</DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Col After</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Col Before</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10 text-red-400">Purge Current Col</DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-red-500/20 text-red-500">
-                <Trash2 className="h-3 w-3" /> Delete Table Matrix
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Row</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-2 hover:bg-white/10">Append Col</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Insert Fixture" onClick={() => fileInputRef.current?.click()}>
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFixtureUpload} />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" title="Insert Shape">
+                <Box className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 text-white p-1">
+              {SHAPES.map(s => (
+                <DropdownMenuItem key={s.id} onClick={() => editor.chain().focus().insertContent(s.content).run()} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-3">
+                  <s.icon className="h-3.5 w-3.5" /> {s.label}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
+        {/* Global Group */}
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()} title="Undo (Ctrl+Z)">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Clear Matrix Styling">
+            <Eraser className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()}>
             <Undo className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()} title="Redo (Ctrl+Y)">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => editor.chain().focus().redo().run()}>
             <Redo className="h-4 w-4" />
           </Button>
         </div>
@@ -1185,7 +1227,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                            <label htmlFor={`p-cat-img-${p.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-4 w-4 text-white" />
                            </label>
-                         </div>
+                        </div>
                          <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="col-span-2 space-y-1">
                                <Label className="text-[8px] font-bold uppercase text-slate-400">Part Name</Label>
@@ -1225,7 +1267,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-4 w-4 text-white" />
                            </label>
-                         </div>
+                        </div>
                          <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="col-span-2 space-y-1">
                                <Label className="text-[8px] font-bold uppercase text-slate-400">Service Node</Label>
@@ -1465,11 +1507,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-xl">
                                   <table className="w-full text-left min-w-[800px]">
                                      <thead className="bg-slate-50 border-b-2 border-slate-900">
-                                        <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Particulars</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
+                                        <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 last:border-r-0">Particulars</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
                                      </thead>
                                      <tbody>
-                                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
-                                        <tr className="bg-slate-100 font-bold"><td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
+                                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200 last:border-r-0">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
+                                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-900"><td className="p-4 text-[11px] uppercase border-r border-slate-900 last:border-r-0">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
                                      </tbody>
                                   </table>
                                </div>
@@ -1516,7 +1558,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[sectionId] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>

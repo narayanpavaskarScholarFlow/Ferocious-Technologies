@@ -574,7 +574,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
   const Watermark = () => (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden print:visible">
-      <div className="relative w-[20%] aspect-square">
+      <div className="relative w-[60%] aspect-square">
          {brandLogo && <img src={brandLogo} alt="Corporate Identity Watermark" className="w-full h-full object-contain" />}
       </div>
     </div>
@@ -788,7 +788,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </thead>
                    <tbody>
                       {calculations.loanRepayment.map((lr) => (
-                        <tr key={lr.year} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                        <tr key={lr.year} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors">
                            <td className="p-4 text-[10px] font-bold uppercase border-r">{lr.year}</td>
                            <td className="p-4 text-right border-r text-slate-500 font-code">{(lr.opening||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
                            <td className="p-4 text-right border-r text-red-600 font-code">{(lr.interest||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>

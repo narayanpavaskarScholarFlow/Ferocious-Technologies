@@ -47,9 +47,20 @@ interface SidebarNavProps {
   userRole?: string;
   isReportingManager?: boolean;
   brandLogo?: string;
+  logoSize?: number;
 }
 
-export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim = true, customTitles = {}, userRole, isReportingManager, brandLogo = '' }: SidebarNavProps) {
+export function SidebarNav({ 
+  currentView, 
+  onViewChange, 
+  permissions = {}, 
+  isSlim = true, 
+  customTitles = {}, 
+  userRole, 
+  isReportingManager, 
+  brandLogo = '',
+  logoSize = 32
+}: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -110,12 +121,16 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
     )}>
       <div 
         className={cn(
-          "bg-white rounded-xl shadow-lg cursor-pointer group transition-all overflow-hidden",
-          isSlim ? "w-12 h-12 flex items-center justify-center p-2" : "w-full flex items-center gap-3 p-3"
+          "bg-white rounded-xl shadow-lg cursor-pointer group transition-all overflow-hidden shrink-0",
+          isSlim ? "flex items-center justify-center p-2" : "w-full flex items-center gap-3 p-3"
         )} 
+        style={isSlim ? { width: Math.max(48, logoSize + 16), height: Math.max(48, logoSize + 16) } : undefined}
         onClick={() => onViewChange('overview')}
       >
-        <div className="relative w-8 h-8 shrink-0">
+        <div 
+          className="relative shrink-0" 
+          style={{ width: logoSize, height: logoSize }}
+        >
           <Image 
             src={brandLogo} 
             alt="Ferocious Tech" 
@@ -124,7 +139,7 @@ export function SidebarNav({ currentView, onViewChange, permissions = {}, isSlim
             data-ai-hint="lion technology logo"
           />
         </div>
-        {!isSlim && <span className="text-[#001F3D] font-headline font-bold text-sm tracking-tight uppercase">FEROCIOUS TECH</span>}
+        {!isSlim && <span className="text-[#001F3D] font-headline font-bold text-sm tracking-tight uppercase truncate">FEROCIOUS TECH</span>}
       </div>
 
       <div className="flex-1 flex flex-col gap-1 w-full mt-4">

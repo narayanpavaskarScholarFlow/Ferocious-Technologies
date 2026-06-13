@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -72,6 +71,7 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   customTitles: {},
   woPrefix: 'WO-',
   woNextNumber: 1001,
+  logoSize: 32,
   billingTableSettings: {
     colWidths: {
       description: 400,
@@ -173,7 +173,8 @@ function IndustrialERPInternal() {
       ...settings,
       woPrefix: settings.woPrefix ?? DEFAULT_UI_SETTINGS.woPrefix,
       woNextNumber: settings.woNextNumber ?? DEFAULT_UI_SETTINGS.woNextNumber,
-      brandLogo: settings.brandLogo
+      brandLogo: settings.brandLogo,
+      logoSize: settings.logoSize ?? DEFAULT_UI_SETTINGS.logoSize
     };
   }, [masterAdmin]);
 
@@ -344,6 +345,7 @@ function IndustrialERPInternal() {
           userRole={currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
           isReportingManager={isReportingManager}
           brandLogo={brandLogo}
+          logoSize={uiSettings.logoSize}
         />
       </div>
 
@@ -368,13 +370,17 @@ function IndustrialERPInternal() {
                   userRole={currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
                   isReportingManager={isReportingManager}
                   brandLogo={brandLogo}
+                  logoSize={uiSettings.logoSize}
                 />
               </SheetContent>
             </Sheet>
 
             <div className="flex items-center gap-2 md:gap-3">
               {brandLogo && (
-                <div className="relative w-7 h-7 md:w-8 md:h-8">
+                <div 
+                  className="relative shrink-0" 
+                  style={{ width: uiSettings.logoSize || 32, height: uiSettings.logoSize || 32 }}
+                >
                   <Image 
                     src={brandLogo} 
                     alt="Ferocious Tech" 

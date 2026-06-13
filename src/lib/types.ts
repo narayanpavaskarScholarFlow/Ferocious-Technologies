@@ -255,6 +255,7 @@ export interface UISettings {
   woPrefix: string;
   woNextNumber: number;
   brandLogo?: string; // High-fidelity corporate logo data URI
+  logoSize: number; // Unified scaling node for branding identities
   billingTableSettings?: {
     colWidths: {
       description: number;

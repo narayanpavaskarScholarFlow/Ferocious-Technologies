@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -71,7 +70,8 @@ import {
   Maximize2,
   Trash2,
   Globe,
-  Upload
+  Upload,
+  Maximize
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -535,7 +535,7 @@ export function ProfileSettings({
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                    <div className="space-y-6 pt-6 border-t border-slate-100">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Corporate Branding</Label>
                       <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                         <div className="relative group">
@@ -549,13 +549,27 @@ export function ProfileSettings({
                         </div>
                         <div className="flex-1 space-y-2">
                            <p className="text-[11px] font-bold text-[#001F3D] uppercase">Global Corporate Identity</p>
-                           <p className="text-[9px] text-slate-400 font-medium leading-relaxed">This logo will be synchronized across the command matrix, reports, and security gateway.</p>
+                           <p className="text-[9px] text-slate-400 font-medium leading-relaxed">This logo will be synchronized across the command matrix and report watermarks.</p>
                            {localUI.brandLogo && (
                              <Button variant="ghost" size="sm" className="h-7 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 text-[9px] font-bold uppercase tracking-widest gap-2 mt-2" onClick={handleDeleteLogo}>
                                <Trash2 className="h-3 w-3" /> Reset Local
                              </Button>
                            )}
                         </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">
+                          Global Logo Scaling (px) <span>{localUI.logoSize}px</span>
+                        </Label>
+                        <Slider 
+                          value={[localUI.logoSize || 32]} 
+                          min={24} 
+                          max={64} 
+                          step={2} 
+                          onValueChange={([v]) => updateLocalUIField('logoSize', v)} 
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium italic">Adjust the visual footprint of the identity mark in headers and sidebars.</p>
                       </div>
                     </div>
                   </div>

@@ -595,7 +595,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             (financials.investFurniture || 0) + 
                             (financials.investPreOp || 0) +
                             (financials.investMoulds || 0) +
-                            (financials.investShedAdvance || 0);
+                            (financials.investShedAdvance || 0) +
+                            (financials.investSoftware || 0) +
+                            (financials.investSystem || 0);
     
     const monthlyOpExBase = (financials.expenseRent || 0) + 
                            (financials.expensePower || 0) + 
@@ -1364,6 +1366,52 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               </div>
 
               <div className="lg:col-span-8 space-y-8">
+                 {/* 15. Project Cost (CAPEX Breakdown) */}
+                 <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. One-Time Project Cost (CAPEX)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Machinery (Breakup)</Label>
+                          <div className="relative">
+                             <Input readOnly className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investMachinery.toLocaleString()} />
+                             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-primary" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3 w-3" /></Button>
+                          </div>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Civil & Infrastructure</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investCivil} onChange={(e)=>setFinancials({...financials, investCivil: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Electrical Setup</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investElectrical} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Moulds & Tooling</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investMoulds} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Shed Security Advance</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials, investShedAdvance: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">CAD/CAM Software</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investSoftware} onChange={(e)=>setFinancials({...financials, investSoftware: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">IT Systems/HW</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investSystem} onChange={(e)=>setFinancials({...financials, investSystem: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Office Furniture</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investFurniture} onChange={(e)=>setFinancials({...financials, investFurniture: Number(e.target.value)})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Pre-Operational Exp</Label>
+                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investPreOp} onChange={(e)=>setFinancials({...financials, investPreOp: Number(e.target.value)})} />
+                       </div>
+                    </div>
+                 </Card>
+
                  <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                     <h3 className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.3em] border-l-4 border-emerald-600 pl-4">Monthly Operational Expense (OpEx) Matrix</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

@@ -249,7 +249,7 @@ const FONT_FAMILIES = [
 const FONT_SIZES = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px'];
 
 const COLOR_PALETTE = [
-  '#000000', '#475569', '#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6', '#ffffff'
+  '#000000', '#475569', '#6366f1', '#10 b981', '#f43f5e', '#f59e0b', '#8b5cf6', '#ffffff'
 ];
 
 const SHAPES = [
@@ -594,7 +594,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             (financials.investElectrical || 0) + 
                             (financials.investFurniture || 0) + 
                             (financials.investPreOp || 0) +
-                            (financials.investMoulds || 0) +
                             (financials.investShedAdvance || 0) +
                             (financials.investSoftware || 0) +
                             (financials.investSystem || 0);
@@ -813,10 +812,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials,investShedAdvance:Number(e.target.value)})} /></td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                         <td className="p-3 border-r border-slate-900 font-medium">Mould Manufacturing (Captive Assets)</td>
-                         <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investMoulds} onChange={(e)=>setFinancials({...financials,investMoulds:Number(e.target.value)})} /></td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
                          <td className="p-3 border-r border-slate-900 font-medium">Civil, Electrical & Infrastructure</td>
                          <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investCivil + financials.investElectrical} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></td>
                       </tr>
@@ -992,11 +987,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       </tr>
                    </thead>
                    <tbody>
-                      <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                      <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                      <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                      <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                       <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
                          <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
-                         {calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                         {calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
                    </tbody>
                 </table>
@@ -1138,7 +1133,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         );
       default: 
         return (
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="space-y-8 animate-in fade-in duration-1000">
             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">{REPORT_SEQUENCE.find(s=>s.id === sectionId)?.label}</h3>
             <RichTextEditor 
               value={(foundationalData as any)[sectionId]} 
@@ -1263,7 +1258,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     {industrialServices.map((s, idx) => (
                       <div key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
                          <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
-                           {s.imageUrl ? <img src={s.imageUrl} className="w-full h-full object-cover" alt="" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-4 w-4 text-white" />
@@ -1386,10 +1381,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investElectrical} onChange={(e)=>setFinancials({...financials, investElectrical: Number(e.target.value)})} />
                        </div>
                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-400">Moulds & Tooling</Label>
-                          <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investMoulds} onChange={(e)=>setFinancials({...financials, investMoulds: Number(e.target.value)})} />
-                       </div>
-                       <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Shed Security Advance</Label>
                           <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investShedAdvance} onChange={(e)=>setFinancials({...financials, investShedAdvance: Number(e.target.value)})} />
                        </div>
@@ -1504,7 +1495,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     <tbody className="text-xs">
                                       <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Plant & Machinery</td><td className="p-3 text-right font-bold">₹ {financials.investMachinery.toLocaleString('en-IN')}</td></tr>
                                       <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Shed Advance</td><td className="p-3 text-right font-bold">₹ {financials.investShedAdvance.toLocaleString('en-IN')}</td></tr>
-                                      <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Moulds & Tooling</td><td className="p-3 text-right font-bold">₹ {financials.investMoulds.toLocaleString('en-IN')}</td></tr>
                                       <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Civil & Electrical</td><td className="p-3 text-right font-bold">₹ {(financials.investCivil + financials.investElectrical).toLocaleString('en-IN')}</td></tr>
                                       <tr className="bg-slate-100 font-bold border-t-2 border-slate-900"><td className="p-3 border-r border-slate-900 uppercase">Total Project Cost</td><td className="p-3 text-right">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td></tr>
                                     </tbody>

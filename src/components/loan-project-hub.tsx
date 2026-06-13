@@ -1371,7 +1371,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. One-Time Project Cost (CAPEX)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
-                          <Label className="text-[9px] font-bold uppercase text-slate-400">Machinery (Breakup)</Label>
+                          <Label className="text-[9px] font-bold uppercase text-slate-400">Plant & Machinery (Breakup)</Label>
                           <div className="relative">
                              <Input readOnly className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investMachinery.toLocaleString()} />
                              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-primary" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3 w-3" /></Button>

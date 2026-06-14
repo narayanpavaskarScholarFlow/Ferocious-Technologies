@@ -70,7 +70,7 @@
   }
 }
 
-/* Tiptap Industrial Table Matrix Styling */
+/* Tiptap Industrial Matrix Styling */
 .tiptap-editor-container {
   @apply focus:outline-none;
 }
@@ -78,6 +78,48 @@
 .tiptap-editor-container img {
   @apply max-w-full h-auto rounded-xl shadow-lg my-6 border border-slate-100;
 }
+
+/* List Matrix Styling */
+.tiptap-editor-container ul,
+.tiptap-editor-container ol,
+.editor-content-preview ul,
+.editor-content-preview ol {
+  padding-left: 2rem;
+  margin: 1rem 0;
+}
+
+.tiptap-editor-container li p,
+.editor-content-preview li p {
+  margin: 0.25rem 0;
+}
+
+/* Bullet Library Matrix */
+.tiptap-editor-container ul[data-bullet-type="disc"],
+.editor-content-preview ul[data-bullet-type="disc"] { list-style-type: disc; }
+.tiptap-editor-container ul[data-bullet-type="circle"],
+.editor-content-preview ul[data-bullet-type="circle"] { list-style-type: circle; }
+.tiptap-editor-container ul[data-bullet-type="square"],
+.editor-content-preview ul[data-bullet-type="square"] { list-style-type: square; }
+.tiptap-editor-container ul[data-bullet-type="diamond"],
+.editor-content-preview ul[data-bullet-type="diamond"] { list-style-type: "◆ "; }
+.tiptap-editor-container ul[data-bullet-type="diamond-matrix"],
+.editor-content-preview ul[data-bullet-type="diamond-matrix"] { list-style-type: "❖ "; }
+.tiptap-editor-container ul[data-bullet-type="arrow"],
+.editor-content-preview ul[data-bullet-type="arrow"] { list-style-type: "➤ "; }
+.tiptap-editor-container ul[data-bullet-type="check"],
+.editor-content-preview ul[data-bullet-type="check"] { list-style-type: "✓ "; }
+
+/* Numbering Library Matrix */
+.tiptap-editor-container ol[data-list-type="decimal"],
+.editor-content-preview ol[data-list-type="decimal"] { list-style-type: decimal; }
+.tiptap-editor-container ol[data-list-type="lower-alpha"],
+.editor-content-preview ol[data-list-type="lower-alpha"] { list-style-type: lower-alpha; }
+.tiptap-editor-container ol[data-list-type="lower-roman"],
+.editor-content-preview ol[data-list-type="lower-roman"] { list-style-type: lower-roman; }
+.tiptap-editor-container ol[data-list-type="upper-alpha"],
+.editor-content-preview ol[data-list-type="upper-alpha"] { list-style-type: upper-alpha; }
+.tiptap-editor-container ol[data-list-type="upper-roman"],
+.editor-content-preview ol[data-list-type="upper-roman"] { list-style-type: upper-roman; }
 
 .tiptap-editor-container table {
   border-collapse: collapse;

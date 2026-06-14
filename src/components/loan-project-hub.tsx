@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -83,7 +84,8 @@ import {
   Palette,
   Circle,
   ArrowUpRight,
-  MousePointer2
+  MousePointer2,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -141,6 +143,9 @@ import Color from '@tiptap/extension-color';
 import FontFamily from '@tiptap/extension-font-family';
 import Highlight from '@tiptap/extension-highlight';
 import TiptapImage from '@tiptap/extension-image';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
 
 // Custom Font Size Extension
 const FontSize = Extension.create({
@@ -169,6 +174,35 @@ const FontSize = Extension.create({
       },
       unsetFontSize: () => ({ chain }) => {
         return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
+      },
+    }
+  },
+});
+
+// Custom List Matrix Extensions
+const CustomBulletList = BulletList.extend({
+  addAttributes() {
+    return {
+      bulletType: {
+        default: 'disc',
+        parseHTML: element => element.getAttribute('data-bullet-type'),
+        renderHTML: attributes => {
+          return { 'data-bullet-type': attributes.bulletType }
+        },
+      },
+    }
+  },
+});
+
+const CustomOrderedList = OrderedList.extend({
+  addAttributes() {
+    return {
+      listType: {
+        default: 'decimal',
+        parseHTML: element => element.getAttribute('data-list-type'),
+        renderHTML: attributes => {
+          return { 'data-list-type': attributes.listType }
+        },
       },
     }
   },
@@ -249,13 +283,26 @@ const FONT_FAMILIES = [
 const FONT_SIZES = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px'];
 
 const COLOR_PALETTE = [
-  '#000000', '#475569', '#6366f1', '#10 b981', '#f43f5e', '#f59e0b', '#8b5cf6', '#ffffff'
+  '#000000', '#475569', '#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6', '#ffffff'
 ];
 
-const SHAPES = [
-  { id: 'rect', icon: Square, label: 'Rectangle', content: '<div style="width: 100px; height: 60px; border: 2px solid #6366f1; margin: 10px 0;"></div>' },
-  { id: 'circle', icon: Circle, label: 'Circle', content: '<div style="width: 60px; height: 60px; border: 2px solid #6366f1; border-radius: 50%; margin: 10px 0;"></div>' },
-  { id: 'arrow', icon: ArrowUpRight, label: 'Arrow', content: '<span style="font-size: 24px; color: #6366f1;">→</span>' },
+const BULLET_STYLES = [
+  { label: 'None', value: 'none', char: 'None' },
+  { label: 'Disc', value: 'disc', char: '•' },
+  { label: 'Circle', value: 'circle', char: '○' },
+  { label: 'Square', value: 'square', char: '■' },
+  { label: 'Diamond', value: 'diamond', char: '◆' },
+  { label: 'Matrix', value: 'diamond-matrix', char: '❖' },
+  { label: 'Arrow', value: 'arrow', char: '➤' },
+  { label: 'Check', value: 'check', char: '✓' },
+];
+
+const ORDERED_STYLES = [
+  { label: '1. 2. 3.', value: 'decimal' },
+  { label: 'a. b. c.', value: 'lower-alpha' },
+  { label: 'i. ii. iii.', value: 'lower-roman' },
+  { label: 'A. B. C.', value: 'upper-alpha' },
+  { label: 'I. II. III.', value: 'upper-roman' },
 ];
 
 // High-Fidelity Rich Text Editor Component
@@ -264,9 +311,15 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
   
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        bulletList: false,
+        orderedList: false,
+      }),
+      CustomBulletList,
+      CustomOrderedList,
+      ListItem,
       UnderlineExtension,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ types: ['heading', 'paragraph', 'bulletList', 'orderedList'] }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
       TableRowExtension,
@@ -307,6 +360,30 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
     }
   };
 
+  const setBulletStyle = (type: string) => {
+    if (!editor) return;
+    if (type === 'none') {
+      editor.chain().focus().liftListItem('listItem').run();
+      return;
+    }
+    if (!editor.isActive('bulletList')) {
+      editor.chain().focus().toggleBulletList().run();
+    }
+    editor.chain().focus().updateAttributes('bulletList', { bulletType: type }).run();
+  };
+
+  const setOrderedStyle = (type: string) => {
+    if (!editor) return;
+    if (type === 'none') {
+      editor.chain().focus().liftListItem('listItem').run();
+      return;
+    }
+    if (!editor.isActive('orderedList')) {
+      editor.chain().focus().toggleOrderedList().run();
+    }
+    editor.chain().focus().updateAttributes('orderedList', { listType: type }).run();
+  };
+
   if (!editor) return null;
 
   return (
@@ -341,6 +418,50 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
               {FONT_SIZES.map(s => (
                 <DropdownMenuItem key={s} onClick={() => (editor.chain().focus() as any).setFontSize(s).run()} className="rounded-lg h-7 text-[10px] font-bold text-center">
                   {s}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Lists Group */}
+        <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className={cn("h-7 gap-1 px-1 text-white hover:bg-white/10", editor.isActive('bulletList') && "bg-white/20")}>
+                <List className="h-3.5 w-3.5" />
+                <ChevronDown className="h-2 w-2 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64 bg-slate-900 border-slate-800 p-2">
+              <DropdownMenuLabel className="text-[9px] uppercase font-bold text-white/40 mb-2">Bullet Library</DropdownMenuLabel>
+              <div className="grid grid-cols-4 gap-2">
+                {BULLET_STYLES.map(s => (
+                  <button 
+                    key={s.value} 
+                    onClick={() => setBulletStyle(s.value)}
+                    className="h-12 w-full flex flex-col items-center justify-center rounded-lg border border-white/5 hover:bg-white/10 transition-all group"
+                  >
+                    <span className="text-lg font-bold text-white group-hover:scale-125 transition-transform">{s.char}</span>
+                    <span className="text-[7px] uppercase mt-1 text-white/40">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className={cn("h-7 gap-1 px-1 text-white hover:bg-white/10", editor.isActive('orderedList') && "bg-white/20")}>
+                <ListOrdered className="h-3.5 w-3.5" />
+                <ChevronDown className="h-2 w-2 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-slate-900 border-slate-800 p-1">
+              <DropdownMenuLabel className="text-[9px] uppercase font-bold text-white/40 mb-1 px-2">Numbering Library</DropdownMenuLabel>
+              {ORDERED_STYLES.map(s => (
+                <DropdownMenuItem key={s.value} onClick={() => setOrderedStyle(s.value)} className="rounded-lg h-9 text-[10px] font-bold uppercase gap-3 hover:bg-white/10">
+                   <span className="text-primary font-code">{s.label}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -924,26 +1045,32 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    <Card key={s.id} className="p-4 bg-slate-50 relative group border-slate-200">
                       <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-3 w-3" /></Button>
                       <div className="flex gap-4 mb-4">
-                        <div className="relative h-16 w-16 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center group/img">
+                        <div className="relative h-16 w-16 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
-                           <input type="file" id={`s-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
-                           <label htmlFor={`s-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                           <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
+                           <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-4 w-4 text-white" />
                            </label>
                         </div>
-                        <div className="flex-1">
-                          <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Service Node Name" />
-                          <Input value={s.description} onChange={(e)=>updateService(idx,'description',e.target.value)} className="h-6 text-[10px] bg-white" placeholder="Brief Capability" />
-                        </div>
+                         <div className="flex-1 grid grid-cols-2 gap-4">
+                            <div className="col-span-2 space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Service Node</Label>
+                               <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Service Node Name" />
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹)</Label>
+                               <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Units</Label>
+                               <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            </div>
+                         </div>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                         <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} placeholder="Rate (₹)" className="bg-white" />
-                         <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} placeholder="Jobs / Yr" className="bg-white" />
-                      </div>
-                   </Card>
-                 ))}
-               </div>
-             </div>
+                    ))}
+                 </div>
+              </div>
           </div>
         );
       case 'cashFlowStatement':
@@ -1369,7 +1496,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
               <div className="lg:col-span-8 space-y-8">
                  <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. One-Time Project Cost (CAPEX)</h3>
+                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. Project Cost (One-Time Investment)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Plant & Machinery (Breakup)</Label>

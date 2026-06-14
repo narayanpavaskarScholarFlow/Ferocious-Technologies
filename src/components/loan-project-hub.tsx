@@ -170,10 +170,10 @@ const FontSize = Extension.create({
   addCommands() {
     return {
       setFontSize: fontSize => ({ chain }) => {
-        return chain().setMark('textStyle', { fontSize }).run()
+        return (chain().setMark('textStyle', { fontSize }) as any).run()
       },
       unsetFontSize: () => ({ chain }) => {
-        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
+        return (chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle() as any).run()
       },
     }
   },
@@ -392,7 +392,6 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
       {/* MS Word-Style Premium Dynamic Toolbar */}
       <div className="bg-slate-950 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800 sticky top-0 z-50">
         
-        {/* Typography Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -425,7 +424,6 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
           </DropdownMenu>
         </div>
 
-        {/* Lists Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -469,7 +467,6 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
           </DropdownMenu>
         </div>
 
-        {/* Style Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}>
             <Bold className="h-3.5 w-3.5" />
@@ -512,7 +509,6 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
           </DropdownMenu>
         </div>
 
-        {/* Structure Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('heading', { level: 1 }) && "bg-white/20")} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
             <Heading1 className="h-3.5 w-3.5" />
@@ -522,7 +518,6 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
           </Button>
         </div>
 
-        {/* Objects Group */}
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -544,7 +539,6 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFixtureUpload} />
         </div>
 
-        {/* Global Group */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/10" onClick={() => editor.chain().focus().undo().run()}>
             <Undo className="h-3.5 w-3.5" />
@@ -855,7 +849,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
   };
 
-  // MS Word Export Logic (Serialized HTML for Legacy Compatibility)
   const exportToWord = useCallback(() => {
     const reportElement = document.getElementById('institutional-report-matrix');
     if (!reportElement) {
@@ -883,6 +876,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           .font-bold { font-weight: bold; }
           img { max-width: 100%; height: auto; display: block; margin: 10pt auto; border-radius: 8pt; }
           .watermark { display: none; }
+          .product-card { border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-radius: 12px; }
         </style>
       </head>
       <body>
@@ -1060,7 +1054,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       case 'productServices':
         return (
           <div className="space-y-12 animate-in fade-in duration-500">
-             {/* Products Section */}
              <div className="space-y-8">
                <div className="flex justify-between items-center border-l-4 border-primary pl-4">
                  <div>
@@ -1111,7 +1104,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
              <div className="h-px bg-slate-100" />
 
-             {/* Services Section */}
              <div className="space-y-8">
                <div className="flex justify-between items-center border-l-4 border-blue-500 pl-4">
                  <div>
@@ -1386,13 +1378,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-[#001F3D]">Strategy <span className="text-slate-400 font-medium">Engineer</span></h2>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center">
-           {activeTab === 'display' && (
-              <div className="flex items-center gap-4 bg-slate-50 px-5 h-12 rounded-xl border border-slate-200 mr-2 shadow-sm">
-                <button onClick={()=>setZoom(Math.max(zoom-0.1, 0.5))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomOut className="h-4 w-4 text-slate-500" /></button>
-                <span className="flex items-center text-[11px] font-bold w-12 justify-center text-[#001F3D]">{Math.round(zoom*100)}%</span>
-                <button onClick={()=>setZoom(Math.min(zoom+0.1, 2))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomIn className="h-4 w-4 text-slate-500" /></button>
-              </div>
-           )}
+           <div className="flex items-center gap-4 bg-slate-50 px-5 h-12 rounded-xl border border-slate-200 mr-2 shadow-sm">
+             <button onClick={()=>setZoom(Math.max(zoom-0.1, 0.5))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomOut className="h-4 w-4 text-slate-500" /></button>
+             <span className="flex items-center text-[11px] font-bold w-12 justify-center text-[#001F3D]">{Math.round(zoom*100)}%</span>
+             <button onClick={()=>setZoom(Math.min(zoom+0.1, 2))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomIn className="h-4 w-4 text-slate-500" /></button>
+           </div>
            <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print PDF</Button>
            <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={exportToWord}><FileText className="h-4 w-4 mr-2" /> MS Word</Button>
            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 flex-1 sm:flex-none" onClick={() => handleSaveStrategy()}><Save className="h-4 w-4" /> Commit Strategy</Button>
@@ -1656,7 +1646,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               <div 
                 id="institutional-report-matrix"
                 style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} 
-                className="mx-auto print:transform-none print:w-full bg-white shadow-2xl print:shadow-none print-matrix"
+                className="mx-auto print:transform-none bg-white shadow-2xl print:shadow-none print-matrix"
               >
                 <div className="p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative bg-white">
                    <div className="min-h-[297mm] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
@@ -1700,7 +1690,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          </div>
                          
                          <div className="space-y-6">
-                            {/* Render Header Note if present */}
                             {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && foundationalData[section.id] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
                             )}
@@ -1795,28 +1784,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {section.id === 'productServices' && (
                               <div className="space-y-16">
-                                {/* Products Sub-section */}
                                 <div className="space-y-8">
                                   <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
                                     <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Products Portfolio</h4>
                                   </div>
                                   <div className="grid grid-cols-3 gap-3">
                                     {proprietaryProducts.map(p => (
-                                      <div key={p.id} className="p-3 bg-white border border-slate-100 rounded-[1.25rem] flex gap-3 shadow-sm h-28 items-center">
-                                         <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-slate-50">
-                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="h-5 w-5 text-slate-200" />}
+                                      <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-[1.25rem] flex gap-4 shadow-sm min-h-[110px] items-center product-card">
+                                         <div className="w-24 h-24 bg-slate-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-slate-100">
+                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
                                          </div>
-                                         <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <p className="text-[10px] font-bold uppercase text-[#001F3D] truncate leading-tight mb-0.5">{p.name}</p>
-                                            <p className="text-[7px] font-bold text-slate-400 uppercase leading-tight truncate mb-2">{p.market}</p>
-                                            <div className="flex flex-col gap-0.5 mt-auto">
-                                               <div className="flex items-center justify-between">
-                                                  <span className="text-[9px] font-black text-red-600">₹ {p.price}</span>
+                                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
+                                            <p className="text-[11px] font-bold uppercase text-[#001F3D] truncate leading-tight mb-1">{p.name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight truncate mb-3">{p.market}</p>
+                                            <div className="flex flex-col gap-2 mt-auto">
+                                               <div className="flex items-center justify-between border-t border-slate-50 pt-2">
                                                   <span className="text-[7px] font-bold text-slate-300 uppercase">Valuation</span>
+                                                  <span className="text-[10px] font-black text-red-600">₹ {p.price}</span>
                                                </div>
                                                <div className="flex items-center justify-between">
-                                                  <span className="text-[8px] font-bold text-slate-500 truncate">{p.annualTargetQty} units/yr</span>
                                                   <span className="text-[7px] font-bold text-slate-300 uppercase">Target</span>
+                                                  <span className="text-[9px] font-bold text-slate-600 truncate">{p.annualTargetQty} / yr</span>
                                                </div>
                                             </div>
                                          </div>
@@ -1827,28 +1815,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                                 <div className="h-px bg-slate-100" />
 
-                                {/* Services Sub-section */}
                                 <div className="space-y-8">
                                   <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-6">
                                     <h4 className="text-xl font-display font-bold text-blue-900 uppercase tracking-tight">Industrial Technical Services Portfolio</h4>
                                   </div>
                                   <div className="grid grid-cols-3 gap-3">
                                     {industrialServices.map(s => (
-                                      <div key={s.id} className="p-3 bg-white border border-slate-100 rounded-[1.25rem] flex gap-3 shadow-sm h-28 items-center">
-                                         <div className="w-16 h-16 bg-blue-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-blue-50">
-                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-5 w-5 text-blue-300" />}
+                                      <div key={s.id} className="p-4 bg-white border border-slate-100 rounded-[1.25rem] flex gap-4 shadow-sm min-h-[110px] items-center product-card">
+                                         <div className="w-24 h-24 bg-blue-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-blue-100">
+                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="w-full h-full object-contain" /> : <Settings2 className="h-6 w-6 text-blue-300" />}
                                          </div>
-                                         <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <p className="text-[10px] font-bold uppercase text-blue-900 truncate leading-tight mb-0.5">{s.name}</p>
-                                            <p className="text-[7px] font-bold text-slate-400 uppercase leading-tight line-clamp-1 mb-2">{s.description}</p>
-                                            <div className="flex flex-col gap-0.5 mt-auto">
-                                               <div className="flex items-center justify-between">
-                                                  <span className="text-[9px] font-black text-blue-600">₹ {s.price}</span>
+                                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
+                                            <p className="text-[11px] font-bold uppercase text-blue-900 truncate leading-tight mb-1">{s.name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight line-clamp-1 mb-3">{s.description}</p>
+                                            <div className="flex flex-col gap-2 mt-auto">
+                                               <div className="flex items-center justify-between border-t border-slate-50 pt-2">
                                                   <span className="text-[7px] font-bold text-slate-300 uppercase">Rate</span>
+                                                  <span className="text-[10px] font-black text-blue-600">₹ {s.price}</span>
                                                </div>
                                                <div className="flex items-center justify-between">
-                                                  <span className="text-[8px] font-bold text-slate-500 truncate">{s.annualTargetQty} jobs/yr</span>
                                                   <span className="text-[7px] font-bold text-slate-300 uppercase">Target</span>
+                                                  <span className="text-[9px] font-bold text-slate-600 truncate">{s.annualTargetQty} / yr</span>
                                                </div>
                                             </div>
                                          </div>
@@ -1859,7 +1846,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
-                            {/* Render Footer Note if present */}
                             {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && foundationalData[section.id + '_footer'] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
@@ -1938,7 +1924,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Global Preview Modal */}
       <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
         <DialogContent className="max-w-[95vw] h-[95vh] bg-slate-900 border-none p-0 overflow-hidden flex flex-col rounded-[2rem]">
            <div className="p-6 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between shrink-0">

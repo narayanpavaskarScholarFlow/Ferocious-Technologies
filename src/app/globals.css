@@ -30,25 +30,48 @@
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    margin: 10mm;
   }
-  body {
+  
+  html, body {
     background: white !important;
     color: black !important;
-    overflow: visible !important;
     height: auto !important;
-    width: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
+
+  /* Un-constrain all layout parents to prevent blank/clipped pages */
+  main, 
+  [role="tabpanel"], 
+  .flex-1, 
+  .flex-col, 
+  .h-screen, 
+  .overflow-hidden, 
+  .overflow-y-auto {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+  }
+
   .no-print {
     display: none !important;
   }
   
   .print-matrix {
+    display: block !important;
+    visibility: visible !important;
     transform: none !important;
     width: 210mm !important;
     margin: 0 auto !important;
     box-shadow: none !important;
     border: none !important;
+    position: static !important;
+    background: white !important;
   }
 
   /* Ensure charts and colors are visible in PDF */
@@ -60,6 +83,9 @@
   .page-break {
     page-break-after: always !important;
     break-after: page !important;
+    display: block !important;
+    height: 1px !important;
+    margin-top: -1px !important;
   }
 }
 

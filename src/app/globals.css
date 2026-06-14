@@ -43,19 +43,14 @@
     padding: 0 !important;
   }
 
-  /* Un-constrain all layout parents to prevent blank/clipped pages */
-  main, 
-  [role="tabpanel"], 
-  .flex-1, 
-  .flex-col, 
-  .h-screen, 
-  .overflow-hidden, 
-  .overflow-y-auto {
+  /* CRITICAL: Recursively un-constrain all layout parents to prevent blank/clipped pages */
+  div, main, section, [role="tabpanel"], .flex-1, .flex-col, .h-screen, .overflow-hidden, .overflow-y-auto {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
     display: block !important;
     position: static !important;
+    float: none !important;
   }
 
   .no-print {

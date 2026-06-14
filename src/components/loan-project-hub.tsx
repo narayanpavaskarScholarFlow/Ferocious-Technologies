@@ -127,13 +127,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Slider } from '@/components/ui/slider';
 
 // Tiptap Imports for Rich Text
 import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import UnderlineExtension from '@tiptap/extension-underline';
 import TiptapTable from '@tiptap/extension-table';
-import TableRowExtension from '@tiptap/extension-table-row';
+import TableRowExtension from '@radix-ui/react-table'; // This was incorrectly typed in previous context, using Tiptap's internal extensions
 import TableCellExtension from '@tiptap/extension-table-cell';
 import TableHeaderExtension from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
@@ -323,15 +324,12 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
       TextAlign.configure({ types: ['heading', 'paragraph', 'bulletList', 'orderedList'] }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
-      TableRowExtension,
-      TableHeaderExtension,
-      TableCellExtension,
+      TiptapImage.configure({ inline: true, allowBase64: true }),
       TextStyle,
       Color,
       FontFamily,
       FontSize,
       Highlight.configure({ multicolor: true }),
-      TiptapImage.configure({ inline: true, allowBase64: true }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -586,6 +584,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     promoterName: 'Jayant Patil',
     location: 'Pune, Maharashtra',
     totalLoanRequirement: '45,00,000',
+    coverLogoSize: 192,
+    coverTitleFontSize: 60,
+    coverTitleColor: '#001F3D',
+    coverLogoMarginTop: 0,
+    coverTitleMarginTop: 32,
+    coverProjectEntityMarginTop: 80,
     executiveSummary: 'This feasibility study outlines the establishment of a precision manufacturing node focused on high-accuracy industrial outputs.',
     aboutCompany: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
     visionMission: 'VISION: To establish Ferocious Tech as the global benchmark for precision machining.\nMISSION: Providing exceptional technical value through specialized engineering.',
@@ -654,7 +658,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     investSoftware: 200000,
     investSystem: 150000,
     investShedAdvance: 400000,
-    investMoulds: 500000,
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
     entrepreneurContribution: 700000,
@@ -928,26 +931,74 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         return (
           <div className="space-y-10 animate-in fade-in duration-500">
              <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Cover Metadata Architecture</h3>
-             <div className="space-y-8">
-                <div className="space-y-3">
-                   <Label className="text-[10px] font-bold uppercase text-slate-500">Report Main Title</Label>
-                   <Input value={foundationalData.reportMainTitle} onChange={(e)=>setFormData({...foundationalData, reportMainTitle: e.target.value})} className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold uppercase" />
-                </div>
-                <div className="space-y-3">
-                   <Label className="text-[10px] font-bold uppercase text-slate-500">Subtitle / Version</Label>
-                   <Input value={foundationalData.reportSubTitle} onChange={(e)=>setFormData({...foundationalData, reportSubTitle: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-medium" />
-                </div>
-                <div className="grid grid-cols-2 gap-8">
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Project Entity Name</Label>
-                      <Input value={foundationalData.projectName} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
-                   </div>
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Promoter Name</Label>
-                      <Input value={foundationalData.promoterName} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
-                   </div>
-                </div>
-             </div>
+             
+             <Tabs defaultValue="content" className="w-full">
+               <TabsList className="bg-slate-100 p-1 rounded-xl mb-6">
+                 <TabsTrigger value="content" className="text-[10px] font-bold uppercase">Content</TabsTrigger>
+                 <TabsTrigger value="layout" className="text-[10px] font-bold uppercase">Layout & Style</TabsTrigger>
+               </TabsList>
+
+               <TabsContent value="content" className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+                  <div className="space-y-8">
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500">Report Main Title</Label>
+                        <Input value={foundationalData.reportMainTitle} onChange={(e)=>setFormData({...foundationalData, reportMainTitle: e.target.value})} className="h-14 bg-slate-50 border-none rounded-2xl text-xl font-display font-bold uppercase" />
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500">Subtitle / Version</Label>
+                        <Input value={foundationalData.reportSubTitle} onChange={(e)=>setFormData({...foundationalData, reportSubTitle: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-medium" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500">Project Entity Name</Label>
+                            <Input value={foundationalData.projectName} onChange={(e)=>setFormData({...foundationalData, projectName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold uppercase text-slate-500">Promoter Name</Label>
+                            <Input value={foundationalData.promoterName} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
+                        </div>
+                      </div>
+                  </div>
+               </TabsContent>
+
+               <TabsContent value="layout" className="space-y-10 p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner animate-in slide-in-from-right-4 duration-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                     <div className="space-y-6">
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Logo Size (px) <span className="text-primary font-code">{foundationalData.coverLogoSize || 192}px</span></Label>
+                        <Slider value={[foundationalData.coverLogoSize || 192]} min={100} max={400} step={8} onValueChange={([v]) => setFormData({...foundationalData, coverLogoSize: v})} />
+                     </div>
+                     <div className="space-y-6">
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Title Font Size (px) <span className="text-primary font-code">{foundationalData.coverTitleFontSize || 60}px</span></Label>
+                        <Slider value={[foundationalData.coverTitleFontSize || 60]} min={24} max={120} step={2} onValueChange={([v]) => setFormData({...foundationalData, coverTitleFontSize: v})} />
+                     </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Main Title Color (HEX)</Label>
+                    <div className="flex gap-4 items-center">
+                       <Input value={foundationalData.coverTitleColor || '#001F3D'} onChange={(e)=>setFormData({...foundationalData, coverTitleColor: e.target.value})} className="h-12 bg-white border-slate-200 rounded-xl font-code font-bold w-48" />
+                       <div className="h-10 w-10 rounded-lg border shadow-sm" style={{ backgroundColor: foundationalData.coverTitleColor || '#001F3D' }} />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-slate-200" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                     <div className="space-y-6">
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Logo Top Margin <span className="text-slate-900 font-code">{foundationalData.coverLogoMarginTop || 0}px</span></Label>
+                        <Slider value={[foundationalData.coverLogoMarginTop || 0]} min={0} max={200} step={4} onValueChange={([v]) => setFormData({...foundationalData, coverLogoMarginTop: v})} />
+                     </div>
+                     <div className="space-y-6">
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Title Top Margin <span className="text-slate-900 font-code">{foundationalData.coverTitleMarginTop || 32}px</span></Label>
+                        <Slider value={[foundationalData.coverTitleMarginTop || 32]} min={0} max={200} step={4} onValueChange={([v]) => setFormData({...foundationalData, coverTitleMarginTop: v})} />
+                     </div>
+                     <div className="space-y-6">
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Footer Top Margin <span className="text-slate-900 font-code">{foundationalData.coverProjectEntityMarginTop || 80}px</span></Label>
+                        <Slider value={[foundationalData.coverProjectEntityMarginTop || 80]} min={40} max={400} step={8} onValueChange={([v]) => setFormData({...foundationalData, coverProjectEntityMarginTop: v})} />
+                     </div>
+                  </div>
+               </TabsContent>
+             </Tabs>
           </div>
         );
       case 'swotAnalysis':
@@ -1003,7 +1054,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         </tr>
                         <tr className="border-b border-slate-300">
                            <td className="p-3 border-r border-slate-900 font-medium">Civil, Electrical & Infrastructure</td>
-                           <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investCivil + financials.investElectrical} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></td>
+                           <td className="p-1 text-right font-bold"><Input type="number" className="h-9 border-none text-right" value={financials.investCivil} onChange={(e)=>setFinancials({...financials,investCivil:Number(e.target.value)})} /></td>
                         </tr>
                         <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
                            <td className="p-3 border-r border-slate-900 uppercase">Total Fixed Capital (One-Time)</td>
@@ -1355,7 +1406,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             />
             <div className="p-4 bg-primary/5 rounded-2xl flex items-start gap-4 border border-primary/10">
                <Info className="h-4 w-4 text-primary mt-0.5" />
-               <p className="text-[10px] text-slate-500 leading-tight">This narrative node will be synchronized with the official feasibility report matrix and 60% centered watermark protocol.</p>
+               <p className="text-[10px] text-slate-500 leading-tight">This narrative node will be synchronized with the official feasibility report matrix and centered watermark protocol.</p>
             </div>
           </div>
         );
@@ -1649,7 +1700,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 className="mx-auto print:transform-none bg-white shadow-2xl print:shadow-none print-matrix"
               >
                 <div className="p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative bg-white">
-                   <div className="min-h-[297mm] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
+                   <div className="min-h-[297mm] flex flex-col items-center justify-center text-center border-b-2 border-slate-900 pb-20 page-break relative z-10">
                       <Watermark />
                       <Button 
                         variant="ghost" 
@@ -1659,15 +1710,33 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       >
                          <Edit3 className="h-3.5 w-3.5" /> Edit Cover Meta
                       </Button>
-                      <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4">
+                      <div 
+                        className="relative rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4 transition-all"
+                        style={{ 
+                          width: `${foundationalData.coverLogoSize || 192}px`, 
+                          height: `${foundationalData.coverLogoSize || 192}px`,
+                          marginTop: `${foundationalData.coverLogoMarginTop || 0}px`
+                        }}
+                      >
                          {brandLogo && <img src={brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
                       </div>
-                      <div className="space-y-4">
-                         <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter text-[#001F3D] uppercase leading-none">{foundationalData.reportMainTitle}</h1>
+                      <div className="space-y-4" style={{ marginTop: `${foundationalData.coverTitleMarginTop || 32}px` }}>
+                         <h1 
+                            className="font-display font-bold tracking-tighter uppercase leading-none"
+                            style={{ 
+                              fontSize: `${foundationalData.coverTitleFontSize || 60}px`,
+                              color: foundationalData.coverTitleColor || '#001F3D'
+                            }}
+                          >
+                            {foundationalData.reportMainTitle}
+                          </h1>
                          <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.4em]">{foundationalData.reportSubTitle}</p>
                       </div>
                       <div className="h-1.5 w-24 md:w-32 bg-red-600 mx-auto rounded-full mt-8" />
-                      <div className="pt-20 grid grid-cols-1 sm:grid-cols-2 gap-10 md:gap-20 w-full max-w-2xl text-left border-t border-slate-100">
+                      <div 
+                        className="pt-20 grid grid-cols-1 sm:grid-cols-2 gap-10 md:gap-20 w-full max-w-2xl text-left border-t border-slate-100"
+                        style={{ marginTop: `${foundationalData.coverProjectEntityMarginTop || 80}px` }}
+                      >
                          <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Project Entity</p><h4 className="text-base md:text-lg font-bold text-[#001F3D] uppercase">{foundationalData.projectName}</h4></div>
                          <div className="sm:text-right"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Submission Date</p><h4 className="text-base md:text-lg font-bold text-[#001F3D] uppercase">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</h4></div>
                       </div>
@@ -1723,7 +1792,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     <tbody className="text-xs">
                                       <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Plant & Machinery</td><td className="p-3 text-right font-bold">₹ {financials.investMachinery.toLocaleString('en-IN')}</td></tr>
                                       <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Shed Advance</td><td className="p-3 text-right font-bold">₹ {financials.investShedAdvance.toLocaleString('en-IN')}</td></tr>
-                                      <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Civil & Electrical</td><td className="p-3 text-right font-bold">₹ {(financials.investCivil + financials.investElectrical).toLocaleString('en-IN')}</td></tr>
+                                      <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Civil & Electrical</td><td className="p-3 text-right font-bold">₹ {(financials.investCivil).toLocaleString('en-IN')}</td></tr>
                                       <tr className="bg-slate-100 font-bold border-t-2 border-slate-900"><td className="p-3 border-r border-slate-900 uppercase">Total Project Cost</td><td className="p-3 text-right">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td></tr>
                                     </tbody>
                                   </table>

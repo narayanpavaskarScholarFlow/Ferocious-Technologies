@@ -477,7 +477,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     projectDetails: 'The proposed project involves the setup of a high-fidelity VMC Machining Center and Tool Room in Pune.',
     productServices: 'Combined Proprietary Products and Industrial Services matrix.',
     marketAnalysis: "India's electrical sector is witnessing an unprecedented surge. The Indian Tooling Industry is valued at approximately ₹18,500 Crores.",
-    swotAnalysis: "STRENGTHS: High technical expertise, Advanced VMC fleet.\nWEAKNESSES: New establishment phase.\nOPPORTUNITIES: EV sector growth.\nTHREATS: Raw material price volatility.",
+    swotAnalysis: "Strategic analysis of operational nodes.",
+    swot_strengths: "",
+    swot_weaknesses: "",
+    swot_opportunities: "",
+    swot_threats: "",
     businessModel: "Revenue-driven B2B model focusing on high-precision job work and proprietary industrial connectors.",
     operationsPlan: "Multi-shift precision machining utilizing 3-axis and 4-axis VMC centers with integrated QC cycles.",
     locationAnalysis: "Strategically located in Pune's industrial belt, providing seamless access to Tier 1 supply chains and skilled labor.",
@@ -774,6 +778,34 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <Label className="text-[10px] font-bold uppercase text-slate-500">Promoter Name</Label>
                       <Input value={foundationalData.promoterName} onChange={(e)=>setFormData({...foundationalData, promoterName: e.target.value})} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
                    </div>
+                </div>
+             </div>
+          </div>
+        );
+      case 'swotAnalysis':
+        return (
+          <div className="space-y-10 animate-in fade-in duration-500">
+             <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Strategic SWOT Matrix</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Strengths */}
+                <div className="p-6 rounded-[2rem] bg-emerald-50 border border-emerald-100 space-y-4 shadow-sm">
+                   <Label className="text-[10px] font-bold uppercase text-emerald-600 tracking-widest ml-1">Strengths</Label>
+                   <RichTextEditor value={foundationalData.swot_strengths || ""} onChange={(val) => setFormData({...foundationalData, swot_strengths: val})} />
+                </div>
+                {/* Weaknesses */}
+                <div className="p-6 rounded-[2rem] bg-rose-50 border border-rose-100 space-y-4 shadow-sm">
+                   <Label className="text-[10px] font-bold uppercase text-rose-600 tracking-widest ml-1">Weaknesses</Label>
+                   <RichTextEditor value={foundationalData.swot_weaknesses || ""} onChange={(val) => setFormData({...foundationalData, swot_weaknesses: val})} />
+                </div>
+                {/* Opportunities */}
+                <div className="p-6 rounded-[2rem] bg-blue-50 border border-blue-100 space-y-4 shadow-sm">
+                   <Label className="text-[10px] font-bold uppercase text-blue-600 tracking-widest ml-1">Opportunities</Label>
+                   <RichTextEditor value={foundationalData.swot_opportunities || ""} onChange={(val) => setFormData({...foundationalData, swot_opportunities: val})} />
+                </div>
+                {/* Threats */}
+                <div className="p-6 rounded-[2rem] bg-amber-50 border border-amber-100 space-y-4 shadow-sm">
+                   <Label className="text-[10px] font-bold uppercase text-amber-600 tracking-widest ml-1">Threats</Label>
+                   <RichTextEditor value={foundationalData.swot_threats || ""} onChange={(val) => setFormData({...foundationalData, swot_threats: val})} />
                 </div>
              </div>
           </div>
@@ -1452,6 +1484,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
                             )}
 
+                            {section.id === 'swotAnalysis' && (
+                              <div className="grid grid-cols-2 gap-8">
+                                <div className="p-8 rounded-[2rem] bg-emerald-50 border-2 border-emerald-100 space-y-4">
+                                  <h4 className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Strengths</h4>
+                                  <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData.swot_strengths || "" }} />
+                                </div>
+                                <div className="p-8 rounded-[2rem] bg-rose-50 border-2 border-rose-100 space-y-4">
+                                  <h4 className="text-xs font-bold text-rose-600 uppercase tracking-widest">Weaknesses</h4>
+                                  <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData.swot_weaknesses || "" }} />
+                                </div>
+                                <div className="p-8 rounded-[2rem] bg-blue-50 border-2 border-blue-100 space-y-4">
+                                  <h4 className="text-xs font-bold text-blue-600 uppercase tracking-widest">Opportunities</h4>
+                                  <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData.swot_opportunities || "" }} />
+                                </div>
+                                <div className="p-8 rounded-[2rem] bg-amber-50 border-2 border-amber-100 space-y-4">
+                                  <h4 className="text-xs font-bold text-amber-600 uppercase tracking-widest">Threats</h4>
+                                  <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData.swot_threats || "" }} />
+                                </div>
+                              </div>
+                            )}
+
                             {section.id === 'projectCost' && (
                               <div className="space-y-6">
                                 <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white">
@@ -1563,7 +1616,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
 
-                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && (
+                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                                 <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>

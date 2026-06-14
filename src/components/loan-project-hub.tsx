@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -870,20 +869,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         <meta charset='utf-8'>
         <style>
           @page { size: 21cm 29.7cm; margin: 2cm; }
-          body { font-family: 'Inter', sans-serif, Arial; line-height: 1.6; }
-          h1 { color: #001F3D; font-size: 32pt; text-align: center; text-transform: uppercase; margin-bottom: 20pt; }
-          h2 { color: #8B5CF6; font-size: 24pt; border-bottom: 2pt solid #8B5CF6; margin-top: 30pt; padding-bottom: 5pt; text-transform: uppercase; }
-          h3 { color: #001F3D; font-size: 18pt; text-transform: uppercase; border-left: 4pt solid #6366f1; padding-left: 10pt; margin: 15pt 0; }
-          table { border-collapse: collapse; width: 100%; margin: 20pt 0; border: 1pt solid #cbd5e1; }
-          th, td { border: 1pt solid #cbd5e1; padding: 10pt; text-align: left; }
+          body { font-family: 'Calibri', 'Inter', sans-serif; line-height: 1.5; color: #334155; }
+          h1 { color: #001F3D; font-size: 28pt; text-align: center; text-transform: uppercase; margin-bottom: 20pt; }
+          h2 { color: #8B5CF6; font-size: 22pt; border-bottom: 2pt solid #8B5CF6; margin-top: 30pt; padding-bottom: 5pt; text-transform: uppercase; }
+          h3 { color: #001F3D; font-size: 16pt; text-transform: uppercase; border-left: 4pt solid #6366f1; padding-left: 10pt; margin: 15pt 0; }
+          table { border-collapse: collapse; width: 100%; margin: 15pt 0; border: 0.5pt solid #cbd5e1; }
+          th, td { border: 0.5pt solid #cbd5e1; padding: 8pt; text-align: left; }
           th { background-color: #f8fafc; font-weight: bold; color: #001F3D; font-size: 10pt; }
-          td { font-size: 10pt; color: #334155; }
+          td { font-size: 10pt; }
           .page-break { page-break-after: always; }
           .text-center { text-align: center; }
           .text-right { text-align: right; }
           .font-bold { font-weight: bold; }
-          img { max-width: 100%; height: auto; display: block; margin: 10pt auto; }
-          .watermark { opacity: 0.05; position: absolute; top: 30%; left: 20%; width: 60%; }
+          img { max-width: 100%; height: auto; display: block; margin: 10pt auto; border-radius: 8pt; }
+          .watermark { display: none; }
         </style>
       </head>
       <body>
@@ -1386,7 +1385,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           </div>
           <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-[#001F3D]">Strategy <span className="text-slate-400 font-medium">Engineer</span></h2>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center">
+           {activeTab === 'display' && (
+              <div className="flex items-center gap-4 bg-slate-50 px-5 h-12 rounded-xl border border-slate-200 mr-2 shadow-sm">
+                <button onClick={()=>setZoom(Math.max(zoom-0.1, 0.5))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomOut className="h-4 w-4 text-slate-500" /></button>
+                <span className="flex items-center text-[11px] font-bold w-12 justify-center text-[#001F3D]">{Math.round(zoom*100)}%</span>
+                <button onClick={()=>setZoom(Math.min(zoom+0.1, 2))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomIn className="h-4 w-4 text-slate-500" /></button>
+              </div>
+           )}
            <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print PDF</Button>
            <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={exportToWord}><FileText className="h-4 w-4 mr-2" /> MS Word</Button>
            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 flex-1 sm:flex-none" onClick={() => handleSaveStrategy()}><Save className="h-4 w-4" /> Commit Strategy</Button>
@@ -1645,25 +1651,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
            </div>
         </TabsContent>
 
-        <TabsContent value="display" className="m-0 flex flex-col items-center overflow-x-hidden">
-           <div className="flex flex-wrap justify-center gap-4 p-4 bg-white/80 backdrop-blur-xl border rounded-3xl md:rounded-full sticky top-6 z-50 shadow-xl no-print mx-4">
-              <div className="flex items-center gap-2">
-                <button onClick={()=>setZoom(Math.max(zoom-0.1, 0.5))} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ZoomOut className="h-4 w-4" /></button>
-                <span className="flex items-center text-[11px] font-bold w-10 justify-center">{Math.round(zoom*100)}%</span>
-                <button onClick={()=>setZoom(Math.min(zoom+0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ZoomIn className="h-4 w-4" /></button>
-              </div>
-              <div className="w-px bg-slate-200 h-8 hidden sm:block" />
-              <div className="flex gap-3">
-                <Button className="bg-[#001F3D] text-white rounded-full h-10 px-6 md:px-8 font-bold text-[10px] uppercase gap-2" onClick={()=>window.print()}><Printer className="h-4 w-4" /> Print PDF</Button>
-                <Button variant="outline" className="border-slate-200 rounded-full h-10 px-6 md:px-8 font-bold text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={exportToWord}><Download className="h-4 w-4" /> MS Word</Button>
-              </div>
-           </div>
-
-           <div className="w-full overflow-x-auto pb-20 px-4 scrollbar-hide">
+        <TabsContent value="display" className="m-0 flex flex-col items-center overflow-x-hidden print:overflow-visible">
+           <div className="w-full overflow-x-auto pb-20 px-4 scrollbar-hide print:overflow-visible print:px-0">
               <div 
                 id="institutional-report-matrix"
                 style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} 
-                className="mx-auto print:transform-none print:w-full bg-white shadow-2xl"
+                className="mx-auto print:transform-none print:w-full bg-white shadow-2xl print:shadow-none print-matrix"
               >
                 <div className="p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative bg-white">
                    <div className="min-h-[297mm] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
@@ -1861,7 +1854,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>
@@ -1874,79 +1867,84 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </TabsContent>
       </Tabs>
 
-      {/* In-Place Preview Editor Modal */}
-      <Dialog open={!!editingSectionInPreview} onOpenChange={(open) => !open && setEditingSectionInPreview(null)}>
-        <DialogContent className="max-w-4xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col h-[85vh]">
-           <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center shrink-0">
+      <Dialog open={isMachineryBreakupOpen} onOpenChange={setIsMachineryBreakupOpen}>
+        <DialogContent className="max-w-4xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
+          <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl"><TableIcon className="h-8 w-8" /></div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Machinery Breakup Matrix</DialogTitle>
+                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial asset allocation and procurement ledger.</DialogDescription>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsMachineryBreakupOpen(false)} className="rounded-full"><X className="h-6 w-6" /></Button>
+          </div>
+          
+          <ScrollArea className="flex-1 p-8">
+            <Table>
+               <TableHeader className="bg-slate-50">
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-4">Asset Identity</TableHead>
+                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-24">Qty</TableHead>
+                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Rate (₹)</TableHead>
+                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Total (₹)</TableHead>
+                     <TableHead className="w-10"></TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {machineryItems.map((item, idx) => (
+                    <TableRow key={item.id} className="h-16 border-slate-50">
+                       <TableCell className="px-4">
+                          <Input value={item.name} onChange={(e)=>handleUpdateDimension(idx,'name',e.target.value)} className="h-9 bg-slate-50 border-none font-bold text-xs uppercase" />
+                       </TableCell>
+                       <TableCell>
+                          <Input type="number" value={item.qty} onChange={(e)=>handleUpdateDimension(idx,'qty',Number(e.target.value))} className="h-9 bg-slate-50 border-none font-bold text-xs text-center" />
+                       </TableCell>
+                       <TableCell>
+                          <Input type="number" value={item.rate} onChange={(e)=>handleUpdateDimension(idx,'rate',Number(e.target.value))} className="h-9 bg-slate-50 border-none font-bold text-xs text-right" />
+                       </TableCell>
+                       <TableCell className="text-right font-display font-bold text-primary">₹ {item.total.toLocaleString()}</TableCell>
+                       <TableCell>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={()=>setMachineryItems(machineryItems.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                       </TableCell>
+                    </TableRow>
+                  ))}
+               </TableBody>
+            </Table>
+            <Button variant="ghost" className="w-full mt-6 h-12 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 border-2 border-dashed border-primary/20" onClick={()=>setMachineryItems([...machineryItems, {id:Date.now().toString(), name:'', qty:1, rate:0, total:0}])}>
+               <Plus className="h-4 w-4" /> Append Asset Node
+            </Button>
+          </ScrollArea>
+          
+          <div className="p-8 bg-slate-50 border-t flex justify-between items-center">
+             <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Asset Valuation</span>
+                <p className="text-2xl font-display font-bold text-[#001F3D]">₹ {financials.investMachinery.toLocaleString()}</p>
+             </div>
+             <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl" onClick={() => setIsMachineryBreakupOpen(false)}>Commit Matrix</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Global Preview Modal */}
+      <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
+        <DialogContent className="max-w-[95vw] h-[95vh] bg-slate-900 border-none p-0 overflow-hidden flex flex-col rounded-[2rem]">
+           <div className="p-6 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20"><Edit3 className="h-6 w-6" /></div>
+                 <div className="p-2 bg-primary/20 rounded-lg text-primary shadow-lg shadow-primary/10"><Maximize2 className="h-5 w-5" /></div>
                  <div>
-                    <h3 className="text-2xl font-display font-bold uppercase tracking-tight">In-Place Protocol Editor</h3>
-                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Section: {REPORT_SEQUENCE.find(s=>s.id === editingSectionInPreview)?.label}</p>
+                   <DialogTitle className="text-lg font-display font-bold text-white uppercase tracking-tight">High-Fidelity Matrix Fit</DialogTitle>
                  </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setEditingSectionInPreview(null)} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all">
-                <X className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={() => setIsZoomDialogOpen(false)} className="h-12 w-12 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                <X className="h-7 w-7" />
               </Button>
            </div>
-           <ScrollArea className="flex-1 p-10 bg-white">
-              {editingSectionInPreview && renderActiveEditor(editingSectionInPreview)}
+           <ScrollArea className="flex-1 bg-slate-950">
+              <div className="p-20 flex justify-center">
+                 {pendingDrawingFile && <img src={pendingDrawingFile} alt="Fullscreen Drawing" className="max-w-full shadow-2xl rounded-3xl" />}
+              </div>
            </ScrollArea>
-           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-between items-center shrink-0">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">All edits are live-synchronized with <br />the feasibility preview matrix.</p>
-              <Button className="bg-[#001F3D] hover:bg-black text-white h-12 px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={() => { handleSaveStrategy(); setEditingSectionInPreview(null); }}>
-                 <Save className="h-4 w-4" /> Commit & Close Matrix
-              </Button>
-           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isMachineryBreakupOpen} onOpenChange={setIsMachineryBreakupOpen}>
-        <DialogContent className="max-w-4xl h-[85vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
-          <DialogHeader className="p-6 md:p-8 bg-[#001F3D] text-white flex flex-row justify-between items-center shrink-0 space-y-0">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20"><Factory className="h-6 w-6 md:h-8 md:w-8" /></div>
-              <div className="text-left">
-                <DialogTitle className="text-xl md:text-2xl font-display font-bold uppercase tracking-tight text-white">Plant & Machinery Breakup</DialogTitle>
-                <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital Expenditure Quotation Ledger v2.4</DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <ScrollArea className="flex-1 p-6 md:p-10">
-            <div className="space-y-8">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[500px]">
-                  <thead className="bg-slate-50"><tr><th className="p-4 text-[9px] uppercase font-bold text-slate-400">Asset</th><th className="p-4 text-[9px] uppercase font-bold text-slate-400 text-center">Qty</th><th className="p-4 text-[9px] uppercase font-bold text-slate-400 text-right">Rate</th><th className="p-4 text-[9px] uppercase font-bold text-slate-400 text-right">Total</th><th className="p-4 w-12"></th></tr></thead>
-                  <tbody>
-                     {machineryItems.map((item, i)=>(
-                       <tr key={item.id} className="border-b group">
-                          <td className="p-2"><Input value={item.name} onChange={(e)=>handleUpdateDimension(i,'name',e.target.value)} className="bg-transparent border-none text-[11px] font-bold" /></td>
-                          <td className="p-2"><Input type="number" value={item.qty} onChange={(e)=>handleUpdateDimension(i,'qty',Number(e.target.value))} className="bg-transparent border-none text-center" /></td>
-                          <td className="p-2"><Input type="number" value={item.rate} onChange={(e)=>handleUpdateDimension(i,'rate',Number(e.target.value))} className="bg-transparent border-none text-right" /></td>
-                          <td className="p-2 text-right font-bold">₹ {item.total.toLocaleString()}</td>
-                          <td className="p-2"><Button variant="ghost" size="icon" onClick={()=>setMachineryItems(machineryItems.filter((_,idx)=>idx!==i))}><Trash2 className="h-4 w-4" /></Button></td>
-                       </tr>
-                     ))}
-                  </tbody>
-                </table>
-              </div>
-              <Button variant="outline" className="w-full h-12 dashed rounded-xl font-bold uppercase text-[9px] tracking-widest" onClick={()=>setMachineryItems([...machineryItems, {id:`M-${Date.now()}`, name:'', qty:1, rate:0, total:0}])}>+ Append Asset Node</Button>
-            </div>
-          </ScrollArea>
-          <DialogFooter className="p-6 md:p-8 bg-slate-50 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-center sm:text-right">
-              <p className="text-[8px] font-bold text-slate-400 uppercase">Gross Val</p>
-              <p className="text-xl md:text-2xl font-bold text-primary">₹ {financials.investMachinery.toLocaleString()}</p>
-            </div>
-            <Button className="h-12 px-10 bg-[#001F3D] text-white rounded-xl w-full sm:w-auto" onClick={()=>setIsMachineryBreakupOpen(false)}>Commit Matrix</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isZoomDialogOpen} onOpenChange={setIsZoomDialogOpen}>
-        <DialogContent className="max-w-full w-screen h-screen m-0 rounded-none bg-slate-950 border-none shadow-none p-0 overflow-hidden flex flex-col">
-          <DialogHeader className="p-4 bg-slate-900/50 border-b flex items-center justify-between shrink-0"><DialogTitle className="text-white uppercase font-bold text-sm">Blueprint Viewer</DialogTitle><Button variant="ghost" size="icon" onClick={()=>setIsZoomDialogOpen(false)} className="text-white"><X className="h-6 w-6" /></Button></DialogHeader>
-          <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto">{pendingDrawingFile && <img src={pendingDrawingFile} alt="" className="max-w-full max-h-full object-contain" />}</div>
         </DialogContent>
       </Dialog>
     </div>

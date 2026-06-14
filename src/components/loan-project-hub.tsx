@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   Landmark, 
   FileText, 
@@ -107,7 +108,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
@@ -1128,7 +1128,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                       <div className="flex flex-col gap-4">
                         <div className="relative h-32 w-full bg-white rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center group/img">
-                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200" />}
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200 m-auto mt-10" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-5 w-5 text-white" />
@@ -1489,7 +1489,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {industrialServices.map((s, idx) => (
                       <Card key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-6 relative group transition-all hover:bg-white hover:border-blue-200">
-                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                          <div className="w-full h-32 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200 m-auto mt-10" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
@@ -1800,18 +1800,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
                                     <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Products Portfolio</h4>
                                   </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                  <div className="grid grid-cols-3 gap-4">
                                     {proprietaryProducts.map(p => (
-                                      <div key={p.id} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex gap-6">
-                                         <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
+                                      <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-3xl flex gap-4 shadow-sm h-full items-center">
+                                         <div className="w-20 h-20 bg-slate-50 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center p-2 border border-slate-50">
+                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
                                          </div>
-                                         <div className="flex-1 space-y-2">
-                                            <p className="text-[12px] font-bold uppercase text-[#001F3D]">{p.name}</p>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.market}</p>
-                                            <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                                               <span className="text-[10px] font-display font-bold text-primary">₹ {parseFloat(p.price).toLocaleString()}</span>
-                                               <span className="text-[9px] font-bold text-slate-400">{p.annualTargetQty} units/yr</span>
+                                         <div className="flex-1 flex flex-col justify-center min-w-0">
+                                            <p className="text-[10px] font-black uppercase text-[#001F3D] truncate">{p.name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight truncate">{p.market}</p>
+                                            <div className="flex items-center gap-3 mt-2">
+                                               <span className="text-[10px] font-black text-red-500">₹ {p.price}</span>
+                                               <span className="text-[8px] font-bold text-slate-400 truncate">{p.annualTargetQty} units/yr</span>
                                             </div>
                                          </div>
                                       </div>
@@ -1826,18 +1826,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-6">
                                     <h4 className="text-xl font-display font-bold text-blue-900 uppercase tracking-tight">Industrial Technical Services Portfolio</h4>
                                   </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                  <div className="grid grid-cols-3 gap-4">
                                     {industrialServices.map(s => (
-                                      <div key={s.id} className="p-6 bg-blue-50 border border-blue-100 rounded-2xl flex gap-6">
-                                         <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
+                                      <div key={s.id} className="p-4 bg-white border border-slate-100 rounded-3xl flex gap-4 shadow-sm h-full items-center">
+                                         <div className="w-20 h-20 bg-blue-50 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center p-2 border border-blue-50">
+                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-blue-300" />}
                                          </div>
-                                         <div className="flex-1 space-y-2">
-                                            <p className="text-[12px] font-bold uppercase text-blue-900">{s.name}</p>
-                                            <p className="text-[9px] font-medium text-slate-500 line-clamp-2">{s.description}</p>
-                                            <div className="flex justify-between items-center pt-2 border-t border-blue-100 mt-2">
-                                               <span className="text-[10px] font-display font-bold text-blue-600">₹ {parseFloat(s.price).toLocaleString()}</span>
-                                               <span className="text-[9px] font-bold text-slate-400">{s.annualTargetQty} jobs/yr</span>
+                                         <div className="flex-1 flex flex-col justify-center min-w-0">
+                                            <p className="text-[10px] font-black uppercase text-blue-900 truncate">{s.name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight truncate line-clamp-1">{s.description}</p>
+                                            <div className="flex items-center gap-3 mt-2">
+                                               <span className="text-[10px] font-black text-blue-600">₹ {s.price}</span>
+                                               <span className="text-[8px] font-bold text-slate-400 truncate">{s.annualTargetQty} jobs/yr</span>
                                             </div>
                                          </div>
                                       </div>
@@ -1854,7 +1854,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>

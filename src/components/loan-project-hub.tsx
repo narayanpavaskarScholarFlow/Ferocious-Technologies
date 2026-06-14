@@ -1489,7 +1489,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {proprietaryProducts.map((p, idx) => (
                       <div key={p.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-6 relative group transition-all hover:bg-white hover:border-primary/20">
-                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                          <div className="w-full h-32 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
                            {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover" alt="" /> : <ImageIcon className="h-8 w-8 text-slate-200 m-auto mt-10" />}
                            <input type="file" id={`p-cat-img-${p.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'product', e)} />
@@ -1719,7 +1719,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           marginTop: `${foundationalData.coverLogoMarginTop || 0}px`
                         }}
                       >
-                         {(localUI?.brandLogo || brandLogo) && <img src={localUI?.brandLogo || brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
+                         {brandLogo && <img src={brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
                       </div>
                       <div className="space-y-4" style={{ marginTop: `${foundationalData.coverTitleMarginTop || 32}px` }}>
                          <h1 

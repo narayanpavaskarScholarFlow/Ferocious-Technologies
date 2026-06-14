@@ -108,3 +108,28 @@ ul[data-bullet-type='disc'] { list-style-type: '• '; }
 .editor-content-preview li, .tiptap-editor-container li {
   margin-bottom: 0.25rem;
 }
+
+/* Tiptap Table Styles */
+.tiptap-editor-container table, .editor-content-preview table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.tiptap-editor-container td, .editor-content-preview td,
+.tiptap-editor-container th, .editor-content-preview th {
+  min-width: 1em;
+  border: 1px solid #ced4da;
+  padding: 3px 5px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap-editor-container th, .editor-content-preview th {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f8fafc;
+}

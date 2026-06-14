@@ -397,9 +397,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
 
   return (
     <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-      {/* MS Word-Style Premium Dynamic Toolbar */}
       <div className="bg-slate-950 text-white p-2 flex flex-wrap items-center gap-1 border-b border-slate-800 sticky top-0 z-50">
-        
         <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

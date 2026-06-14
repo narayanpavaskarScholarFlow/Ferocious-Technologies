@@ -7,7 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Table as UITable, 
+  TableBody as UITableBody, 
+  TableCell as UITableCell, 
+  TableHead as UITableHead, 
+  TableHeader as UITableHeader, 
+  TableRow as UITableRow 
+} from '@/components/ui/table';
 import { 
   Landmark, 
   FileText, 
@@ -134,9 +141,9 @@ import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import UnderlineExtension from '@tiptap/extension-underline';
 import TiptapTable from '@tiptap/extension-table';
-import TableRowExtension from '@radix-ui/react-table'; // This was incorrectly typed in previous context, using Tiptap's internal extensions
-import TableCellExtension from '@tiptap/extension-table-cell';
-import TableHeaderExtension from '@tiptap/extension-table-header';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
@@ -324,6 +331,9 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
       TextAlign.configure({ types: ['heading', 'paragraph', 'bulletList', 'orderedList'] }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
       TiptapImage.configure({ inline: true, allowBase64: true }),
       TextStyle,
       Color,
@@ -1948,36 +1958,36 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           </div>
           
           <ScrollArea className="flex-1 p-8">
-            <Table>
-               <TableHeader className="bg-slate-50">
-                  <TableRow className="hover:bg-transparent border-slate-100">
-                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-4">Asset Identity</TableHead>
-                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-24">Qty</TableHead>
-                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Rate (₹)</TableHead>
-                     <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Total (₹)</TableHead>
-                     <TableHead className="w-10"></TableHead>
-                  </TableRow>
-               </TableHeader>
-               <TableBody>
+            <UITable>
+               <UITableHeader className="bg-slate-50">
+                  <UITableRow className="hover:bg-transparent border-slate-100">
+                     <UITableHead className="font-bold text-[10px] uppercase text-slate-400 py-4 px-4">Asset Identity</UITableHead>
+                     <UITableHead className="font-bold text-[10px] uppercase text-slate-400 text-center w-24">Qty</UITableHead>
+                     <UITableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Rate (₹)</UITableHead>
+                     <UITableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Total (₹)</UITableHead>
+                     <UITableHead className="w-10"></UITableHead>
+                  </UITableRow>
+               </UITableHeader>
+               <UITableBody>
                   {machineryItems.map((item, idx) => (
-                    <TableRow key={item.id} className="h-16 border-slate-50">
-                       <TableCell className="px-4">
+                    <UITableRow key={item.id} className="h-16 border-slate-50">
+                       <UITableCell className="px-4">
                           <Input value={item.name} onChange={(e)=>handleUpdateDimension(idx,'name',e.target.value)} className="h-9 bg-slate-50 border-none font-bold text-xs uppercase" />
-                       </TableCell>
-                       <TableCell>
+                       </UITableCell>
+                       <UITableCell>
                           <Input type="number" value={item.qty} onChange={(e)=>handleUpdateDimension(idx,'qty',Number(e.target.value))} className="h-9 bg-slate-50 border-none font-bold text-xs text-center" />
-                       </TableCell>
-                       <TableCell>
+                       </UITableCell>
+                       <UITableCell>
                           <Input type="number" value={item.rate} onChange={(e)=>handleUpdateDimension(idx,'rate',Number(e.target.value))} className="h-9 bg-slate-50 border-none font-bold text-xs text-right" />
-                       </TableCell>
-                       <TableCell className="text-right font-display font-bold text-primary">₹ {item.total.toLocaleString()}</TableCell>
-                       <TableCell>
+                       </UITableCell>
+                       <UITableCell className="text-right font-display font-bold text-primary">₹ {item.total.toLocaleString()}</UITableCell>
+                       <UITableCell>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={()=>setMachineryItems(machineryItems.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
-                       </TableCell>
-                    </TableRow>
+                       </UITableCell>
+                    </UITableRow>
                   ))}
-               </TableBody>
-            </Table>
+               </UITableBody>
+            </UITable>
             <Button variant="ghost" className="w-full mt-6 h-12 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 border-2 border-dashed border-primary/20" onClick={()=>setMachineryItems([...machineryItems, {id:Date.now().toString(), name:'', qty:1, rate:0, total:0}])}>
                <Plus className="h-4 w-4" /> Append Asset Node
             </Button>
@@ -2011,6 +2021,27 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  {pendingDrawingFile && <img src={pendingDrawingFile} alt="Fullscreen Drawing" className="max-w-full shadow-2xl rounded-3xl" />}
               </div>
            </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Narrative Editor Hub (Contextual) */}
+      <Dialog open={!!editingSectionInPreview} onOpenChange={(open) => !open && setEditingSectionInPreview(null)}>
+        <DialogContent className="max-w-4xl h-[80vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
+          <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-[#001F3D] rounded-2xl text-white"><Edit3 className="h-7 w-7" /></div>
+              <div>
+                <DialogTitle className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Edit Matrix Node: {REPORT_SEQUENCE.find(s => s.id === editingSectionInPreview)?.label}</DialogTitle>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setEditingSectionInPreview(null)}><X className="h-6 w-6" /></Button>
+          </div>
+          <ScrollArea className="flex-1 p-10">
+            {editingSectionInPreview && renderActiveEditor(editingSectionInPreview)}
+          </ScrollArea>
+          <div className="p-8 border-t bg-slate-50/50 flex justify-end">
+            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] shadow-xl" onClick={() => { handleSaveStrategy(); setEditingSectionInPreview(null); }}>Commit Node Changes</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -1174,7 +1174,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                  {industrialServices.map((s, idx) => (
                    <Card key={s.id} className="p-5 bg-slate-50 relative group border-slate-200 hover:bg-white hover:border-blue-200 transition-all rounded-2xl">
-                      <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                       <div className="flex flex-col gap-4">
                         <div className="relative h-32 w-full bg-white rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center group/img">
                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200 m-auto mt-10" />}
@@ -1531,7 +1531,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {industrialServices.map((s, idx) => (
                       <Card key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-6 relative group transition-all hover:bg-white hover:border-blue-200">
-                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                          <div className="w-full h-32 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200 m-auto mt-10" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
@@ -1719,7 +1719,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           marginTop: `${foundationalData.coverLogoMarginTop || 0}px`
                         }}
                       >
-                         {brandLogo && <img src={brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
+                         {(localUI?.brandLogo || brandLogo) && <img src={localUI?.brandLogo || brandLogo} alt="Logo" className="w-full h-full object-contain p-4" />}
                       </div>
                       <div className="space-y-4" style={{ marginTop: `${foundationalData.coverTitleMarginTop || 32}px` }}>
                          <h1 
@@ -1785,73 +1785,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
-                            {section.id === 'projectCost' && (
-                              <div className="space-y-6">
-                                <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white">
-                                  <table className="w-full text-left min-w-[500px]">
-                                    <thead className="bg-slate-50 border-b border-slate-900"><tr className="text-[10px] font-bold uppercase"><th className="p-3 border-r border-slate-900">Expenditure</th><th className="p-3 text-right">Amount (₹)</th></tr></thead>
-                                    <tbody className="text-xs">
-                                      <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Plant & Machinery</td><td className="p-3 text-right font-bold">₹ {financials.investMachinery.toLocaleString('en-IN')}</td></tr>
-                                      <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Shed Advance</td><td className="p-3 text-right font-bold">₹ {financials.investShedAdvance.toLocaleString('en-IN')}</td></tr>
-                                      <tr className="border-b border-slate-300"><td className="p-3 border-r border-slate-900 font-medium">Civil & Electrical</td><td className="p-3 text-right font-bold">₹ {(financials.investCivil).toLocaleString('en-IN')}</td></tr>
-                                      <tr className="bg-slate-100 font-bold border-t-2 border-slate-900"><td className="p-3 border-r border-slate-900 uppercase">Total Project Cost</td><td className="p-3 text-right">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td></tr>
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            )}
-
-                            {section.id === 'meansOfFinance' && (
-                              <div className="overflow-x-auto border-2 border-slate-900 rounded-sm bg-white">
-                                <table className="w-full text-left border-collapse min-w-[600px]">
-                                  <thead className="bg-slate-50 border-b-2 border-slate-900"><tr className="text-[10px] font-bold uppercase text-[#3B82F6]"><th className="p-4 border-r border-slate-900">Source</th><th className="p-4 text-center border-r border-slate-900 w-24">Share</th><th className="p-4 text-right">Amount (₹)</th></tr></thead>
-                                  <tbody className="text-xs">
-                                    <tr className="border-b border-slate-300"><td className="p-4 border-r border-slate-900 font-medium">Bank Loan (90%)</td><td className="p-4 text-center border-r border-slate-900">90%</td><td className="p-4 text-right">₹ {calculations.loanAmt.toLocaleString('en-IN')}</td></tr>
-                                    <tr className="border-b border-slate-300"><td className="p-4 border-r border-slate-900 font-medium">Promoter Equity (10%)</td><td className="p-4 text-center border-r border-slate-900">10%</td><td className="p-4 text-right">₹ {calculations.entrepreneurAmt.toLocaleString('en-IN')}</td></tr>
-                                    <tr className="bg-slate-100 font-black"><td className="p-4 border-r border-slate-900 text-right uppercase">Total Capital Node</td><td className="p-4 text-center border-r border-slate-900">100%</td><td className="p-4 text-right">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</td></tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-
-                            {section.id === 'cashFlowStatement' && (
-                              <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-xl">
-                                <table className="w-full text-left border-collapse min-w-[800px]">
-                                  <thead className="bg-slate-50 border-b border-slate-100"><tr><th className="p-4 text-[9px] font-bold uppercase border-r">Particulars</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}</tr></thead>
-                                  <tbody>
-                                    <tr className="bg-[#001F3D] text-white"><td className="p-4 px-6 text-[10px] font-bold uppercase border-r border-white/10">Closing Cash Flow</td>{calculations.cashFlow.map(c=><td key={c.year} className="p-4 text-[12px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {(c.closingCash||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-
-                            {section.id === 'amortizationSchedule' && (
-                              <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-xl">
-                                <table className="w-full text-left border-collapse min-w-[800px]">
-                                  <thead className="bg-slate-50 border-b border-slate-100"><tr><th className="p-4 text-[9px] font-bold uppercase border-r">Year</th><th className="p-4 text-right border-r">Opening</th><th className="p-4 text-right border-r text-red-600">Interest</th><th className="p-4 text-right border-r text-red-600">Principal</th><th className="p-4 text-right">Closing</th></tr></thead>
-                                  <tbody>
-                                    {calculations.loanRepayment.map((lr) => (
-                                      <tr key={lr.year} className="border-b border-slate-50"><td className="p-4 text-[10px] font-bold uppercase border-r">{lr.year}</td><td className="p-4 text-right border-r">{(lr.opening||0).toLocaleString('en-IN')}</td><td className="p-4 text-right border-r text-red-600">{(lr.interest||0).toLocaleString('en-IN')}</td><td className="p-4 text-right border-r text-red-600">{(lr.principal||0).toLocaleString('en-IN')}</td><td className="p-4 text-right font-bold">{(lr.closing||0).toLocaleString('en-IN')}</td></tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-
-                            {section.id === 'roadmap' && (
-                               <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-xl">
-                                  <table className="w-full text-left min-w-[800px]">
-                                     <thead className="bg-slate-50 border-b-2 border-slate-900">
-                                        <tr><th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 last:border-r-0">Particulars</th>{calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}</tr>
-                                     </thead>
-                                     <tbody>
-                                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r border-slate-200 last:border-r-0">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[10px] text-right border-r border-slate-200 last:border-0">{(p.revenue||0).toLocaleString('en-IN')}</td>)}</tr>
-                                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-900"><td className="p-4 text-[11px] uppercase border-r border-slate-900 last:border-r-0">Profit After Tax (PAT)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-[11px] text-right border-r border-slate-200 last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN')}</td>)}</tr>
-                                     </tbody>
-                                  </table>
-                               </div>
-                            )}
-
                             {section.id === 'productServices' && (
                               <div className="space-y-16">
                                 <div className="space-y-8">
@@ -1860,7 +1793,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   </div>
                                   <div className="grid grid-cols-3 gap-3">
                                     {proprietaryProducts.map(p => (
-                                      <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-[1.25rem] flex gap-4 shadow-sm min-h-[110px] items-center product-card">
+                                      <div key={p.id} className="p-3 bg-white border border-slate-100 rounded-[1.25rem] flex gap-4 shadow-sm min-h-[110px] items-center product-card">
                                          <div className="w-24 h-24 bg-slate-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-slate-100">
                                             {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
                                          </div>
@@ -1891,7 +1824,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   </div>
                                   <div className="grid grid-cols-3 gap-3">
                                     {industrialServices.map(s => (
-                                      <div key={s.id} className="p-4 bg-white border border-slate-100 rounded-[1.25rem] flex gap-4 shadow-sm min-h-[110px] items-center product-card">
+                                      <div key={s.id} className="p-3 bg-white border border-slate-100 rounded-[1.25rem] flex gap-4 shadow-sm min-h-[110px] items-center product-card">
                                          <div className="w-24 h-24 bg-blue-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-blue-100">
                                             {s.imageUrl ? <img src={s.imageUrl} alt="" className="w-full h-full object-contain" /> : <Settings2 className="h-6 w-6 text-blue-300" />}
                                          </div>

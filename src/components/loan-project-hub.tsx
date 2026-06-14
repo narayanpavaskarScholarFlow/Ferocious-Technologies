@@ -247,7 +247,7 @@ const REPORT_SEQUENCE = [
   { id: 'promoterProfile', label: '04. Promoter / Entrepreneur Profile' },
   { id: 'projectDetails', label: '05. Project Details' },
   { id: 'productServices', label: '06. Product & Services' },
-  { id: 'marketAnalysis', label: '07. Market Analysis (combined)' },
+  { id: 'marketAnalysis', label: '07. Market Analysis' },
   { id: 'swotAnalysis', label: '08. SWOT Analysis' },
   { id: 'businessModel', label: '09. Business Model' },
   { id: 'operationsPlan', label: '10. Operations / Production Plan' },
@@ -1061,59 +1061,98 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       case 'productServices':
         return (
           <div className="space-y-12 animate-in fade-in duration-500">
+             {/* Products Section */}
              <div className="space-y-8">
-               <div className="flex justify-between items-center"><h4 className="text-xs font-bold uppercase text-slate-400">Proprietary Products Catalog</h4><Button size="sm" variant="ghost" className="text-primary" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Add Product</Button></div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="flex justify-between items-center border-l-4 border-primary pl-4">
+                 <div>
+                   <h4 className="text-xs font-bold uppercase text-slate-400">Proprietary Products Matrix</h4>
+                   <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Self-manufactured industrial yields.</p>
+                 </div>
+                 <Button size="sm" variant="ghost" className="text-primary font-bold text-[10px] uppercase gap-2 hover:bg-primary/5" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                    <Plus className="h-3.5 w-3.5" /> Append Product
+                 </Button>
+               </div>
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                  {proprietaryProducts.map((p, idx) => (
-                   <Card key={p.id} className="p-4 bg-slate-50 relative group border-slate-200">
-                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-slate-300 group-hover:text-red-500" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-3 w-3" /></Button>
-                      <div className="flex gap-4 mb-4">
-                        <div className="relative h-16 w-16 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center group/img">
-                           {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="h-6 w-6 text-slate-300" />}
+                   <Card key={p.id} className="p-5 bg-slate-50 relative group border-slate-200 hover:bg-white hover:border-primary/20 transition-all rounded-2xl">
+                      <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                      <div className="flex flex-col gap-4">
+                        <div className="relative h-32 w-full bg-white rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center group/img">
+                           {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="h-8 w-8 text-slate-200" />}
                            <input type="file" id={`p-img-${p.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'product', e)} />
                            <label htmlFor={`p-img-${p.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
-                              <Upload className="h-4 w-4 text-white" />
+                              <Upload className="h-5 w-5 text-white" />
                            </label>
                         </div>
-                        <div className="flex-1">
-                          <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Product Node Name" />
-                          <Input value={p.market} onChange={(e)=>updateProduct(idx,'market',e.target.value)} className="h-6 text-[10px] bg-white" placeholder="Target Market" />
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-[8px] font-bold uppercase text-slate-400">Part Node</Label>
+                            <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-8 font-bold bg-white text-[11px] uppercase" placeholder="Product Name" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[8px] font-bold uppercase text-slate-400">Market Vertical</Label>
+                            <Input value={p.market} onChange={(e)=>updateProduct(idx,'market',e.target.value)} className="h-7 text-[10px] bg-white uppercase font-medium" placeholder="Target Sector" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                             <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Price (₹)</Label>
+                               <Input value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} className="h-8 bg-white font-bold text-xs" />
+                             </div>
+                             <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Target Qty</Label>
+                               <Input value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} className="h-8 bg-white font-bold text-xs" />
+                             </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                         <Input value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} placeholder="Price (₹)" className="bg-white" />
-                         <Input value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} placeholder="Target Qty" className="bg-white" />
                       </div>
                    </Card>
                  ))}
                </div>
              </div>
+
+             <div className="h-px bg-slate-100" />
+
+             {/* Services Section */}
              <div className="space-y-8">
-               <div className="flex justify-between items-center"><h4 className="text-xs font-bold uppercase text-slate-400">Industrial Services Catalog</h4><Button size="sm" variant="ghost" className="text-accent" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>+ Add Service</Button></div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="flex justify-between items-center border-l-4 border-blue-500 pl-4">
+                 <div>
+                   <h4 className="text-xs font-bold uppercase text-slate-400">Industrial Services Matrix</h4>
+                   <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Specialized technical job-work portfolios.</p>
+                 </div>
+                 <Button size="sm" variant="ghost" className="text-blue-600 font-bold text-[10px] uppercase gap-2 hover:bg-blue-50" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                    <Plus className="h-3.5 w-3.5" /> Append Service
+                 </Button>
+               </div>
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                  {industrialServices.map((s, idx) => (
-                   <Card key={s.id} className="p-4 bg-slate-50 relative group border-slate-200">
-                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-3 w-3" /></Button>
-                      <div className="flex gap-4 mb-4">
-                        <div className="relative h-16 w-16 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
-                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
+                   <Card key={s.id} className="p-5 bg-slate-50 relative group border-slate-200 hover:bg-white hover:border-blue-200 transition-all rounded-2xl">
+                      <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-300 group-hover:text-red-500" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                      <div className="flex flex-col gap-4">
+                        <div className="relative h-32 w-full bg-white rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center group/img">
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
-                              <Upload className="h-4 w-4 text-white" />
+                              <Upload className="h-5 w-5 text-white" />
                            </label>
                         </div>
-                         <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div className="col-span-2 space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Service Node</Label>
-                               <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Service Node Name" />
+                         <div className="space-y-3">
+                            <div className="space-y-1">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Service Identifier</Label>
+                               <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 font-bold bg-white text-[11px] uppercase" placeholder="Service Name" />
                             </div>
                             <div className="space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹)</Label>
-                               <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Technical Scope</Label>
+                               <Textarea value={s.description} onChange={(e)=>updateService(idx,'description',e.target.value)} className="h-16 text-[10px] bg-white resize-none" placeholder="Capabilities..." />
                             </div>
-                            <div className="space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Units</Label>
-                               <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            <div className="grid grid-cols-2 gap-3">
+                               <div className="space-y-1">
+                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹)</Label>
+                                 <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} className="h-8 bg-white font-bold text-xs" />
+                               </div>
+                               <div className="space-y-1">
+                                 <Label className="text-[8px] font-bold uppercase text-slate-400">Target Loads</Label>
+                                 <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} className="h-8 bg-white font-bold text-xs" />
+                               </div>
                             </div>
                          </div>
                       </div>
@@ -1388,82 +1427,86 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </TabsContent>
 
         <TabsContent value="catalogues" className="m-0 space-y-10">
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           <div className="grid grid-cols-1 gap-12">
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                  <div className="flex justify-between items-center border-l-4 border-primary pl-6">
                     <div>
                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Direct manufactured yields.</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase gap-2" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                    <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase gap-2 hover:bg-primary/5" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
                        <Plus className="h-3 w-3" /> Append Node
                     </Button>
                  </div>
-                 <div className="space-y-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {proprietaryProducts.map((p, idx) => (
-                      <div key={p.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-primary/20">
-                         <div className="w-20 h-20 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
-                           {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover" alt="" /> : <ImageIcon className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
+                      <div key={p.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-6 relative group transition-all hover:bg-white hover:border-primary/20">
+                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                         <div className="w-full h-32 bg-white border rounded-xl overflow-hidden shrink-0 relative group/img">
+                           {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover" alt="" /> : <ImageIcon className="h-8 w-8 text-slate-200 m-auto mt-10" />}
                            <input type="file" id={`p-cat-img-${p.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'product', e)} />
                            <label htmlFor={`p-cat-img-${p.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
-                              <Upload className="h-4 w-4 text-white" />
+                              <Upload className="h-5 w-5 text-white" />
                            </label>
                         </div>
-                         <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div className="col-span-2 space-y-1">
+                         <div className="flex-1 space-y-4">
+                            <div className="space-y-1">
                                <Label className="text-[8px] font-bold uppercase text-slate-400">Part Name</Label>
-                               <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Product Node Name" />
+                               <Input value={p.name} onChange={(e)=>updateProduct(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white text-[11px] uppercase" placeholder="Product Name" />
                             </div>
-                            <div className="space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Price (₹)</Label>
-                               <Input value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Qty</Label>
-                               <Input value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Price (₹)</Label>
+                                <Input value={p.price} onChange={(e)=>updateProduct(idx,'price',e.target.value)} className="h-8 bg-white border-none font-bold text-xs" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Qty</Label>
+                                <Input value={p.annualTargetQty} onChange={(e)=>updateProduct(idx,'annualTargetQty',e.target.value)} className="h-8 bg-white border-none font-bold text-xs" />
+                              </div>
                             </div>
                          </div>
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setProprietaryProducts(proprietaryProducts.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     ))}
                  </div>
               </Card>
 
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                 <div className="flex justify-between items-center border-l-4 border-accent pl-6">
+                 <div className="flex justify-between items-center border-l-4 border-blue-500 pl-6">
                     <div>
                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Technical Services</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">External job work and specialized services.</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-accent font-bold text-[9px] uppercase gap-2" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                    <Button variant="ghost" size="sm" className="text-blue-600 font-bold text-[9px] uppercase gap-2 hover:bg-blue-50" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
                        <Plus className="h-3.5 w-3.5" /> Append Node
                     </Button>
                  </div>
-                 <div className="space-y-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {industrialServices.map((s, idx) => (
-                      <Card key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
-                         <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
-                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto" />}
+                      <Card key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-6 relative group transition-all hover:bg-white hover:border-blue-200">
+                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
+                         <div className="w-full h-32 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-8 w-8 text-slate-200 m-auto mt-10" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
-                              <Upload className="h-4 w-4 text-white" />
+                              <Upload className="h-5 w-5 text-white" />
                            </label>
                         </div>
-                         <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div className="col-span-2 space-y-1">
+                         <div className="flex-1 space-y-4">
+                            <div className="space-y-1">
                                <Label className="text-[8px] font-bold uppercase text-slate-400">Service Node</Label>
-                               <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white" placeholder="Service Node Name" />
+                               <Input value={s.name} onChange={(e)=>updateService(idx,'name',e.target.value)} className="h-8 mb-2 font-bold bg-white text-[11px] uppercase" placeholder="Service Name" />
                             </div>
-                            <div className="space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹)</Label>
-                               <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Units</Label>
-                               <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} className="h-9 bg-white border-none font-bold text-xs" />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Rate (₹)</Label>
+                                <Input value={s.price} onChange={(e)=>updateService(idx,'price',e.target.value)} className="h-8 bg-white border-none font-bold text-xs" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Annual Units</Label>
+                                <Input value={s.annualTargetQty} onChange={(e)=>updateService(idx,'annualTargetQty',e.target.value)} className="h-8 bg-white border-none font-bold text-xs" />
+                              </div>
                             </div>
                          </div>
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
                       </Card>
                     ))}
                  </div>
@@ -1547,7 +1590,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
               <div className="lg:col-span-8 space-y-8">
                  <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. Project Cost (One-Time Investment)</h3>
+                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">16. Project Cost (One-Time Investment)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Plant & Machinery (Breakup)</Label>
@@ -1758,40 +1801,55 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             )}
 
                             {section.id === 'productServices' && (
-                              <div className="space-y-12">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                  {proprietaryProducts.map(p => (
-                                    <div key={p.id} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex gap-6">
-                                       <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                          {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
-                                       </div>
-                                       <div className="flex-1 space-y-2">
-                                          <p className="text-[12px] font-bold uppercase text-[#001F3D]">{p.name}</p>
-                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.market}</p>
-                                          <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                                             <span className="text-[10px] font-display font-bold text-primary">₹ {parseFloat(p.price).toLocaleString()}</span>
-                                             <span className="text-[9px] font-bold text-slate-400">{p.annualTargetQty} units/yr</span>
-                                          </div>
-                                       </div>
-                                    </div>
-                                  ))}
+                              <div className="space-y-16">
+                                {/* Products Sub-section */}
+                                <div className="space-y-8">
+                                  <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
+                                    <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Products Portfolio</h4>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {proprietaryProducts.map(p => (
+                                      <div key={p.id} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex gap-6">
+                                         <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
+                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
+                                         </div>
+                                         <div className="flex-1 space-y-2">
+                                            <p className="text-[12px] font-bold uppercase text-[#001F3D]">{p.name}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.market}</p>
+                                            <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
+                                               <span className="text-[10px] font-display font-bold text-primary">₹ {parseFloat(p.price).toLocaleString()}</span>
+                                               <span className="text-[9px] font-bold text-slate-400">{p.annualTargetQty} units/yr</span>
+                                            </div>
+                                         </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                  {industrialServices.map(s => (
-                                    <div key={s.id} className="p-6 bg-blue-50 border border-blue-100 rounded-2xl flex gap-6">
-                                       <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                          {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
-                                       </div>
-                                       <div className="flex-1 space-y-2">
-                                          <p className="text-[12px] font-bold uppercase text-blue-900">{s.name}</p>
-                                          <p className="text-[9px] font-medium text-slate-500 line-clamp-2">{s.description}</p>
-                                          <div className="flex justify-between items-center pt-2 border-t border-blue-100 mt-2">
-                                             <span className="text-[10px] font-display font-bold text-blue-600">₹ {parseFloat(s.price).toLocaleString()}</span>
-                                             <span className="text-[9px] font-bold text-slate-400">{s.annualTargetQty} jobs/yr</span>
-                                          </div>
-                                       </div>
-                                    </div>
-                                  ))}
+
+                                <div className="h-px bg-slate-100" />
+
+                                {/* Services Sub-section */}
+                                <div className="space-y-8">
+                                  <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-6">
+                                    <h4 className="text-xl font-display font-bold text-blue-900 uppercase tracking-tight">Industrial Technical Services Portfolio</h4>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {industrialServices.map(s => (
+                                      <div key={s.id} className="p-6 bg-blue-50 border border-blue-100 rounded-2xl flex gap-6">
+                                         <div className="w-24 h-24 bg-white border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-2">
+                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-slate-200" />}
+                                         </div>
+                                         <div className="flex-1 space-y-2">
+                                            <p className="text-[12px] font-bold uppercase text-blue-900">{s.name}</p>
+                                            <p className="text-[9px] font-medium text-slate-500 line-clamp-2">{s.description}</p>
+                                            <div className="flex justify-between items-center pt-2 border-t border-blue-100 mt-2">
+                                               <span className="text-[10px] font-display font-bold text-blue-600">₹ {parseFloat(s.price).toLocaleString()}</span>
+                                               <span className="text-[9px] font-bold text-slate-400">{s.annualTargetQty} jobs/yr</span>
+                                            </div>
+                                         </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             )}

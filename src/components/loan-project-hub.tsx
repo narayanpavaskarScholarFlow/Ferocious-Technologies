@@ -1563,14 +1563,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Loan Capital Node (₹)</Label>
                           <div className="relative">
-                             <Input readOnly className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-display font-bold text-lg text-primary" value={calculations.loanAmt.toLocaleString('en-IN', {maximumFractionDigits:0})} />
+                             <input readOnly className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-display font-bold text-lg text-primary w-full px-4" value={calculations.loanAmt.toLocaleString('en-IN', {maximumFractionDigits:0})} />
                              <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary/10 text-primary text-[8px]">90.0%</Badge>
                           </div>
                        </div>
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Entrepreneur Invest Node (₹)</Label>
                           <div className="relative">
-                             <Input readOnly className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-display font-bold text-lg text-slate-700" value={calculations.entrepreneurAmt.toLocaleString('en-IN', {maximumFractionDigits:0})} />
+                             <input readOnly className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-display font-bold text-lg text-slate-700 w-full px-4" value={calculations.entrepreneurAmt.toLocaleString('en-IN', {maximumFractionDigits:0})} />
                              <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-100 text-slate-400 text-[8px]">10.0%</Badge>
                           </div>
                        </div>
@@ -1800,18 +1800,24 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
                                     <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Proprietary Products Portfolio</h4>
                                   </div>
-                                  <div className="grid grid-cols-3 gap-4">
+                                  <div className="grid grid-cols-3 gap-3">
                                     {proprietaryProducts.map(p => (
-                                      <div key={p.id} className="p-4 bg-white border border-slate-100 rounded-3xl flex gap-4 shadow-sm h-full items-center">
-                                         <div className="w-20 h-20 bg-slate-50 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center p-2 border border-slate-50">
-                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="h-6 w-6 text-slate-200" />}
+                                      <div key={p.id} className="p-3 bg-white border border-slate-100 rounded-[1.25rem] flex gap-3 shadow-sm h-28 items-center">
+                                         <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-slate-50">
+                                            {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="h-5 w-5 text-slate-200" />}
                                          </div>
                                          <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <p className="text-[10px] font-black uppercase text-[#001F3D] truncate">{p.name}</p>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight truncate">{p.market}</p>
-                                            <div className="flex items-center gap-3 mt-2">
-                                               <span className="text-[10px] font-black text-red-500">₹ {p.price}</span>
-                                               <span className="text-[8px] font-bold text-slate-400 truncate">{p.annualTargetQty} units/yr</span>
+                                            <p className="text-[10px] font-bold uppercase text-[#001F3D] truncate leading-tight mb-0.5">{p.name}</p>
+                                            <p className="text-[7px] font-bold text-slate-400 uppercase leading-tight truncate mb-2">{p.market}</p>
+                                            <div className="flex flex-col gap-0.5 mt-auto">
+                                               <div className="flex items-center justify-between">
+                                                  <span className="text-[9px] font-black text-red-600">₹ {p.price}</span>
+                                                  <span className="text-[7px] font-bold text-slate-300 uppercase">Valuation</span>
+                                               </div>
+                                               <div className="flex items-center justify-between">
+                                                  <span className="text-[8px] font-bold text-slate-500 truncate">{p.annualTargetQty} units/yr</span>
+                                                  <span className="text-[7px] font-bold text-slate-300 uppercase">Target</span>
+                                               </div>
                                             </div>
                                          </div>
                                       </div>
@@ -1826,18 +1832,24 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                   <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-6">
                                     <h4 className="text-xl font-display font-bold text-blue-900 uppercase tracking-tight">Industrial Technical Services Portfolio</h4>
                                   </div>
-                                  <div className="grid grid-cols-3 gap-4">
+                                  <div className="grid grid-cols-3 gap-3">
                                     {industrialServices.map(s => (
-                                      <div key={s.id} className="p-4 bg-white border border-slate-100 rounded-3xl flex gap-4 shadow-sm h-full items-center">
-                                         <div className="w-20 h-20 bg-blue-50 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center p-2 border border-blue-50">
-                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-6 w-6 text-blue-300" />}
+                                      <div key={s.id} className="p-3 bg-white border border-slate-100 rounded-[1.25rem] flex gap-3 shadow-sm h-28 items-center">
+                                         <div className="w-16 h-16 bg-blue-50 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1 border border-blue-50">
+                                            {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-contain" /> : <Settings2 className="h-5 w-5 text-blue-300" />}
                                          </div>
                                          <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <p className="text-[10px] font-black uppercase text-blue-900 truncate">{s.name}</p>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight truncate line-clamp-1">{s.description}</p>
-                                            <div className="flex items-center gap-3 mt-2">
-                                               <span className="text-[10px] font-black text-blue-600">₹ {s.price}</span>
-                                               <span className="text-[8px] font-bold text-slate-400 truncate">{s.annualTargetQty} jobs/yr</span>
+                                            <p className="text-[10px] font-bold uppercase text-blue-900 truncate leading-tight mb-0.5">{s.name}</p>
+                                            <p className="text-[7px] font-bold text-slate-400 uppercase leading-tight line-clamp-1 mb-2">{s.description}</p>
+                                            <div className="flex flex-col gap-0.5 mt-auto">
+                                               <div className="flex items-center justify-between">
+                                                  <span className="text-[9px] font-black text-blue-600">₹ {s.price}</span>
+                                                  <span className="text-[7px] font-bold text-slate-300 uppercase">Rate</span>
+                                               </div>
+                                               <div className="flex items-center justify-between">
+                                                  <span className="text-[8px] font-bold text-slate-500 truncate">{s.annualTargetQty} jobs/yr</span>
+                                                  <span className="text-[7px] font-bold text-slate-300 uppercase">Target</span>
+                                               </div>
                                             </div>
                                          </div>
                                       </div>

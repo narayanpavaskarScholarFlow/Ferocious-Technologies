@@ -250,26 +250,27 @@ const REPORT_SEQUENCE = [
   { id: 'swotAnalysis', label: '08. SWOT Analysis' },
   { id: 'businessModel', label: '09. Business Model' },
   { id: 'operationsPlan', label: '10. Operations / Production Plan' },
-  { id: 'locationAnalysis', label: '11. Location Analysis' },
-  { id: 'orgStructure', label: '12. Organizational Structure' },
-  { id: 'marketingStrategy', label: '13. Marketing Strategy' },
-  { id: 'techIntegration', label: '14. Technology Integration (Firebase)' },
-  { id: 'projectCost', label: '15. Project Cost (One-Time Investment)' },
-  { id: 'meansOfFinance', label: '16. Means of Finance' },
-  { id: 'workingCapitalRequirement', label: '17. Working Capital Requirement' },
-  { id: 'financialProjections', label: '18. Financial Projections' },
-  { id: 'cashFlowStatement', label: '19. Cash Flow Statement' },
-  { id: 'turnoverAnalysis', label: '20. Turnover Analysis' },
-  { id: 'breakevenAnalysis', label: '21. Break-even Analysis' },
-  { id: 'dscrMatrix', label: '22. DSCR Matrix' },
-  { id: 'keyRatios', label: '23. Key Ratios' },
-  { id: 'mpbfCalculation', label: '24. MPBF Calculation' },
-  { id: 'amortizationSchedule', label: '25. Amortization Schedule' },
-  { id: 'riskMitigation', label: '26. Risk & Mitigation' },
-  { id: 'govtSchemes', label: '27. Government Schemes (CGTMSE)' },
-  { id: 'licensesRegistrations', label: '28. Licenses & Registrations' },
-  { id: 'roadmap', label: '29. Roadmap (5 Years)' },
-  { id: 'conclusion', label: '30. Conclusion' }
+  { id: 'layout', label: '11. Layout' },
+  { id: 'locationAnalysis', label: '12. Location Analysis' },
+  { id: 'orgStructure', label: '13. Organizational Structure' },
+  { id: 'marketingStrategy', label: '14. Marketing Strategy' },
+  { id: 'techIntegration', label: '15. Technology Integration (Firebase)' },
+  { id: 'projectCost', label: '16. Project Cost (One-Time Investment)' },
+  { id: 'meansOfFinance', label: '17. Means of Finance' },
+  { id: 'workingCapitalRequirement', label: '18. Working Capital Requirement' },
+  { id: 'financialProjections', label: '19. Financial Projections' },
+  { id: 'cashFlowStatement', label: '20. Cash Flow Statement' },
+  { id: 'turnoverAnalysis', label: '21. Turnover Analysis' },
+  { id: 'breakevenAnalysis', label: '22. Break-even Analysis' },
+  { id: 'dscrMatrix', label: '23. DSCR Matrix' },
+  { id: 'keyRatios', label: '24. Key Ratios' },
+  { id: 'mpbfCalculation', label: '25. MPBF Calculation' },
+  { id: 'amortizationSchedule', label: '26. Amortization Schedule' },
+  { id: 'riskMitigation', label: '27. Risk & Mitigation' },
+  { id: 'govtSchemes', label: '28. Government Schemes (CGTMSE)' },
+  { id: 'licensesRegistrations', label: '29. Licenses & Registrations' },
+  { id: 'roadmap', label: '30. Roadmap (5 Years)' },
+  { id: 'conclusion', label: '31. Conclusion' }
 ];
 
 const FONT_FAMILIES = [
@@ -605,6 +606,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     swot_threats: "",
     businessModel: "Revenue-driven B2B model focusing on high-precision job work and proprietary industrial connectors.",
     operationsPlan: "Multi-shift precision machining utilizing 3-axis and 4-axis VMC centers with integrated QC cycles.",
+    layout: "The layout of the manufacturing facility is designed for streamlined material movement and high-fidelity VMC operations.",
     locationAnalysis: "Strategically located in Pune's industrial belt, providing seamless access to Tier 1 supply chains and skilled labor.",
     orgStructure: "Lean organizational matrix consisting of a Promoter, Shift Supervisors, VMC Operators, and Quality Leads.",
     marketingStrategy: "Direct industrial liaison, digital cataloging, and exhibition presence at IMTEX and related trade nodes.",
@@ -1496,7 +1498,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
               <div className="lg:col-span-8 space-y-8">
                  <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. Project Cost (One-Time Investment)</h3>
+                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">16. Project Cost (One-Time Investment)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Plant & Machinery (Breakup)</Label>

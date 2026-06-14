@@ -972,7 +972,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                <TabsContent value="layout" className="space-y-10 p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner animate-in slide-in-from-right-4 duration-500">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                      <div className="space-y-6">
-                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Logo Size (px) <span className="text-primary font-code">{foundationalData.coverLogoSize || 192}px</span></Label>
+                        <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest flex justify-between">Logo UI Scaling (px) <span className="text-primary font-code">{foundationalData.coverLogoSize || 192}px</span></Label>
                         <Slider value={[foundationalData.coverLogoSize || 192]} min={100} max={400} step={8} onValueChange={([v]) => setFormData({...foundationalData, coverLogoSize: v})} />
                      </div>
                      <div className="space-y-6">

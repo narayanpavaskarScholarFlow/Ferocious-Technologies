@@ -33,34 +33,34 @@
     margin: 10mm;
   }
   
-  html, body {
-    background: white !important;
-    color: black !important;
+  /* CRITICAL: Force all parent containers to be visible and unconstrained */
+  html, body, #__next, main, [role="main"], [role="tabpanel"], .flex-1, .flex-col, .h-screen, .overflow-hidden, .overflow-y-auto, div {
     height: auto !important;
-    overflow: visible !important;
-    position: static !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* CRITICAL: Recursively un-constrain all layout parents to prevent blank/clipped pages */
-  div, main, section, [role="tabpanel"], .flex-1, .flex-col, .h-screen, .overflow-hidden, .overflow-y-auto {
-    height: auto !important;
+    min-height: initial !important;
     max-height: none !important;
     overflow: visible !important;
-    display: block !important;
     position: static !important;
+    display: block !important;
     float: none !important;
+    visibility: visible !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .no-print {
     display: none !important;
   }
   
+  /* Precision Report Matrix */
   .print-matrix {
     display: block !important;
     visibility: visible !important;
-    transform: none !important;
+    transform: none !important; /* KILL DIGITAL ZOOM FOR PRINT */
     width: 210mm !important;
     margin: 0 auto !important;
     box-shadow: none !important;

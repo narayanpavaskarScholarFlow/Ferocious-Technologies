@@ -85,7 +85,8 @@ import {
   Circle,
   ArrowUpRight,
   MousePointer2,
-  ChevronDown
+  ChevronDown,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -855,6 +856,57 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
   };
 
+  // MS Word Export Logic (Serialized HTML for Legacy Compatibility)
+  const exportToWord = useCallback(() => {
+    const reportElement = document.getElementById('institutional-report-matrix');
+    if (!reportElement) {
+      toast({ variant: "destructive", title: "Export Error", description: "Report matrix not found in DOM." });
+      return;
+    }
+
+    const header = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <style>
+          @page { size: 21cm 29.7cm; margin: 2cm; }
+          body { font-family: 'Inter', sans-serif, Arial; line-height: 1.6; }
+          h1 { color: #001F3D; font-size: 32pt; text-align: center; text-transform: uppercase; margin-bottom: 20pt; }
+          h2 { color: #8B5CF6; font-size: 24pt; border-bottom: 2pt solid #8B5CF6; margin-top: 30pt; padding-bottom: 5pt; text-transform: uppercase; }
+          h3 { color: #001F3D; font-size: 18pt; text-transform: uppercase; border-left: 4pt solid #6366f1; padding-left: 10pt; margin: 15pt 0; }
+          table { border-collapse: collapse; width: 100%; margin: 20pt 0; border: 1pt solid #cbd5e1; }
+          th, td { border: 1pt solid #cbd5e1; padding: 10pt; text-align: left; }
+          th { background-color: #f8fafc; font-weight: bold; color: #001F3D; font-size: 10pt; }
+          td { font-size: 10pt; color: #334155; }
+          .page-break { page-break-after: always; }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          .font-bold { font-weight: bold; }
+          img { max-width: 100%; height: auto; display: block; margin: 10pt auto; }
+          .watermark { opacity: 0.05; position: absolute; top: 30%; left: 20%; width: 60%; }
+        </style>
+      </head>
+      <body>
+    `;
+    const footer = "</body></html>";
+    const reportHtml = reportElement.innerHTML;
+    
+    const blob = new Blob(['\ufeff', header + reportHtml + footer], {
+      type: 'application/msword'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Ferocious_Tech_Project_Report_${new Date().toISOString().split('T')[0]}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({ title: "MS Word Export Protocol", description: "Strategic matrix converted to institutional Word document." });
+  }, [toast]);
+
   const Watermark = () => (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden print:visible">
       <div className="relative w-[60%] aspect-square">
@@ -910,22 +962,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <div className="space-y-10 animate-in fade-in duration-500">
              <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Strategic SWOT Matrix</h3>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Strengths */}
                 <div className="p-6 rounded-[2rem] bg-emerald-50 border border-emerald-100 space-y-4 shadow-sm">
                    <Label className="text-[10px] font-bold uppercase text-emerald-600 tracking-widest ml-1">Strengths</Label>
                    <RichTextEditor value={foundationalData.swot_strengths || ""} onChange={(val) => setFormData({...foundationalData, swot_strengths: val})} />
                 </div>
-                {/* Weaknesses */}
                 <div className="p-6 rounded-[2rem] bg-rose-50 border border-rose-100 space-y-4 shadow-sm">
                    <Label className="text-[10px] font-bold uppercase text-rose-600 tracking-widest ml-1">Weaknesses</Label>
                    <RichTextEditor value={foundationalData.swot_weaknesses || ""} onChange={(val) => setFormData({...foundationalData, swot_weaknesses: val})} />
                 </div>
-                {/* Opportunities */}
                 <div className="p-6 rounded-[2rem] bg-blue-50 border border-blue-100 space-y-4 shadow-sm">
                    <Label className="text-[10px] font-bold uppercase text-blue-600 tracking-widest ml-1">Opportunities</Label>
                    <RichTextEditor value={foundationalData.swot_opportunities || ""} onChange={(val) => setFormData({...foundationalData, swot_opportunities: val})} />
                 </div>
-                {/* Threats */}
                 <div className="p-6 rounded-[2rem] bg-amber-50 border border-amber-100 space-y-4 shadow-sm">
                    <Label className="text-[10px] font-bold uppercase text-amber-600 tracking-widest ml-1">Threats</Label>
                    <RichTextEditor value={foundationalData.swot_threats || ""} onChange={(val) => setFormData({...foundationalData, swot_threats: val})} />
@@ -1300,7 +1348,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-[#001F3D]">Strategy <span className="text-slate-400 font-medium">Engineer</span></h2>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-           <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Export Report</Button>
+           <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print PDF</Button>
+           <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={exportToWord}><FileText className="h-4 w-4 mr-2" /> MS Word</Button>
            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 flex-1 sm:flex-none" onClick={() => handleSaveStrategy()}><Save className="h-4 w-4" /> Commit Strategy</Button>
         </div>
       </header>
@@ -1392,9 +1441,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                  </div>
                  <div className="space-y-4">
                     {industrialServices.map((s, idx) => (
-                      <div key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
+                      <Card key={s.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-6 relative group transition-all hover:bg-white hover:border-accent/20">
                          <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shrink-0 relative group/img">
-                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto mt-7 ml-7" />}
+                           {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : <Settings2 className="h-6 w-6 text-slate-300 m-auto" />}
                            <input type="file" id={`s-cat-img-${s.id}`} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(idx, 'service', e)} />
                            <label htmlFor={`s-cat-img-${s.id}`} className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                               <Upload className="h-4 w-4 text-white" />
@@ -1415,7 +1464,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                             </div>
                          </div>
                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={()=>setIndustrialServices(industrialServices.filter((_,i)=>i!==idx))}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
+                      </Card>
                     ))}
                  </div>
               </Card>
@@ -1498,7 +1547,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
               <div className="lg:col-span-8 space-y-8">
                  <Card className="p-6 md:p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">16. Project Cost (One-Time Investment)</h3>
+                    <h3 className="text-[10px] font-bold text-[#001F3D] uppercase tracking-[0.3em] border-l-4 border-[#001F3D] pl-4">15. Project Cost (One-Time Investment)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Plant & Machinery (Breakup)</Label>
@@ -1561,13 +1610,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 <button onClick={()=>setZoom(Math.min(zoom+0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ZoomIn className="h-4 w-4" /></button>
               </div>
               <div className="w-px bg-slate-200 h-8 hidden sm:block" />
-              <Button className="bg-[#001F3D] text-white rounded-full h-10 px-6 md:px-8 font-bold text-[10px] uppercase" onClick={()=>window.print()}><Printer className="h-4 w-4 mr-2" /> Print PDF</Button>
+              <div className="flex gap-3">
+                <Button className="bg-[#001F3D] text-white rounded-full h-10 px-6 md:px-8 font-bold text-[10px] uppercase gap-2" onClick={()=>window.print()}><Printer className="h-4 w-4" /> Print PDF</Button>
+                <Button variant="outline" className="border-slate-200 rounded-full h-10 px-6 md:px-8 font-bold text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={exportToWord}><Download className="h-4 w-4" /> MS Word</Button>
+              </div>
            </div>
 
            <div className="w-full overflow-x-auto pb-20 px-4 scrollbar-hide">
-              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} className="mx-auto print:transform-none print:w-full">
-                <div className="bg-white shadow-2xl p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative">
-                   <div className="min-h-[80vh] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
+              <div 
+                id="institutional-report-matrix"
+                style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', width: '210mm' }} 
+                className="mx-auto print:transform-none print:w-full bg-white shadow-2xl"
+              >
+                <div className="p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative bg-white">
+                   <div className="min-h-[297mm] flex flex-col items-center justify-center text-center space-y-12 border-b-2 border-slate-900 pb-20 page-break relative z-10">
                       <Watermark />
                       <Button 
                         variant="ghost" 
@@ -1747,7 +1803,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>

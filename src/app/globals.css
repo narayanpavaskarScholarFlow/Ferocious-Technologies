@@ -60,7 +60,7 @@
   .print-matrix {
     display: block !important;
     visibility: visible !important;
-    transform: none !important; /* KILL DIGITAL ZOOM */
+    transform: none !important;
     width: 210mm !important;
     margin: 0 auto !important;
     box-shadow: none !important;

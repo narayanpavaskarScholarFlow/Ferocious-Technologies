@@ -177,17 +177,16 @@ const FontSize = Extension.create({
   },
   addCommands() {
     return {
-      setFontSize: fontSize => ({ chain }) => {
-        return (chain().setMark('textStyle', { fontSize }) as any).run()
+      setFontSize: (fontSize: string) => ({ chain }: any) => {
+        return chain().setMark('textStyle', { fontSize }).run()
       },
-      unsetFontSize: () => ({ chain }) => {
-        return (chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle() as any).run()
+      unsetFontSize: () => ({ chain }: any) => {
+        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
       },
     }
   },
 });
 
-// Custom List Matrix Extensions
 const CustomBulletList = BulletList.extend({
   addAttributes() {
     return {
@@ -314,7 +313,6 @@ const ORDERED_STYLES = [
   { label: 'I. II. III.', value: 'upper-roman' },
 ];
 
-// High-Fidelity Rich Text Editor Component
 const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onChange: (val: string) => void, placeholder?: string }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -1412,10 +1410,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               value={foundationalData[sectionId] || ""} 
               onChange={(val)=>setFormData({...foundationalData, [sectionId]: val})} 
             />
-            <div className="p-4 bg-primary/5 rounded-2xl flex items-start gap-4 border border-primary/10">
-               <Info className="h-4 w-4 text-primary mt-0.5" />
-               <p className="text-[10px] text-slate-500 leading-tight">This narrative node will be synchronized with the official feasibility report matrix and centered watermark protocol.</p>
-            </div>
           </div>
         );
     }
@@ -1442,7 +1436,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
              <span className="flex items-center text-[11px] font-bold w-12 justify-center text-[#001F3D]">{Math.round(zoom*100)}%</span>
              <button onClick={()=>setZoom(Math.min(zoom+0.1, 2))} className="p-1 hover:bg-slate-200 rounded-md transition-colors"><ZoomIn className="h-4 w-4 text-slate-500" /></button>
            </div>
-           <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print PDF</Button>
            <Button variant="outline" className="h-12 rounded-xl border-slate-200 px-8 font-bold text-[10px] uppercase tracking-widest gap-2 flex-1 sm:flex-none" onClick={exportToWord}><FileText className="h-4 w-4 mr-2" /> MS Word</Button>
            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 flex-1 sm:flex-none" onClick={() => handleSaveStrategy()}><Save className="h-4 w-4" /> Commit Strategy</Button>
         </div>
@@ -1651,7 +1644,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           <Label className="text-[9px] font-bold uppercase text-slate-400">Plant & Machinery (Breakup)</Label>
                           <div className="relative">
                              <Input readOnly className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.investMachinery.toLocaleString()} />
-                             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-primary" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3 w-3" /></Button>
+                             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-primary" onClick={()=>setIsMachineryBreakupOpen(true)}><Edit3 className="h-3.5 w-3.5" /></Button>
                           </div>
                        </div>
                        <div className="space-y-2">
@@ -2022,7 +2015,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Narrative Editor Hub (Contextual) */}
       <Dialog open={!!editingSectionInPreview} onOpenChange={(open) => !open && setEditingSectionInPreview(null)}>
         <DialogContent className="max-w-4xl h-[80vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
           <div className="p-8 border-b bg-slate-50 flex items-center justify-between">

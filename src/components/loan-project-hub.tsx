@@ -766,6 +766,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const cashFlow: any[] = [];
     const loanRepayment: any[] = [];
     const ratioMatrix: any[] = [];
+    const mpbfMatrix: any[] = [];
 
     let currentTNW = totalOwnFunds;
     let accumulatedDepreciation = 0;
@@ -860,6 +861,29 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         closing: yearTermLoan
       });
 
+      // MPBF Calculation Logic
+      const currentAssets = (yearRevenue * 45 / 365) + (workingCapitalValue * 0.8) + yearClosingCash;
+      const currentLiabsOtherThanBank = (yearOpExBase / 12 * 30 / 365);
+      const wcGap = currentAssets - currentLiabsOtherThanBank;
+      
+      const minNetWC_Method1 = wcGap * 0.25;
+      const mpbf_Method1 = wcGap - minNetWC_Method1;
+      
+      const minNetWC_Method2 = currentAssets * 0.25;
+      const mpbf_Method2 = wcGap - minNetWC_Method2;
+      
+      const salesMethod = yearRevenue * 0.25;
+      
+      mpbfMatrix.push({
+        year: `FY ${25+y}-${26+y}`,
+        currentAssets,
+        currentLiabs: currentLiabsOtherThanBank,
+        wcGap,
+        method1: { minNetWC: minNetWC_Method1, mpbf: mpbf_Method1 },
+        method2: { minNetWC: minNetWC_Method2, mpbf: mpbf_Method2 },
+        salesMethod: { revenue: yearRevenue, mpbf: salesMethod }
+      });
+
       openingCash = yearClosingCash;
     }
 
@@ -881,6 +905,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       cashFlow,
       loanRepayment,
       ratioMatrix,
+      mpbfMatrix,
       avgDSCR: avgDSCR.toFixed(2),
       fixedCapital: fixedAssetsAtCost,
       mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75),
@@ -1405,6 +1430,53 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   </table>
                </div>
             </div>
+          </NoteWrapper>
+        );
+      case 'mpbfCalculation':
+        return (
+          <NoteWrapper sectionId={sectionId}>
+             <div className="space-y-12">
+                <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Institutional MPBF Assessment Matrix</h3>
+                <div className="border-2 border-slate-900 rounded-sm bg-white shadow-xl overflow-x-auto">
+                   <table className="w-full text-left border-collapse min-w-[900px]">
+                      <thead className="bg-slate-950 text-white border-b-2 border-slate-900">
+                         <tr>
+                            <th className="p-4 text-[10px] font-bold uppercase border-r border-white/10 w-[30%]">MPBF Assessment Particulars</th>
+                            {calculations.mpbfMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-white/10 last:border-0">{m.year}</th>)}
+                         </tr>
+                      </thead>
+                      <tbody className="text-[10px]">
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Assets (A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentAssets.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Liabilities (other than Bank Borrowing) (B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentLiabs.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Working Capital Gap (C = A - B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.wcGap.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         
+                         {/* 1st Method */}
+                         <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-blue-800 uppercase">1st Method of Lending</td></tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (D = 25% of C)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-400 bg-blue-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-blue-900">MPBF 1st Method (C - D)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                         {/* 2nd Method */}
+                         <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-emerald-800 uppercase">2nd Method of Lending</td></tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (E = 25% of A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-400 bg-emerald-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-emerald-900">MPBF 2nd Method (C - E)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                         {/* Sales Method */}
+                         <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-purple-800 uppercase">Percentage of Sales method</td></tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Gross Revenue / Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-950 bg-purple-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-purple-900">MPBF - 25% of Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                      </tbody>
+                   </table>
+                </div>
+                <div className="p-6 bg-slate-950 text-white rounded-2xl flex items-center justify-between shadow-2xl border border-white/10">
+                   <div className="flex items-center gap-4">
+                      <ShieldCheck className="h-7 w-7 text-emerald-400" />
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Institutional Limit Verification</p>
+                        <p className="text-xs font-medium text-white/80">Calculated MPBF represents the maximum permissible funding threshold across three industrial methodologies.</p>
+                      </div>
+                   </div>
+                </div>
+             </div>
           </NoteWrapper>
         );
       case 'roadmap':
@@ -2033,6 +2105,38 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               <KeyDataAtGlance isReport={true} />
                             )}
 
+                            {section.id === 'mpbfCalculation' && (
+                               <div className="space-y-12">
+                                  <div className="border-2 border-slate-900 rounded-sm bg-white overflow-x-auto shadow-sm">
+                                     <table className="w-full text-left border-collapse min-w-[800px]">
+                                        <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                           <tr>
+                                              <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[35%]">MPBF Assessment Particulars</th>
+                                              {calculations.mpbfMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                                           </tr>
+                                        </thead>
+                                        <tbody className="text-[10px]">
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Assets (A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentAssets.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Liabilities (other than Bank Borrowing) (B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentLiabs.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Working Capital Gap (C = A - B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.wcGap.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           
+                                           <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-blue-800 uppercase">1st Method of Lending</td></tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (D = 25% of C)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-400 bg-blue-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-blue-900">MPBF 1st method (C - D)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                                           <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-emerald-800 uppercase">2nd Method of Lending</td></tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (E = 25% of A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-400 bg-emerald-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-emerald-900">MPBF 2nd method (C - E)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                                           <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-purple-800 uppercase">Percentage of Sales method</td></tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Gross Revenue / Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-950 bg-purple-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-purple-900">MPBF - 25% of Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                        </tbody>
+                                     </table>
+                                  </div>
+                               </div>
+                            )}
+
                             {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && foundationalData[section.id + '_footer'] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
@@ -2154,3 +2258,4 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
+

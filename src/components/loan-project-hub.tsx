@@ -443,6 +443,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
                 {BULLET_STYLES.map(s => (
                   <button 
                     key={s.value} 
+                    type="button"
                     onClick={() => setBulletStyle(s.value)}
                     className="h-12 w-full flex flex-col items-center justify-center rounded-lg border border-white/5 hover:bg-white/10 transition-all group"
                   >
@@ -492,7 +493,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
             <DropdownMenuContent className="w-40 bg-slate-900 border-slate-800 p-2">
               <div className="grid grid-cols-4 gap-1.5">
                 {COLOR_PALETTE.map(c => (
-                  <button key={c} onClick={() => editor.chain().focus().setColor(c).run()} className="h-5 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
+                  <button key={c} type="button" onClick={() => editor.chain().focus().setColor(c).run()} className="h-5 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
                 ))}
               </div>
             </DropdownMenuContent>
@@ -507,7 +508,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
             <DropdownMenuContent className="w-40 bg-slate-900 border-slate-800 p-2">
               <div className="grid grid-cols-4 gap-1.5">
                 {COLOR_PALETTE.map(c => (
-                  <button key={c} onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()} className="h-5 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
+                  <button key={c} type="button" onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()} className="h-5 w-full rounded-md border border-white/10" style={{ backgroundColor: c }} />
                 ))}
               </div>
             </DropdownMenuContent>
@@ -723,8 +724,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     // Borrower's Margin for Working Capital
     const requiredWCMargin = workingCapitalValue * (financials.wcMarginPercent / 100);
 
+    // Suggested Working Capital Limit based on logic
+    // Usually CC limit is 20-25% of turnover OR (OpEx * Months) - Margin
+    // Here we will use 25% of annual turnover as a baseline cap if not set
+    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.replace(/,/g, '')) || 0), 0);
+    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.replace(/,/g, '')) || 0), 0);
+    const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
+    
     // Means of Finance Detailed Calc
     const totalOwnFunds = (financials.ownCapital || 0) + (financials.loanFriendsFamily || 0);
+    // If workingCapitalLimit is 0, we can suggest one:
+    const suggestedWCLimit = financials.workingCapitalLimit || (totalCapacityAnnualRevenue * 0.25 * 0.75);
+
     const termLoanAmt = totalProjectCost - totalOwnFunds - (financials.workingCapitalLimit || 0);
     const totalFinance = totalOwnFunds + termLoanAmt + (financials.workingCapitalLimit || 0);
 
@@ -743,10 +754,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     if (activeRepaymentTenure > 0 && monthlyRate > 0) {
       emi = (termLoanAmt * monthlyRate * Math.pow(1 + monthlyRate, activeRepaymentTenure)) / (Math.pow(1 + monthlyRate, activeRepaymentTenure) - 1);
     }
-
-    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.replace(/,/g, '')) || 0), 0);
-    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.replace(/,/g, '')) || 0), 0);
-    const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
 
     const schedule: any[] = [];
     let remainingBalance = termLoanAmt;
@@ -789,17 +796,17 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const dscr = (yearPAT + yearDepreciation + yearInterest) / (yearInterest + yearPrincipal || 1);
 
       projections.push({
-        year: `Year ${y}`,
-        revenue: yearRevenue,
-        ebitda: yearEBITDA,
-        pat: yearPAT,
-        margin: (yearPAT / yearRevenue * 100).toFixed(1),
-        ratio: (yearTOL / currentTNW).toFixed(2),
+        year: `FY ${25+y}-${26+y}`,
+        revenue: Math.round(yearRevenue),
+        ebitda: Math.round(yearEBITDA),
+        pat: Math.round(yearPAT),
+        margin: parseFloat((yearPAT / yearRevenue * 100).toFixed(1)),
+        ratio: parseFloat((yearTOL / currentTNW).toFixed(2)),
         dscr: dscr.toFixed(2)
       });
 
       cashFlow.push({
-        year: `Year ${y}`,
+        year: `FY ${25+y}-${26+y}`,
         npat: yearPAT,
         interest: yearInterest,
         depreciation: yearDepreciation,
@@ -809,7 +816,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       });
 
       loanRepayment.push({
-        year: `Year ${y}`,
+        year: `FY ${25+y}-${26+y}`,
         opening: schedule[(y-1)*12]?.balance || (y === 1 ? termLoanAmt : 0),
         interest: yearInterest,
         principal: yearPrincipal,
@@ -841,7 +848,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       fixedCapital: fixedAssetsAtCost,
       mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75),
       total5YearProfit,
-      requiredWCMargin
+      requiredWCMargin,
+      totalCapacityAnnualRevenue
     };
   }, [financials, proprietaryProducts, industrialServices]);
 
@@ -951,6 +959,66 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest px-1">Footer Annotation</Label>
           <RichTextEditor value={foundationalData[sectionId + '_footer'] || ""} onChange={(val) => setFormData({...foundationalData, [sectionId + '_footer']: val})} />
        </div>
+    </div>
+  );
+
+  const KeyDataAtGlance = ({ isReport = false }: { isReport?: boolean }) => (
+    <div className={cn("space-y-12", isReport ? "mt-12" : "")}>
+      <h3 className={cn("font-display font-bold uppercase tracking-tight", isReport ? "text-2xl text-[#001F3D]" : "text-lg text-primary")}>Key Data at a Glance</h3>
+      
+      <div className="space-y-16">
+        <div className="space-y-4">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Projected Sales & Profitability</p>
+          <div className={cn("w-full", isReport ? "h-[350px]" : "h-[300px]")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={calculations.projections}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#64748b'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#64748b'}} tickFormatter={(v) => `₹${(v/100000).toFixed(0)}L`} />
+                <ChartTooltip 
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                  labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                <Bar name="Revenue Income / Gross Sales" dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar name="EBITDA" dataKey="ebitda" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar name="PROFIT AFTER TAX" dataKey="pat" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="space-y-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">TOL/TNW Ratio Trendline</p>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={calculations.projections}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 700, fill: '#64748b'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 700, fill: '#64748b'}} />
+                  <ChartTooltip />
+                  <Line type="monotone" dataKey="ratio" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} name="TOL/TNW Ratio" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Net Profit Margin Trendline</p>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={calculations.projections}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 700, fill: '#64748b'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 700, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} />
+                  <ChartTooltip />
+                  <Line type="monotone" dataKey="margin" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, fill: '#f43f5e', strokeWidth: 2, stroke: '#fff' }} name="Net Profit Margin (%)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -1371,6 +1439,29 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
           </NoteWrapper>
         );
+      case 'turnoverAnalysis':
+        return (
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-12">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">21. Turnover & Profitability Matrix</h3>
+               <KeyDataAtGlance isReport={true} />
+               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm mt-8">
+                  <table className="w-full text-left min-w-[800px]">
+                     <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr className="text-[9px] font-bold uppercase text-slate-400">
+                           <th className="p-4 border-r">Fiscal Window</th>
+                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-right border-r last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">Projected Turnover</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] font-bold">₹ {p.revenue.toLocaleString()}</td>)}</tr>
+                        <tr className="bg-slate-100 font-bold"><td className="p-4 border-r text-[10px] uppercase">Yield Growth %</td>{financials.yearlyGrowthTargets.map((g,i)=><td key={i} className="p-4 text-right border-r text-[10px] text-primary">{g}%</td>)}</tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
+        );
       case 'dscrMatrix':
         return (
           <NoteWrapper sectionId={sectionId}>
@@ -1401,11 +1492,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   <div className="space-y-8 relative z-10">
                      <div className="flex justify-between items-center py-4 border-b border-slate-100">
                         <span className="text-[10px] font-bold uppercase text-slate-400">Projected Annual Turnover</span>
-                        <span className="text-lg font-bold text-[#001F3D]">₹ {(totalCapacityAnnualRevenue || 0).toLocaleString()}</span>
+                        <span className="text-lg font-bold text-[#001F3D]">₹ {calculations.totalCapacityAnnualRevenue.toLocaleString()}</span>
                      </div>
                      <div className="flex justify-between items-center py-4 border-b border-slate-100">
                         <span className="text-[10px] font-bold uppercase text-slate-400">Working Capital Threshold (25% of Turnover)</span>
-                        <span className="text-lg font-bold text-slate-700">₹ {((totalCapacityAnnualRevenue || 0) * 0.25).toLocaleString()}</span>
+                        <span className="text-lg font-bold text-slate-700">₹ {(calculations.totalCapacityAnnualRevenue * 0.25).toLocaleString()}</span>
                      </div>
                      <div className="flex justify-between items-center py-6 bg-slate-50 px-4 rounded-xl">
                         <span className="text-xs font-black uppercase text-[#001F3D]">Eligible Bank Finance (MPBF Node)</span>
@@ -1428,12 +1519,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         );
     }
   };
-
-  const totalCapacityAnnualRevenue = useMemo(() => {
-    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.replace(/,/g, '')) || 0), 0);
-    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.replace(/,/g, '')) || 0), 0);
-    return annualProductRevenue + annualServiceRevenue;
-  }, [proprietaryProducts, industrialServices]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000 font-body pb-20 print:pb-0">
@@ -1496,9 +1581,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Proprietary Product Matrix</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Direct manufactured yields.</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-primary font-bold text-[9px] uppercase gap-2 hover:bg-primary/5" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                    <button type="button" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} className="text-primary font-bold text-[9px] uppercase gap-2 hover:bg-primary/5 flex items-center p-2 rounded-lg">
                        <Plus className="h-3 w-3" /> Append Node
-                    </Button>
+                    </button>
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {proprietaryProducts.map((p, idx) => (
@@ -1538,9 +1623,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Industrial Technical Services</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">External job work and specialized services.</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-blue-600 font-bold text-[9px] uppercase gap-2 hover:bg-blue-50" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])}>
+                    <button type="button" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} className="text-blue-600 font-bold text-[9px] uppercase gap-2 hover:bg-blue-50 flex items-center p-2 rounded-lg">
                        <Plus className="h-3.5 w-3.5" /> Append Node
-                    </Button>
+                    </button>
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {industrialServices.map((s, idx) => (
@@ -1631,7 +1716,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2">
-                                <Label className="text-[8px] font-bold text-slate-500 uppercase">Working Capital Limit (₹)</Label>
+                                <div className="flex justify-between items-center mb-1">
+                                  <Label className="text-[8px] font-bold text-slate-500 uppercase">Working Capital Limit (₹)</Label>
+                                  <button type="button" onClick={() => setFinancials({...financials, workingCapitalLimit: Math.round(calculations.mpbf)})} className="text-[7px] font-bold uppercase text-primary hover:underline">Apply MPBF</button>
+                                </div>
                                 <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.workingCapitalLimit} onChange={(e)=>setFinancials({...financials, workingCapitalLimit: Number(e.target.value)})} />
                              </div>
                              <div className="space-y-2">
@@ -1721,6 +1809,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     </div>
                  </Card>
               </div>
+
+              <div className="lg:col-span-12">
+                <Card className="p-10 border-slate-200 bg-white shadow-xl rounded-[2.5rem]">
+                   <KeyDataAtGlance />
+                </Card>
+              </div>
            </div>
         </TabsContent>
 
@@ -1734,14 +1828,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 <div className="p-10 md:p-20 min-h-[297mm] space-y-16 print:p-12 print:shadow-none relative bg-white">
                    <div className="min-h-[297mm] flex flex-col items-center justify-center text-center border-b-2 border-slate-900 pb-20 page-break relative z-10">
                       <Watermark />
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="absolute top-4 right-4 no-print text-[#001F3D] hover:bg-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg"
+                      <button 
+                        type="button"
+                        className="absolute top-4 right-4 no-print text-[#001F3D] hover:bg-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg flex items-center p-2"
                         onClick={() => setEditingSectionInPreview('coverDetails')}
                       >
                          <Edit3 className="h-3.5 w-3.5" /> Edit Cover Meta
-                      </Button>
+                      </button>
                       <div 
                         className="relative rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border flex items-center justify-center p-4 transition-all"
                         style={{ 
@@ -1780,18 +1873,17 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          <Watermark />
                          <div className="flex justify-between items-center border-b-2 border-[#8B5CF6] pb-2 mb-8">
                            <h2 className="text-2xl md:text-3xl font-display font-bold text-[#8B5CF6] tracking-tight uppercase">{section.label}</h2>
-                           <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="no-print text-[#8B5CF6] hover:bg-[#8B5CF6]/10 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg"
+                           <button 
+                              type="button"
+                              className="no-print text-[#8B5CF6] hover:bg-[#8B5CF6]/10 font-bold text-[10px] uppercase tracking-widest gap-2 h-8 rounded-lg flex items-center p-2"
                               onClick={() => setEditingSectionInPreview(section.id)}
                            >
                               <Edit3 className="h-3.5 w-3.5" /> Edit Matrix Node
-                           </Button>
+                           </button>
                          </div>
                          
                          <div className="space-y-6">
-                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && foundationalData[section.id] && (
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis'].includes(section.id) && foundationalData[section.id] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
                             )}
 
@@ -1880,11 +1972,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
-                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation'].includes(section.id) && foundationalData[section.id + '_footer'] && (
+                            {section.id === 'turnoverAnalysis' && (
+                              <KeyDataAtGlance isReport={true} />
+                            )}
+
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis'].includes(section.id) && foundationalData[section.id + '_footer'] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
 
-                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis'].includes(section.id) && (
+                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis', 'turnoverAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                                 <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
@@ -2001,4 +2097,3 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
-

@@ -763,6 +763,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const loanRepayment: any[] = [];
     const ratioMatrix: any[] = [];
     const mpbfMatrix: any[] = [];
+    const dscrMatrix: any[] = [];
 
     let currentTNW = totalOwnFunds;
     let accumulatedDepreciation = 0;
@@ -788,7 +789,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearTermLoan = schedule[Math.min(y * 12, schedule.length) - 1]?.balance || 0;
       const yearCurrentLiabilities = workingCapitalValue * (1 + (y * 0.1)); 
       const yearTOL = yearTermLoan + yearCurrentLiabilities;
-      const dscr = (yearPAT + yearDepreciation + yearInterest) / (yearInterest + yearPrincipal || 1);
+      
+      // DSCR Components
+      const numerator = yearPAT + yearDepreciation + yearInterest;
+      const interestPayment = yearInterest;
+      const termLoanPrincipal = yearPrincipal;
+      const wcPrincipal = 0; // Assume revolving for MVP
+      const totalRepayment = interestPayment + termLoanPrincipal + wcPrincipal;
+      const dscr = numerator / (totalRepayment || 1);
 
       projections.push({
         year: `FY ${25+y}-${26+y}`,
@@ -797,6 +805,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         pat: Math.round(yearPAT),
         margin: parseFloat((yearPAT / yearRevenue * 100).toFixed(1)),
         ratio: parseFloat((yearTOL / currentTNW).toFixed(2)),
+        dscr: dscr.toFixed(2)
+      });
+
+      dscrMatrix.push({
+        year: `FY ${25+y}-${26+y}`,
+        numerator,
+        interestPayment,
+        termLoanPrincipal,
+        wcPrincipal,
+        totalRepayment,
         dscr: dscr.toFixed(2)
       });
 
@@ -881,6 +899,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     const avgDSCR = projections.reduce((acc, p) => acc + parseFloat(p.dscr), 0) / 5;
+    const avgDSCRTermOnly = projections.reduce((acc, p) => {
+        const item = dscrMatrix.find(d => d.year === p.year);
+        const termOnlyRepayment = (item?.interestPayment || 0) + (item?.termLoanPrincipal || 0);
+        return acc + ((item?.numerator || 0) / (termOnlyRepayment || 1));
+    }, 0) / 5;
 
     return {
       monthlyOpEx: monthlyOpExBase,
@@ -899,8 +922,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       loanRepayment,
       ratioMatrix,
       mpbfMatrix,
+      dscrMatrix,
       monthlySchedule: schedule,
       avgDSCR: avgDSCR.toFixed(2),
+      avgDSCRTermOnly: avgDSCRTermOnly.toFixed(2),
       fixedCapital: fixedAssetsAtCost,
       mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75),
       requiredWCMargin,
@@ -1489,6 +1514,60 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                    </table>
                 </div>
              </div>
+          </NoteWrapper>
+        );
+      case 'dscrMatrix':
+        return (
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-12">
+               <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Institutional DSCR Matrix Analysis</h3>
+               <div className="border-2 border-slate-900 rounded-sm bg-white shadow-xl overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[900px]">
+                    <thead className="bg-slate-50 border-b-2 border-slate-900">
+                      <tr className="text-[10px] font-bold uppercase">
+                        <th className="p-4 border-r border-slate-300 w-[30%]">Particulars</th>
+                        {calculations.dscrMatrix.map(m => <th key={m.year} className="p-4 text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody className="text-[10px]">
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">PAT + Depreciation + Interest</td>
+                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0 font-bold">₹ {m.numerator.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Interest payment</td>
+                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.interestPayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Term Loan</td>
+                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.termLoanPrincipal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Working Capital Limit</td>
+                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.wcPrincipal > 0 ? `₹ ${m.wcPrincipal.toLocaleString()}` : '---'}</td>)}
+                      </tr>
+                      <tr className="border-b-2 border-slate-300 bg-slate-50 font-bold">
+                        <td className="p-3 px-4 border-r border-slate-200 uppercase">Total Repayment during the year</td>
+                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.totalRepayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="bg-[#001F3D] text-white font-black">
+                        <td className="p-4 px-6 text-base border-r border-white/10 uppercase">DSCR</td>
+                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-4 text-right text-lg border-r border-white/10 last:border-0">{m.dscr}</td>)}
+                      </tr>
+                    </tbody>
+                  </table>
+               </div>
+               <div className="grid grid-cols-2 gap-8">
+                  <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-900 shadow-sm space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average DSCR (Term Loan + Working Capital Loan)</p>
+                    <p className="text-3xl font-display font-bold text-[#001F3D]">{calculations.avgDSCR}</p>
+                  </div>
+                  <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-900 shadow-sm space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average DSCR (Term Loan only)</p>
+                    <p className="text-3xl font-display font-bold text-primary">{calculations.avgDSCRTermOnly}</p>
+                  </div>
+               </div>
+            </div>
           </NoteWrapper>
         );
       case 'roadmap':
@@ -2206,6 +2285,39 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               </div>
                             )}
 
+                            {section.id === 'dscrMatrix' && (
+                               <div className="space-y-12">
+                                  <div className="border-2 border-slate-900 rounded-sm bg-white overflow-x-auto shadow-sm">
+                                     <table className="w-full text-left border-collapse min-w-[800px]">
+                                        <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                           <tr>
+                                              <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[35%]">Particulars</th>
+                                              {calculations.dscrMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                                           </tr>
+                                        </thead>
+                                        <tbody className="text-[10px]">
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">PAT + Depreciation + Interest</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.numerator.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Interest payment</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.interestPayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Term Loan</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.termLoanPrincipal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Working Capital Limit</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">---</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Total Repayment during the year</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.totalRepayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="bg-[#001F3D] text-white font-black"><td className="p-4 px-6 text-base border-r border-white/10 uppercase">DSCR</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-4 text-right text-lg border-r border-white/10 last:border-0">{m.dscr}</td>)}</tr>
+                                        </tbody>
+                                     </table>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-8">
+                                     <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-900 shadow-sm space-y-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average DSCR (Term Loan + Working Capital Loan)</p>
+                                        <p className="text-3xl font-display font-bold text-[#001F3D]">{calculations.avgDSCR}</p>
+                                     </div>
+                                     <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-900 shadow-sm space-y-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average DSCR (Term Loan only)</p>
+                                        <p className="text-3xl font-display font-bold text-primary">{calculations.avgDSCRTermOnly}</p>
+                                     </div>
+                                  </div>
+                               </div>
+                            )}
+
                             {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && foundationalData[section.id + '_footer'] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
@@ -2327,4 +2439,3 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
-

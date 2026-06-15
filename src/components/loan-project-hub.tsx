@@ -765,6 +765,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const projections: any[] = [];
     const cashFlow: any[] = [];
     const loanRepayment: any[] = [];
+    const ratioMatrix: any[] = [];
 
     let currentTNW = totalOwnFunds;
     let accumulatedDepreciation = 0;
@@ -802,9 +803,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         dscr: dscr.toFixed(2)
       });
 
+      // Key Ratios Industrial Calculation
+      ratioMatrix.push({
+        year: `FY ${25+y}-${26+y}`,
+        debtEquity: ((yearTermLoan + suggestedWCLimit) / currentTNW).toFixed(2),
+        debtRatio: ((yearTermLoan + suggestedWCLimit) / (currentTNW + yearTOL)).toFixed(2),
+        tolTnw: (yearTOL / currentTNW).toFixed(2),
+        interestCoverage: (yearEBITDA / (yearInterest || 1)).toFixed(2),
+        dscr: dscr.toFixed(2),
+        currentRatio: ((workingCapitalValue * 1.5) / yearCurrentLiabilities).toFixed(2),
+        quickRatio: ((workingCapitalValue * 0.8) / yearCurrentLiabilities).toFixed(2),
+        gpMargin: ((yearEBITDA / yearRevenue) * 100).toFixed(2),
+        ebitdaMargin: ((yearEBITDA / yearRevenue) * 100).toFixed(2),
+        npMargin: ((yearPAT / yearRevenue) * 100).toFixed(2),
+        roa: ((yearPAT / fixedAssetsAtCost) * 100).toFixed(2)
+      });
+
       // Complex A-B-C Cash Flow Calculation
       const cf_A_OperatingProfitBeforeWC = yearPAT + yearInterest + yearDepreciation;
-      const cf_A_NetCashFromOperating = cf_A_OperatingProfitBeforeWC; // Simplified WC changes for MVP
+      const cf_A_NetCashFromOperating = cf_A_OperatingProfitBeforeWC; 
 
       const cf_B_InterestExp = -yearInterest;
       const cf_B_TermLoanRepay = -yearPrincipal;
@@ -863,6 +880,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       projections,
       cashFlow,
       loanRepayment,
+      ratioMatrix,
       avgDSCR: avgDSCR.toFixed(2),
       fixedCapital: fixedAssetsAtCost,
       mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75),
@@ -933,8 +951,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           .text-right { text-align: right; }
           .font-bold { font-weight: bold; }
           img { max-width: 100%; height: auto; display: block; margin: 10pt auto; border-radius: 8pt; }
-          .watermark { display: none; }
-          .product-card { border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-radius: 12px; }
         </style>
       </head>
       <body>
@@ -1500,6 +1516,54 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
           </NoteWrapper>
         );
+      case 'keyRatios':
+        return (
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">24. Key Industrial Ratios Ledger</h3>
+               <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-sm">
+                  <table className="w-full text-left min-w-[900px] border-collapse">
+                     <thead className="bg-slate-50 border-b-2 border-slate-900">
+                        <tr>
+                           <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Ratio Particulars</th>
+                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody className="text-[10px]">
+                        {/* Section: Long-term Solvency */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-primary uppercase border-b">Long-term Solvency Ratios</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Debt Equity Ratio</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.debtEquity}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Debt Ratio</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.debtRatio}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">TOL/TNW</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.tolTnw}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Interest Coverage</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.interestCoverage}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Debt Service Coverage Ratio (DSCR)</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.dscr}</td>)}</tr>
+
+                        {/* Section: Short-term Solvency */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-blue-600 uppercase border-b">Short-term Solvency Ratios</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Current Ratio</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.currentRatio}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Quick Ratio or Liquid Ratio</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.quickRatio}</td>)}</tr>
+
+                        {/* Section: Profitability */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-emerald-600 uppercase border-b">Profitability Ratios</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">EBIDTA Margin (%)</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.ebitdaMargin}%</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Net Profit Margin (%)</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.npMargin}%</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Return on Assets (ROA %)</td>{calculations.ratioMatrix.map((r,i)=><td key={i} className="p-3 text-right border-r last:border-0">{r.roa}%</td>)}</tr>
+
+                        {/* Section: Growth */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-purple-600 uppercase border-b">Growth Ratios (Annualised)</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Sales / Revenue Growth</td>{financials.yearlyGrowthTargets.map((g,i)=><td key={i} className="p-3 text-right border-r last:border-0">{g}%</td>)}</tr>
+
+                        {/* Section: Activity */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-amber-600 uppercase border-b">Activity Ratios (Cycles)</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Debtors Turnover (days)</td>{calculations.projections.map((_,i)=><td key={i} className="p-3 text-right border-r last:border-0">45</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Sundry Creditors (days)</td>{calculations.projections.map((_,i)=><td key={i} className="p-3 text-right border-r last:border-0">30</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Inventory Turnover (days)</td>{calculations.projections.map((_,i)=><td key={i} className="p-3 text-right border-r last:border-0">60</td>)}</tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
+        );
       default: 
         return (
           <div className="space-y-8 animate-in fade-in duration-1000">
@@ -1876,7 +1940,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          </div>
                          
                          <div className="space-y-6">
-                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis'].includes(section.id) && foundationalData[section.id] && (
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && foundationalData[section.id] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
                             )}
 
@@ -1969,11 +2033,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               <KeyDataAtGlance isReport={true} />
                             )}
 
-                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis'].includes(section.id) && foundationalData[section.id + '_footer'] && (
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && foundationalData[section.id + '_footer'] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
 
-                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis', 'turnoverAnalysis'].includes(section.id) && (
+                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                                 <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>

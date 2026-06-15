@@ -620,7 +620,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     projectCost: 'One-time capital investment details.',
     meansOfFinance: '90/10 Debt-Equity financing structure.',
     workingCapitalRequirement: 'Liquidity reserve for 3 months operational buffer.',
-    financialProjections: '5-year performance and yield analysis.',
+    financialProjections: 'Detailed Sources and Application of Funds matrix tracking project liquidity and capital adequacy.',
     cashFlowStatement: 'Annual operational and financing liquidity analysis.',
     turnoverAnalysis: 'Revenue realization and growth targets.',
     breakevenAnalysis: 'Operational threshold for profitability.',
@@ -766,6 +766,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const mpbfMatrix: any[] = [];
     const dscrMatrix: any[] = [];
     const breakevenMatrix: any[] = [];
+    const balanceSheet: any[] = [];
 
     let currentTNW = totalOwnFunds;
     let accumulatedDepreciation = 0;
@@ -803,7 +804,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       // Break-even Components
       const variableCosts = yearRevenue * (financials.variableCostPercent / 100);
       const grossProfit = yearRevenue - variableCosts; // Contribution (B)
-      const fixedCostsExceptFinance = yearOpExBase - variableCosts; // This is a simplified split
       const totalFixedCost = yearOpExBase - variableCosts + yearDepreciation + yearInterest; // (C)
       const bepSales = (yearRevenue * totalFixedCost) / (grossProfit || 1); // (A*C)/B
 
@@ -916,6 +916,51 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         salesMethod: { revenue: yearRevenue, mpbf: salesMethod }
       });
 
+      // BALANCE SHEET CALCULATION
+      balanceSheet.push({
+        year: `FY ${25+y}-${26+y}`,
+        sources: {
+          ownFunds: {
+            opening: y === 1 ? totalOwnFunds : currentTNW - (yearPAT * 0.8),
+            additional: 0,
+            profit: yearPAT,
+            subsidy: 0,
+            drawings: yearPAT * 0.2, // Simplified assumption
+            total: currentTNW
+          },
+          longTermLiabs: {
+            bankLoan: yearTermLoan,
+            friendsFamily: financials.loanFriendsFamily * (1 - (y * 0.1)) // Assuming slight repayment
+          },
+          currentLiabs: {
+            wcLoan: financials.workingCapitalLimit,
+            interestPayable: yearInterest / 12,
+            taxProvision: yearPAT * 0.25,
+            creditors: currentLiabsOtherThanBank * 0.7,
+            others: currentLiabsOtherThanBank * 0.3
+          },
+          total: currentTNW + yearTermLoan + (financials.loanFriendsFamily * (1-(y*0.1))) + financials.workingCapitalLimit + (yearInterest/12) + (yearPAT*0.25) + currentLiabsOtherThanBank
+        },
+        application: {
+          nonCurrentAssets: {
+            grossBlock: fixedAssetsAtCost,
+            additions: 0,
+            depreciation: accumulatedDepreciation,
+            netBlock: fixedAssetsAtCost - accumulatedDepreciation
+          },
+          currentAssets: {
+            cashBank: yearClosingCash,
+            receivables: yearRevenue * 45 / 365,
+            rawMaterial: workingCapitalValue * 0.4,
+            wip: workingCapitalValue * 0.2,
+            finishedGoods: workingCapitalValue * 0.2,
+            advanceTax: yearPAT * 0.25 * 0.8,
+            others: workingCapitalValue * 0.05
+          },
+          total: (fixedAssetsAtCost - accumulatedDepreciation) + yearClosingCash + (yearRevenue * 45 / 365) + workingCapitalValue
+        }
+      });
+
       openingCash = yearClosingCash;
     }
 
@@ -945,6 +990,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       mpbfMatrix,
       dscrMatrix,
       breakevenMatrix,
+      balanceSheet,
       monthlySchedule: schedule,
       avgDSCR: avgDSCR.toFixed(2),
       avgDSCRTermOnly: avgDSCRTermOnly.toFixed(2),
@@ -1720,23 +1766,119 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       case 'financialProjections':
         return (
           <NoteWrapper sectionId={sectionId}>
-            <div className="space-y-6">
-               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Institutional Financial Projections</h3>
-               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
-                  <table className="w-full text-left min-w-[800px]">
-                     <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                           <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r">Metric Node</th>
-                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
+            <div className="space-y-12">
+               <div className="space-y-6">
+                  <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Projected Sources of Funds Matrix</h3>
+                  <div className="border border-slate-300 rounded-sm bg-white overflow-x-auto shadow-sm">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                      <thead className="bg-slate-50 border-b-2 border-slate-300">
+                        <tr className="text-[9px] font-bold uppercase">
+                          <th className="p-4 border-r border-slate-200">Particulars</th>
+                          {calculations.balanceSheet.map(b => <th key={b.year} className="p-4 text-right border-r border-slate-200">{b.year}</th>)}
                         </tr>
-                     </thead>
-                     <tbody>
-                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">Revenue (Yield)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] font-bold">₹ {p.revenue.toLocaleString()}</td>)}</tr>
-                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px]">₹ {p.ebitda.toLocaleString()}</td>)}</tr>
-                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">PAT (Net Margin)</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] text-emerald-600 font-bold">₹ {p.pat.toLocaleString()}</td>)}</tr>
-                        <tr className="bg-[#001F3D] text-white"><td className="p-4 font-bold border-r border-white/10 text-[10px] uppercase">Net Margin %</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r border-white/10 text-[10px] font-display font-bold">{p.margin}%</td>)}</tr>
-                     </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="text-[10px]">
+                        <tr className="bg-blue-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-blue-900">A. Own Funds</td></tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Initial Capital / Opening Balance</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.ownFunds.opening.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Profit (+) or Loss (-) from current P&L</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-emerald-600 font-bold">₹ {b.sources.ownFunds.profit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Less: Drawings / Dividend</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-red-600">₹ -{b.sources.ownFunds.drawings.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="bg-slate-50 font-bold border-b-2 border-slate-300">
+                          <td className="p-3 px-6 border-r border-slate-200 uppercase">Total Own Funds</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-blue-700">₹ {b.sources.ownFunds.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+
+                        <tr className="bg-purple-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-purple-900">B. Long Term Liabilities</td></tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Term Loan from Bank</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.longTermLiabs.bankLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Loan from Friends & Family</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.longTermLiabs.friendsFamily.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+
+                        <tr className="bg-amber-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-amber-900">C. Current Liabilities</td></tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Working Capital Loan</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.wcLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Provision for Taxation</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.taxProvision.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Sundry Creditors & Provisions</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.creditors.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+
+                        <tr className="bg-[#001F3D] text-white font-black border-t-2 border-slate-900">
+                          <td className="p-4 px-6 border-r border-white/10 uppercase">Total Sources of Funds</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-4 text-right text-base border-r border-white/10">₹ {b.sources.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+               </div>
+
+               <div className="space-y-6 pt-10">
+                  <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Projected Application of Funds Matrix</h3>
+                  <div className="border border-slate-300 rounded-sm bg-white overflow-x-auto shadow-sm">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                      <thead className="bg-slate-50 border-b-2 border-slate-300">
+                        <tr className="text-[9px] font-bold uppercase">
+                          <th className="p-4 border-r border-slate-200">Particulars</th>
+                          {calculations.balanceSheet.map(b => <th key={b.year} className="p-4 text-right border-r border-slate-200">{b.year}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody className="text-[10px]">
+                        <tr className="bg-blue-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-blue-900">A. Non Current Assets (Fixed Assets)</td></tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Gross Block (Assets at Cost)</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.nonCurrentAssets.grossBlock.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Depreciation till Date</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-red-600">₹ -{b.application.nonCurrentAssets.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="bg-slate-50 font-bold border-b-2 border-slate-300">
+                          <td className="p-3 px-6 border-r border-slate-200 uppercase">Net Block (W.D.V)</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-blue-700">₹ {b.application.nonCurrentAssets.netBlock.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+
+                        <tr className="bg-emerald-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-emerald-900">B. Current Assets</td></tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Cash & Bank Balance</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.cashBank.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Trade Receivables (Debtors)</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.receivables.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Inventory (Raw Material, WIP, Finished)</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {(b.application.currentAssets.rawMaterial + b.application.currentAssets.wip + b.application.currentAssets.finishedGoods).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="p-3 px-4 border-r border-slate-100">Other Current Assets & Advances</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.others.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+
+                        <tr className="bg-[#001F3D] text-white font-black border-t-2 border-slate-900">
+                          <td className="p-4 px-6 border-r border-white/10 uppercase">Total Application of Funds</td>
+                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-4 text-right text-base border-r border-white/10">₹ {b.application.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                </div>
             </div>
           </NoteWrapper>
@@ -2567,3 +2709,4 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
+

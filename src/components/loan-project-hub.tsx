@@ -142,9 +142,9 @@ import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import UnderlineExtension from '@tiptap/extension-underline';
 import TiptapTable from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
+import TiptapTableRow from '@tiptap/extension-table-row';
+import TiptapTableCell from '@tiptap/extension-table-cell';
+import TiptapTableHeader from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
@@ -330,9 +330,9 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
       TextAlign.configure({ types: ['heading', 'paragraph', 'bulletList', 'orderedList'] }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
-      TableRow,
-      TableCell,
-      TableHeader,
+      TiptapTableRow,
+      TiptapTableCell,
+      TiptapTableHeader,
       TiptapImage.configure({ inline: true, allowBase64: true }),
       TextStyle,
       Color,
@@ -673,6 +673,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     workingCapitalLimit: 0,
     wcInterestRate: 10.75,
     wcMarginPercent: 20, 
+    variableCostPercent: 60, // Industrial standard for direct manufacturing (Material + Power + Consumables)
   });
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -764,6 +765,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const ratioMatrix: any[] = [];
     const mpbfMatrix: any[] = [];
     const dscrMatrix: any[] = [];
+    const breakevenMatrix: any[] = [];
 
     let currentTNW = totalOwnFunds;
     let accumulatedDepreciation = 0;
@@ -798,6 +800,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const totalRepayment = interestPayment + termLoanPrincipal + wcPrincipal;
       const dscr = numerator / (totalRepayment || 1);
 
+      // Break-even Components
+      const variableCosts = yearRevenue * (financials.variableCostPercent / 100);
+      const grossProfit = yearRevenue - variableCosts; // Contribution (B)
+      const fixedCostsExceptFinance = yearOpExBase - variableCosts; // This is a simplified split
+      const totalFixedCost = yearOpExBase - variableCosts + yearDepreciation + yearInterest; // (C)
+      const bepSales = (yearRevenue * totalFixedCost) / (grossProfit || 1); // (A*C)/B
+
       projections.push({
         year: `FY ${25+y}-${26+y}`,
         revenue: Math.round(yearRevenue),
@@ -806,6 +815,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         margin: parseFloat((yearPAT / yearRevenue * 100).toFixed(1)),
         ratio: parseFloat((yearTOL / currentTNW).toFixed(2)),
         dscr: dscr.toFixed(2)
+      });
+
+      breakevenMatrix.push({
+        year: `FY ${25+y}-${26+y}`,
+        revenue: yearRevenue,
+        variableCosts,
+        grossProfit,
+        otherFixedCosts: Math.max(0, yearOpExBase - variableCosts),
+        depreciation: yearDepreciation,
+        interest: yearInterest,
+        totalFixedCost,
+        bepSales
       });
 
       dscrMatrix.push({
@@ -923,6 +944,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       ratioMatrix,
       mpbfMatrix,
       dscrMatrix,
+      breakevenMatrix,
       monthlySchedule: schedule,
       avgDSCR: avgDSCR.toFixed(2),
       avgDSCRTermOnly: avgDSCRTermOnly.toFixed(2),
@@ -1302,6 +1324,69 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">Borrower's Margin Requirement</span>
                   </div>
                   <Badge className="bg-emerald-600 text-white border-none font-bold text-[10px] px-4 py-1.5 rounded-full">Working Capital: {financials.wcMarginPercent}% (₹ {calculations.requiredWCMargin.toLocaleString()})</Badge>
+               </div>
+            </div>
+          </NoteWrapper>
+        );
+      case 'breakevenAnalysis':
+        return (
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-12">
+               <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Institutional Break-even Analysis Matrix</h3>
+               <div className="border-2 border-slate-900 rounded-sm bg-white shadow-xl overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead className="bg-slate-50 border-b-2 border-slate-900">
+                      <tr>
+                        <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[30%]">Particulars</th>
+                        <th className="p-4 text-[10px] font-bold uppercase text-center border-r border-slate-300 italic">Remaining Current Year</th>
+                        {calculations.breakevenMatrix.map(m => <th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody className="text-[10px]">
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200 font-bold">Revenue Income / Gross Sales (A)</td>
+                        <td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Variable Costs</td>
+                        <td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.variableCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b-2 border-slate-900 bg-slate-50 font-bold">
+                        <td className="p-3 px-4 border-r border-slate-200">Gross Profit (B)</td>
+                        <td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.grossProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-100 h-2"></tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Other Costs (Fixed OpEx)</td>
+                        <td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.otherFixedCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Depreciation</td>
+                        <td className="p-3 text-center border-r border-slate-200 font-bold">-</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-3 px-4 border-r border-slate-200">Interest Cost</td>
+                        <td className="p-3 text-center border-r border-slate-200 font-bold">-</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b-2 border-slate-900 bg-slate-50 font-bold">
+                        <td className="p-3 px-4 border-r border-slate-200">Total Fixed Cost (C)</td>
+                        <td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.totalFixedCost.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                      <tr className="border-b border-slate-100 h-2"></tr>
+                      <tr className="bg-[#001F3D] text-white font-black">
+                        <td className="p-4 px-6 text-sm border-r border-white/10 uppercase">Break Even Sales (A*C)/B</td>
+                        <td className="p-3 text-center border-r border-white/10 text-white/40">****</td>
+                        {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-4 text-right text-base border-r border-white/10 last:border-0 text-emerald-400">₹ {m.bepSales.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                      </tr>
+                    </tbody>
+                  </table>
                </div>
             </div>
           </NoteWrapper>
@@ -2023,6 +2108,17 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Total Monthly Load</Label><div className="h-12 bg-emerald-50 rounded-xl flex items-center px-4 font-display font-bold text-emerald-700 shadow-inner">₹ {(calculations.monthlyOpEx + calculations.emi).toLocaleString('en-IN', {maximumFractionDigits: 0})}</div></div>
                     </div>
                  </Card>
+
+                 <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-6">
+                    <h3 className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.3em] border-l-4 border-blue-600 pl-4">Variable Cost Assumptions</h3>
+                    <div className="space-y-6">
+                       <div className="space-y-3">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">Variable Cost (% of Revenue) <span className="text-blue-600 font-code">{financials.variableCostPercent}%</span></Label>
+                          <Slider value={[financials.variableCostPercent]} min={30} max={80} step={1} onValueChange={([v]) => setFinancials({...financials, variableCostPercent: v})} />
+                          <p className="text-[8px] text-slate-400 uppercase font-bold mt-2">* Includes Raw Materials, Consumables, and Direct Utilities.</p>
+                       </div>
+                    </div>
+                 </Card>
               </div>
 
               <div className="lg:col-span-12">
@@ -2098,7 +2194,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          </div>
                          
                          <div className="space-y-6">
-                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && foundationalData[section.id] && (
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios', 'breakevenAnalysis'].includes(section.id) && foundationalData[section.id] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
                             )}
 
@@ -2189,6 +2285,38 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {section.id === 'turnoverAnalysis' && (
                               <KeyDataAtGlance isReport={true} />
+                            )}
+
+                            {section.id === 'breakevenAnalysis' && (
+                               <div className="space-y-12">
+                                  <div className="border-2 border-slate-900 rounded-sm bg-white overflow-x-auto shadow-sm">
+                                     <table className="w-full text-left border-collapse min-w-[800px]">
+                                        <thead className="bg-slate-50 border-b-2 border-slate-900">
+                                           <tr>
+                                              <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[35%]">Particulars</th>
+                                              <th className="p-4 text-[10px] font-bold uppercase text-center border-r border-slate-300 italic">Remaining Current Year</th>
+                                              {calculations.breakevenMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                                           </tr>
+                                        </thead>
+                                        <tbody className="text-[10px]">
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Revenue Income / Gross Sales (A)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Variable Costs</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.variableCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Gross Profit (B)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.grossProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Other Costs (Fixed OpEx)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.otherFixedCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Depreciation</td><td className="p-3 text-center border-r border-slate-200 font-bold">-</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Interest Cost</td><td className="p-3 text-center border-r border-slate-200 font-bold">-</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-950 bg-slate-100 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase">Total Fixed Cost (C)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.totalFixedCost.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                                           <tr className="bg-[#001F3D] text-white font-black">
+                                              <td className="p-4 px-6 text-sm border-r border-white/10 uppercase">Break Even Sales (A*C)/B</td>
+                                              <td className="p-3 text-center border-r border-white/10 text-white/40">****</td>
+                                              {calculations.breakevenMatrix.map(m=><td key={m.year} className="p-4 text-right text-base border-r border-white/10 last:border-0 text-emerald-400">₹ {m.bepSales.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                                           </tr>
+                                        </tbody>
+                                     </table>
+                                  </div>
+                               </div>
                             )}
 
                             {section.id === 'mpbfCalculation' && (
@@ -2318,11 +2446,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                </div>
                             )}
 
-                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && foundationalData[section.id + '_footer'] && (
+                            {['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'turnoverAnalysis', 'keyRatios', 'breakevenAnalysis'].includes(section.id) && foundationalData[section.id + '_footer'] && (
                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id + '_footer'] }} />
                             )}
 
-                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis', 'turnoverAnalysis', 'keyRatios'].includes(section.id) && (
+                            {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis', 'turnoverAnalysis', 'keyRatios', 'breakevenAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                                 <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>

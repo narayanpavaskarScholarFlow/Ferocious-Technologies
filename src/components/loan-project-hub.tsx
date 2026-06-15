@@ -725,15 +725,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const requiredWCMargin = workingCapitalValue * (financials.wcMarginPercent / 100);
 
     // Suggested Working Capital Limit based on logic
-    // Usually CC limit is 20-25% of turnover OR (OpEx * Months) - Margin
-    // Here we will use 25% of annual turnover as a baseline cap if not set
     const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.replace(/,/g, '')) || 0), 0);
     const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.replace(/,/g, '')) || 0), 0);
     const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
     
     // Means of Finance Detailed Calc
     const totalOwnFunds = (financials.ownCapital || 0) + (financials.loanFriendsFamily || 0);
-    // If workingCapitalLimit is 0, we can suggest one:
     const suggestedWCLimit = financials.workingCapitalLimit || (totalCapacityAnnualRevenue * 0.25 * 0.75);
 
     const termLoanAmt = totalProjectCost - totalOwnFunds - (financials.workingCapitalLimit || 0);
@@ -805,14 +802,37 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         dscr: dscr.toFixed(2)
       });
 
+      // Complex A-B-C Cash Flow Calculation
+      const cf_A_OperatingProfitBeforeWC = yearPAT + yearInterest + yearDepreciation;
+      const cf_A_NetCashFromOperating = cf_A_OperatingProfitBeforeWC; // Simplified WC changes for MVP
+
+      const cf_B_InterestExp = -yearInterest;
+      const cf_B_TermLoanRepay = -yearPrincipal;
+      const cf_B_TotalFinancing = cf_B_InterestExp + cf_B_TermLoanRepay + (y === 1 ? (totalOwnFunds + termLoanAmt + financials.workingCapitalLimit) : 0);
+
+      const cf_C_PurchaseAssets = y === 1 ? -fixedAssetsAtCost : 0;
+
+      const totalCashInflow = cf_A_NetCashFromOperating + cf_B_TotalFinancing + cf_C_PurchaseAssets;
+      const yearClosingCash = openingCash + totalCashInflow;
+
       cashFlow.push({
         year: `FY ${25+y}-${26+y}`,
-        npat: yearPAT,
+        pat: yearPAT,
         interest: yearInterest,
         depreciation: yearDepreciation,
-        opProfit: yearPAT + yearInterest + yearDepreciation,
-        loanRepayment: -yearPrincipal,
-        closingCash: openingCash + (yearPAT + yearInterest + yearDepreciation) - yearPrincipal
+        opProfitBeforeWC: cf_A_OperatingProfitBeforeWC,
+        netOpCash: cf_A_NetCashFromOperating,
+        financing: {
+          interest: cf_B_InterestExp,
+          termLoan: y === 1 ? termLoanAmt : cf_B_TermLoanRepay,
+          wcLoan: y === 1 ? financials.workingCapitalLimit : 0,
+          ownFunds: y === 1 ? totalOwnFunds : 0,
+          total: cf_B_TotalFinancing
+        },
+        investing: cf_C_PurchaseAssets,
+        totalInflow: totalCashInflow,
+        openingCash,
+        closingCash: yearClosingCash
       });
 
       loanRepayment.push({
@@ -823,11 +843,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         closing: yearTermLoan
       });
 
-      openingCash = cashFlow[y-1].closingCash;
+      openingCash = yearClosingCash;
     }
 
     const avgDSCR = projections.reduce((acc, p) => acc + parseFloat(p.dscr), 0) / 5;
-    const total5YearProfit = projections.reduce((acc, p) => acc + p.pat, 0);
 
     return {
       monthlyOpEx: monthlyOpExBase,
@@ -847,7 +866,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       avgDSCR: avgDSCR.toFixed(2),
       fixedCapital: fixedAssetsAtCost,
       mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75),
-      total5YearProfit,
       requiredWCMargin,
       totalCapacityAnnualRevenue
     };
@@ -1296,24 +1314,44 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         return (
           <NoteWrapper sectionId={sectionId}>
             <div className="space-y-6">
-               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Projected 5-Year Cash Flow</h3>
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Projected 5-Year Cash Flow Matrix</h3>
                <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
-                     <thead className="bg-slate-50 border-b border-slate-100">
+                  <table className="w-full text-left border-collapse min-w-[1000px]">
+                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                           <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r w-[20%]">Cash Particulars</th>
+                           <th className="p-4 text-[9px] font-bold uppercase text-slate-400 border-r w-[25%]">Cash Particulars</th>
                            {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r last:border-0">{p.year}</th>)}
                         </tr>
                      </thead>
-                     <tbody>
-                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Profit After Tax (PAT)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.npat.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Interest Paid</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50">Depreciation Addback</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                        <tr className="border-b bg-slate-100 font-bold"><td className="p-3 text-[10px] font-bold uppercase border-r">Gross Operating Cash</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0">₹ {c.opProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                        <tr className="border-b"><td className="p-3 text-[10px] font-medium border-r bg-slate-50 text-red-600">(-) Loan Repayment</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-[10px] text-right border-r last:border-0 text-red-600">₹ {Math.abs(c.loanRepayment).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                     <tbody className="text-[10px]">
+                        {/* Section A: Operating */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-primary uppercase border-b">A. Cash Flow from Operating Activities</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Net Profit After Tax (PAT)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">{c.pat.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Add: Interest Expense</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">{c.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Add: Depreciation</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">{c.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b bg-slate-50 font-bold"><td className="p-3 pl-6 uppercase border-r">Operating Profit before WC Changes</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">₹ {c.opProfitBeforeWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r text-slate-400">(Increase)/Decrease in Current Assets</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0 text-slate-400">---</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r text-slate-400">Increase/(Decrease) in Current Liabilities</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0 text-slate-400">---</td>)}</tr>
+                        <tr className="border-b-2 border-slate-300 bg-slate-100 font-bold"><td className="p-3 px-4 uppercase border-r text-emerald-700">Net Cash from Operating Activities</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0 text-emerald-700">₹ {c.netOpCash.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                        {/* Section B: Financing */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-blue-600 uppercase border-b">B. Cash Flow from Financing Activities</td></tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Interest Expense</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0 text-red-600">{c.financing.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Term Loan Taken / (Repaid)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">{c.financing.termLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Working Capital Loan Taken / (Repaid)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">{c.financing.wcLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 pl-8 border-r">Capital Introduced / Loan from F&F</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">{c.financing.ownFunds.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b-2 border-slate-300 bg-slate-100 font-bold"><td className="p-3 px-4 uppercase border-r text-blue-700">Net Cash from Financing Activities</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0 text-blue-700">₹ {c.financing.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                        {/* Section C: Investing */}
+                        <tr className="bg-slate-50/50"><td colSpan={6} className="p-3 px-4 font-bold text-purple-600 uppercase border-b">C. Cash Flow from Investing Activities</td></tr>
+                        <tr className="border-b-2 border-slate-300"><td className="p-3 pl-8 border-r">Purchase of Fixed Assets (CAPEX)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0 text-red-600">{c.investing.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+
+                        {/* Totals */}
+                        <tr className="bg-slate-200 font-bold border-t-2 border-slate-900"><td className="p-3 px-4 uppercase border-r">Total Cash Inflow / (Outflow) (A+B+C)</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">₹ {c.totalInflow.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-3 px-4 border-r bg-slate-50">Add: Opening Cash Balance</td>{calculations.cashFlow.map((c,i)=><td key={i} className="p-3 text-right border-r last:border-0">₹ {c.openingCash.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                         <tr className="bg-[#001F3D] text-white font-bold">
-                           <td className="p-4 px-6 text-[10px] font-bold uppercase border-r border-white/10">Closing Cash Reserve</td>
-                           {calculations.cashFlow.map((c,i)=><td key={i} className="p-4 text-[12px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {(c.closingCash||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                           <td className="p-4 px-6 text-[11px] font-bold uppercase border-r border-white/10">Closing Cash Balance</td>
+                           {calculations.cashFlow.map((c,i)=><td key={i} className="p-4 text-[12px] font-display font-bold text-emerald-400 text-right border-r border-white/10 last:border-0">₹ {c.closingCash.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                      </tbody>
                   </table>
@@ -1462,51 +1500,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
           </NoteWrapper>
         );
-      case 'dscrMatrix':
-        return (
-          <NoteWrapper sectionId={sectionId}>
-            <div className="space-y-6">
-               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Debt Service Coverage Ratio (DSCR) Matrix</h3>
-               <div className="border border-slate-200 overflow-x-auto rounded-xl bg-white shadow-sm">
-                  <table className="w-full text-left min-w-[800px]">
-                     <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr className="text-[9px] font-bold uppercase text-slate-400">
-                           <th className="p-4 border-r">Institutional Node</th>
-                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-right border-r last:border-0">{p.year}</th>)}
-                        </tr>
-                     </thead>
-                     <tbody>
-                        <tr className="bg-slate-100 font-bold"><td className="p-4 text-[10px] uppercase border-r">Yearly DSCR Value</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-primary">{p.dscr}</td>)}</tr>
-                     </tbody>
-                  </table>
-               </div>
-            </div>
-          </NoteWrapper>
-        );
-      case 'mpbfCalculation':
-        return (
-          <NoteWrapper sectionId={sectionId}>
-            <div className="space-y-6">
-               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">Maximum Permissible Bank Finance (MPBF)</h3>
-               <Card className="p-10 bg-white border-2 border-slate-900 rounded-sm relative overflow-hidden shadow-sm">
-                  <div className="space-y-8 relative z-10">
-                     <div className="flex justify-between items-center py-4 border-b border-slate-100">
-                        <span className="text-[10px] font-bold uppercase text-slate-400">Projected Annual Turnover</span>
-                        <span className="text-lg font-bold text-[#001F3D]">₹ {calculations.totalCapacityAnnualRevenue.toLocaleString()}</span>
-                     </div>
-                     <div className="flex justify-between items-center py-4 border-b border-slate-100">
-                        <span className="text-[10px] font-bold uppercase text-slate-400">Working Capital Threshold (25% of Turnover)</span>
-                        <span className="text-lg font-bold text-slate-700">₹ {(calculations.totalCapacityAnnualRevenue * 0.25).toLocaleString()}</span>
-                     </div>
-                     <div className="flex justify-between items-center py-6 bg-slate-50 px-4 rounded-xl">
-                        <span className="text-xs font-black uppercase text-[#001F3D]">Eligible Bank Finance (MPBF Node)</span>
-                        <span className="text-2xl font-display font-bold text-orange-600">₹ {calculations.mpbf.toLocaleString()}</span>
-                     </div>
-                  </div>
-               </Card>
-            </div>
-          </NoteWrapper>
-        );
       default: 
         return (
           <div className="space-y-8 animate-in fade-in duration-1000">
@@ -1582,7 +1575,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Direct manufactured yields.</p>
                     </div>
                     <button type="button" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0.00', annualTargetQty: '0', imageUrl: '' }])} className="text-primary font-bold text-[9px] uppercase gap-2 hover:bg-primary/5 flex items-center p-2 rounded-lg">
-                       <Plus className="h-3 w-3" /> Append Node
+                       <Plus className="h-3.5 w-3.5" /> Append Node
                     </button>
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

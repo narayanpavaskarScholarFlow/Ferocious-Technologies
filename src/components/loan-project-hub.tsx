@@ -723,8 +723,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const totalProjectCost = fixedAssetsAtCost + workingCapitalValue;
     const requiredWCMargin = workingCapitalValue * (financials.wcMarginPercent / 100);
 
-    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.replace(/,/g, '')) || 0), 0);
-    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.replace(/,/g, '')) || 0), 0);
+    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.toString().replace(/,/g, '')) || 0), 0);
+    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.toString().replace(/,/g, '')) || 0), 0);
     const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
     
     const totalOwnFunds = (financials.ownCapital || 0) + (financials.loanFriendsFamily || 0);
@@ -773,11 +773,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const depreciationRate = 0.15;
     let openingCash = workingCapitalValue * 0.2;
 
+    // Use sequential growth calculation
+    let previousYearRevenue = totalCapacityAnnualRevenue * 0.7; // Start at 70% in Year 1
+
     for (let y = 1; y <= 5; y++) {
-      const growth = financials.yearlyGrowthTargets?.[y-1] ?? (y === 1 ? 0 : 15);
-      const revMultiplier = Math.pow(1 + (growth / 100), y - 1);
+      const growth = financials.yearlyGrowthTargets?.[y-1] ?? 0;
       
-      const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.7) : (totalCapacityAnnualRevenue * revMultiplier);
+      let yearRevenue;
+      if (y === 1) {
+        // Year 1 growth is treated as initial utilization baseline offset
+        yearRevenue = previousYearRevenue * (1 + growth/100);
+      } else {
+        yearRevenue = projections[y-2].revenue * (1 + growth/100);
+      }
+      
       const yearOpExBase = monthlyOpExBase * 12 * (1 + (y * 0.05));
       const yearDepreciation = Math.max(0, (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate);
       accumulatedDepreciation += yearDepreciation;
@@ -813,7 +822,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         ebitda: Math.round(yearEBITDA),
         pat: Math.round(yearPAT),
         margin: parseFloat((yearPAT / yearRevenue * 100).toFixed(1)),
-        ratio: parseFloat((yearTOL / currentTNW).toFixed(2)),
+        ratio: parseFloat((yearTOL / (currentTNW || 1)).toFixed(2)),
         dscr: dscr.toFixed(2)
       });
 
@@ -841,17 +850,17 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
       ratioMatrix.push({
         year: `FY ${25+y}-${26+y}`,
-        debtEquity: ((yearTermLoan + suggestedWCLimit) / currentTNW).toFixed(2),
-        debtRatio: ((yearTermLoan + suggestedWCLimit) / (currentTNW + yearTOL)).toFixed(2),
-        tolTnw: (yearTOL / currentTNW).toFixed(2),
+        debtEquity: ((yearTermLoan + suggestedWCLimit) / (currentTNW || 1)).toFixed(2),
+        debtRatio: ((yearTermLoan + suggestedWCLimit) / ((currentTNW + yearTOL) || 1)).toFixed(2),
+        tolTnw: (yearTOL / (currentTNW || 1)).toFixed(2),
         interestCoverage: (yearEBITDA / (yearInterest || 1)).toFixed(2),
         dscr: dscr.toFixed(2),
-        currentRatio: ((workingCapitalValue * 1.5) / yearCurrentLiabilities).toFixed(2),
-        quickRatio: ((workingCapitalValue * 0.8) / yearCurrentLiabilities).toFixed(2),
-        gpMargin: ((yearEBITDA / yearRevenue) * 100).toFixed(2),
-        ebitdaMargin: ((yearEBITDA / yearRevenue) * 100).toFixed(2),
-        npMargin: ((yearPAT / yearRevenue) * 100).toFixed(2),
-        roa: ((yearPAT / fixedAssetsAtCost) * 100).toFixed(2)
+        currentRatio: ((workingCapitalValue * 1.5) / (yearCurrentLiabilities || 1)).toFixed(2),
+        quickRatio: ((workingCapitalValue * 0.8) / (yearCurrentLiabilities || 1)).toFixed(2),
+        gpMargin: ((yearEBITDA / (yearRevenue || 1)) * 100).toFixed(2),
+        ebitdaMargin: ((yearEBITDA / (yearRevenue || 1)) * 100).toFixed(2),
+        npMargin: ((yearPAT / (yearRevenue || 1)) * 100).toFixed(2),
+        roa: ((yearPAT / (fixedAssetsAtCost || 1)) * 100).toFixed(2)
       });
 
       const cf_A_OperatingProfitBeforeWC = yearPAT + yearInterest + yearDepreciation;
@@ -1383,9 +1392,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead className="bg-slate-50 border-b-2 border-slate-900">
                       <tr>
-                        <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[30%]">Particulars</th>
-                        <th className="p-4 text-[10px] font-bold uppercase text-center border-r border-slate-300 italic">Remaining Current Year</th>
-                        {calculations.breakevenMatrix.map(m => <th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                        <th className="p-4 border-r border-slate-300 w-[30%] text-[10px] font-bold uppercase">Particulars</th>
+                        <th className="p-4 border-r border-slate-300 italic text-center text-[10px] font-bold uppercase">Remaining Current Year</th>
+                        {calculations.breakevenMatrix.map(m => <th key={m.year} className="p-4 border-r border-slate-300 last:border-0 text-right text-[10px] font-bold uppercase">{m.year}</th>)}
                       </tr>
                     </thead>
                     <tbody className="text-[10px]">
@@ -1420,8 +1429,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         <td className="p-3 text-center border-r border-slate-200 font-bold">-</td>
                         {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
-                      <tr className="border-b-2 border-slate-900 bg-slate-50 font-bold">
-                        <td className="p-3 px-4 border-r border-slate-200">Total Fixed Cost (C)</td>
+                      <tr className="border-b-2 border-slate-900 bg-slate-100 font-bold">
+                        <td className="p-3 px-4 border-r border-slate-200 uppercase">Total Fixed Cost (C)</td>
                         <td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>
                         {calculations.breakevenMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.totalFixedCost.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
@@ -1573,7 +1582,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         </tr>
                       </thead>
                       <tbody className="text-[8px] font-code">
-                        {calculations.monthlySchedule.slice(0, 42).map((m) => (
+                        {calculations.monthlySchedule.slice(0, 42).map((m: any) => (
                           <tr key={m.month} className={cn("border-b border-slate-100", m.month % 12 === 0 ? "border-b-2 border-slate-300 bg-slate-50" : "")}>
                             <td className="p-2 border-r font-bold">{m.month.toString().padStart(2, '0')}</td>
                             <td className="p-2 border-r text-right text-red-600">{m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
@@ -1597,7 +1606,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         </tr>
                       </thead>
                       <tbody className="text-[8px] font-code">
-                        {calculations.monthlySchedule.slice(42, 84).map((m) => (
+                        {calculations.monthlySchedule.slice(42, 84).map((m: any) => (
                           <tr key={m.month} className={cn("border-b border-slate-100", m.month % 12 === 0 ? "border-b-2 border-slate-300 bg-slate-50" : "")}>
                             <td className="p-2 border-r font-bold">{m.month.toString().padStart(2, '0')}</td>
                             <td className="p-2 border-r text-right text-red-600">{m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
@@ -1622,25 +1631,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <thead className="bg-slate-950 text-white border-b-2 border-slate-900">
                          <tr>
                             <th className="p-4 text-[10px] font-bold uppercase border-r border-white/10 w-[30%]">MPBF Assessment Particulars</th>
-                            {calculations.mpbfMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-white/10 last:border-0">{m.year}</th>)}
+                            {calculations.mpbfMatrix.map((m: any)=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-white/10 last:border-0">{m.year}</th>)}
                          </tr>
                       </thead>
                       <tbody className="text-[10px]">
-                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Assets (A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentAssets.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Liabilities (other than Bank Borrowing) (B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentLiabs.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                         <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Working Capital Gap (C = A - B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.wcGap.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Assets (A)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentAssets.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Liabilities (other than Bank Borrowing) (B)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentLiabs.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Working Capital Gap (C = A - B)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.wcGap.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                          
                          <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-blue-800 uppercase">1st Method of Lending</td></tr>
-                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (D = 25% of C)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                         <tr className="border-b-2 border-slate-400 bg-blue-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-blue-900">MPBF 1st Method (C - D)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (D = 25% of C)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-400 bg-blue-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-blue-900">MPBF 1st Method (C - D)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
 
                          <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-emerald-800 uppercase">2nd Method of Lending</td></tr>
-                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (E = 25% of A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                         <tr className="border-b-2 border-slate-400 bg-emerald-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-emerald-900">MPBF 2nd Method (C - E)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (E = 25% of A)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-400 bg-emerald-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-emerald-900">MPBF 2nd Method (C - E)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
 
                          <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-purple-800 uppercase">Percentage of Sales method</td></tr>
-                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Gross Revenue / Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                         <tr className="border-b-2 border-slate-950 bg-purple-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-purple-900">MPBF - 25% of Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Gross Revenue / Sales</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                         <tr className="border-b-2 border-slate-950 bg-purple-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-purple-900">MPBF - 25% of Sales</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                       </tbody>
                    </table>
                 </div>
@@ -1657,33 +1666,33 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <thead className="bg-slate-50 border-b-2 border-slate-900">
                       <tr className="text-[10px] font-bold uppercase">
                         <th className="p-4 border-r border-slate-300 w-[30%]">Particulars</th>
-                        {calculations.dscrMatrix.map(m => <th key={m.year} className="p-4 text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                        {calculations.dscrMatrix.map((m: any) => <th key={m.year} className="p-4 text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
                       </tr>
                     </thead>
                     <tbody className="text-[10px]">
                       <tr className="border-b border-slate-200">
                         <td className="p-3 px-4 border-r border-slate-200">PAT + Depreciation + Interest</td>
-                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0 font-bold">₹ {m.numerator.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        {calculations.dscrMatrix.map((m: any, i: number) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0 font-bold">₹ {m.numerator.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
                       <tr className="border-b border-slate-200">
                         <td className="p-3 px-4 border-r border-slate-200">Interest payment</td>
-                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.interestPayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        {calculations.dscrMatrix.map((m: any, i: number) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.interestPayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
                       <tr className="border-b border-slate-200">
                         <td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Term Loan</td>
-                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.termLoanPrincipal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        {calculations.dscrMatrix.map((m: any, i: number) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.termLoanPrincipal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
                       <tr className="border-b border-slate-200">
                         <td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Working Capital Limit</td>
-                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.wcPrincipal > 0 ? `₹ ${m.wcPrincipal.toLocaleString()}` : '---'}</td>)}
+                        {calculations.dscrMatrix.map((m: any, i: number) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">{m.wcPrincipal > 0 ? `₹ ${m.wcPrincipal.toLocaleString()}` : '---'}</td>)}
                       </tr>
                       <tr className="border-b-2 border-slate-300 bg-slate-50 font-bold">
                         <td className="p-3 px-4 border-r border-slate-200 uppercase">Total Repayment during the year</td>
-                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.totalRepayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        {calculations.dscrMatrix.map((m: any, i: number) => <td key={i} className="p-3 text-right border-r border-slate-200 last:border-0">₹ {m.totalRepayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                       </tr>
                       <tr className="bg-[#001F3D] text-white font-black">
                         <td className="p-4 px-6 text-base border-r border-white/10 uppercase">DSCR</td>
-                        {calculations.dscrMatrix.map((m, i) => <td key={i} className="p-4 text-right text-lg border-r border-white/10 last:border-0">{m.dscr}</td>)}
+                        {calculations.dscrMatrix.map((m: any, i: number) => <td key={i} className="p-4 text-right text-lg border-r border-white/10 last:border-0">{m.dscr}</td>)}
                       </tr>
                     </tbody>
                   </table>
@@ -1711,15 +1720,15 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      <thead className="bg-slate-50 border-b-2 border-slate-900">
                         <tr>
                            <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 w-[20%]">Performance Particulars</th>
-                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
+                           {calculations.projections.map((p: any)=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
                         </tr>
                      </thead>
                      <tbody>
-                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                        <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                         <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
                            <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
-                           {calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                           {calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                      </tbody>
                   </table>
@@ -1774,55 +1783,55 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <thead className="bg-slate-50 border-b-2 border-slate-300">
                         <tr className="text-[9px] font-bold uppercase">
                           <th className="p-4 border-r border-slate-200">Particulars</th>
-                          {calculations.balanceSheet.map(b => <th key={b.year} className="p-4 text-right border-r border-slate-200">{b.year}</th>)}
+                          {calculations.balanceSheet.map((b: any) => <th key={b.year} className="p-4 text-right border-r border-slate-200">{b.year}</th>)}
                         </tr>
                       </thead>
                       <tbody className="text-[10px]">
                         <tr className="bg-blue-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-blue-900">A. Own Funds</td></tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Initial Capital / Opening Balance</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.ownFunds.opening.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.ownFunds.opening.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Profit (+) or Loss (-) from current P&L</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-emerald-600 font-bold">₹ {b.sources.ownFunds.profit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r text-emerald-600 font-bold">₹ {b.sources.ownFunds.profit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Less: Drawings / Dividend</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-red-600">₹ -{b.sources.ownFunds.drawings.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r text-red-600">₹ -{b.sources.ownFunds.drawings.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="bg-slate-50 font-bold border-b-2 border-slate-300">
                           <td className="p-3 px-6 border-r border-slate-200 uppercase">Total Own Funds</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-blue-700">₹ {b.sources.ownFunds.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r text-blue-700">₹ {b.sources.ownFunds.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
 
                         <tr className="bg-purple-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-purple-900">B. Long Term Liabilities</td></tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Term Loan from Bank</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.longTermLiabs.bankLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.longTermLiabs.bankLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Loan from Friends & Family</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.longTermLiabs.friendsFamily.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.longTermLiabs.friendsFamily.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
 
                         <tr className="bg-amber-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-amber-900">C. Current Liabilities</td></tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Working Capital Loan</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.wcLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.wcLoan.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Provision for Taxation</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.taxProvision.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.taxProvision.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Sundry Creditors & Provisions</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.creditors.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.sources.currentLiabs.creditors.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
 
                         <tr className="bg-[#001F3D] text-white font-black border-t-2 border-slate-900">
                           <td className="p-4 px-6 border-r border-white/10 uppercase">Total Sources of Funds</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-4 text-right text-base border-r border-white/10">₹ {b.sources.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-4 text-right text-base border-r border-white/10">₹ {b.sources.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                       </tbody>
                     </table>
@@ -1836,45 +1845,45 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <thead className="bg-slate-50 border-b-2 border-slate-300">
                         <tr className="text-[9px] font-bold uppercase">
                           <th className="p-4 border-r border-slate-200">Particulars</th>
-                          {calculations.balanceSheet.map(b => <th key={b.year} className="p-4 text-right border-r border-slate-200">{b.year}</th>)}
+                          {calculations.balanceSheet.map((b: any) => <th key={b.year} className="p-4 text-right border-r border-slate-200">{b.year}</th>)}
                         </tr>
                       </thead>
                       <tbody className="text-[10px]">
                         <tr className="bg-blue-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-blue-900">A. Non Current Assets (Fixed Assets)</td></tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Gross Block (Assets at Cost)</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.nonCurrentAssets.grossBlock.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.application.nonCurrentAssets.grossBlock.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Depreciation till Date</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-red-600">₹ -{b.application.nonCurrentAssets.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r text-red-600">₹ -{b.application.nonCurrentAssets.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="bg-slate-50 font-bold border-b-2 border-slate-300">
                           <td className="p-3 px-6 border-r border-slate-200 uppercase">Net Block (W.D.V)</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r text-blue-700">₹ {b.application.nonCurrentAssets.netBlock.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r text-blue-700">₹ {b.application.nonCurrentAssets.netBlock.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
 
                         <tr className="bg-emerald-50 font-bold border-b border-slate-300"><td colSpan={6} className="p-2 px-4 uppercase text-emerald-900">B. Current Assets</td></tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Cash & Bank Balance</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.cashBank.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.cashBank.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Trade Receivables (Debtors)</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.receivables.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.receivables.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Inventory (Raw Material, WIP, Finished)</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {(b.application.currentAssets.rawMaterial + b.application.currentAssets.wip + b.application.currentAssets.finishedGoods).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {(b.application.currentAssets.rawMaterial + b.application.currentAssets.wip + b.application.currentAssets.finishedGoods).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                         <tr className="border-b border-slate-100">
                           <td className="p-3 px-4 border-r border-slate-100">Other Current Assets & Advances</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.others.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-3 text-right border-r">₹ {b.application.currentAssets.others.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
 
                         <tr className="bg-[#001F3D] text-white font-black border-t-2 border-slate-900">
                           <td className="p-4 px-6 border-r border-white/10 uppercase">Total Application of Funds</td>
-                          {calculations.balanceSheet.map((b,i) => <td key={i} className="p-4 text-right text-base border-r border-white/10">₹ {b.application.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                          {calculations.balanceSheet.map((b: any,i: number) => <td key={i} className="p-4 text-right text-base border-r border-white/10">₹ {b.application.total.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                         </tr>
                       </tbody>
                     </table>
@@ -1894,11 +1903,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      <thead className="bg-slate-50 border-b border-slate-100">
                         <tr className="text-[9px] font-bold uppercase text-slate-400">
                            <th className="p-4 border-r">Fiscal Window</th>
-                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-right border-r last:border-0">{p.year}</th>)}
+                           {calculations.projections.map((p: any)=><th key={p.year} className="p-4 text-right border-r last:border-0">{p.year}</th>)}
                         </tr>
                      </thead>
                      <tbody>
-                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">Projected Turnover</td>{calculations.projections.map(p=><td key={p.year} className="p-4 text-right border-r text-[10px] font-bold">₹ {p.revenue.toLocaleString()}</td>)}</tr>
+                        <tr className="border-b"><td className="p-4 font-bold border-r bg-slate-50 text-[10px] uppercase">Projected Turnover</td>{calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r text-[10px] font-bold">₹ {p.revenue.toLocaleString()}</td>)}</tr>
                         <tr className="bg-slate-100 font-bold"><td className="p-4 border-r text-[10px] uppercase">Yield Growth %</td>{financials.yearlyGrowthTargets.map((g,i)=><td key={i} className="p-4 text-right border-r text-[10px] text-primary">{g}%</td>)}</tr>
                      </tbody>
                   </table>
@@ -1916,7 +1925,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                      <thead className="bg-slate-50 border-b-2 border-slate-900">
                         <tr>
                            <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200">Ratio Particulars</th>
-                           {calculations.projections.map(p=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
+                           {calculations.projections.map((p: any)=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
                         </tr>
                      </thead>
                      <tbody className="text-[10px]">
@@ -2017,6 +2026,40 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
         <TabsContent value="catalogues" className="m-0 space-y-10">
            <div className="grid grid-cols-1 gap-12">
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                 <div className="flex justify-between items-center border-l-4 border-emerald-500 pl-6">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="h-6 w-6 text-emerald-500" />
+                      <div>
+                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Sales Growth Matrix (5 Years)</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Manual Year-on-Year growth targets for interlinked projections.</p>
+                      </div>
+                    </div>
+                 </div>
+                 <div className="grid grid-cols-5 gap-4">
+                    {financials.yearlyGrowthTargets.map((g, i) => (
+                      <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 shadow-inner">
+                        <Label className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">
+                          {i === 0 ? 'Year 1 Capacity (%)' : `Year ${i+1} Growth (%)`}
+                        </Label>
+                        <div className="relative">
+                          <Input 
+                            type="number" 
+                            className="h-12 bg-white border-none rounded-xl font-display font-bold text-lg text-primary shadow-sm pr-10" 
+                            value={g} 
+                            onChange={(e) => {
+                              const newTargets = [...financials.yearlyGrowthTargets];
+                              newTargets[i] = Number(e.target.value);
+                              setFinancials({...financials, yearlyGrowthTargets: newTargets});
+                            }} 
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">%</span>
+                        </div>
+                      </div>
+                    ))}
+                 </div>
+              </Card>
+
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                  <div className="flex justify-between items-center border-l-4 border-primary pl-6">
                     <div>
@@ -2437,23 +2480,23 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                            <tr>
                                               <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[35%]">Particulars</th>
                                               <th className="p-4 text-[10px] font-bold uppercase text-center border-r border-slate-300 italic">Remaining Current Year</th>
-                                              {calculations.breakevenMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                                              {calculations.breakevenMatrix.map((m: any)=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
                                            </tr>
                                         </thead>
                                         <tbody className="text-[10px]">
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Revenue Income / Gross Sales (A)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Variable Costs</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.variableCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Gross Profit (B)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.grossProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Revenue Income / Gross Sales (A)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Variable Costs</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.variableCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Gross Profit (B)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.grossProfit.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                                            
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Other Costs (Fixed OpEx)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.otherFixedCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Depreciation</td><td className="p-3 text-center border-r border-slate-200 font-bold">-</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Interest Cost</td><td className="p-3 text-center border-r border-slate-200 font-bold">-</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-950 bg-slate-100 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase">Total Fixed Cost (C)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.totalFixedCost.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Other Costs (Fixed OpEx)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.otherFixedCosts.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Depreciation</td><td className="p-3 text-center border-r border-slate-200 font-bold">-</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.depreciation.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Interest Cost</td><td className="p-3 text-center border-r border-slate-200 font-bold">-</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-950 bg-slate-100 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase">Total Fixed Cost (C)</td><td className="p-3 text-center border-r border-slate-200 text-slate-300">****</td>{calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.totalFixedCost.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
 
                                            <tr className="bg-[#001F3D] text-white font-black">
                                               <td className="p-4 px-6 text-sm border-r border-white/10 uppercase">Break Even Sales (A*C)/B</td>
                                               <td className="p-3 text-center border-r border-white/10 text-white/40">****</td>
-                                              {calculations.breakevenMatrix.map(m=><td key={m.year} className="p-4 text-right text-base border-r border-white/10 last:border-0 text-emerald-400">₹ {m.bepSales.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                                              {calculations.breakevenMatrix.map((m: any)=><td key={m.year} className="p-4 text-right text-base border-r border-white/10 last:border-0 text-emerald-400">₹ {m.bepSales.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
                                            </tr>
                                         </tbody>
                                      </table>
@@ -2468,25 +2511,25 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                         <thead className="bg-slate-50 border-b-2 border-slate-900">
                                            <tr>
                                               <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[35%]">MPBF Assessment Particulars</th>
-                                              {calculations.mpbfMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                                              {calculations.mpbfMatrix.map((m: any)=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
                                            </tr>
                                         </thead>
                                         <tbody className="text-[10px]">
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Assets (A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentAssets.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Liabilities (other than Bank Borrowing) (B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentLiabs.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Working Capital Gap (C = A - B)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.wcGap.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Assets (A)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentAssets.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Total Current Liabilities (other than Bank Borrowing) (B)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.currentLiabs.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Working Capital Gap (C = A - B)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.wcGap.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                                            
                                            <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-blue-800 uppercase">1st Method of Lending</td></tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (D = 25% of C)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-400 bg-blue-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-blue-900">MPBF 1st method (C - D)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (D = 25% of C)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-400 bg-blue-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-blue-900">MPBF 1st method (C - D)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method1.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
 
                                            <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-emerald-800 uppercase">2nd Method of Lending</td></tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (E = 25% of A)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-400 bg-emerald-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-emerald-900">MPBF 2nd method (C - E)</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Minimum Stipulated Net Working Capital (E = 25% of A)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.minNetWC.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-400 bg-emerald-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-emerald-900">MPBF 2nd method (C - E)</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.method2.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
 
                                            <tr className="bg-slate-100 font-bold"><td colSpan={6} className="p-3 px-4 border-b border-slate-900 text-purple-800 uppercase">Percentage of Sales method</td></tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Gross Revenue / Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-950 bg-purple-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-purple-900">MPBF - 25% of Sales</td>{calculations.mpbfMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200 italic">Gross Revenue / Sales</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.revenue.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-950 bg-purple-50 font-bold"><td className="p-3 px-4 border-r border-slate-200 uppercase text-purple-900">MPBF - 25% of Sales</td>{calculations.mpbfMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.salesMethod.mpbf.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
                                         </tbody>
                                      </table>
                                   </div>
@@ -2517,7 +2560,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                           </tr>
                                         </thead>
                                         <tbody className="text-[8px] font-code">
-                                          {calculations.monthlySchedule.slice(0, 42).map((m) => (
+                                          {calculations.monthlySchedule.slice(0, 42).map((m: any) => (
                                             <tr key={m.month} className={cn("border-b border-slate-100", m.month % 12 === 0 ? "border-b-2 border-slate-300 bg-slate-50" : "")}>
                                               <td className="p-2 border-r font-bold">{m.month.toString().padStart(2, '0')}</td>
                                               <td className="p-2 border-r text-right text-red-600">{m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
@@ -2540,7 +2583,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                           </tr>
                                         </thead>
                                         <tbody className="text-[8px] font-code">
-                                          {calculations.monthlySchedule.slice(42, 84).map((m) => (
+                                          {calculations.monthlySchedule.slice(42, 84).map((m: any) => (
                                             <tr key={m.month} className={cn("border-b border-slate-100", m.month % 12 === 0 ? "border-b-2 border-slate-300 bg-slate-50" : "")}>
                                               <td className="p-2 border-r font-bold">{m.month.toString().padStart(2, '0')}</td>
                                               <td className="p-2 border-r text-right text-red-600">{m.interest.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
@@ -2562,16 +2605,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                         <thead className="bg-slate-50 border-b-2 border-slate-900">
                                            <tr>
                                               <th className="p-4 text-[10px] font-bold uppercase border-r border-slate-300 w-[35%]">Particulars</th>
-                                              {calculations.dscrMatrix.map(m=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
+                                              {calculations.dscrMatrix.map((m: any)=><th key={m.year} className="p-4 text-[10px] font-bold uppercase text-right border-r border-slate-300 last:border-0">{m.year}</th>)}
                                            </tr>
                                         </thead>
                                         <tbody className="text-[10px]">
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">PAT + Depreciation + Interest</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.numerator.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Interest payment</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.interestPayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Term Loan</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.termLoanPrincipal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Working Capital Limit</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">---</td>)}</tr>
-                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Total Repayment during the year</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.totalRepayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
-                                           <tr className="bg-[#001F3D] text-white font-black"><td className="p-4 px-6 text-base border-r border-white/10 uppercase">DSCR</td>{calculations.dscrMatrix.map(m=><td key={m.year} className="p-4 text-right text-lg border-r border-white/10 last:border-0">{m.dscr}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">PAT + Depreciation + Interest</td>{calculations.dscrMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.numerator.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Interest payment</td>{calculations.dscrMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.interestPayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Term Loan</td>{calculations.dscrMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.termLoanPrincipal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="border-b border-slate-300"><td className="p-3 px-4 border-r border-slate-200">Principal Repayment of Working Capital Limit</td>{calculations.dscrMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">---</td>)}</tr>
+                                           <tr className="border-b-2 border-slate-900 bg-slate-50 font-black"><td className="p-3 px-4 border-r border-slate-200 uppercase">Total Repayment during the year</td>{calculations.dscrMatrix.map((m: any)=><td key={m.year} className="p-3 text-right border-r last:border-0">₹ {m.totalRepayment.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                                           <tr className="bg-[#001F3D] text-white font-black"><td className="p-4 px-6 text-base border-r border-white/10 uppercase">DSCR</td>{calculations.dscrMatrix.map((m: any)=><td key={m.year} className="p-4 text-right text-lg border-r border-white/10 last:border-0">{m.dscr}</td>)}</tr>
                                         </tbody>
                                      </table>
                                   </div>

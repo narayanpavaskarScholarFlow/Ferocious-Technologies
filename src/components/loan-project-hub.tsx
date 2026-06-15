@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -670,6 +671,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     loanFriendsFamily: 0,
     workingCapitalLimit: 0,
     wcInterestRate: 10.75,
+    wcMarginPercent: 20, // Borrower's Margin / Contribution Working Capital
   });
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -718,6 +720,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const workingCapitalValue = monthlyOpExBase * 3;
     const totalProjectCost = fixedAssetsAtCost + workingCapitalValue;
     
+    // Borrower's Margin for Working Capital
+    const requiredWCMargin = workingCapitalValue * (financials.wcMarginPercent / 100);
+
     // Means of Finance Detailed Calc
     const totalOwnFunds = (financials.ownCapital || 0) + (financials.loanFriendsFamily || 0);
     const termLoanAmt = totalProjectCost - totalOwnFunds - (financials.workingCapitalLimit || 0);
@@ -835,7 +840,8 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       avgDSCR: avgDSCR.toFixed(2),
       fixedCapital: fixedAssetsAtCost,
       mpbf: (totalCapacityAnnualRevenue * 0.25 * 0.75),
-      total5YearProfit
+      total5YearProfit,
+      requiredWCMargin
     };
   }, [financials, proprietaryProducts, industrialServices]);
 
@@ -1143,6 +1149,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                         </tr>
                      </tbody>
                   </table>
+               </div>
+               <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                     <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                     <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">Borrower's Margin Requirement</span>
+                  </div>
+                  <Badge className="bg-emerald-600 text-white border-none font-bold text-[10px] px-4 py-1.5 rounded-full">Working Capital: {financials.wcMarginPercent}% (₹ {calculations.requiredWCMargin.toLocaleString()})</Badge>
                </div>
             </div>
           </NoteWrapper>
@@ -1612,7 +1625,10 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                        </div>
 
                        <div className="space-y-4">
-                          <Label className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Institutional Finance Nodes</Label>
+                          <div className="flex justify-between items-center">
+                            <Label className="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Institutional Finance Nodes</Label>
+                            <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-bold px-2">WC Margin: {financials.wcMarginPercent}%</Badge>
+                          </div>
                           <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label className="text-[8px] font-bold text-slate-500 uppercase">Working Capital Limit (₹)</Label>
@@ -1622,6 +1638,11 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                 <Label className="text-[8px] font-bold text-slate-500 uppercase">WC Interest Rate (%)</Label>
                                 <Input type="number" className="h-10 bg-slate-50 border-none rounded-xl font-bold" value={financials.wcInterestRate} onChange={(e)=>setFinancials({...financials, wcInterestRate: Number(e.target.value)})} />
                              </div>
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[8px] font-bold text-slate-500 uppercase">Borrower's Margin / Contribution (%)</Label>
+                             <Input type="number" className="h-10 bg-emerald-50 border-none rounded-xl font-bold" value={financials.wcMarginPercent} onChange={(e)=>setFinancials({...financials, wcMarginPercent: Number(e.target.value)})} />
+                             <p className="text-[7px] text-slate-400 uppercase font-bold">* Requirement: ₹ {calculations.requiredWCMargin.toLocaleString()} contribution based on WC cycle.</p>
                           </div>
                        </div>
 
@@ -1865,7 +1886,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                             {!['projectCost', 'meansOfFinance', 'cashFlowStatement', 'amortizationSchedule', 'roadmap', 'productServices', 'coverDetails', 'workingCapitalRequirement', 'financialProjections', 'dscrMatrix', 'mpbfCalculation', 'swotAnalysis'].includes(section.id) && (
                               <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: (foundationalData as any)[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
+                                <div className="text-sm text-slate-700 editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] || "Metadata protocol active. Awaiting strategic input matrix." }} />
                               </div>
                             )}
                          </div>
@@ -1980,3 +2001,4 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
+

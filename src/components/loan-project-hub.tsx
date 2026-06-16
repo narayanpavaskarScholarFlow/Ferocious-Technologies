@@ -69,7 +69,9 @@ import {
   Redo,
   TableProperties,
   Heading1,
-  AlignJustify
+  AlignJustify,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -191,6 +193,7 @@ interface ProprietaryProduct {
   price: string;
   annualTargetQty: string;
   imageUrl: string;
+  yoyGrowth?: number[];
 }
 
 interface IndustrialService {
@@ -200,6 +203,7 @@ interface IndustrialService {
   price: string;
   annualTargetQty: string;
   imageUrl: string;
+  yoyGrowth?: number[];
 }
 
 interface MachineryItem {
@@ -567,13 +571,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   });
 
   const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
-    { id: 'p1', name: 'Precision Curved Conduit Connector', market: 'Automotive/Electrical', price: '450', annualTargetQty: '5000', imageUrl: 'https://picsum.photos/seed/conduit/600/400' },
-    { id: 'p2', name: 'VMC Machined Engine Plate', market: 'Heavy Machinery', price: '2800', annualTargetQty: '1200', imageUrl: 'https://picsum.photos/seed/engineplate/600/400' }
+    { id: 'p1', name: 'Precision Curved Conduit Connector', market: 'Automotive/Electrical', price: '450', annualTargetQty: '5000', imageUrl: 'https://picsum.photos/seed/conduit/600/400', yoyGrowth: [0, 10, 10, 10, 10] },
+    { id: 'p2', name: 'VMC Machined Engine Plate', market: 'Heavy Machinery', price: '2800', annualTargetQty: '1200', imageUrl: 'https://picsum.photos/seed/engineplate/600/400', yoyGrowth: [0, 10, 10, 10, 10] }
   ]);
 
   const [industrialServices, setIndustrialServices] = useState<IndustrialService[]>([
-    { id: 's1', name: 'High-Precision VMC Job-Work', description: 'Accuracy within 5 microns on Haas VMC.', price: '1800', annualTargetQty: '2500', imageUrl: 'https://picsum.photos/seed/milling/600/400' },
-    { id: 's2', name: 'Mould Design & Prototyping', description: 'CAD/CAM integrated solution.', price: '45000', annualTargetQty: '24', imageUrl: 'https://picsum.photos/seed/3dprint/600/400' }
+    { id: 's1', name: 'High-Precision VMC Job-Work', description: 'Accuracy within 5 microns on Haas VMC.', price: '1800', annualTargetQty: '2500', imageUrl: 'https://picsum.photos/seed/milling/600/400', yoyGrowth: [0, 15, 15, 15, 15] },
+    { id: 's2', name: 'Mould Design & Prototyping', description: 'CAD/CAM integrated solution.', price: '45000', annualTargetQty: '24', imageUrl: 'https://picsum.photos/seed/3dprint/600/400', yoyGrowth: [0, 10, 10, 10, 10] }
   ]);
 
   const [machineryItems, setMachineryItems] = useState<MachineryItem[]>([
@@ -662,10 +666,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const totalProjectCost = fixedAssetsAtCost + workingCapitalRequirement;
     const totalOwnFunds = (financials.ownCapital || 0) + (financials.loanFriendsFamily || 0);
 
-    const annualProductRevenue = proprietaryProducts.reduce((acc, p) => acc + (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.toString().replace(/,/g, '')) || 0), 0);
-    const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.toString().replace(/,/g, '')) || 0), 0);
-    const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
-    
     const termLoanAmt = totalProjectCost - totalOwnFunds - financials.workingCapitalLimit;
 
     // Amortization Schedule
@@ -696,9 +696,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     let closingCash = workingCapitalRequirement; // Starting buffer
 
     for (let y = 1; y <= 5; y++) {
-      const growth = financials.yearlyGrowthTargets?.[y-1] ?? 0;
-      const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.75) : projections[y-2].revenue * (1 + growth/100);
-      const yearOpEx = monthlyOpExBase * 12 * (1 + (y * 0.05));
+      // Calculate Revenue based on YoY Growth targets from Catalogues
+      let yearRevenue = 0;
+      proprietaryProducts.forEach(p => {
+        const baseRev = (parseFloat(p.price) || 0) * (parseInt(p.annualTargetQty.toString().replace(/,/g, '')) || 0);
+        const growth = (p.yoyGrowth?.[y-1] || 0) / 100;
+        yearRevenue += baseRev * (1 + growth);
+      });
+      industrialServices.forEach(s => {
+        const baseRev = (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.toString().replace(/,/g, '')) || 0);
+        const growth = (s.yoyGrowth?.[y-1] || 0) / 100;
+        yearRevenue += baseRev * (1 + growth);
+      });
+
+      const yearOpEx = monthlyOpExBase * 12 * (1 + ((y-1) * 0.05));
       const yearInterest = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.interest, 0);
       const yearDepreciation = (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate;
       accumulatedDepreciation += yearDepreciation;
@@ -797,26 +808,40 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Proprietary Products</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0', annualTargetQty: '0', imageUrl: '' }])}><Plus className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0', annualTargetQty: '0', imageUrl: '', yoyGrowth: [0, 10, 10, 10, 10] }])}><Plus className="h-4 w-4" /></Button>
                 </div>
                 {proprietaryProducts.map((p, i) => (
-                  <div key={p.id} className="p-4 bg-slate-50 rounded-xl border space-y-4">
+                  <div key={p.id} className="p-6 bg-slate-50 rounded-xl border space-y-6">
                     <Input placeholder="Product Name" value={p.name} onChange={(e) => {
                       const updated = [...proprietaryProducts];
                       updated[i].name = e.target.value;
                       setProprietaryProducts(updated);
-                    }} />
+                    }} className="h-11 bg-white border-slate-200" />
                     <div className="grid grid-cols-2 gap-4">
                       <Input placeholder="Price (₹)" type="number" value={p.price} onChange={(e) => {
                         const updated = [...proprietaryProducts];
                         updated[i].price = e.target.value;
                         setProprietaryProducts(updated);
-                      }} />
+                      }} className="h-11 bg-white border-slate-200" />
                       <Input placeholder="Annual Target Qty" type="number" value={p.annualTargetQty} onChange={(e) => {
                         const updated = [...proprietaryProducts];
                         updated[i].annualTargetQty = e.target.value;
                         setProprietaryProducts(updated);
-                      }} />
+                      }} className="h-11 bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-3">
+                       <Label className="text-[9px] font-bold uppercase text-slate-400">YoY Sales Growth (%)</Label>
+                       <div className="grid grid-cols-5 gap-2">
+                          {p.yoyGrowth?.map((g, gi) => (
+                            <Input key={gi} type="number" value={g} onChange={(e) => {
+                              const updated = [...proprietaryProducts];
+                              const newGrowth = [...(updated[i].yoyGrowth || [0,0,0,0,0])];
+                              newGrowth[gi] = parseInt(e.target.value) || 0;
+                              updated[i].yoyGrowth = newGrowth;
+                              setProprietaryProducts(updated);
+                            }} className="h-8 text-[10px] text-center" />
+                          ))}
+                       </div>
                     </div>
                   </div>
                 ))}
@@ -825,26 +850,40 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-accent pl-4">Industrial Services</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0', annualTargetQty: '0', imageUrl: '' }])}><Plus className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0', annualTargetQty: '0', imageUrl: '', yoyGrowth: [0, 15, 15, 15, 15] }])}><Plus className="h-4 w-4" /></Button>
                 </div>
                 {industrialServices.map((s, i) => (
-                  <div key={s.id} className="p-4 bg-slate-50 rounded-xl border space-y-4">
+                  <div key={s.id} className="p-6 bg-slate-50 rounded-xl border space-y-6">
                     <Input placeholder="Service Name" value={s.name} onChange={(e) => {
                       const updated = [...industrialServices];
                       updated[i].name = e.target.value;
                       setIndustrialServices(updated);
-                    }} />
+                    }} className="h-11 bg-white border-slate-200" />
                     <div className="grid grid-cols-2 gap-4">
                       <Input placeholder="Price/Rate (₹)" type="number" value={s.price} onChange={(e) => {
                         const updated = [...industrialServices];
                         updated[i].price = e.target.value;
                         setIndustrialServices(updated);
-                      }} />
+                      }} className="h-11 bg-white border-slate-200" />
                       <Input placeholder="Annual Load Hours" type="number" value={s.annualTargetQty} onChange={(e) => {
                         const updated = [...industrialServices];
                         updated[i].annualTargetQty = e.target.value;
                         setIndustrialServices(updated);
-                      }} />
+                      }} className="h-11 bg-white border-slate-200" />
+                    </div>
+                    <div className="space-y-3">
+                       <Label className="text-[9px] font-bold uppercase text-slate-400">YoY Revenue Growth (%)</Label>
+                       <div className="grid grid-cols-5 gap-2">
+                          {s.yoyGrowth?.map((g, gi) => (
+                            <Input key={gi} type="number" value={g} onChange={(e) => {
+                              const updated = [...industrialServices];
+                              const newGrowth = [...(updated[i].yoyGrowth || [0,0,0,0,0])];
+                              newGrowth[gi] = parseInt(e.target.value) || 0;
+                              updated[i].yoyGrowth = newGrowth;
+                              setIndustrialServices(updated);
+                            }} className="h-8 text-[10px] text-center" />
+                          ))}
+                       </div>
                     </div>
                   </div>
                 ))}
@@ -978,10 +1017,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                            </button>
                          </div>
                          
-                         {section.id === 'executiveSummary' && foundationalData.executiveSummary && (
-                           <div className="editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData.executiveSummary }} />
-                         )}
-
                          {section.id === 'projectCost' && (
                            <div className="space-y-10">
                               <UITable className="border-2 border-slate-900">
@@ -1019,7 +1054,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
                          {section.id === 'financialProjections' && (
                            <div className="space-y-10">
-                              <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">Projected Profitability Matrix (₹ Laks)</h3>
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">Projected Profitability Matrix (₹ Lakhs)</h3>
                               <UITable className="border-2 border-slate-900">
                                 <UITableHeader className="bg-slate-900 text-white">
                                   <UITableRow className="hover:bg-slate-900 border-none">
@@ -1037,7 +1072,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                                     {calculations.projections.map((p, idx) => <UITableCell key={idx} className="text-center font-display font-bold text-[10px]">{(p.revenue / 100000).toFixed(2)}</UITableCell>)}
                                   </UITableRow>
                                   <UITableRow className="border-b border-slate-200">
-                                    <UITableCell className="font-bold text-[10px] px-4 py-4">EBIDTA</UITableCell>
+                                    <UITableCell className="font-bold text-[10px] px-4 py-4">EBITDA</UITableCell>
                                     {calculations.projections.map((p, idx) => <UITableCell key={idx} className="text-center font-display font-bold text-[10px]">{(p.ebitda / 100000).toFixed(2)}</UITableCell>)}
                                   </UITableRow>
                                   <UITableRow className="border-b border-slate-200">
@@ -1079,12 +1114,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                            </div>
                          )}
 
-                         {!['executiveSummary', 'projectCost', 'financialProjections', 'amortizationSchedule'].includes(section.id) && foundationalData[section.id] && (
-                            <div className="editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[sectionId] }} />
+                         {foundationalData[section.id] && (
+                            <div className="editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[section.id] }} />
                          )}
                          
                          {/* Fallback for empty sections */}
-                         {!['executiveSummary', 'projectCost', 'financialProjections', 'amortizationSchedule'].includes(section.id) && !foundationalData[section.id] && (
+                         {!['projectCost', 'financialProjections', 'amortizationSchedule'].includes(section.id) && !foundationalData[section.id] && (
                            <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl opacity-20">
                               <FileText className="h-10 w-10 mb-4" />
                               <p className="text-[10px] font-bold uppercase tracking-widest">Section Metadata Empty</p>
@@ -1166,4 +1201,3 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
-

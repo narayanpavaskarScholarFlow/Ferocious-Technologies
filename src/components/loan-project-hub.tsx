@@ -31,74 +31,45 @@ import {
   Save,
   Upload,
   Box,
-  Compass,
   ShieldCheck,
   Zap,
-  UserCircle,
-  Shield,
-  ZoomIn,
-  ZoomOut,
   Calculator,
   Clock,
   Factory,
-  Table as TableIcon,
-  Activity,
-  FileCheck,
   Settings2,
-  Gauge,
   X,
   Receipt,
   FileBarChart,
-  Scale,
   Edit3,
   Maximize2,
-  RefreshCcw,
   Hammer,
   ShieldAlert,
   Info,
-  BarChart3,
   LineChart as LineChartIcon,
-  ClipboardList,
   Check,
   Building2,
   CreditCard,
-  Briefcase,
-  Monitor,
-  LayoutGrid,
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Quote,
-  Undo,
-  Redo,
-  TableProperties,
-  MoreVertical,
-  Strikethrough,
-  Heading1,
-  Heading2,
-  Heading3,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Minus,
-  Eraser,
   Type,
   Baseline,
   Square,
   Highlighter,
   Palette,
-  Circle,
   ArrowUpRight,
-  MousePointer2,
   ChevronDown,
   Download,
   Send,
-  ExternalLink,
-  ListTree,
-  Coins
+  Coins,
+  History,
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  Undo,
+  Redo,
+  TableProperties,
+  Heading1,
+  AlignJustify
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -109,20 +80,13 @@ import {
   CartesianGrid, 
   Tooltip as ChartTooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  Legend,
   Cell
 } from 'recharts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import Image from 'next/image';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -144,7 +108,7 @@ import { Slider } from '@/components/ui/slider';
 // Tiptap Imports for Rich Text
 import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import UnderlineExtension from '@tiptap/extension-underline';
+import Underline from '@tiptap/extension-underline';
 import TiptapTable from '@tiptap/extension-table';
 import TiptapTableRow from '@tiptap/extension-table-row';
 import TiptapTableCell from '@tiptap/extension-table-cell';
@@ -330,7 +294,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
       CustomBulletList,
       CustomOrderedList,
       ListItem,
-      UnderlineExtension,
+      Underline,
       TextAlign.configure({ types: ['heading', 'paragraph', 'bulletList', 'orderedList'] }),
       Link.configure({ openOnClick: false }),
       TiptapTable.configure({ resizable: true }),
@@ -485,7 +449,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: { value: string, onCha
             <Italic className="h-3.5 w-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/10", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
-            <Underline className="h-3.5 w-3.5" />
+            <UnderlineIcon className="h-3.5 w-3.5" />
           </Button>
           
           <DropdownMenu>
@@ -570,6 +534,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [activeEditingSection, setActiveEditingSection] = useState<string>('coverDetails');
   const [editingSectionInPreview, setEditingSectionInPreview] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [isCostBreakupOpen, setIsCostBreakupOpen] = useState(false);
 
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
   const { data: savedStrategy } = useDoc<any>(strategyRef);
@@ -579,20 +544,20 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [checklist, setChecklist] = useState<Record<string, boolean>>(initialChecklist);
 
   const [foundationalData, setFormData] = useState<any>({
-    projectName: '',
+    projectName: 'Establishment of High-Precision VMC Tool Room',
     reportMainTitle: 'Techno-Economic Feasibility Analysis',
     reportSubTitle: 'Detailed Project Report (DPR)',
-    businessFirmName: '',
-    businessIndustry: '',
-    natureOfBusiness: '',
-    legalConstitution: '',
-    businessAddress: '',
-    pinCode: '',
-    contactPhone: '',
-    typeOfLoanNeeded: '',
-    promoterName: '',
-    location: '',
-    totalLoanRequirement: '0',
+    businessFirmName: 'Ferocious Tech',
+    businessIndustry: 'Precision Engineering & Tool Manufacturing',
+    natureOfBusiness: 'Design and manufacturing of high-precision moulds, dies, jigs, and aerospace components.',
+    legalConstitution: 'Proprietorship',
+    businessAddress: 'Plot No. 45, Industrial Estate, Phase II, Pune, Maharashtra',
+    pinCode: '411026',
+    contactPhone: '+91 98765 43210',
+    typeOfLoanNeeded: 'Term Loan & Working Capital (OD/CC)',
+    promoterName: 'Jayant Patil',
+    location: 'Pune, MH',
+    totalLoanRequirement: '5500000',
     coverLogoSize: 192,
     coverTitleFontSize: 60,
     coverTitleColor: '#001F3D',
@@ -601,33 +566,45 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     coverProjectEntityMarginTop: 80,
   });
 
-  const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([]);
-  const [industrialServices, setIndustrialServices] = useState<IndustrialService[]>([]);
-  const [machineryItems, setMachineryItems] = useState<MachineryItem[]>([]);
+  const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
+    { id: 'p1', name: 'Precision Curved Conduit Connector', market: 'Automotive/Electrical', price: '450', annualTargetQty: '5000', imageUrl: 'https://picsum.photos/seed/conduit/600/400' },
+    { id: 'p2', name: 'VMC Machined Engine Plate', market: 'Heavy Machinery', price: '2800', annualTargetQty: '1200', imageUrl: 'https://picsum.photos/seed/engineplate/600/400' }
+  ]);
+
+  const [industrialServices, setIndustrialServices] = useState<IndustrialService[]>([
+    { id: 's1', name: 'High-Precision VMC Job-Work', description: 'Accuracy within 5 microns on Haas VMC.', price: '1800', annualTargetQty: '2500', imageUrl: 'https://picsum.photos/seed/milling/600/400' },
+    { id: 's2', name: 'Mould Design & Prototyping', description: 'CAD/CAM integrated solution.', price: '45000', annualTargetQty: '24', imageUrl: 'https://picsum.photos/seed/3dprint/600/400' }
+  ]);
+
+  const [machineryItems, setMachineryItems] = useState<MachineryItem[]>([
+    { id: 'm1', name: 'VMC Haas VF-2', qty: 1, rate: 3500000, total: 3500000 },
+    { id: 'm2', name: 'Precision Grinding Unit', qty: 1, rate: 800000, total: 800000 },
+    { id: 'm3', name: 'CMM Inspection Probe', qty: 1, rate: 200000, total: 200000 }
+  ]);
 
   const [financials, setFinancials] = useState({
     loanROI: 10.75,
     loanTenure: 84, 
     loanMoratorium: 6,
-    expenseRent: 0,
-    expensePower: 0,
-    expenseMaintenance: 0,
-    expenseConsumables: 0,
-    investMachinery: 0,
-    investCivil: 0,
-    investElectrical: 0,
-    investFurniture: 0,
-    investPreOp: 0,
-    investSoftware: 0,
-    investSystem: 0,
-    investShedAdvance: 0,
+    expenseRent: 65000,
+    expensePower: 25000,
+    expenseMaintenance: 15000,
+    expenseConsumables: 40000,
+    investMachinery: 4500000,
+    investCivil: 200000,
+    investElectrical: 300000,
+    investFurniture: 150000,
+    investPreOp: 200000,
+    investSoftware: 250000,
+    investSystem: 150000,
+    investShedAdvance: 400000,
     yearlyGrowthTargets: [0, 15, 15, 15, 15],
     targetNetMargin: 20,
-    ownCapital: 0,
-    loanFriendsFamily: 0,
-    workingCapitalLimit: 0,
-    wcInterestRate: 10.75,
-    wcMarginPercent: 20, 
+    ownCapital: 1500000,
+    loanFriendsFamily: 500000,
+    workingCapitalLimit: 1200000,
+    wcInterestRate: 11.5,
+    wcMarginPercent: 25, 
     variableCostPercent: 60, 
   });
 
@@ -689,8 +666,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     const annualServiceRevenue = industrialServices.reduce((acc, s) => acc + (parseFloat(s.price) || 0) * (parseInt(s.annualTargetQty.toString().replace(/,/g, '')) || 0), 0);
     const totalCapacityAnnualRevenue = annualProductRevenue + annualServiceRevenue;
     
-    const suggestedWCLimit = financials.workingCapitalLimit || (totalCapacityAnnualRevenue * 0.25 * 0.75);
-    const termLoanAmt = totalProjectCost - totalOwnFunds - suggestedWCLimit;
+    const termLoanAmt = totalProjectCost - totalOwnFunds - financials.workingCapitalLimit;
 
     // Amortization Schedule
     const monthlyRate = (financials.loanROI / 100) / 12;
@@ -714,14 +690,14 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     }
 
     const projections: any[] = [];
-    const balanceSheet: any[] = [];
     let accumulatedDepreciation = 0;
     const depreciationRate = 0.15;
     let currentEquity = totalOwnFunds;
+    let closingCash = workingCapitalRequirement; // Starting buffer
 
     for (let y = 1; y <= 5; y++) {
       const growth = financials.yearlyGrowthTargets?.[y-1] ?? 0;
-      const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.7) : projections[y-2].revenue * (1 + growth/100);
+      const yearRevenue = y === 1 ? (totalCapacityAnnualRevenue * 0.75) : projections[y-2].revenue * (1 + growth/100);
       const yearOpEx = monthlyOpExBase * 12 * (1 + (y * 0.05));
       const yearInterest = schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.interest, 0);
       const yearDepreciation = (fixedAssetsAtCost - accumulatedDepreciation) * depreciationRate;
@@ -731,14 +707,21 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const yearPBT = yearEBITDA - yearInterest - yearDepreciation;
       const yearPAT = yearPBT > 0 ? yearPBT * 0.75 : 0;
       
-      currentEquity += yearPAT * 0.8; // Reinvesting 80%
+      currentEquity += yearPAT;
+      closingCash += (yearPAT + yearDepreciation) - schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.principal, 0);
 
       projections.push({
         year: `Year ${y}`,
         revenue: yearRevenue,
         ebitda: yearEBITDA,
         pat: yearPAT,
-        dscr: ((yearPAT + yearDepreciation + yearInterest) / (yearInterest + (emi * 12 - yearInterest) || 1)).toFixed(2)
+        interest: yearInterest,
+        depreciation: yearDepreciation,
+        principal: schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.principal, 0),
+        equity: currentEquity,
+        cash: closingCash,
+        loanBal: schedule[y * 12 - 1]?.balance || 0,
+        dscr: ((yearPAT + yearDepreciation + yearInterest) / (yearInterest + (schedule.slice((y - 1) * 12, y * 12).reduce((acc, s) => acc + s.principal, 0)) || 1)).toFixed(2)
       });
     }
 
@@ -748,7 +731,9 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       totalOwnFunds,
       projections,
       avgDSCR: (projections.reduce((acc, p) => acc + parseFloat(p.dscr), 0) / 5).toFixed(2),
-      monthlySchedule: schedule
+      monthlySchedule: schedule,
+      fixedAssetsAtCost,
+      workingCapitalRequirement
     };
   }, [financials, proprietaryProducts, industrialServices]);
 
@@ -808,12 +793,74 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </TabsContent>
 
         <TabsContent value="catalogues" className="m-0 space-y-10">
-           {/* Catalogue matrices would go here */}
-           <Card className="p-20 text-center opacity-30 uppercase font-bold text-xs">Catalogues Node Ready</Card>
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Proprietary Products</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setProprietaryProducts([...proprietaryProducts, { id: Date.now().toString(), name: '', market: '', price: '0', annualTargetQty: '0', imageUrl: '' }])}><Plus className="h-4 w-4" /></Button>
+                </div>
+                {proprietaryProducts.map((p, i) => (
+                  <div key={p.id} className="p-4 bg-slate-50 rounded-xl border space-y-4">
+                    <Input placeholder="Product Name" value={p.name} onChange={(e) => {
+                      const updated = [...proprietaryProducts];
+                      updated[i].name = e.target.value;
+                      setProprietaryProducts(updated);
+                    }} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input placeholder="Price (₹)" type="number" value={p.price} onChange={(e) => {
+                        const updated = [...proprietaryProducts];
+                        updated[i].price = e.target.value;
+                        setProprietaryProducts(updated);
+                      }} />
+                      <Input placeholder="Annual Target Qty" type="number" value={p.annualTargetQty} onChange={(e) => {
+                        const updated = [...proprietaryProducts];
+                        updated[i].annualTargetQty = e.target.value;
+                        setProprietaryProducts(updated);
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </Card>
+
+              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] space-y-8">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-accent pl-4">Industrial Services</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setIndustrialServices([...industrialServices, { id: Date.now().toString(), name: '', description: '', price: '0', annualTargetQty: '0', imageUrl: '' }])}><Plus className="h-4 w-4" /></Button>
+                </div>
+                {industrialServices.map((s, i) => (
+                  <div key={s.id} className="p-4 bg-slate-50 rounded-xl border space-y-4">
+                    <Input placeholder="Service Name" value={s.name} onChange={(e) => {
+                      const updated = [...industrialServices];
+                      updated[i].name = e.target.value;
+                      setIndustrialServices(updated);
+                    }} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input placeholder="Price/Rate (₹)" type="number" value={s.price} onChange={(e) => {
+                        const updated = [...industrialServices];
+                        updated[i].price = e.target.value;
+                        setIndustrialServices(updated);
+                      }} />
+                      <Input placeholder="Annual Load Hours" type="number" value={s.annualTargetQty} onChange={(e) => {
+                        const updated = [...industrialServices];
+                        updated[i].annualTargetQty = e.target.value;
+                        setIndustrialServices(updated);
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </Card>
+           </div>
         </TabsContent>
 
         <TabsContent value="financials" className="m-0 space-y-10">
            <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+              <div className="flex justify-between items-center px-4">
+                <h3 className="text-xl font-display font-bold uppercase tracking-tight text-[#001F3D]">Projected Financial Core</h3>
+                <Button variant="outline" className="rounded-xl font-bold uppercase text-[9px] tracking-widest gap-2" onClick={() => setIsCostBreakupOpen(true)}>
+                  <Calculator className="h-4 w-4" /> View Cost Breakup
+                </Button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Project Cost</p>
@@ -832,10 +879,60 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <p className="text-xl font-display font-bold text-purple-700">{calculations.avgDSCR}</p>
                  </div>
               </div>
+
+              <div className="pt-8 border-t space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Loan ROI (%)</Label>
+                    <Input type="number" step="0.25" value={financials.loanROI} onChange={(e) => setFinancials({...financials, loanROI: parseFloat(e.target.value)})} />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Tenure (Months)</Label>
+                    <Input type="number" value={financials.loanTenure} onChange={(e) => setFinancials({...financials, loanTenure: parseInt(e.target.value)})} />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">WC Limit (₹)</Label>
+                    <Input type="number" value={financials.workingCapitalLimit} onChange={(e) => setFinancials({...financials, workingCapitalLimit: parseInt(e.target.value)})} />
+                  </div>
+                </div>
+              </div>
+           </Card>
+
+           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem]">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D] mb-8 border-l-4 border-primary pl-4">Yearly Growth Targets (%)</h3>
+              <div className="grid grid-cols-5 gap-6">
+                {financials.yearlyGrowthTargets.map((g, i) => (
+                  <div key={i} className="space-y-3">
+                    <Label className="text-[9px] font-bold text-slate-400 uppercase">Year {i+1}</Label>
+                    <Input type="number" value={g} onChange={(e) => {
+                      const updated = [...financials.yearlyGrowthTargets];
+                      updated[i] = parseInt(e.target.value) || 0;
+                      setFinancials({...financials, yearlyGrowthTargets: updated});
+                    }} className="bg-slate-50" />
+                  </div>
+                ))}
+              </div>
            </Card>
         </TabsContent>
 
         <TabsContent value="display" className="m-0 flex flex-col items-center">
+           <div className="w-full bg-slate-900/5 p-8 border-b border-slate-200/60 sticky top-16 z-50 flex justify-between items-center backdrop-blur-md no-print">
+              <div className="flex items-center gap-6">
+                 <div className="flex items-center gap-3">
+                    <Printer className="h-5 w-5 text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Print Protocol Active</span>
+                 </div>
+                 <div className="flex items-center gap-4 bg-white/50 p-1.5 rounded-xl border border-slate-200">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}><ZoomOut className="h-4 w-4" /></Button>
+                    <span className="text-[10px] font-bold font-code w-12 text-center">{Math.round(zoom * 100)}%</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setZoom(Math.min(1.5, zoom + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
+                 </div>
+              </div>
+              <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-12 font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group" onClick={handlePrint}>
+                <Send className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /> Print PDF Matrix
+              </Button>
+           </div>
+
            <div className="w-full overflow-x-auto pb-20 px-4 scrollbar-hide">
               <div 
                 id="institutional-report-matrix"
@@ -857,6 +954,18 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                          <h1 className="font-display font-bold tracking-tighter uppercase leading-none" style={{ fontSize: `${foundationalData.coverTitleFontSize || 60}px`, color: foundationalData.coverTitleColor || '#001F3D' }}>{foundationalData.reportMainTitle}</h1>
                          <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.4em]">{foundationalData.reportSubTitle}</p>
                       </div>
+                      
+                      <div className="w-full border-t-2 border-slate-100 pt-16 flex flex-col items-center" style={{ marginTop: `${foundationalData.coverProjectEntityMarginTop || 80}px` }}>
+                         <div className="space-y-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Identity</p>
+                            <h2 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{foundationalData.projectName}</h2>
+                         </div>
+                         <div className="mt-12 space-y-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Institutional Lead</p>
+                            <h3 className="text-lg font-bold text-[#001F3D] uppercase">{foundationalData.businessFirmName}</h3>
+                            <p className="text-xs font-bold text-slate-500 uppercase mt-1">{foundationalData.businessAddress} • {foundationalData.pinCode}</p>
+                         </div>
+                      </div>
                    </div>
 
                    {REPORT_SEQUENCE.map((section) => (
@@ -868,9 +977,119 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                               <Edit3 className="h-3.5 w-3.5" /> Edit Matrix Node
                            </button>
                          </div>
-                         <div className="space-y-6">
-                            {renderActiveEditor(section.id)}
-                         </div>
+                         
+                         {section.id === 'executiveSummary' && foundationalData.executiveSummary && (
+                           <div className="editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData.executiveSummary }} />
+                         )}
+
+                         {section.id === 'projectCost' && (
+                           <div className="space-y-10">
+                              <UITable className="border-2 border-slate-900">
+                                <UITableHeader className="bg-slate-900 text-white">
+                                  <UITableRow className="hover:bg-slate-900 border-none">
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] px-6 py-4">Component</UITableHead>
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] text-right px-6">Amount (₹)</UITableHead>
+                                  </UITableRow>
+                                </UITableHeader>
+                                <UITableBody>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[11px] px-6 py-4">Machinery & Equipment</UITableCell>
+                                    <UITableCell className="text-right font-display font-bold text-[11px] px-6">₹ {financials.investMachinery.toLocaleString()}</UITableCell>
+                                  </UITableRow>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[11px] px-6 py-4">Civil & Electrical Works</UITableCell>
+                                    <UITableCell className="text-right font-display font-bold text-[11px] px-6">₹ {(financials.investCivil + financials.investElectrical).toLocaleString()}</UITableCell>
+                                  </UITableRow>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[11px] px-6 py-4">Software & IT Systems</UITableCell>
+                                    <UITableCell className="text-right font-display font-bold text-[11px] px-6">₹ {(financials.investSoftware + financials.investSystem).toLocaleString()}</UITableCell>
+                                  </UITableRow>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[11px] px-6 py-4">Working Capital Margin (3 Months)</UITableCell>
+                                    <UITableCell className="text-right font-display font-bold text-[11px] px-6">₹ {calculations.workingCapitalRequirement.toLocaleString()}</UITableCell>
+                                  </UITableRow>
+                                  <UITableRow className="bg-slate-50">
+                                    <UITableCell className="font-black text-[12px] px-6 py-6 uppercase">Total Project Cost</UITableCell>
+                                    <UITableCell className="text-right font-display font-black text-[14px] px-6">₹ {calculations.totalProjectCost.toLocaleString()}</UITableCell>
+                                  </UITableRow>
+                                </UITableBody>
+                              </UITable>
+                           </div>
+                         )}
+
+                         {section.id === 'financialProjections' && (
+                           <div className="space-y-10">
+                              <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">Projected Profitability Matrix (₹ Laks)</h3>
+                              <UITable className="border-2 border-slate-900">
+                                <UITableHeader className="bg-slate-900 text-white">
+                                  <UITableRow className="hover:bg-slate-900 border-none">
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] px-4 py-4">Indicators</UITableHead>
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] text-center">Year 1</UITableHead>
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] text-center">Year 2</UITableHead>
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] text-center">Year 3</UITableHead>
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] text-center">Year 4</UITableHead>
+                                    <UITableHead className="text-white uppercase font-bold text-[10px] text-center">Year 5</UITableHead>
+                                  </UITableRow>
+                                </UITableHeader>
+                                <UITableBody>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[10px] px-4 py-4">Revenue</UITableCell>
+                                    {calculations.projections.map((p, idx) => <UITableCell key={idx} className="text-center font-display font-bold text-[10px]">{(p.revenue / 100000).toFixed(2)}</UITableCell>)}
+                                  </UITableRow>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[10px] px-4 py-4">EBIDTA</UITableCell>
+                                    {calculations.projections.map((p, idx) => <UITableCell key={idx} className="text-center font-display font-bold text-[10px]">{(p.ebitda / 100000).toFixed(2)}</UITableCell>)}
+                                  </UITableRow>
+                                  <UITableRow className="border-b border-slate-200">
+                                    <UITableCell className="font-bold text-[10px] px-4 py-4">PAT</UITableCell>
+                                    {calculations.projections.map((p, idx) => <UITableCell key={idx} className="text-center font-display font-bold text-[10px] text-emerald-600">{(p.pat / 100000).toFixed(2)}</UITableCell>)}
+                                  </UITableRow>
+                                </UITableBody>
+                              </UITable>
+                           </div>
+                         )}
+
+                         {section.id === 'amortizationSchedule' && (
+                           <div className="space-y-8">
+                             <h3 className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">84-Month Debt Settlement Schedule</h3>
+                             <div className="grid grid-cols-2 gap-10">
+                               {[0, 42].map(offset => (
+                                 <UITable key={offset} className="border border-slate-200 text-[9px]">
+                                   <UITableHeader className="bg-slate-50">
+                                     <UITableRow>
+                                       <UITableHead className="font-bold text-[8px] uppercase py-2">Mth</UITableHead>
+                                       <UITableHead className="font-bold text-[8px] uppercase py-2">Prin.</UITableHead>
+                                       <UITableHead className="font-bold text-[8px] uppercase py-2">Int.</UITableHead>
+                                       <UITableHead className="font-bold text-[8px] uppercase py-2 text-right">Bal.</UITableHead>
+                                     </UITableRow>
+                                   </UITableHeader>
+                                   <UITableBody>
+                                     {calculations.monthlySchedule.slice(offset, offset + 42).map(s => (
+                                       <UITableRow key={s.month} className="h-6">
+                                         <UITableCell className="font-bold">{s.month}</UITableCell>
+                                         <UITableCell>{Math.round(s.principal).toLocaleString()}</UITableCell>
+                                         <UITableCell>{Math.round(s.interest).toLocaleString()}</UITableCell>
+                                         <UITableCell className="text-right font-medium">{Math.round(s.balance).toLocaleString()}</UITableCell>
+                                       </UITableRow>
+                                     ))}
+                                   </UITableBody>
+                                 </UITable>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+
+                         {!['executiveSummary', 'projectCost', 'financialProjections', 'amortizationSchedule'].includes(section.id) && foundationalData[section.id] && (
+                            <div className="editor-content-preview" dangerouslySetInnerHTML={{ __html: foundationalData[sectionId] }} />
+                         )}
+                         
+                         {/* Fallback for empty sections */}
+                         {!['executiveSummary', 'projectCost', 'financialProjections', 'amortizationSchedule'].includes(section.id) && !foundationalData[section.id] && (
+                           <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl opacity-20">
+                              <FileText className="h-10 w-10 mb-4" />
+                              <p className="text-[10px] font-bold uppercase tracking-widest">Section Metadata Empty</p>
+                           </div>
+                         )}
                        </div>
                      )
                    ))}
@@ -895,6 +1114,56 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isCostBreakupOpen} onOpenChange={setIsCostBreakupOpen}>
+        <DialogContent className="max-w-2xl bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
+          <div className="p-10 bg-[#001F3D] text-white flex items-center justify-between">
+             <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary rounded-2xl"><Calculator className="h-8 w-8" /></div>
+                <div>
+                   <h3 className="text-2xl font-display font-bold uppercase tracking-tight">Total Project Breakup</h3>
+                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital & Operational Investment Matrix</p>
+                </div>
+             </div>
+             <Button variant="ghost" size="icon" onClick={() => setIsCostBreakupOpen(false)} className="text-white/40 hover:text-white"><X className="h-6 w-6" /></Button>
+          </div>
+          <ScrollArea className="max-h-[500px] p-10">
+             <div className="space-y-10">
+                <div className="space-y-6">
+                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l-4 border-primary pl-4">Fixed Capital (CAPEX)</h4>
+                   <div className="space-y-3">
+                      {[
+                        { label: 'Machinery & Equipment', val: financials.investMachinery },
+                        { label: 'Civil & Interior Works', val: financials.investCivil },
+                        { label: 'Electrical Infrastructure', val: financials.investElectrical },
+                        { label: 'Industrial Furniture', val: financials.investFurniture },
+                        { label: 'Engineering Software (CAD/CAM)', val: financials.investSoftware },
+                        { label: 'Pre-operative Expenses', val: financials.investPreOp },
+                        { label: 'Shed/Security Deposit', val: financials.investShedAdvance },
+                      ].map(item => (
+                        <div key={item.label} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+                           <span className="text-[11px] font-bold text-slate-600 uppercase">{item.label}</span>
+                           <span className="text-xs font-display font-bold text-[#001F3D]">₹ {item.val.toLocaleString()}</span>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+                <div className="space-y-6">
+                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-l-4 border-accent pl-4">Operational Liquidity (OPEX Buffer)</h4>
+                   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase">Working Capital Margin (3 Months)</span>
+                      <span className="text-xs font-display font-bold text-[#001F3D]">₹ {calculations.workingCapitalRequirement.toLocaleString()}</span>
+                   </div>
+                </div>
+             </div>
+          </ScrollArea>
+          <div className="p-10 border-t bg-slate-50/50 flex justify-between items-center">
+             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aggregate Investment</span>
+             <span className="text-2xl font-display font-bold text-[#001F3D]">₹ {calculations.totalProjectCost.toLocaleString()}</span>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

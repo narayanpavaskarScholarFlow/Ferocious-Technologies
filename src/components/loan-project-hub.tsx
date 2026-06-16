@@ -95,7 +95,10 @@ import {
   MousePointer2,
   ChevronDown,
   Download,
-  Send
+  Send,
+  ExternalLink,
+  ListTree,
+  Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -309,7 +312,7 @@ const BULLET_STYLES = [
 
 const ORDERED_STYLES = [
   { label: '1. 2. 3.', value: 'decimal' },
-  { label: 'a. b. c.', value: 'lower-alpha' },
+  { label: 'a. b. b.', value: 'lower-alpha' },
   { label: 'i. ii. iii.', value: 'lower-roman' },
   { label: 'A. B. C.', value: 'upper-alpha' },
   { label: 'I. II. III.', value: 'upper-roman' },
@@ -568,6 +571,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [editingSectionInPreview, setEditingSectionInPreview] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
+  const [isCostBreakupOpen, setIsCostBreakupOpen] = useState(false);
   const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
   const [pendingDrawingFile, setPendingDrawingFile] = useState<string | undefined>();
 
@@ -1269,6 +1273,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                     <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Executive Summary Snapshot</h3>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Project vitals and funding nodes.</p>
                  </div>
+                 <Button 
+                    variant="outline" 
+                    className="h-10 px-6 rounded-xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm hover:bg-primary/5"
+                    onClick={() => setIsCostBreakupOpen(true)}
+                 >
+                    <ListTree className="h-4 w-4" /> View Cost Breakup
+                 </Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
@@ -1367,7 +1378,131 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Project Cost Breakup Dialog */}
+      <Dialog open={isCostBreakupOpen} onOpenChange={setIsCostBreakupOpen}>
+        <DialogContent className="max-w-3xl h-[80vh] bg-white border-none shadow-2xl rounded-[3rem] p-0 overflow-hidden flex flex-col">
+          <div className="p-8 bg-[#001F3D] text-white flex items-center justify-between shrink-0">
+             <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20"><Calculator className="h-8 w-8" /></div>
+                <div>
+                   <DialogTitle className="text-2xl font-display font-bold uppercase tracking-tight">Total Project Cost Breakup</DialogTitle>
+                   <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Institutional Valuation Ledger v2.4</DialogDescription>
+                </div>
+             </div>
+             <div className="text-right">
+                <p className="text-[10px] text-white/40 font-bold uppercase mb-1">Total Valuation</p>
+                <h3 className="text-3xl font-display font-bold text-white">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</h3>
+             </div>
+          </div>
+
+          <ScrollArea className="flex-1 p-10">
+             <div className="space-y-12 pb-10">
+                {/* Fixed Capital (CAPEX) Section */}
+                <div className="space-y-6">
+                   <div className="flex items-center justify-between border-l-4 border-primary pl-4">
+                      <div className="flex items-center gap-3">
+                        <Box className="h-5 w-5 text-primary" />
+                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Fixed Capital Matrix (CAPEX)</h4>
+                      </div>
+                      <Badge className="bg-primary/5 text-primary border-none text-[9px] font-bold">Total: ₹ {calculations.fixedCapital.toLocaleString('en-IN')}</Badge>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 gap-3">
+                      <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100 group hover:border-primary/20 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D] uppercase">Machinery & Equipment</span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">{machineryItems.length} Identified Units</span>
+                         </div>
+                         <span className="text-sm font-bold text-slate-700">₹ {financials.investMachinery.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100 group hover:border-primary/20 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D] uppercase">Civil & Interior Works</span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Flooring & Partitions</span>
+                         </div>
+                         <span className="text-sm font-bold text-slate-700">₹ {financials.investCivil.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100 group hover:border-primary/20 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D] uppercase">Electrical Installations</span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Cabling & Lighting</span>
+                         </div>
+                         <span className="text-sm font-bold text-slate-700">₹ {financials.investElectrical.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100 group hover:border-primary/20 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D] uppercase">Software & ERP Nodes</span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">System Licenses</span>
+                         </div>
+                         <span className="text-sm font-bold text-slate-700">₹ {financials.investSoftware.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100 group hover:border-primary/20 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D] uppercase">Pre-operative Expenses</span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Admin & Initial Setup</span>
+                         </div>
+                         <span className="text-sm font-bold text-slate-700">₹ {financials.investPreOp.toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100 group hover:border-primary/20 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-[#001F3D] uppercase">Rental / Shed Deposits</span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Lease Commitments</span>
+                         </div>
+                         <span className="text-sm font-bold text-slate-700">₹ {financials.investShedAdvance.toLocaleString('en-IN')}</span>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Working Capital Liquidity Section */}
+                <div className="space-y-6">
+                   <div className="flex items-center justify-between border-l-4 border-emerald-500 pl-4">
+                      <div className="flex items-center gap-3">
+                        <Coins className="h-5 w-5 text-emerald-500" />
+                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Operational Liquidity (OPEX Buffer)</h4>
+                      </div>
+                      <Badge className="bg-emerald-50 text-emerald-700 border-none text-[9px] font-bold">Term: 3 Months</Badge>
+                   </div>
+                   
+                   <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex items-center justify-between">
+                      <div className="space-y-1">
+                         <span className="text-[11px] font-bold text-emerald-800 uppercase">Working Capital Requirement</span>
+                         <p className="text-[9px] text-emerald-600/70 font-medium">3-Month buffer for Rent, Power, Consumables & Maintenance.</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-2xl font-display font-bold text-emerald-700">₹ {calculations.workingCapitalValue.toLocaleString('en-IN')}</p>
+                         <p className="text-[8px] font-bold text-emerald-500 uppercase mt-1">₹ {calculations.monthlyOpEx.toLocaleString('en-IN')} / Month</p>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Final Reconciliation Node */}
+                <div className="pt-10 border-t-2 border-slate-900 flex justify-between items-end">
+                   <div className="space-y-2">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">Final Project Valuation</h4>
+                      <p className="text-xs text-slate-500 font-medium italic">* Sum of all Fixed Capital and Operational Liquidity buffers.</p>
+                   </div>
+                   <div className="text-right">
+                      <span className="text-5xl font-display font-bold text-[#001F3D] tracking-tighter">₹ {calculations.totalProjectCost.toLocaleString('en-IN')}</span>
+                   </div>
+                </div>
+             </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center shrink-0">
+             <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Audit Reconciliation Active</span>
+             </div>
+             <Button className="h-12 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] shadow-xl" onClick={() => setIsCostBreakupOpen(false)}>Close Ledger</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

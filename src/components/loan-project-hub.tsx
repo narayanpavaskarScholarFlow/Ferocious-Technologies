@@ -94,7 +94,8 @@ import {
   ArrowUpRight,
   MousePointer2,
   ChevronDown,
-  Download
+  Download,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -704,6 +705,13 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     if (!silent) toast({ title: "Strategy Matrix Committed", description: "All strategic nodes synchronized with master ledger." });
   }, [foundationalData, proprietaryProducts, industrialServices, machineryItems, financials, checklist, strategyRef, toast]);
 
+  const handlePrint = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.focus();
+      window.print();
+    }
+  }, []);
+
   const calculations = useMemo(() => {
     const fixedAssetsAtCost = (financials.investMachinery || 0) + 
                             (financials.investCivil || 0) + 
@@ -806,7 +814,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
       const numerator = yearPAT + yearDepreciation + yearInterest;
       const interestPayment = yearInterest;
       const termLoanPrincipal = yearPrincipal;
-      const wcPrincipal = 0; // Assume revolving for MVP
+      const wcPrincipal = 0; // Assume revolving for NPV
       const totalRepayment = interestPayment + termLoanPrincipal + wcPrincipal;
       const dscr = numerator / (totalRepayment || 1);
 
@@ -1958,6 +1966,32 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
             </div>
           </NoteWrapper>
         );
+      case 'roadmap':
+        return (
+          <NoteWrapper sectionId={sectionId}>
+            <div className="space-y-6">
+               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest px-1">5-Year Strategic Yield Road Map</h3>
+               <div className="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-sm">
+                  <table className="w-full text-left min-w-[800px]">
+                     <thead className="bg-slate-50 border-b-2 border-slate-900">
+                        <tr>
+                           <th className="p-4 text-[9px] font-bold uppercase border-r border-slate-200 w-[20%]">Performance Particulars</th>
+                           {calculations.projections.map((p: any)=><th key={p.year} className="p-4 text-[9px] font-bold uppercase text-right border-r border-slate-200 last:border-0">{p.year}</th>)}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        <tr className="border-b font-bold"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">Income from Operations</td>{calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.revenue||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="border-b"><td className="p-4 text-[10px] uppercase border-r bg-slate-50">EBITDA Node</td>{calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r last:border-0">₹ {(p.ebitda||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}</tr>
+                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-900">
+                           <td className="p-4 text-[11px] uppercase border-r border-slate-900">Profit After Tax (PAT)</td>
+                           {calculations.projections.map((p: any)=><td key={p.year} className="p-4 text-right border-r last:border-0 text-emerald-600">₹ {(p.pat||0).toLocaleString('en-IN', {maximumFractionDigits:0})}</td>)}
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+          </NoteWrapper>
+        );
       default: 
         return (
           <div className="space-y-8 animate-in fade-in duration-1000">
@@ -2315,6 +2349,19 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
         </TabsContent>
 
         <TabsContent value="display" className="m-0 flex flex-col items-center overflow-x-hidden print:overflow-visible">
+           <div className="w-full max-w-[210mm] flex justify-between items-center mb-6 no-print px-4">
+              <div className="flex items-center gap-2">
+                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">A4 Preview Protocol Active</span>
+              </div>
+              <Button 
+                onClick={handlePrint}
+                className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 shadow-emerald-600/20"
+              >
+                <Printer className="h-4 w-4" /> Print PDF Matrix
+              </Button>
+           </div>
+
            <div className="w-full overflow-x-auto pb-20 px-4 scrollbar-hide print:overflow-visible print:px-0">
               <div 
                 id="institutional-report-matrix"
@@ -2752,4 +2799,3 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
-

@@ -570,7 +570,6 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   const [activeEditingSection, setActiveEditingSection] = useState<string>('coverDetails');
   const [editingSectionInPreview, setEditingSectionInPreview] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [isMachineryBreakupOpen, setIsMachineryBreakupOpen] = useState(false);
   const [isCostBreakupOpen, setIsCostBreakupOpen] = useState(false);
   const [isZoomDialogOpen, setIsZoomDialogOpen] = useState(false);
   const [pendingDrawingFile, setPendingDrawingFile] = useState<string | undefined>();
@@ -603,41 +602,30 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     coverLogoMarginTop: 0,
     coverTitleMarginTop: 32,
     coverProjectEntityMarginTop: 80,
-    executiveSummary: 'This feasibility study outlines the establishment of a precision manufacturing node focused on high-accuracy industrial outputs.',
-    aboutCompany: 'Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols.',
-    visionMission: 'VISION: To establish Ferocious Tech as the global benchmark for precision machining.\nMISSION: Providing exceptional technical value through specialized engineering.',
-    promoterProfile: 'Jayant Patil - B.E. Mechanical / MBA Operations. 15+ Years in Tool Room & VMC Operations. Highly technical leadership with a proven track record in precision engineering.',
-    projectDetails: 'The proposed project involves the setup of a high-fidelity VMC Machining Center and Tool Room in Pune.',
+    executiveSummary: '<p>This feasibility study outlines the establishment of a precision manufacturing node focused on high-accuracy industrial outputs for the electrical, construction, and aerospace sectors.</p><ul><li>Strategic alignment with <b>Make in India</b> initiative.</li><li>Implementation of high-fidelity VMC Machining protocols.</li><li>Integrated real-time yield monitoring via MES matrix.</li></ul>',
+    aboutCompany: '<p>Ferocious Tech is an emerging industrial leader in precision engineering, focused on technical excellence and automated manufacturing protocols. Located in the industrial heart of Pune, the firm leverages state-of-the-art tooling to serve Tier 1 automotive and aerospace supply chains.</p>',
+    visionMission: '<p><b>VISION:</b> To establish Ferocious Tech as the global benchmark for precision machining and specialized tool-room engineering.</p><p><b>MISSION:</b> Providing exceptional technical value through specialized engineering, optimized cycle times, and rigorous quality certification protocols.</p>',
+    promoterProfile: '<p><b>Jayant Patil</b> - B.E. Mechanical / MBA Operations. 15+ Years in Tool Room & VMC Operations. Highly technical leadership with a proven track record in precision engineering and multi-axis machining workflows.</p>',
+    projectDetails: '<p>The proposed project involves the setup of a high-fidelity VMC Machining Center and Tool Room in Pune. The facility will utilize multi-axis centers to produce complex geometries with tolerances within ±0.005mm.</p>',
     productServices: 'Combined Proprietary Products and Industrial Services matrix.',
-    marketAnalysis: "India's electrical sector is witnessing an unprecedented surge. The Indian Tooling Industry is valued at approximately ₹18,500 Crores.",
+    marketAnalysis: "<p>India's electrical sector is witnessing an unprecedented surge with a 15% CAGR. The Indian Tooling Industry is valued at approximately ₹18,500 Crores. Ferocious Tech identifies a high-yield gap in localized precision conduit connectors and high-complexity VMC job work.</p>",
     swotAnalysis: "Strategic analysis of operational nodes.",
-    swot_strengths: "",
-    swot_weaknesses: "",
-    swot_opportunities: "",
-    swot_threats: "",
-    businessModel: "Revenue-driven B2B model focusing on high-precision job work and proprietary industrial connectors.",
-    operationsPlan: "Multi-shift precision machining utilizing 3-axis and 4-axis VMC centers with integrated QC cycles.",
-    layout: "The layout of the manufacturing facility is designed for streamlined material movement and high-fidelity VMC operations.",
-    locationAnalysis: "Strategically located in Pune's industrial belt, providing seamless access to Tier 1 supply chains and skilled labor.",
-    orgStructure: "Lean organizational matrix consisting of a Promoter, Shift Supervisors, VMC Operators, and Quality Leads.",
-    marketingStrategy: "Direct industrial liaison, digital cataloging, and exhibition presence at IMTEX and related trade nodes.",
-    techIntegration: "System uses Firebase and Next.js for real-time manufacturing execution system (MES) and inventory synchronization.",
-    projectCost: 'One-time capital investment details.',
-    meansOfFinance: '90/10 Debt-Equity financing structure.',
-    workingCapitalRequirement: 'Liquidity reserve for 3 months operational buffer.',
-    financialProjections: 'Detailed Sources and Application of Funds matrix tracking project liquidity and capital adequacy.',
-    cashFlowStatement: 'Annual operational and financing liquidity analysis.',
-    turnoverAnalysis: 'Revenue realization and growth targets.',
-    breakevenAnalysis: 'Operational threshold for profitability.',
-    dscrMatrix: 'Debt Service Coverage Ratio analysis for institutional stability.',
-    keyRatios: 'Liquidity, Solvency, and Profitability ratios.',
-    mpbfCalculation: 'Maximum Permissible Bank Finance assessment.',
-    amortizationSchedule: 'Monthly and annual debt settlement timeline.',
-    riskMitigation: "Comprehensive insurance coverage, multi-vendor raw material sourcing, and dynamic debt-service reserves.",
-    govtSchemes: "The project identifies the CGTMSE (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix.",
-    licensesRegistrations: "Udyam Registration, GST, ISO 9001:2015 compliance, and local municipal NOCs verified.",
-    roadmap: '5-year strategic evolution plan.',
-    conclusion: "Based on the Techno-Economic analysis, the project demonstrates high viability with strong debt-service coverage and technical stability."
+    swot_strengths: "<ul><li>15+ Years Promoter Experience</li><li>High-Precision 4-Axis Capabilities</li><li>Real-time MES Integration</li></ul>",
+    swot_weaknesses: "<ul><li>New Operational Node (Initial Market Entry)</li><li>High initial CAPEX requirement</li></ul>",
+    swot_opportunities: "<ul><li>Import substitution for specialized connectors</li><li>Expansion into aerospace Tier 2 clusters</li></ul>",
+    swot_threats: "<ul><li>Fluctuating Raw Material costs (Al/Steel)</li><li>Competitive entry from low-cost clusters</li></ul>",
+    businessModel: "<p>Revenue-driven B2B model focusing on high-precision job work and proprietary industrial connectors. The model targets 70% capacity utilization in Year 1 with incremental growth nodes.</p>",
+    operationsPlan: "<p>Multi-shift precision machining utilizing 3-axis and 4-axis VMC centers with integrated QC cycles. Raw material sourcing through verified local hubs with 60-day inventory buffers.</p>",
+    layout: "<p>The layout of the manufacturing facility is designed for streamlined material movement and high-fidelity VMC operations, following 5S Lean manufacturing protocols.</p>",
+    locationAnalysis: "<p>Strategically located in Pune's industrial belt, providing seamless access to Tier 1 supply chains, skilled multi-axis operators, and consistent power infrastructure.</p>",
+    orgStructure: "<p>Lean organizational matrix consisting of a Promoter (Command Lead), Shift Supervisors, VMC Operators, and Quality Lead with real-time reporting protocols.</p>",
+    marketingStrategy: "<p>Direct industrial liaison, digital cataloging, and exhibition presence at IMTEX. Leverages a technical sales node for Tier 1 client onboarding.</p>",
+    techIntegration: "<p>System uses <b>Firebase Real-time Database</b> and Next.js for a custom Manufacturing Execution System (MES), inventory synchronization, and quality report archival.</p>",
+    riskMitigation: "<p>Comprehensive insurance coverage, multi-vendor raw material sourcing, and dynamic debt-service reserves. Hedging protocols for high-value raw materials.</p>",
+    govtSchemes: "<p>The project identifies the <b>CGTMSE</b> (Credit Guarantee Fund Trust for Micro and Small Enterprises) as the primary credit risk mitigation matrix, facilitating institutional support without third-party collateral.</p>",
+    licensesRegistrations: "<p>Udyam Registration, GST Compliance, ISO 9001:2015 Certification, and Local Municipal NOCs verified.</p>",
+    roadmap: '<p><b>Year 1:</b> Installation & Commissioning.</p><p><b>Year 2:</b> Capacity ramp-up to 85%.</p><p><b>Year 3:</b> Integration of 5-axis capabilities.</p><p><b>Year 5:</b> Expansion into global aerospace supply chains.</p>',
+    conclusion: "<p>Based on the Techno-Economic analysis, the project demonstrates high viability with strong debt-service coverage (Avg DSCR 2.4+) and significant technical stability.</p>"
   });
 
   const [proprietaryProducts, setProprietaryProducts] = useState<ProprietaryProduct[]>([
@@ -652,7 +640,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
   ]);
 
   const [machineryItems, setMachineryItems] = useState<MachineryItem[]>([
-    { id: 'M1', name: 'VMC 3-Axis Center', qty: 1, rate: 4500000, total: 4500000 },
+    { id: 'M1', name: 'VMC 3-Axis Center (Haas/BFW)', qty: 1, rate: 4500000, total: 4500000 },
   ]);
 
   const [financials, setFinancials] = useState({
@@ -1465,7 +1453,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                       <div className="flex items-center gap-3">
                         <Coins className="h-5 w-5 text-emerald-500" />
                         <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Operational Liquidity (OPEX Buffer)</h4>
-                      </div>
+                   </div>
                       <Badge className="bg-emerald-50 text-emerald-700 border-none text-[9px] font-bold">Term: 3 Months</Badge>
                    </div>
                    

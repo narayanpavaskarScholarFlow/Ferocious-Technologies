@@ -562,6 +562,12 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     promoterName: 'Jayant Patil',
     location: 'Pune, MH',
     totalLoanRequirement: '5500000',
+    executiveSummary: `<p><b>Executive Summary:</b> This project report details the establishment of a state-of-the-art VMC Tool Room under the banner of <b>Ferocious Tech</b>. The project is strategically located in Pune's industrial belt, targeting the high-growth automotive and aerospace tool-room markets.</p><p>The unit will leverage <b>Haas VF-2</b> vertical machining centers and high-fidelity <b>CAD/CAM</b> software to deliver precision moulds and aerospace components with tolerances as low as 5 microns.</p>`,
+    visionMission: `<p><b>Vision:</b> To become the leading high-fidelity precision manufacturing node in Western India.</p><p><b>Mission:</b> To deliver absolute dimensional compliance and rapid industrial prototyping through advanced technology and skilled craftsmanship.</p>`,
+    promoterProfile: `<p><b>Jayant Patil</b> is a veteran precision engineer with over 15 years of experience in CNC VMC operations and tool design. He has previously served as Head of Tooling at multiple Tier-1 automotive firms.</p>`,
+    techIntegration: `<p>The facility is powered by the <b>Ferocious Matrix v2.4</b> ERP, integrating real-time shop floor telemetry via <b>Firebase Firestore</b> and high-fidelity visual scheduling with <b>Next.js</b>.</p>`,
+    swotAnalysis: `<ul><li><b>Strengths:</b> Advanced Haas machinery, skilled technical lead, Prime industrial location.</li><li><b>Weaknesses:</b> High initial CAPEX, Competitive market pricing.</li><li><b>Opportunities:</b> Export orders for aerospace jigs, Localized tooling for EV manufacturers.</li><li><b>Threats:</b> Fluctuating raw material prices, Rapid technology obsolescence.</li></ul>`,
+    roadmap: `<p><b>Year 1:</b> Establishment and ISO Certification.</p><p><b>Year 3:</b> Expansion to 5 VMC nodes.</p><p><b>Year 5:</b> International Aerospace Accreditation.</p>`,
     coverLogoSize: 192,
     coverTitleFontSize: 60,
     coverTitleColor: '#001F3D',
@@ -1136,13 +1142,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
       <Dialog open={!!editingSectionInPreview} onOpenChange={(open) => !open && setEditingSectionInPreview(null)}>
         <DialogContent className="max-w-4xl h-[80vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
-          <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
+          <DialogHeader className="p-8 border-b bg-slate-50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-[#001F3D] rounded-2xl text-white"><Edit3 className="h-7 w-7" /></div>
-              <div><DialogTitle className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Edit Matrix Node: {REPORT_SEQUENCE.find(s => s.id === editingSectionInPreview)?.label}</DialogTitle></div>
+              <div>
+                <DialogTitle className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Edit Matrix Node: {REPORT_SEQUENCE.find(s => s.id === editingSectionInPreview)?.label}</DialogTitle>
+                <DialogDescription className="sr-only">Rich text editor for strategic node metadata.</DialogDescription>
+              </div>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setEditingSectionInPreview(null)}><X className="h-6 w-6" /></Button>
-          </div>
+          </DialogHeader>
           <ScrollArea className="flex-1 p-10">{editingSectionInPreview && renderActiveEditor(editingSectionInPreview)}</ScrollArea>
           <div className="p-8 border-t bg-slate-50/50 flex justify-end">
             <Button className="h-12 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] shadow-xl" onClick={() => { handleSaveStrategy(); setEditingSectionInPreview(null); }}>Commit Node Changes</Button>
@@ -1152,16 +1161,16 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
 
       <Dialog open={isCostBreakupOpen} onOpenChange={setIsCostBreakupOpen}>
         <DialogContent className="max-w-2xl bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
-          <div className="p-10 bg-[#001F3D] text-white flex items-center justify-between">
+          <DialogHeader className="p-10 bg-[#001F3D] text-white flex items-center justify-between shrink-0">
              <div className="flex items-center gap-4">
                 <div className="p-3 bg-primary rounded-2xl"><Calculator className="h-8 w-8" /></div>
                 <div>
-                   <h3 className="text-2xl font-display font-bold uppercase tracking-tight">Total Project Breakup</h3>
-                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital & Operational Investment Matrix</p>
+                   <DialogTitle className="text-2xl font-display font-bold uppercase tracking-tight">Total Project Breakup</DialogTitle>
+                   <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Capital & Operational Investment Matrix</DialogDescription>
                 </div>
              </div>
              <Button variant="ghost" size="icon" onClick={() => setIsCostBreakupOpen(false)} className="text-white/40 hover:text-white"><X className="h-6 w-6" /></Button>
-          </div>
+          </DialogHeader>
           <ScrollArea className="max-h-[500px] p-10">
              <div className="space-y-10">
                 <div className="space-y-6">
@@ -1192,7 +1201,7 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
                 </div>
              </div>
           </ScrollArea>
-          <div className="p-10 border-t bg-slate-50/50 flex justify-between items-center">
+          <div className="p-10 border-t bg-slate-50/50 flex justify-between items-center shrink-0">
              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aggregate Investment</span>
              <span className="text-2xl font-display font-bold text-[#001F3D]">₹ {calculations.totalProjectCost.toLocaleString()}</span>
           </div>
@@ -1201,3 +1210,4 @@ export function LoanProjectHub({ brandLogo = '' }: LoanProjectHubProps) {
     </div>
   );
 }
+

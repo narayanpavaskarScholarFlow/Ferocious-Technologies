@@ -99,7 +99,6 @@ const ACCESS_NODES: { id: ViewType | string; label: string; category: string; ic
   { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
   { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },
   { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
-  { id: 'loan-project', label: 'Loan Strategy Hub', category: 'Strategic Hub', icon: Landmark },
   { id: 'orders', label: 'Master Orders', category: 'Production Management', icon: ShoppingCart },
   { id: 'production-planner', label: 'Mass Production', category: 'Production Management', icon: Factory },
   { id: 'gantt', label: 'Visual Timeline', category: 'Production Management', icon: LayoutGrid },

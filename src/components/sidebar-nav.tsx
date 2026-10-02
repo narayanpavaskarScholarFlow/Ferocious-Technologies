@@ -91,7 +91,6 @@ export function SidebarNav({
       { id: 'vendor' as ViewType, icon: Truck, label: customTitles['vendor'] || 'Supply Chain' },
       { id: 'weekly-plan' as ViewType, icon: Calendar, label: customTitles['weekly-plan'] || 'Master Plan' },
       { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: customTitles['smart-quote'] || 'AI Quoting' },
-      { id: 'loan-project' as ViewType, icon: Landmark, label: customTitles['loan-project'] || 'Project Architect' },
     ];
 
     return items.filter(item => {

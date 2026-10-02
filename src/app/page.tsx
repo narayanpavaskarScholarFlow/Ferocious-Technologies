@@ -28,7 +28,6 @@ import { LoginScreen } from '@/components/login-screen';
 import { UserManagement } from '@/components/user-management';
 import { UserDetailView } from '@/components/user-detail-view';
 import { DispatchLedger } from '@/components/dispatch-ledger';
-import { LoanProjectHub } from '@/components/loan-project-hub';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -206,7 +205,7 @@ function IndustrialERPInternal() {
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
         'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full',
-        'team-matrix': 'full', delivery: 'full', 'loan-project': 'full',
+        'team-matrix': 'full', delivery: 'full',
         'billing-quotation': 'full',
         'billing-invoice': 'full',
         'billing-po': 'full',
@@ -420,7 +419,6 @@ function IndustrialERPInternal() {
         <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 print:p-0">
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
-            {currentView === 'loan-project' && <LoanProjectHub brandLogo={brandLogo} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('settings')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}

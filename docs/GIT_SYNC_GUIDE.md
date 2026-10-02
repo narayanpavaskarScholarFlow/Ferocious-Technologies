@@ -1,26 +1,23 @@
-# Git Synchronization Protocol v2.4
+# Git Synchronization Protocol v2.5
 
 This document serves as the master authority for maintaining the connection between the **Ferocious Technologies ERP** workspace and the remote GitHub repository.
 
 ## 01. Diagnostic Matrix
-If you encounter "Repository not found" errors, verify the remote identity:
-- **Command**: `git remote -v`
-- **UI Node**: Check the **Deployment** tab in the Studio sidebar.
+Status check performed at the industrial gateway. 
 
-## 02. Reconnection Sequence
-If the remote points to a placeholder (e.g., `YOUR_USERNAME`), execute the following recovery protocol:
+- **Local Path**: `/home/user/studio`
+- **Active Branch**: `main`
+- **Remote Identity**: `NONE` (Detached from invalid placeholder)
 
-1. **Purge Invalid Remote**:
-   ```bash
-   git remote remove origin
-   ```
+## 02. Connection Recovery Sequence
+If you need to establish a new link to a verified GitHub node, execute the following protocol:
 
-2. **Initialize Real Identity**:
+1. **Initialize Real Identity**:
    ```bash
    git remote add origin https://github.com/<your-username>/FerociousTechnologies.git
    ```
 
-3. **Synchronize Master Branch**:
+2. **Synchronize Master Branch**:
    ```bash
    git push -u origin main
    ```
@@ -31,4 +28,4 @@ If the remote points to a placeholder (e.g., `YOUR_USERNAME`), execute the follo
 - **Stage** all core nodes (`src`, `docs`, `config`) for every commit to ensure the remote reflects the full industrial state.
 
 ---
-**Status**: LOCAL_HEALTHY | REMOTE_PENDING_RECONNECT
+**Status**: LOCAL_HEALTHY | REMOTE_DISCONNECTED | CORE_PROTECTED

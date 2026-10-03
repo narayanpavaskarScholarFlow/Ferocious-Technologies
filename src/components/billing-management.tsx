@@ -46,7 +46,9 @@ import {
   FileCheck,
   ArrowLeft,
   Upload,
-  Download
+  Download,
+  Link2,
+  Info
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -66,35 +68,35 @@ import {
   format, 
   startOfToday, 
   getDaysInMonth,
-  getDate
+  getDate,
+  isValid
 } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'Quotation', icon: FileBox, prefix: 'QT' },
-  { id: 'proforma', label: 'Proforma', icon: FileCheck, prefix: 'PFI' },
-  { id: 'invoice', label: 'Sale Inv', icon: FileText, prefix: 'INV' },
-  { id: 'purchase_invoice', label: 'Pur Inv', icon: ShoppingCart, prefix: 'PI' },
-  { id: 'delivery_challan', label: 'Challan', icon: Truck, prefix: 'DC' },
   { id: 'purchase_order', label: 'Customer PO', icon: FileBadge, prefix: 'PO' },
-  { id: 'sale_order', label: 'Sale Order', icon: FileText, prefix: 'SO' },
-  { id: 'credit_note', label: 'Cr Note', icon: ArrowDownLeft, prefix: 'CN' },
-  { id: 'debit_note', label: 'Db Note', icon: ArrowUpRight, prefix: 'DN' },
-  { id: 'inward_payment', label: 'Inward Pay', icon: ArrowDownLeft, prefix: 'REC' },
-  { id: 'outward_payment', label: 'Outward Pay', icon: ArrowUpRight, prefix: 'PAY' },
+  { id: 'sale_order', label: 'Sales Order', icon: FileText, prefix: 'SO' },
+  { id: 'proforma', label: 'Proforma', icon: FileCheck, prefix: 'PFI' },
+  { id: 'invoice', label: 'Sales Invoice', icon: FileText, prefix: 'INV' },
+  { id: 'purchase_invoice', label: 'Purchase Invoice', icon: ShoppingCart, prefix: 'PI' },
+  { id: 'delivery_challan', label: 'Delivery Challan', icon: Truck, prefix: 'DC' },
+  { id: 'credit_note', label: 'Credit Note', icon: ArrowDownLeft, prefix: 'CN' },
+  { id: 'debit_note', label: 'Debit Note', icon: ArrowUpRight, prefix: 'DN' },
+  { id: 'inward_payment', label: 'Inward Payment', icon: ArrowDownLeft, prefix: 'REC' },
+  { id: 'outward_payment', label: 'Outward Payment', icon: ArrowUpRight, prefix: 'PAY' },
 ];
 
 const MAIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { id: 'customer', label: 'Identity', icon: Building2 },
+  { id: 'customer', label: 'Identity Matrix', icon: Building2 },
   { id: 'product-master', label: 'Product Master', icon: PackageSearch },
   ...DOCUMENT_TYPES.map(t => ({ id: t.id, label: t.label, icon: t.icon })),
-  { id: 'report', label: 'Report', icon: FileBarChart },
+  { id: 'report', label: 'BI Analytics', icon: FileBarChart },
 ];
 
 function numberToWords(num: number): string {
@@ -112,65 +114,6 @@ function numberToWords(num: number): string {
   return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
 }
 
-const DEFAULT_NUMBER_SERIES: NumberSeries = {
-  prefix: 'DOC',
-  startingNumber: 1,
-  currentNumber: 1,
-  length: 4,
-  fyFormat: 'YYYY',
-  separator: '-',
-  resetEveryFY: true,
-  manualOverride: false,
-};
-
-const CircularGauge = ({ achievement, size = 120, strokeWidth = 10, children }: { achievement: number, size?: number, strokeWidth?: number, children?: React.ReactNode }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (Math.min(achievement, 100) / 100) * circumference;
-  const color = achievement >= 100 ? "#22c55e" : achievement >= 70 ? "#eab308" : "#f43f5e";
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle cx={size/2} cy={size/2} r={radius} stroke="#f1f5f9" strokeWidth={strokeWidth} fill="transparent" />
-        <circle cx={size/2} cy={size/2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {children || <><span className="text-xl font-bold text-primary">{Math.round(achievement)}%</span></>}
-      </div>
-    </div>
-  );
-};
-
-const SmartKPICard = ({ title, value, target, achievement, icon: Icon }: any) => {
-  const isRed = achievement < 70;
-  const isYellow = achievement >= 70 && achievement < 100;
-  const isGreen = achievement >= 100;
-  const colorClass = isGreen ? 'text-emerald-600' : isYellow ? 'text-amber-600' : 'text-rose-600';
-  const progressClass = isGreen ? 'bg-emerald-600' : isYellow ? 'bg-amber-600' : 'bg-rose-600';
-
-  return (
-    <Card className="p-4 bg-white border border-slate-200 shadow-sm enterprise-card">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-          <h3 className="text-lg font-bold text-primary">{typeof value === 'number' ? `₹ ${value.toLocaleString()}` : value}</h3>
-        </div>
-        <div className="p-2 bg-slate-50 rounded"><Icon className="h-4 w-4 text-slate-400" /></div>
-      </div>
-      <div className="space-y-1.5">
-        <div className="flex justify-between items-center text-[8px] font-bold text-slate-400 uppercase">
-          <span>Target: {target.toLocaleString()}</span>
-          <span className={colorClass}>{Math.round(achievement)}%</span>
-        </div>
-        <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div className={cn("h-full transition-all duration-1000", progressClass)} style={{ width: `${Math.min(achievement, 100)}%` }} />
-        </div>
-      </div>
-    </Card>
-  );
-};
-
 interface BillingManagementProps {
   customers: Customer[];
   vendors: Vendor[];
@@ -186,24 +129,24 @@ interface BillingManagementProps {
   uiSettings: UISettings;
 }
 
-export function BillingManagement({ customers, vendors, records, orders, users, inventory, products, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
+export function BillingManagement({ 
+  customers, vendors, records, orders, users, inventory, products, permissions, 
+  onSaveRecord, onDeleteRecord, uiSettings 
+}: BillingManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardView, setDashboardView] = useState<'quick' | 'analytics'>('analytics');
   const [selectedAnalyticsDate, setSelectedAnalyticsDate] = useState(new Date().toISOString().split('T')[0]);
+  
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [activeRecordType, setActiveRecordType] = useState('invoice');
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
-  const [isProductFormOpen, setIsAddProductOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isTargetDialogOpen, setIsTargetDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '', type: 'invoice', customerName: '', customerId: '', date: new Date().toISOString().split('T')[0],
     number: '', status: 'Pending', items: [], subTotal: 0, amount: 0, taxTotal: 0, discountTotal: 0, additionalCharges: 0,
-    roundOff: 0, notes: '', terms: '', quotationId: ''
+    roundOff: 0, notes: '', terms: '', quotationId: '', poId: '', poNumber: '', referenceNumber: '', deliveryMode: ''
   });
 
   const biMetrics = useMemo(() => {
@@ -212,11 +155,26 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const mEnd = endOfMonth(targetDate);
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
+    
     const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
-    const healthScore = Math.round(Math.min(achievementPercent, 100) * 0.7 + 30);
-    return { monthlyBillingTarget, actualBillingAchieved, achievementPercent, healthScore };
+    
+    const monthInward = records.filter(r => r.type === 'inward_payment' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
+    const totalCollected = monthInward.reduce((acc, r) => acc + (r.amount || 0), 0);
+    const collectionAchievement = actualBillingAchieved > 0 ? (totalCollected / actualBillingAchieved) * 100 : 100;
+
+    const healthScore = Math.round((achievementPercent * 0.4) + (collectionAchievement * 0.4) + (90 * 0.2));
+
+    return { 
+      monthlyBillingTarget, 
+      actualBillingAchieved, 
+      achievementPercent, 
+      healthScore, 
+      remaining: Math.max(0, monthlyBillingTarget - actualBillingAchieved),
+      collected: totalCollected,
+      dailyVelocity: (monthlyBillingTarget - actualBillingAchieved) / Math.max(1, (getDaysInMonth(targetDate) - getDate(startOfToday())))
+    };
   }, [records, uiSettings.monthlyBillingTargets, selectedAnalyticsDate]);
 
   const handleOpenForm = (type: string, record?: BillingRecord) => {
@@ -228,7 +186,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       setEditingRecordId(null);
       setFormData({
         id: `REC-${Date.now()}`, type, customerName: '', customerId: '', date: new Date().toISOString().split('T')[0],
-        number: `QT-0001-2024`, status: 'Pending', 
+        number: `${DOCUMENT_TYPES.find(t=>t.id===type)?.prefix || 'DOC'}-${Date.now().toString().slice(-4)}`, status: 'Pending', 
         items: [{ id: '1', description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }],
         subTotal: 0, amount: 0, taxTotal: 0, discountTotal: 0, additionalCharges: 0, roundOff: 0, notes: '', terms: '', quotationId: ''
       });
@@ -237,105 +195,364 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   };
 
   const handleSave = () => {
-    if (!formData.customerId || !formData.number) { toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." }); return; }
+    if (!formData.customerId || !formData.number) { 
+      toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." }); 
+      return; 
+    }
     onSaveRecord(formData as BillingRecord);
-    toast({ title: "Ledger Synchronized", description: `${formData.type} committed.` });
+    toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
     setIsRecordFormOpen(false);
   };
 
+  // Restoration of "Previous ERP Structure" - Card Based Hierarchical Entry
   const FullPageEditor = () => (
-    <div className="flex flex-col bg-slate-50 min-h-screen animate-in fade-in duration-300">
-      <div className="sticky top-0 z-50 bg-primary text-white px-6 h-12 flex items-center justify-between shadow-lg">
+    <div className="flex flex-col bg-slate-50 dark:bg-slate-950 min-h-screen animate-in fade-in duration-300 pb-20">
+      <div className="sticky top-0 z-50 bg-[#001F3D] text-white px-6 h-14 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)} className="text-white hover:bg-white/10"><ArrowLeft className="h-4 w-4" /></Button>
-          <span className="text-[10px] font-black uppercase tracking-widest">Entry Matrix: {activeRecordType.replace('_', ' ')}</span>
+          <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)} className="text-white hover:bg-white/10 rounded-full h-10 w-10">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Operational Entry Matrix</span>
+            <h2 className="text-lg font-display font-bold uppercase leading-none">{activeRecordType.replace('_', ' ')} Registry</h2>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8 text-[10px] uppercase font-bold" onClick={handleSave}><Save className="h-3.5 w-3.5 mr-2" /> Save & Commit</Button>
-          <Button size="sm" className="bg-white text-primary hover:bg-slate-100 h-8 text-[10px] uppercase font-bold" onClick={handleSave}><Printer className="h-3.5 w-3.5 mr-2" /> Print</Button>
+        <div className="flex gap-3">
+          <Button variant="ghost" size="sm" className="text-white/40 hover:text-white h-10 px-6 font-bold uppercase text-[9px] tracking-widest" onClick={() => setIsRecordFormOpen(false)}>Discard</Button>
+          <Button className="bg-emerald-600 hover:bg-emerald-700 h-10 px-8 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl shadow-emerald-900/20" onClick={handleSave}>
+            <Save className="h-4 w-4 mr-2" /> Commit Node
+          </Button>
         </div>
       </div>
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-6 enterprise-card space-y-4">
-          <h4 className="text-[10px] font-bold uppercase text-slate-400 border-b pb-2">Customer Identity</h4>
-          <div className="grid grid-cols-1 gap-4">
-             <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Customer Name</Label>
-               <Select value={formData.customerId} onValueChange={(id) => { const c = customers.find(x => x.id === id); setFormData({ ...formData, customerId: id, customerName: c?.name || '' }); }}><SelectTrigger className="h-9 border-slate-300"><SelectValue placeholder="Identify..." /></SelectTrigger><SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}</SelectContent></Select>
+
+      <div className="max-w-[1400px] mx-auto w-full p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Identity & Nodes */}
+        <div className="lg:col-span-8 space-y-8">
+          <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-3xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.02]"><Building2 className="h-16 w-16" /></div>
+            <div className="relative z-10 space-y-8">
+              <h4 className="text-[10px] font-black uppercase text-primary border-l-4 border-primary pl-4 tracking-widest">Customer Identity Node</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Account Identity</Label>
+                  <Select value={formData.customerId} onValueChange={(id) => { 
+                    const c = customers.find(x => x.id === id); 
+                    setFormData({ ...formData, customerId: id, customerName: c?.name || '' }); 
+                  }}>
+                    <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold uppercase shadow-inner">
+                      <SelectValue placeholder="Identify..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase">{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Shipping Address Node</Label>
+                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-xs font-bold shadow-inner" value={formData.shipTo} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-3xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.02]"><FileText className="h-16 w-16" /></div>
+            <div className="relative z-10 space-y-8">
+              <h4 className="text-[10px] font-black uppercase text-primary border-l-4 border-primary pl-4 tracking-widest">Procedural Item Registry</h4>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50 dark:bg-slate-900">
+                    <TableRow className="hover:bg-transparent border-none">
+                      <TableHead className="w-12 text-center text-[8px]">SR</TableHead>
+                      <TableHead className="text-[8px]">Product/Service</TableHead>
+                      <TableHead className="text-[8px] text-center w-20">Qty</TableHead>
+                      <TableHead className="text-[8px] text-center w-24">Rate (₹)</TableHead>
+                      <TableHead className="text-[8px] text-center w-24">GST %</TableHead>
+                      <TableHead className="text-[8px] text-right px-4">Amount</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(formData.items || []).map((item, idx) => (
+                      <TableRow key={idx} className="h-16 border-b border-slate-50 dark:border-border hover:bg-slate-50/30 transition-colors">
+                        <TableCell className="text-center font-bold text-[10px] text-slate-300">{(idx+1).toString().padStart(2, '0')}</TableCell>
+                        <TableCell>
+                           <Select value={item.productId} onValueChange={(pId) => {
+                             const p = products.find(x => x.id === pId);
+                             const newItems = [...(formData.items || [])];
+                             newItems[idx] = { ...newItems[idx], productId: pId, description: p?.name || '', hsn: p?.hsn || '', price: p?.saleRate || 0, gstRate: p?.gstRate || 18, total: (newItems[idx].qty || 1) * (p?.saleRate || 0) };
+                             setFormData({...formData, items: newItems});
+                           }}>
+                             <SelectTrigger className="h-9 border-none bg-slate-50 dark:bg-slate-900 rounded-lg text-[10px] font-bold uppercase">
+                               <SelectValue placeholder="Identify Node..." />
+                             </SelectTrigger>
+                             <SelectContent className="rounded-xl">
+                               {products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase">{p.name}</SelectItem>)}
+                             </SelectContent>
+                           </Select>
+                        </TableCell>
+                        <TableCell><Input type="number" className="h-9 text-center border-none bg-slate-50 dark:bg-slate-900 rounded-lg font-bold text-[10px]" value={item.qty} onChange={(e) => {
+                          const newItems = [...(formData.items || [])];
+                          newItems[idx] = { ...newItems[idx], qty: Number(e.target.value), total: Number(e.target.value) * newItems[idx].price };
+                          setFormData({...formData, items: newItems});
+                        }} /></TableCell>
+                        <TableCell><Input type="number" className="h-9 text-center border-none bg-slate-50 dark:bg-slate-900 rounded-lg font-bold text-[10px]" value={item.price} onChange={(e) => {
+                          const newItems = [...(formData.items || [])];
+                          newItems[idx] = { ...newItems[idx], price: Number(e.target.value), total: Number(e.target.value) * newItems[idx].qty };
+                          setFormData({...formData, items: newItems});
+                        }} /></TableCell>
+                        <TableCell><Input type="number" className="h-9 text-center border-none bg-slate-50 dark:bg-slate-900 rounded-lg font-bold text-[10px]" value={item.gstRate} onChange={(e) => {
+                          const newItems = [...(formData.items || [])];
+                          newItems[idx] = { ...newItems[idx], gstRate: Number(e.target.value) };
+                          setFormData({...formData, items: newItems});
+                        }} /></TableCell>
+                        <TableCell className="text-right font-display font-bold text-xs">₹ {item.total?.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500" onClick={() => {
+                            const newItems = (formData.items || []).filter((_, i) => i !== idx);
+                            setFormData({...formData, items: newItems});
+                          }}><Trash2 className="h-4 w-4" /></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <Button variant="ghost" className="w-full mt-4 h-10 rounded-xl border border-dashed border-slate-200 text-slate-400 font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-slate-50" onClick={() => {
+                  const newItems = [...(formData.items || []), { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }];
+                  setFormData({...formData, items: newItems as BillingLineItem[]});
+                }}><Plus className="h-3.5 w-3.5" /> Append Protocol Node</Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column: Calculations & Summary Nodes */}
+        <div className="lg:col-span-4 space-y-8 sticky top-24">
+          <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-3xl space-y-8">
+             <h4 className="text-[10px] font-black uppercase text-primary border-l-4 border-primary pl-4 tracking-widest">Document Registry Node</h4>
+             <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Document No.</Label>
+                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-code font-bold shadow-inner" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Registry Date</Label>
+                  <DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-12" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Reference No.</Label>
+                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold shadow-inner" value={formData.referenceNumber} onChange={(e)=>setFormData({...formData, referenceNumber: e.target.value})} />
+                </div>
              </div>
-             <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Shipping Address</Label><Input className="h-9 border-slate-300" value={formData.shipTo} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
-          </div>
-        </Card>
-        <Card className="p-6 enterprise-card space-y-4">
-          <h4 className="text-[10px] font-bold uppercase text-slate-400 border-b pb-2">Document Nodes</h4>
-          <div className="grid grid-cols-2 gap-4">
-             <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Document No.</Label><Input className="h-9 font-code" value={formData.number} /></div>
-             <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-slate-500">Document Date</Label><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-9" /></div>
-          </div>
-        </Card>
+          </Card>
+
+          <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-3xl relative overflow-hidden">
+             <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+             <div className="relative z-10 space-y-10">
+                <div className="flex justify-between items-center">
+                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Final Valuation Matrix</h4>
+                   <Badge className="bg-primary/20 text-primary border-none px-3 font-bold text-[8px] uppercase">Fidelity_Verified</Badge>
+                </div>
+                
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center text-[11px] font-bold text-white/40 uppercase">
+                      <span>Gross Taxable</span>
+                      <span className="text-white">₹ {(formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString()}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-[11px] font-bold text-white/40 uppercase">
+                      <span>Matrix Tax (GST)</span>
+                      <span className="text-white">₹ {((formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0)).toLocaleString()}</span>
+                   </div>
+                   <div className="h-px bg-white/10 my-4" />
+                   <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-primary">Grand Total Yield</p>
+                        <p className="text-4xl font-display font-black tracking-tighter">₹ {(
+                          (formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0) + 
+                          (formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0)
+                        ).toLocaleString()}</p>
+                      </div>
+                      <Calculator className="h-10 w-10 text-white/5" />
+                   </div>
+                </div>
+
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                   <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-2">Institutional Transcription</p>
+                   <p className="text-[10px] font-bold leading-relaxed">{numberToWords((formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0) + (formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0))}</p>
+                </div>
+             </div>
+          </Card>
+
+          <Card className="p-6 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl flex items-start gap-4">
+             <div className="p-2 bg-amber-500 rounded-lg text-white"><Info className="h-4 w-4" /></div>
+             <p className="text-[10px] text-amber-800 dark:text-amber-200 font-medium leading-relaxed uppercase tracking-tight">
+               Changes to document nodes trigger immediate re-calculation of institutional health indices. Ensure total fidelity before final commit.
+             </p>
+          </Card>
+        </div>
       </div>
     </div>
   );
 
-  const AnalyticsView = () => (
-    <div className="space-y-8 animate-in fade-in">
-      <div className="flex justify-between items-center bg-white p-6 border-slate-200 border rounded shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary rounded"><BrainCircuit className="h-6 w-6 text-white" /></div>
-          <div><h2 className="text-xl font-bold text-primary uppercase">Business Intelligence</h2><p className="text-[10px] text-slate-400 font-bold uppercase">Matrix Performance Analysis</p></div>
+  const DashboardView = () => (
+    <div className="space-y-8 animate-in fade-in duration-500 p-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight leading-none">Intelligence Dashboard</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Business Analytics & Yield Performance</p>
         </div>
-        <div className="flex items-center gap-3">
-           <Button variant="ghost" size="sm" onClick={() => { const d = parseISO(selectedAnalyticsDate); d.setMonth(d.getMonth() - 1); setSelectedAnalyticsDate(d.toISOString().split('T')[0]); }}><ChevronLeft className="h-4 w-4" /></Button>
-           <span className="text-[10px] font-bold uppercase min-w-[120px] text-center">{format(parseISO(selectedAnalyticsDate), 'MMMM yyyy')}</span>
-           <Button variant="ghost" size="sm" onClick={() => { const d = parseISO(selectedAnalyticsDate); d.setMonth(d.getMonth() + 1); setSelectedAnalyticsDate(d.toISOString().split('T')[0]); }}><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <SmartKPICard title="Monthly Target" value={biMetrics.monthlyBillingTarget} target={biMetrics.monthlyBillingTarget} achievement={100} icon={Target} />
-        <SmartKPICard title="Actual Achieved" value={biMetrics.actualBillingAchieved} target={biMetrics.monthlyBillingTarget} achievement={biMetrics.achievementPercent} icon={TrendingUp} />
-        <div className="md:col-span-2 p-6 bg-primary text-white rounded enterprise-card flex items-center justify-between">
-           <div><p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">Health Score</p><h4 className="text-3xl font-bold">{biMetrics.healthScore}%</h4></div>
-           <CircularGauge achievement={biMetrics.healthScore} size={80} />
+        <div className="flex bg-slate-100 dark:bg-card p-1 rounded-xl shadow-inner">
+           <button onClick={() => setDashboardView('analytics')} className={cn("px-8 py-2 rounded-lg text-[10px] font-black uppercase transition-all", dashboardView === 'analytics' ? "bg-white dark:bg-primary text-primary dark:text-card shadow-sm" : "text-slate-400")}>Performance Matrix</button>
+           <button onClick={() => setDashboardView('quick')} className={cn("px-8 py-2 rounded-lg text-[10px] font-black uppercase transition-all", dashboardView === 'quick' ? "bg-white dark:bg-primary text-primary dark:text-card shadow-sm" : "text-slate-400")}>Functional Quick-Links</button>
         </div>
       </div>
+
+      {dashboardView === 'analytics' ? (
+        <div className="space-y-8">
+           <div className="flex items-center justify-between bg-white dark:bg-card p-8 border border-slate-200 dark:border-border rounded-3xl shadow-sm">
+             <div className="flex items-center gap-6">
+                <div className="p-4 bg-primary rounded-2xl shadow-xl shadow-primary/20"><BrainCircuit className="h-8 w-8 text-white" /></div>
+                <div>
+                   <h3 className="text-xl font-bold dark:text-white uppercase">Institutional Health Index</h3>
+                   <div className="flex items-center gap-4 mt-1">
+                      <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase tracking-widest px-3">Protocol_Synced</Badge>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(parseISO(selectedAnalyticsDate), 'MMMM yyyy')} Window</span>
+                   </div>
+                </div>
+             </div>
+             <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => {
+                   const d = parseISO(selectedAnalyticsDate);
+                   d.setMonth(d.getMonth() - 1);
+                   setSelectedAnalyticsDate(d.toISOString().split('T')[0]);
+                }} className="rounded-full h-10 w-10 text-slate-400 hover:text-primary"><ChevronLeft className="h-6 w-6" /></Button>
+                <span className="text-sm font-display font-black uppercase tracking-widest min-w-[150px] text-center dark:text-white">{format(parseISO(selectedAnalyticsDate), 'MMM yyyy')}</span>
+                <Button variant="ghost" size="icon" onClick={() => {
+                   const d = parseISO(selectedAnalyticsDate);
+                   d.setMonth(d.getMonth() + 1);
+                   setSelectedAnalyticsDate(d.toISOString().split('T')[0]);
+                }} className="rounded-full h-10 w-10 text-slate-400 hover:text-primary"><ChevronRight className="h-6 w-6" /></Button>
+             </div>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[
+                { label: 'Monthly Target', val: `₹ ${biMetrics.monthlyBillingTarget.toLocaleString()}`, icon: Target, color: 'text-blue-500' },
+                { label: 'Actual Billed', val: `₹ ${biMetrics.actualBillingAchieved.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
+                { label: 'Yield Deficiency', val: `₹ ${biMetrics.remaining.toLocaleString()}`, icon: Clock, color: 'text-amber-500' },
+                { label: 'Matrix Health', val: `${biMetrics.healthScore}%`, icon: Zap, color: 'text-primary' },
+              ].map(kpi => (
+                <Card key={kpi.label} className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border rounded-3xl shadow-sm space-y-4 hover:border-primary/50 transition-all group">
+                   <div className="flex justify-between items-start">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{kpi.label}</p>
+                      <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                   </div>
+                   <h4 className="text-2xl font-display font-bold dark:text-white">{kpi.val}</h4>
+                </Card>
+              ))}
+           </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          {MAIN_TABS.slice(1, -1).map(module => (
+            <Card key={module.id} className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border rounded-3xl shadow-sm hover:border-primary/50 cursor-pointer transition-all flex flex-col items-center gap-6 group" onClick={() => setActiveTab(module.id)}>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all text-slate-400">
+                 <module.icon className="h-8 w-8" />
+              </div>
+              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 text-center tracking-widest">{module.label}</span>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="h-full flex flex-col gap-0 bg-slate-50/30 dark:bg-slate-950/20 font-body">
       {isRecordFormOpen ? <FullPageEditor /> : (
         <>
-          <div className="flex items-center justify-between bg-white border-b border-slate-200 h-12 px-1 scrollbar-hide overflow-x-auto no-print">
-            <div className="flex h-full gap-0.5">{MAIN_TABS.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("px-4 h-full text-[10px] font-bold uppercase flex items-center gap-2 border-b-2 transition-all", activeTab === tab.id ? "border-primary text-primary bg-slate-50" : "border-transparent text-slate-500 hover:bg-slate-50")}>{tab.icon && <tab.icon className="h-3.5 w-3.5" />}{tab.label}</button>
-            ))}</div>
+          <div className="bg-white dark:bg-card border-b border-slate-200 dark:border-border h-14 px-4 flex items-center scrollbar-hide overflow-x-auto no-print sticky top-0 z-40">
+            <div className="flex h-full gap-1">
+              {MAIN_TABS.map(tab => (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setActiveTab(tab.id)} 
+                  className={cn(
+                    "px-6 h-full text-[10px] font-black uppercase flex items-center gap-3 border-b-4 transition-all tracking-widest", 
+                    activeTab === tab.id 
+                      ? "border-primary text-primary bg-primary/5 shadow-inner" 
+                      : "border-transparent text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-slate-600"
+                  )}
+                >
+                  <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-primary" : "text-slate-300")} />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {activeTab === 'dashboard' ? (
-              <div className="p-6 space-y-8">
-                <div className="flex justify-center"><div className="bg-slate-200 p-1 rounded flex gap-1"><button onClick={() => setDashboardView('analytics')} className={cn("px-8 py-2 rounded text-[10px] font-bold uppercase", dashboardView === 'analytics' ? "bg-white text-primary shadow-sm" : "text-slate-500")}>Analytics</button><button onClick={() => setDashboardView('quick')} className={cn("px-8 py-2 rounded text-[10px] font-bold uppercase", dashboardView === 'quick' ? "bg-primary text-white shadow-sm" : "text-slate-500")}>Quick Links</button></div></div>
-                {dashboardView === 'analytics' ? <AnalyticsView /> : <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">{MAIN_TABS.slice(1).map(tab => (
-                  <Card key={tab.id} className="p-4 enterprise-card hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center gap-3 aspect-square" onClick={() => setActiveTab(tab.id)}>
-                    <div className="p-3 bg-slate-50 rounded"><tab.icon className="h-6 w-6 text-primary" /></div>
-                    <span className="text-[10px] font-bold uppercase text-slate-600 text-center">{tab.label}</span>
-                  </Card>
-                ))}</div>}
-              </div>
-            ) : (
-              <div className="p-6">
-                <Card className="enterprise-card">
-                  <div className="p-6 border-b bg-slate-50/50 flex justify-between items-center"><h3 className="text-sm font-bold text-primary uppercase">{MAIN_TABS.find(t=>t.id===activeTab)?.label} Registry</h3><Button size="sm" className="h-9 px-6 font-bold uppercase text-[10px]" onClick={() => handleOpenForm(activeTab)}><Plus className="h-3.5 w-3.5 mr-2" /> New Entry</Button></div>
-                  <Table><TableHeader><TableRow><TableHead>Identity</TableHead><TableHead>Doc No.</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-center">Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
-                    <TableBody>{records.filter(r=>r.type === activeTab).map(r => (
-                      <TableRow key={r.id} onClick={() => handleOpenForm(r.type, r)} className="cursor-pointer">
-                        <TableCell className="font-bold text-slate-700 uppercase">{r.customerName}</TableCell>
-                        <TableCell className="font-code text-primary font-bold">{r.number}</TableCell>
-                        <TableCell className="text-right font-bold text-slate-900">₹ {r.amount?.toLocaleString()}</TableCell>
-                        <TableCell className="text-center"><Badge variant="outline" className="text-[8px] font-bold uppercase">{r.status}</Badge></TableCell>
-                        <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={(e)=>{e.stopPropagation(); onDeleteRecord(r.id);}}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button></TableCell>
-                      </TableRow>
-                    ))}</TableBody>
-                  </Table>
-                </Card>
+
+          <div className="flex-1 overflow-y-auto w-full">
+            {activeTab === 'dashboard' ? <DashboardView /> : (
+              <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                 <Card className="bg-white dark:bg-card border-slate-200 dark:border-border shadow-2xl rounded-3xl overflow-hidden">
+                    <div className="p-10 border-b border-slate-100 dark:border-border bg-slate-50/50 dark:bg-slate-900/10 flex flex-col md:flex-row justify-between items-center gap-8">
+                       <div className="flex items-center gap-6">
+                          <div className="p-4 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-blue-900/20">
+                            {MAIN_TABS.find(t=>t.id===activeTab)?.icon && (() => {
+                              const Icon = MAIN_TABS.find(t=>t.id===activeTab)!.icon;
+                              return <Icon className="h-8 w-8" />;
+                            })()}
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">{MAIN_TABS.find(t=>t.id===activeTab)?.label} Hub</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Institutional Ledger Matrix</p>
+                          </div>
+                       </div>
+                       <Button className="h-14 px-12 bg-primary dark:bg-primary hover:bg-black text-white dark:text-card rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20 flex gap-3 group" onClick={() => handleOpenForm(activeTab)}>
+                          <Plus className="h-5 w-5" /> Initialize Entry <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                       </Button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-white dark:bg-card border-b border-slate-100 dark:border-border">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="font-black text-[10px] uppercase text-slate-400 py-6 px-10">Account Identity</TableHead>
+                            <TableHead className="font-black text-[10px] uppercase text-slate-400">Registry ID</TableHead>
+                            <TableHead className="font-black text-[10px] uppercase text-right px-6">Valuation (₹)</TableHead>
+                            <TableHead className="font-black text-[10px] uppercase text-center w-32">Status Node</TableHead>
+                            <TableHead className="text-right px-10 w-20"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="bg-white dark:bg-card">
+                          {records.filter(r=>r.type === activeTab).map(r => (
+                            <TableRow key={r.id} onClick={() => handleOpenForm(r.type, r)} className="h-24 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 border-b border-slate-50 dark:border-border transition-all cursor-pointer group">
+                              <TableCell className="px-10">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-black text-[#001F3D] dark:text-white uppercase tracking-tight">{r.customerName}</span>
+                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">ID: {r.customerId}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-code text-xs font-bold text-primary">{r.number}</TableCell>
+                              <TableCell className="text-right font-display font-black text-sm dark:text-white">₹ {r.amount?.toLocaleString()}</TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full border-slate-200 dark:border-border dark:text-slate-400">{r.status}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right px-10">
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                   <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500" onClick={(e)=>{e.stopPropagation(); onDeleteRecord(r.id);}}><Trash2 className="h-5 w-5" /></Button>
+                                   <ChevronRight className="h-5 w-5 text-slate-200" />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {records.filter(r=>r.type===activeTab).length === 0 && (
+                            <TableRow><TableCell colSpan={5} className="py-40 text-center text-[10px] text-slate-300 font-black uppercase tracking-widest italic">Ledger Registry Node Empty</TableCell></TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                 </Card>
               </div>
             )}
           </div>

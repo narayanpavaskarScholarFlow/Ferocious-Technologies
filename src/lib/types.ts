@@ -113,22 +113,26 @@ export interface Order {
 export interface BillingLineItem {
   id: string;
   description: string;
+  note?: string;
   hsn: string;
   qty: number;
   unit: string;
   price: number;
   discount: number;
+  discountType: 'percentage' | 'amount';
   gstRate: number;
   total: number;
 }
 
 export interface BillingRecord {
   id: string;
-  type: string; // 'invoice' | 'purchase_invoice' | 'quotation' | 'delivery_challan' | 'proforma' | 'purchase_order' | 'sale_order' | 'credit_note' | 'debit_note' | 'inward' | 'outward'
+  type: string;
   customerName: string;
   customerId: string;
   date: string;
   number: string;
+  numberPrefix?: string;
+  numberPostfix?: string;
   amount: number;
   status: string;
   note: string;
@@ -148,6 +152,17 @@ export interface BillingRecord {
   placeOfSupply?: string;
   vehicleNo?: string;
   terms?: string;
+  revCharge?: 'Yes' | 'No';
+  shipTo?: string;
+  distanceEWay?: string;
+  challanNo?: string;
+  challanDate?: string;
+  lrNo?: string;
+  deliveryMode?: string;
+  tcsRate?: number;
+  tcsAmount?: number;
+  roundOff?: number;
+  isRoundOffActive?: boolean;
 }
 
 export interface SQCDPData {

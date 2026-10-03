@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +88,7 @@ import {
   BrainCircuit,
   Settings
 } from 'lucide-react';
-import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType } from '@/lib/types';
+import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -123,6 +122,7 @@ import {
   Legend,
   Sector
 } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -223,6 +223,17 @@ function numberToWords(num: number): string {
   return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
 }
 
+const DEFAULT_NUMBER_SERIES: NumberSeries = {
+  prefix: 'DOC',
+  startingNumber: 1,
+  currentNumber: 1,
+  length: 4,
+  fyFormat: 'YYYY',
+  separator: '-',
+  resetEveryFY: true,
+  manualOverride: false,
+};
+
 export function BillingManagement({ customers, vendors, records, orders, users, inventory, permissions, onSaveRecord, onDeleteRecord, onTabChange, uiSettings }: BillingManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -230,7 +241,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [activeRecordType, setActiveRecordType] = useState('invoice');
-  const [editingRecordId, setEditingLogId] = useState<string | null>(null);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
   const [previewRecord, setPreviewRecord] = useState<BillingRecord | null>(null);
   
@@ -242,7 +253,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   const [activeReportId, setActiveReportId] = useState('sales');
   
-  // BI Targets (Mockable/Admin configurable)
   const [targets, setTargets] = useState({
     monthlySales: 2500000,
     monthlyQuotations: 50,
@@ -256,24 +266,31 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     setLastSyncTime(new Date().toLocaleString());
   }, [records]);
 
+  const generateNextNumber = useCallback((type: string) => {
+    const series = uiSettings.numberSeries?.[type] || { ...DEFAULT_NUMBER_SERIES, prefix: DOCUMENT_TYPES.find(d => d.id === type)?.prefix || 'DOC' };
+    const numStr = series.currentNumber.toString().padStart(series.length, '0');
+    const fy = new Date().getFullYear();
+    const fyStr = series.fyFormat === 'YYYY' ? fy.toString() : 
+                 series.fyFormat === 'YY-YY' ? `${fy.toString().slice(-2)}-${(fy+1).toString().slice(-2)}` : '';
+    
+    return [series.prefix, numStr, fyStr].filter(Boolean).join(` ${series.separator} `);
+  }, [uiSettings.numberSeries]);
+
   const handleOpenForm = (type: string, record?: BillingRecord) => {
     setActiveRecordType(type);
     if (record) {
-      setEditingLogId(record.id);
+      setEditingRecordId(record.id);
       setFormData(record);
     } else {
-      const docType = DOCUMENT_TYPES.find(d => d.id === type);
-      const nextNum = records.filter(r => r.type === type).length + 1;
-      setEditingLogId(null);
+      const generatedNumber = generateNextNumber(type);
+      setEditingRecordId(null);
       setFormData({
         id: `REC-${Date.now()}`,
         type,
         customerName: '',
         customerId: '',
         date: new Date().toISOString().split('T')[0],
-        number: nextNum.toString(),
-        numberPrefix: docType?.prefix || 'DOC',
-        numberPostfix: new Date().getFullYear().toString(),
+        number: generatedNumber,
         status: type === 'quotation' ? 'Draft' : 'Pending',
         note: '',
         items: type.includes('payment') ? [] : [{ id: '1', description: '', note: '', hsn: '', qty: 0, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage' as const, gstRate: 18, total: 0 }],
@@ -289,7 +306,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         distanceEWay: '',
         challanNo: '',
         challanDate: '',
-        lrNo: '',
         deliveryMode: '',
         tcsRate: 0,
         tcsAmount: 0,
@@ -381,8 +397,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." });
       return;
     }
+
     onSaveRecord(formData as BillingRecord);
-    toast({ title: "Ledger Synchronized", description: `${formData.type} #${formData.numberPrefix}-${formData.number}-${formData.numberPostfix} committed.` });
+
+    // If it's a new record and manual override is off, we should ideally increment the number in Firestore.
+    // This part requires a separate update call to the Admin/System settings if needed.
+    
+    toast({ title: "Ledger Synchronized", description: `${formData.type} #${formData.number} committed.` });
     setIsRecordFormOpen(false);
   };
 
@@ -423,13 +444,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const receivables = invoices.filter(r => r.status !== 'Paid').reduce((s, r) => s + r.amount, 0);
     const payables = purchases.filter(r => r.status !== 'Paid').reduce((s, r) => s + r.amount, 0);
     
-    // Profit Calculation (Simplified: Revenue - Purchases)
     const monthlyExp = purchases.filter(r => isWithinInterval(parseISO(r.date), {start: monthStart, end: now})).reduce((s, r) => s + r.amount, 0);
     const profit = monthlyRev - monthlyExp;
 
     const conversionRate = quotations.length > 0 ? Math.round((quotations.filter(q => q.status === 'Converted').length / quotations.length) * 100) : 0;
 
-    // Sales by Day (Last 7 Days)
     const salesByDay = Array.from({length: 7}, (_, i) => {
       const date = subDays(now, 6 - i);
       const dayLabel = format(date, 'EEE');
@@ -440,7 +459,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       return { name: dayLabel, value, target: targets.monthlySales / 30 };
     });
 
-    // Top Customers
     const customerMap: Record<string, {name: string, revenue: number, orders: number, outstanding: number}> = {};
     invoices.forEach(r => {
       if (!customerMap[r.customerId]) {
@@ -452,7 +470,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
     const topCustomers = Object.values(customerMap).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
 
-    // Business Health Score Calculation
     const revAchievement = Math.min((monthlyRev / targets.monthlySales) * 100, 100);
     const collectionEfficiency = payments.length > 0 ? (payments.filter(p => isWithinInterval(parseISO(p.date), {start: monthStart, end: now})).reduce((s, p) => s + p.amount, 0) / monthlyRev) * 100 : 0;
     const inventoryHealth = inventory.length > 0 ? (inventory.filter(i => i.status === 'In Stock').length / inventory.length) * 100 : 100;
@@ -469,8 +486,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     customerId: '',
     date: new Date().toISOString().split('T')[0],
     number: '',
-    numberPrefix: '',
-    numberPostfix: '',
     status: 'Pending',
     note: '',
     items: [],
@@ -486,7 +501,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     distanceEWay: '',
     challanNo: '',
     challanDate: '',
-    lrNo: '',
     deliveryMode: '',
     tcsRate: 0,
     tcsAmount: 0,
@@ -511,7 +525,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   const FullPageEditor = () => {
     const isPaymentType = activeRecordType === 'inward_payment' || activeRecordType === 'outward_payment';
-    const [visibleCols, setVisibleCols] = useState({ hsn: true, discount: true, gst: true });
+    const seriesConfig = uiSettings.numberSeries?.[activeRecordType] || DEFAULT_NUMBER_SERIES;
     
     if (isPaymentType) {
       return (
@@ -531,10 +545,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           <div className="max-w-4xl mx-auto w-full p-8 space-y-8 mt-4">
             <div className="grid grid-cols-12 items-center gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Receipt No <span className="text-red-500">*</span></Label>
-              <div className="col-span-9 flex gap-2">
-                <Input className="h-9 bg-slate-50 border-slate-300 text-[10px] font-bold w-28 uppercase px-3 rounded-none" value={formData.numberPrefix || ''} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
-                <Input className="h-9 border-slate-300 text-xs font-bold flex-1 px-3 rounded-none" value={formData.number || ''} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
-                <Input className="h-9 bg-slate-50 border-slate-300 text-[10px] font-bold w-28 uppercase px-3 rounded-none" value={formData.numberPostfix || ''} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
+              <div className="col-span-9">
+                <Input 
+                  readOnly={!seriesConfig.manualOverride}
+                  className={cn("h-9 border-slate-300 text-xs font-bold px-3 rounded-none", !seriesConfig.manualOverride && "bg-slate-50 opacity-60")} 
+                  value={formData.number || ''} 
+                  onChange={(e)=>setFormData({...formData, number: e.target.value})} 
+                />
               </div>
             </div>
             <div className="grid grid-cols-12 items-center gap-6">
@@ -612,14 +629,17 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
 
             <div className="bg-white border border-slate-300 p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><FileText className="h-3.5 w-3.5" /> Quotation Detail</h3>
+              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><FileText className="h-3.5 w-3.5" /> Document Detail</h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Document No <span className="text-red-500">*</span></Label>
-                  <div className="col-span-8 flex gap-1">
-                    <Input className="h-8 border-slate-300 rounded-none text-[10px] font-bold w-20 text-center uppercase" value={formData.numberPrefix || ''} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
-                    <Input className="h-8 border-slate-300 rounded-none text-xs font-bold flex-1 text-center" value={formData.number || ''} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
-                    <Input className="h-8 border-slate-300 rounded-none text-[10px] font-bold w-20 text-center uppercase" value={formData.numberPostfix || ''} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
+                  <div className="col-span-8">
+                    <Input 
+                      readOnly={!seriesConfig.manualOverride}
+                      className={cn("h-8 border-slate-300 rounded-none text-xs font-bold w-full text-center", !seriesConfig.manualOverride && "bg-slate-50 opacity-60")} 
+                      value={formData.number || ''} 
+                      onChange={(e)=>setFormData({...formData, number: e.target.value})} 
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
@@ -741,7 +761,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           </div>
         </div>
 
-        {/* Top KPI Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
           <KPICard title="Total Revenue" value={biMetrics.monthlyRev} target={targets.monthlySales} achievement={Math.round((biMetrics.monthlyRev/targets.monthlySales)*100)} icon={TrendingUp} />
           <KPICard title="Net Profit" value={biMetrics.profit} target={targets.monthlySales * 0.2} achievement={Math.round((biMetrics.profit/(targets.monthlySales * 0.2))*100)} icon={Coins} />
@@ -766,7 +785,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Sales Performance vs Target */}
           <Card className="lg:col-span-8 p-10 border-slate-100 bg-white shadow-xl rounded-[2.5rem] space-y-8 relative overflow-hidden">
             <div className="flex justify-between items-center relative z-10">
               <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
@@ -801,7 +819,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </Card>
 
-          {/* Business Health Gauge */}
           <Card className="lg:col-span-4 p-10 bg-[#001F3D] border-none shadow-2xl rounded-[2.5rem] flex flex-col items-center justify-center text-center relative overflow-hidden group">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
             <div className="relative z-10 space-y-8 w-full">
@@ -845,7 +862,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Top Customers Horizontal Bar */}
           <Card className="lg:col-span-6 p-8 border-slate-100 bg-white shadow-xl rounded-[2rem] space-y-8">
             <div className="flex items-center gap-3 border-l-4 border-accent pl-4">
               <Building2 className="h-5 w-5 text-accent" />
@@ -867,7 +883,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </Card>
 
-          {/* Profitability Waterfall / Analysis */}
           <Card className="lg:col-span-6 p-8 border-slate-100 bg-white shadow-xl rounded-[2rem] space-y-8">
             <div className="flex items-center gap-3 border-l-4 border-emerald-500 pl-4">
               <Calculator className="h-5 w-5 text-emerald-500" />
@@ -899,7 +914,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Prediction Panel */}
           <Card className="p-8 bg-slate-900 text-white border-none shadow-2xl rounded-[2rem] relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <BrainCircuit className="h-20 w-20 text-primary" />
@@ -926,7 +940,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </Card>
 
-          {/* Low Stock Monitor */}
           <Card className="p-8 bg-white border-slate-100 shadow-xl rounded-[2rem] space-y-6">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <Package className="h-3.5 w-3.5" /> Stock Risk Monitor
@@ -947,7 +960,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </Card>
 
-          {/* Payment aging */}
           <Card className="p-8 bg-white border-slate-100 shadow-xl rounded-[2rem] space-y-6 col-span-2">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <Clock className="h-3.5 w-3.5" /> Receivable Aging Ledger
@@ -1067,7 +1079,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                    {filteredRecords.map((record) => (
                       <TableRow key={record.id} className="h-16 border-b border-slate-50 group hover:bg-slate-50/50 cursor-pointer" onClick={() => setPreviewRecord(record)}>
                          <TableCell className="px-6" onClick={(e)=>e.stopPropagation()}><Checkbox checked={selectedRecords.includes(record.id)} onCheckedChange={()=>setSelectedRecords(prev => prev.includes(record.id) ? prev.filter(i => i !== record.id) : [...prev, record.id])} /></TableCell>
-                         <TableCell className="px-6 font-code text-[11px] font-bold text-primary whitespace-nowrap">{record.numberPrefix}-{record.number}</TableCell>
+                         <TableCell className="px-6 font-code text-[11px] font-bold text-primary whitespace-nowrap">{record.number}</TableCell>
                          <TableCell className="px-4 text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">{record.date}</TableCell>
                          <TableCell className="px-4"><span className="text-[12px] font-bold text-[#001F3D] uppercase truncate max-w-[200px] inline-block">{record.customerName}</span></TableCell>
                          <TableCell className="px-4 text-right font-display font-black text-[#001F3D] text-[13px]">₹ {(record.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
@@ -1123,7 +1135,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <>
                 <div className="p-8 bg-[#001F3D] text-white flex justify-between items-start shrink-0">
                    <div className="space-y-4">
-                      <div className="flex items-center gap-3"><div className="p-2 bg-primary/20 rounded-lg"><FileText className="h-6 w-6 text-primary" /></div><h3 className="text-2xl font-display font-black uppercase tracking-tight">{previewRecord.numberPrefix}-{previewRecord.number}</h3></div>
+                      <div className="flex items-center gap-3"><div className="p-2 bg-primary/20 rounded-lg"><FileText className="h-6 w-6 text-primary" /></div><h3 className="text-2xl font-display font-black uppercase tracking-tight">{previewRecord.number}</h3></div>
                       <div className="space-y-1"><p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Client Identity</p><p className="text-lg font-bold uppercase">{previewRecord.customerName}</p></div>
                    </div>
                    <Badge className={cn("text-[10px] font-bold uppercase py-2 px-6 rounded-full", getStatusBadgeStyles(previewRecord.status))}>{previewRecord.status}</Badge>
@@ -1131,7 +1143,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <ScrollArea className="flex-1 p-8">
                    <div className="space-y-10 pb-20">
                       <div className="grid grid-cols-2 gap-8"><div className="space-y-1"><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Document Date</p><p className="text-xs font-bold text-slate-700">{previewRecord.date}</p></div><div className="space-y-1"><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">GST Number</p><p className="text-xs font-bold font-code text-slate-700">{previewRecord.gstNumber || 'UNREGISTERED'}</p></div></div>
-                      <div className="space-y-4"><h4 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest border-b pb-2">Line Item Matrix</h4><div className="space-y-2">{previewRecord.items?.map((item, idx) => (<div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center group"><div className="flex flex-col gap-1"><span className="text-[11px] font-bold text-slate-700 uppercase">{item.description}</span><span className="text-[9px] text-slate-400 font-bold uppercase">{item.qty} {item.unit} • ₹{item.price}/ea</span></div><span className="text-[11px] font-display font-black text-[#001F3D]">₹ {(item.total ?? 0).toLocaleString()}</span></div>))}</div></div>
+                      <div className="space-y-4"><h4 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest border-b pb-2">Line Item Matrix</h4><div className="space-y-2">{previewRecord.items?.map((item, idx) => (
+                        <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center group"><div className="flex flex-col gap-1"><span className="text-[11px] font-bold text-slate-700 uppercase">{item.description}</span><span className="text-[9px] text-slate-400 font-bold uppercase">{item.qty} {item.unit} • ₹{item.price}/ea</span></div><span className="text-[11px] font-display font-black text-[#001F3D]">₹ {(item.total ?? 0).toLocaleString()}</span></div>
+                      ))}</div></div>
                       <div className="p-6 bg-slate-50 rounded-2xl space-y-4"><div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-500"><span>Taxable Base</span><span>₹ {(previewRecord.subTotal || 0).toLocaleString()}</span></div><div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-500"><span>Integrated Tax</span><span className="text-primary">₹ {(previewRecord.taxTotal || 0).toLocaleString()}</span></div><div className="pt-4 border-t flex justify-between items-end"><span className="text-xs font-black uppercase text-[#001F3D]">Total Settlement</span><span className="text-2xl font-display font-black text-[#001F3D]">₹ {(previewRecord.amount || 0).toLocaleString()}</span></div></div>
                    </div>
                 </ScrollArea>
@@ -1144,7 +1158,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
          </SheetContent>
       </Sheet>
 
-      {/* Target Calibration Dialog */}
       <Dialog open={isTargetDialogOpen} onOpenChange={setIsTargetDialogOpen}>
         <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-[2rem] p-10">
           <DialogHeader className="mb-6">

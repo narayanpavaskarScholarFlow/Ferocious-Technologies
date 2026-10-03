@@ -137,8 +137,6 @@ export interface BillingRecord {
   customerId: string;
   date: string;
   number: string;
-  numberPrefix?: string;
-  numberPostfix?: string;
   amount: number;
   status: string;
   note: string;
@@ -163,7 +161,6 @@ export interface BillingRecord {
   distanceEWay?: string;
   challanNo?: string;
   challanDate?: string;
-  lrNo?: string;
   deliveryMode?: string;
   tcsRate?: number;
   tcsAmount?: number;
@@ -283,6 +280,17 @@ export interface SalaryStructure {
   ifscCode: string;
 }
 
+export interface NumberSeries {
+  prefix: string;
+  startingNumber: number;
+  currentNumber: number;
+  length: number;
+  fyFormat: 'YYYY' | 'YY-YY' | 'NONE';
+  separator: string;
+  resetEveryFY: boolean;
+  manualOverride: boolean;
+}
+
 export interface UISettings {
   fontSize: number;
   tableDensity: 'compact' | 'standard' | 'comfortable';
@@ -297,6 +305,7 @@ export interface UISettings {
   woNextNumber: number;
   brandLogo?: string; // High-fidelity corporate logo data URI
   logoSize: number; // Unified scaling node for branding identities
+  numberSeries?: Record<string, NumberSeries>;
   billingTableSettings?: {
     colWidths: {
       description: number;

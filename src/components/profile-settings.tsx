@@ -75,16 +75,19 @@ import {
   Layout,
   Type,
   Square,
-  DollarSign
+  DollarSign,
+  SwitchCamera,
+  RotateCcw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
+import { SystemUser, PermissionLevel, UISettings, ViewType, NumberSeries } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { UserManagement } from './user-management';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 
 const THEME_COLORS = [
   { name: 'Classic Navy', value: '243 75% 59%', color: 'bg-[#6366f1]' },
@@ -134,6 +137,31 @@ const MACHINE_ACCESS_LIST = ["VMC", "CNC Turning", "Surface Grinding", "VMM"];
 const DEPARTMENTS = [
   "Admin", "Marketing", "R&D", "Design", "Engineering", "Tool Room", "Quality", "Production", "Accounts"
 ];
+
+const DOC_TYPES_FOR_SERIES = [
+  { id: 'quotation', label: 'Quotation' },
+  { id: 'sale_order', label: 'Sales Order' },
+  { id: 'purchase_order', label: 'Purchase Order' },
+  { id: 'invoice', label: 'Sales Invoice' },
+  { id: 'purchase_invoice', label: 'Purchase Invoice' },
+  { id: 'proforma', label: 'Proforma' },
+  { id: 'delivery_challan', label: 'Delivery Challan' },
+  { id: 'credit_note', label: 'Credit Note' },
+  { id: 'debit_note', label: 'Debit Note' },
+  { id: 'job_work', label: 'Job Work' },
+  { id: 'service_request', label: 'Service Request' },
+];
+
+const DEFAULT_NUMBER_SERIES: NumberSeries = {
+  prefix: 'QT',
+  startingNumber: 1,
+  currentNumber: 1,
+  length: 4,
+  fyFormat: 'YYYY',
+  separator: '-',
+  resetEveryFY: true,
+  manualOverride: false,
+};
 
 interface ProfileSettingsProps {
   currentUser: string | null;
@@ -344,6 +372,26 @@ export function ProfileSettings({
     updateLocalUIField('billingTableSettings', updatedBilling);
   };
 
+  const handleUpdateSeries = (docId: string, field: keyof NumberSeries, value: any) => {
+    const currentSeriesMap = localUI.numberSeries || {};
+    const series = currentSeriesMap[docId] || { ...DEFAULT_NUMBER_SERIES };
+    
+    const updatedSeries = { ...series, [field]: value };
+    const updatedMap = { ...currentSeriesMap, [docId]: updatedSeries };
+    
+    updateLocalUIField('numberSeries', updatedMap);
+  };
+
+  const getSeriesPreview = (docId: string) => {
+    const series = localUI.numberSeries?.[docId] || DEFAULT_NUMBER_SERIES;
+    const numStr = series.currentNumber.toString().padStart(series.length, '0');
+    const fy = new Date().getFullYear();
+    const fyStr = series.fyFormat === 'YYYY' ? fy.toString() : 
+                 series.fyFormat === 'YY-YY' ? `${fy.toString().slice(-2)}-${(fy+1).toString().slice(-2)}` : '';
+    
+    return [series.prefix, numStr, fyStr].filter(Boolean).join(` ${series.separator} `);
+  };
+
   const handleMatrixPermissionUpdate = (nodeId: string, level: PermissionLevel) => {
     setMatrixPermissions(prev => ({ ...prev, [nodeId]: level }));
   };
@@ -406,6 +454,9 @@ export function ProfileSettings({
               </TabsTrigger>
               <TabsTrigger value="financial-matrix" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
                 <TableProperties className="h-3.5 w-3.5 mr-2" /> Financial Matrix
+              </TabsTrigger>
+              <TabsTrigger value="number-governance" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
+                <Hash className="h-3.5 w-3.5 mr-2" /> Sequence Matrix
               </TabsTrigger>
             </>
           )}
@@ -912,6 +963,102 @@ export function ProfileSettings({
                     </div>
                   </div>
                </Card>
+            </TabsContent>
+
+            <TabsContent value="number-governance" className="m-0 space-y-8 pb-20">
+               <div className="flex justify-between items-center px-2">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-xl"><Hash className="h-8 w-8" /></div>
+                    <div>
+                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Document Numbering Matrix</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Configure automated serialization protocols for commercial nodes.</p>
+                    </div>
+                 </div>
+                 <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
+                   <Save className="h-4 w-4" /> SAVE DATA
+                 </Button>
+              </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {DOC_TYPES_FOR_SERIES.map((docType) => {
+                    const series = localUI.numberSeries?.[docType.id] || DEFAULT_NUMBER_SERIES;
+                    return (
+                      <Card key={docType.id} className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8 relative overflow-hidden group">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{docType.label} Protocol</h4>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">NEXT IDENTIFIER PREVIEW:</p>
+                            <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 text-sm font-code font-bold mt-2 h-10 px-6 rounded-xl">
+                              {getSeriesPreview(docType.id)}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-col items-end gap-4">
+                             <div className="flex items-center gap-3">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">Manual Override</Label>
+                                <Switch 
+                                  checked={series.manualOverride} 
+                                  onCheckedChange={(val) => handleUpdateSeries(docType.id, 'manualOverride', val)} 
+                                />
+                             </div>
+                             <div className="flex items-center gap-3">
+                                <Label className="text-[8px] font-bold uppercase text-slate-400">FY Reset</Label>
+                                <Switch 
+                                  checked={series.resetEveryFY} 
+                                  onCheckedChange={(val) => handleUpdateSeries(docType.id, 'resetEveryFY', val)} 
+                                />
+                             </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-50">
+                           <div className="space-y-2">
+                              <Label className="text-[8px] font-bold uppercase text-slate-500">Prefix</Label>
+                              <Input className="h-10 bg-slate-50 border-none font-bold uppercase" value={series.prefix} onChange={(e) => handleUpdateSeries(docType.id, 'prefix', e.target.value)} />
+                           </div>
+                           <div className="space-y-2">
+                              <Label className="text-[8px] font-bold uppercase text-slate-500">Starting No.</Label>
+                              <Input type="number" className="h-10 bg-slate-50 border-none font-bold" value={series.startingNumber} onChange={(e) => handleUpdateSeries(docType.id, 'startingNumber', Number(e.target.value))} />
+                           </div>
+                           <div className="space-y-2">
+                              <Label className="text-[8px] font-bold uppercase text-slate-500">Padding Length</Label>
+                              <Select value={series.length.toString()} onValueChange={(val) => handleUpdateSeries(docType.id, 'length', Number(val))}>
+                                 <SelectTrigger className="h-10 bg-slate-50 border-none text-[10px] font-bold"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="rounded-xl">
+                                    <SelectItem value="3">3 Digits (001)</SelectItem>
+                                    <SelectItem value="4">4 Digits (0001)</SelectItem>
+                                    <SelectItem value="5">5 Digits (00001)</SelectItem>
+                                 </SelectContent>
+                              </Select>
+                           </div>
+                           <div className="space-y-2">
+                              <Label className="text-[8px] font-bold uppercase text-slate-500">FY Format</Label>
+                              <Select value={series.fyFormat} onValueChange={(val: any) => handleUpdateSeries(docType.id, 'fyFormat', val)}>
+                                 <SelectTrigger className="h-10 bg-slate-50 border-none text-[10px] font-bold"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="rounded-xl">
+                                    <SelectItem value="YYYY">YYYY (2024)</SelectItem>
+                                    <SelectItem value="YY-YY">YY-YY (24-25)</SelectItem>
+                                    <SelectItem value="NONE">No Suffix</SelectItem>
+                                 </SelectContent>
+                              </Select>
+                           </div>
+                        </div>
+
+                        <div className="space-y-2">
+                           <Label className="text-[8px] font-bold uppercase text-slate-500">Separator</Label>
+                           <Select value={series.separator} onValueChange={(val) => handleUpdateSeries(docType.id, 'separator', val)}>
+                              <SelectTrigger className="h-10 bg-slate-50 border-none text-[10px] font-bold"><SelectValue /></SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                 <SelectItem value="-">Dash (-)</SelectItem>
+                                 <SelectItem value="/">Slash (/)</SelectItem>
+                                 <SelectItem value=" ">Space ( )</SelectItem>
+                                 <SelectItem value="">None</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+                      </Card>
+                    );
+                  })}
+               </div>
             </TabsContent>
           </>
         )}

@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   FileText, 
   ShoppingCart, 
@@ -167,6 +166,25 @@ const REPORT_STRUCTURE = [
   }
 ];
 
+// Utility for Amount to Words conversion
+function numberToWords(num: number): string {
+  if (num === 0) return "ZERO RUPEES ONLY";
+  
+  const single = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN"];
+  const double = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
+
+  function convert(n: number): string {
+    if (n < 20) return single[n];
+    if (n < 100) return double[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + single[n % 10] : "");
+    if (n < 1000) return single[Math.floor(n / 100)] + " HUNDRED" + (n % 100 !== 0 ? " AND " + convert(n % 100) : "");
+    if (n < 100000) return convert(Math.floor(n / 1000)) + " THOUSAND" + (n % 1000 !== 0 ? " " + convert(n % 1000) : "");
+    if (n < 10000000) return convert(Math.floor(n / 100000)) + " LAKH" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
+    return convert(Math.floor(n / 10000000)) + " CRORE" + (n % 10000000 !== 0 ? " " + convert(n % 10000000) : "");
+  }
+
+  return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
+}
+
 export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -183,7 +201,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [searchGst, setSearchGst] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
 
   // Report State
@@ -288,10 +305,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       gstRate: 18,
       total: 0
     };
-    setFormData(prev => ({
-      ...prev,
-      items: [...(prev.items || []), newItem]
-    }));
+    setFormData(prev => {
+      const updated = { ...prev, items: [...(prev.items || []), newItem] };
+      return calculateTotals(updated);
+    });
   };
 
   const handleRemoveItem = (id: string) => {
@@ -313,21 +330,23 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   const calculateTotals = (data: Partial<BillingRecord>) => {
     const items = data.items || [];
-    const subTotal = items.reduce((acc, i) => acc + (i.qty * i.price), 0);
+    const subTotal = items.reduce((acc, i) => acc + ((i.qty || 0) * (i.price || 0)), 0);
     
     let discountTotal = 0;
     items.forEach(i => {
+      const base = (i.qty || 0) * (i.price || 0);
       if (i.discountType === 'percentage') {
-        discountTotal += (i.qty * i.price) * (i.discount / 100);
+        discountTotal += base * ((i.discount || 0) / 100);
       } else {
-        discountTotal += i.discount;
+        discountTotal += (i.discount || 0);
       }
     });
 
     const taxableTotal = subTotal - discountTotal + (data.transportationCharges || 0);
     const taxTotal = items.reduce((acc, i) => {
-      const itemTaxable = (i.qty * i.price) - (i.discountType === 'percentage' ? (i.qty * i.price * (i.discount / 100)) : i.discount);
-      return acc + (itemTaxable * (i.gstRate / 100));
+      const itemBase = (i.qty || 0) * (i.price || 0);
+      const itemTaxable = itemBase - (i.discountType === 'percentage' ? (itemBase * ((i.discount || 0) / 100)) : (i.discount || 0));
+      return acc + (itemTaxable * ((i.gstRate || 0) / 100));
     }, 0);
 
     const baseAmount = taxableTotal + taxTotal;
@@ -342,10 +361,20 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       finalAmount = rounded;
     }
 
-    return { ...data, items: items.map(i => {
-      const itemTaxable = (i.qty * i.price) - (i.discountType === 'percentage' ? (i.qty * i.price * (i.discount / 100)) : i.discount);
-      return { ...i, total: itemTaxable + (itemTaxable * (i.gstRate / 100)) };
-    }), subTotal, discountTotal, taxTotal, amount: finalAmount, tcsAmount, roundOff };
+    return { 
+      ...data, 
+      items: items.map(i => {
+        const itemBase = (i.qty || 0) * (i.price || 0);
+        const itemTaxable = itemBase - (i.discountType === 'percentage' ? (itemBase * ((i.discount || 0) / 100)) : (i.discount || 0));
+        return { ...i, total: itemTaxable + (itemTaxable * ((i.gstRate || 0) / 100)) };
+      }), 
+      subTotal, 
+      discountTotal, 
+      taxTotal, 
+      amount: finalAmount, 
+      tcsAmount, 
+      roundOff 
+    };
   };
 
   const handleSave = () => {
@@ -353,6 +382,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." });
       return;
     }
+    
+    const invalidItems = formData.items?.some(i => !i.description || (i.qty || 0) <= 0 || (i.price || 0) <= 0);
+    if (invalidItems) {
+      toast({ variant: "destructive", title: "Data Error", description: "All line items must have a description, positive quantity, and price." });
+      return;
+    }
+
     onSaveRecord(formData as BillingRecord);
     toast({ title: "Ledger Synchronized", description: `${formData.type} #${formData.numberPrefix}-${formData.number}-${formData.numberPostfix} committed.` });
     setIsRecordFormOpen(false);
@@ -474,7 +510,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="grid grid-cols-12 items-start gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase mt-2">Address</Label>
               <div className="col-span-9">
-                <Textarea className="min-h-[60px] border-slate-300 rounded-none p-3 text-xs font-medium resize-none bg-slate-50" readOnly value={formData.shipTo || ''} />
+                <Textarea className="min-h-[60px] border-slate-300 rounded-none p-3 text-xs font-medium resize-none bg-slate-50" readOnly value={formData.shipTo || ''} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} />
               </div>
             </div>
 
@@ -533,10 +569,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         <div className="p-4 border-b bg-white flex items-center justify-between sticky top-0 z-50 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-[#001F3D] rounded text-white shadow-sm">
-              {DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.icon ? (() => { const Icon = DOCUMENT_TYPES.find(d => d.id === activeRecordType)!.icon; return <Icon className="h-5 w-5" />; })() : <Receipt className="h-5 w-5" />}
+              <Receipt className="h-5 w-5" />
             </div>
             <h2 className="text-xl font-bold text-[#001F3D] uppercase tracking-tighter">
-              {editingRecordId ? 'Edit' : 'Create'} {DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.label} Matrix
+              {editingRecordId ? 'Edit' : 'Create'} {currentTabLabel} Matrix
             </h2>
           </div>
           <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)}><X className="h-4 w-4 mr-2" /> Cancel</Button>
@@ -545,7 +581,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         <div className="flex-1 w-full max-w-[1700px] mx-auto p-4 md:p-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white border border-slate-300 p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> Customer Information</h3>
+              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> Vendor Information</h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">M/S <span className="text-red-500">*</span></Label>
@@ -566,7 +602,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 </div>
                 <div className="grid grid-cols-12 items-start gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase mt-2">Address</Label>
-                  <div className="col-span-8"><Textarea className="min-h-[60px] border-slate-300 rounded-none text-xs p-2 bg-slate-50" readOnly value={formData.shipTo || ''} /></div>
+                  <div className="col-span-8"><Textarea className="min-h-[60px] border-slate-300 rounded-none text-xs p-2 bg-slate-50" value={formData.shipTo || ''} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Contact Person</Label>
@@ -581,6 +617,15 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="col-span-8 flex gap-2">
                     <Input className="h-8 border-slate-300 rounded-none text-xs uppercase" value={formData.gstNumber || ''} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} />
                     <Input className="h-8 border-slate-300 rounded-none text-xs uppercase" placeholder="PAN" value={formData.panNumber || ''} onChange={(e)=>setFormData({...formData, panNumber: e.target.value})} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
+                  <div className="col-span-8">
+                     <Select value={formData.revCharge || 'No'} onValueChange={(val: any) => setFormData({...formData, revCharge: val})}>
+                        <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs uppercase"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="No">No</SelectItem><SelectItem value="Yes">Yes</SelectItem></SelectContent>
+                     </Select>
                   </div>
                 </div>
               </div>
@@ -602,6 +647,17 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-8 rounded-none" /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan No & Date</Label>
+                  <div className="col-span-8 flex gap-2">
+                    <Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.challanNo || ''} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} />
+                    <DatePicker value={formData.challanDate} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-8 rounded-none flex-1" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">L.R. No</Label>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.lrNo || ''} onChange={(e)=>setFormData({...formData, lrNo: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Delivery Mode</Label>
                   <div className="col-span-8">
                     <Select value={formData.deliveryMode || ''} onValueChange={(val) => setFormData({...formData, deliveryMode: val})}>
@@ -614,54 +670,230 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </div>
 
-          <div className="bg-white border border-slate-300 overflow-hidden">
+          <div className="bg-white border border-slate-300 overflow-hidden shadow-sm">
             <Table className="border-collapse">
-              <TableHeader className="bg-slate-100">
+              <TableHeader className="bg-slate-50">
                 <TableRow className="hover:bg-transparent border-b border-slate-300">
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-12 text-center border-r border-slate-300">SR.</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300">Product / Other Charges</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300 min-w-[300px]">Product / Other Charges</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-32 border-r border-slate-300">HSN/SAC</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Qty.</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">UOM</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-32 text-center border-r border-slate-300">Price</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-28 text-center border-r border-slate-300">Discount</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-28 text-center border-r border-slate-300">IGST (%)</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-40 text-right">Total</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {formData.items?.map((item, idx) => (
-                  <TableRow key={item.id} className="border-b border-slate-300 h-12">
-                    <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300">{idx + 1}</TableCell>
-                    <TableCell className="p-1 border-r border-slate-300"><Input className="h-8 border-none bg-transparent text-xs font-bold" value={item.description || ''} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} /></TableCell>
-                    <TableCell className="p-1 border-r border-slate-300"><Input className="h-8 border-none bg-transparent text-xs text-center" value={item.hsn || ''} onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} /></TableCell>
-                    <TableCell className="p-1 border-r border-slate-300"><Input type="number" className="h-8 text-center text-xs border-none bg-transparent" value={item.qty || 0} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} /></TableCell>
-                    <TableCell className="p-1 border-r border-slate-300"><Input className="h-8 text-center text-xs border-none bg-transparent" value={item.unit || ''} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} /></TableCell>
-                    <TableCell className="p-1 border-r border-slate-300"><Input type="number" className="h-8 text-center text-xs border-none bg-transparent" value={item.price || 0} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} /></TableCell>
-                    <TableCell className="text-right px-4 text-xs font-bold">₹ {(item.total ?? 0).toLocaleString()}</TableCell>
-                    <TableCell className="p-1 text-center"><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500" onClick={()=>handleRemoveItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
+                  <TableRow key={item.id} className="border-b border-slate-300 align-top group">
+                    <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300 py-4">{idx + 1}</TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <div className="flex flex-col">
+                        <Input 
+                          placeholder="Enter Product name"
+                          className="h-10 border-none bg-white text-xs font-bold px-4 rounded-none focus-visible:ring-1 focus-visible:ring-primary/20" 
+                          value={item.description || ''} 
+                          onChange={(e)=>updateItem(item.id, 'description', e.target.value)} 
+                        />
+                        <Textarea 
+                          placeholder="Item Note..."
+                          className="min-h-[60px] border-none bg-slate-50/50 text-[10px] px-4 py-2 rounded-none resize-none focus-visible:ring-0" 
+                          value={item.note || ''} 
+                          onChange={(e)=>updateItem(item.id, 'note', e.target.value)}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Input 
+                        className="h-10 border-none bg-transparent text-xs text-center font-code rounded-none" 
+                        value={item.hsn || ''} 
+                        onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} 
+                      />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Input 
+                        type="number" 
+                        className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold" 
+                        value={item.qty || 0} 
+                        onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} 
+                      />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Input 
+                        className="h-10 text-center text-xs border-none bg-transparent rounded-none" 
+                        value={item.unit || ''} 
+                        onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} 
+                      />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Input 
+                        type="number" 
+                        className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold text-primary" 
+                        value={item.price || 0} 
+                        onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} 
+                      />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <div className="flex items-center">
+                        <Input 
+                          type="number" 
+                          className="h-10 text-center text-xs border-none bg-transparent rounded-none w-full" 
+                          value={item.discount || 0} 
+                          onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} 
+                        />
+                        <button 
+                          className="px-2 text-[8px] font-bold text-slate-400 hover:text-primary"
+                          onClick={() => updateItem(item.id, 'discountType', item.discountType === 'percentage' ? 'amount' : 'percentage')}
+                        >
+                          {item.discountType === 'percentage' ? '%' : '₹'}
+                        </button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Input 
+                        type="number" 
+                        className="h-10 text-center text-xs border-none bg-transparent rounded-none" 
+                        value={item.gstRate || 0} 
+                        onChange={(e)=>updateItem(item.id, 'gstRate', Number(e.target.value))} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && idx === (formData.items?.length || 0) - 1) {
+                            handleAddItem();
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right px-4 text-xs font-bold py-4">
+                      ₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="p-1 text-center">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" onClick={()=>handleRemoveItem(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
+                
+                {/* Total Row matching reference image */}
+                <TableRow className="bg-yellow-100/50 hover:bg-yellow-100/50 border-t-2 border-slate-300">
+                  <TableCell colSpan={2} className="text-right font-black text-[10px] uppercase text-[#001F3D] py-4 px-6 border-r border-slate-300">Total Quotation Val.</TableCell>
+                  <TableCell className="border-r border-slate-300"></TableCell>
+                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">{formData.items?.reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
+                  <TableCell className="border-r border-slate-300"></TableCell>
+                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.items?.reduce((acc, i) => acc + (i.price || 0), 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.discountTotal?.toLocaleString()}</TableCell>
+                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.taxTotal?.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-black text-sm text-[#001F3D] px-4">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
               </TableBody>
             </Table>
-            <div className="p-2 border-t"><Button variant="ghost" onClick={handleAddItem} className="h-8 px-4 text-primary font-bold uppercase text-[9px] gap-2"><Plus className="h-3 w-3" /> Add Row</Button></div>
+            <div className="p-4 border-t bg-white flex justify-start">
+               <Button variant="ghost" onClick={handleAddItem} className="h-9 px-6 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5">
+                 <Plus className="h-4 w-4" /> Add Next Operational Node
+               </Button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-7 bg-white border border-slate-300 p-6 space-y-4">
-              <Label className="text-[10px] font-bold uppercase text-slate-500">Terms & Conditions</Label>
-              <Textarea className="min-h-[100px] border-slate-300 rounded-none text-xs bg-slate-50" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 space-y-6">
+              <div className="bg-white border border-slate-300 p-6 space-y-6">
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase text-slate-500">Bank Interface Selection</Label>
+                   <Select>
+                      <SelectTrigger className="h-10 bg-slate-50 border-slate-200 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Hide Bank Details" /></SelectTrigger>
+                      <SelectContent><SelectItem value="none">Hide Bank Details</SelectItem></SelectContent>
+                   </Select>
+                </div>
+
+                <div className="space-y-4 border-t pt-6">
+                   <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Terms & Condition / Additional Note</h4>
+                   <div className="space-y-3">
+                      <Input placeholder="Title (e.g. Validity)" className="h-10 border-slate-200 rounded-none text-xs font-bold" />
+                      <Textarea placeholder="Detail (e.g. Subject to our home jurisdiction...)" className="min-h-[80px] border-slate-200 rounded-none text-xs font-medium" />
+                      <Button variant="outline" size="sm" className="h-9 rounded-none font-bold uppercase text-[9px] tracking-widest gap-2"><Plus className="h-3.5 w-3.5" /> Add Notes</Button>
+                   </div>
+                </div>
+
+                <div className="space-y-2 border-t pt-6">
+                   <Label className="text-[10px] font-bold uppercase text-slate-400">Internal Document Note / Remarks</Label>
+                   <Textarea className="min-h-[80px] border-slate-200 rounded-none text-xs font-medium bg-slate-50/50" placeholder="Not Visible on Print" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                </div>
+              </div>
             </div>
-            <div className="lg:col-span-5 bg-white border border-slate-300 p-8 space-y-4">
-              <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600"><span>Taxable Value</span><span>₹ {(formData.subTotal || 0).toLocaleString()}</span></div>
-              <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600"><span>Total Tax</span><span className="text-primary">₹ {(formData.taxTotal || 0).toLocaleString()}</span></div>
-              <div className="bg-yellow-400 p-6 flex justify-between items-center -mx-8"><span className="text-sm font-black uppercase text-[#001F3D]">Grand Total</span><span className="text-3xl font-display font-black text-[#001F3D]">₹ {(formData.amount || 0).toLocaleString()}</span></div>
+
+            <div className="lg:col-span-5 bg-white border border-slate-300 p-8 space-y-6">
+              <div className="space-y-4">
+                 <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600"><span>Taxable Value</span><span className="font-code">₹ {(formData.subTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                 
+                 <div className="pt-2 flex justify-between items-center text-xs font-bold uppercase text-emerald-600 cursor-pointer hover:underline">
+                    <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Add Additional Charge</span>
+                    <span>₹ {(formData.transportationCharges || 0).toLocaleString()}</span>
+                 </div>
+
+                 <div className="pt-4 border-t flex justify-between items-center text-xs font-black uppercase text-[#001F3D]"><span>Total Taxable</span><span className="font-code">₹ {(formData.subTotal! - formData.discountTotal! + (formData.transportationCharges || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                 
+                 <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600"><span>Total Tax (GST)</span><span className="text-primary font-code">₹ {(formData.taxTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+
+                 <div className="grid grid-cols-12 items-center gap-4 py-2 bg-slate-50/50 px-3">
+                    <span className="col-span-4 text-[10px] font-bold uppercase text-slate-400">TCS Protocol</span>
+                    <div className="col-span-5"><Input type="number" className="h-8 border-slate-200 bg-white text-xs text-center" value={formData.tcsRate} onChange={(e)=>setFormData({...formData, tcsRate: Number(e.target.value)})} /></div>
+                    <span className="col-span-3 text-right text-xs font-bold text-slate-500">₹ {(formData.tcsAmount || 0).toLocaleString()}</span>
+                 </div>
+
+                 <div className="grid grid-cols-12 items-center gap-4 py-2 bg-slate-50/50 px-3">
+                    <span className="col-span-4 text-[10px] font-bold uppercase text-slate-400">Discount Node</span>
+                    <div className="col-span-5 flex gap-1">
+                      <Input type="number" className="h-8 border-slate-200 bg-white text-xs text-center flex-1" value={formData.discountTotal} onChange={(e)=>setFormData({...formData, discountTotal: Number(e.target.value)})} />
+                      <Select defaultValue="amount"><SelectTrigger className="h-8 w-12 rounded-none text-[10px] font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="amount">₹</SelectItem></SelectContent></Select>
+                    </div>
+                    <span className="col-span-3 text-right text-xs font-bold text-slate-500">- ₹ {(formData.discountTotal || 0).toLocaleString()}</span>
+                 </div>
+
+                 <div className="flex justify-between items-center pt-4 border-t">
+                    <span className="text-[10px] font-bold uppercase text-slate-500">Automatic Round Off</span>
+                    <Switch checked={formData.isRoundOffActive} onCheckedChange={(val)=>setFormData({...formData, isRoundOffActive: val})} />
+                 </div>
+              </div>
+
+              <div className="bg-yellow-400 p-6 flex justify-between items-center -mx-8 shadow-inner">
+                <div className="space-y-1">
+                   <span className="text-xs font-black uppercase text-[#001F3D] tracking-tighter">Grand Total Settlement</span>
+                   <p className="text-[8px] font-bold text-[#001F3D]/60 uppercase">Final Valuation Matrix</p>
+                </div>
+                <span className="text-4xl font-display font-black text-[#001F3D] tracking-tighter">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className="space-y-4 pt-4">
+                 <div className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Total in Words</span>
+                    <p className="text-[11px] font-bold text-slate-700 bg-slate-50 p-4 border border-slate-100 rounded-lg leading-relaxed shadow-inner">
+                      {numberToWords(formData.amount || 0)}
+                    </p>
+                 </div>
+                 
+                 <div className="pt-6 border-t">
+                    <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/10 rounded-xl">
+                       <span className="text-[10px] font-bold uppercase text-primary flex items-center gap-2"><Sparkles className="h-3 w-3" /> Smart Suggestion Node</span>
+                       <Plus className="h-4 w-4 text-primary cursor-pointer hover:scale-110 transition-transform" />
+                    </div>
+                 </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-end gap-3 z-50">
-           <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-10 px-8 font-bold uppercase text-xs border border-slate-300">Back</Button>
-           <Button className="h-10 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-xs" onClick={handleSave}>Save</Button>
+        <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-between items-center z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+           <div className="flex items-center gap-4">
+             <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-all"><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
+             <Button variant="outline" className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-all"><History className="h-4 w-4 mr-2" /> Save Draft</Button>
+           </div>
+           <div className="flex items-center gap-4">
+             <Button className="h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-emerald-600/20 flex gap-3"><Printer className="h-4 w-4" /> Save & Print Matrix</Button>
+             <Button className="h-12 px-12 bg-[#001F3D] hover:bg-black text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-primary/20 flex gap-3" onClick={handleSave}><Save className="h-4 w-4" /> Commit to Ledger</Button>
+           </div>
         </div>
       </div>
     );

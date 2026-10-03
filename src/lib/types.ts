@@ -68,7 +68,8 @@ export type ViewType =
   | 'manpower'
   | 'salary'
   | 'team-matrix'
-  | 'delivery';
+  | 'delivery'
+  | 'print-templates';
 
 export interface ViewMetadata {
   title: string;
@@ -429,4 +430,41 @@ export interface UserLeave {
   status: 'Pending' | 'Approved' | 'Rejected';
   isPlannedMatrix?: boolean;
   plannedMonth?: string;
+}
+
+export interface Letterhead {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  companyName: string;
+  tagline?: string;
+  address: string;
+  gstNumber?: string;
+  panNumber?: string;
+  contactNumber: string;
+  email: string;
+  website?: string;
+  qrCodeUrl?: string;
+  headerLayout: 1 | 2 | 3 | 4;
+  footerNotes?: string;
+  bankDetails?: {
+    bankName: string;
+    accountNo: string;
+    ifscCode: string;
+    branch: string;
+  };
+  signatory?: {
+    name: string;
+    designation: string;
+    sealUrl?: string;
+  };
+}
+
+export interface PrintTemplate {
+  id: string;
+  name: string;
+  documentType: string; // Quotation, Invoice, etc.
+  layout: 'classic' | 'corporate' | 'industrial' | 'compact';
+  letterheadId: string;
+  isDefault: boolean;
 }

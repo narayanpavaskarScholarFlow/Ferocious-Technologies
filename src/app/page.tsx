@@ -26,6 +26,7 @@ import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
 import { UserDetailView } from '@/components/user-detail-view';
 import { DispatchLedger } from '@/components/dispatch-ledger'; 
+import { DocumentTemplateManager } from '@/components/document-template-manager';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -106,6 +107,7 @@ const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
   'my-portal': { title: 'Personal Portal', category: 'Personnel Gateway' },
   'user-detail': { title: 'Identity Profile', category: 'System Governance' },
   settings: { title: 'Control Center', category: 'System Governance' },
+  'print-templates': { title: 'Document Templates', category: 'System Governance' },
   // Billing sub-types share the main billing metadata
   'billing-quotation': { title: 'Quotation Ledger', category: 'Commercial Operations' },
   'billing-invoice': { title: 'Invoice Ledger', category: 'Commercial Operations' },
@@ -254,7 +256,7 @@ function IndustrialERPInternal() {
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
         'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full',
-        'team-matrix': 'full', delivery: 'full',
+        'team-matrix': 'full', delivery: 'full', 'print-templates': 'full',
         'billing-quotation': 'full',
         'billing-invoice': 'full',
         'billing-po': 'full',
@@ -460,6 +462,7 @@ function IndustrialERPInternal() {
             {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
             {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} onNavigateToGantt={()=>handleViewChange('gantt')} />}
+            {currentView === 'print-templates' && <DocumentTemplateManager />}
           </div>
         </main>
       </div>

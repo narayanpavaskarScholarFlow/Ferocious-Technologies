@@ -33,7 +33,8 @@ import {
   UserCircle,
   PackageCheck,
   Globe,
-  Landmark
+  Landmark,
+  Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -90,6 +91,7 @@ export function SidebarNav({
       { id: 'sqcdp' as ViewType, icon: LineChart, label: customTitles['sqcdp'] || 'Performance' },
       { id: 'weekly-plan' as ViewType, icon: Calendar, label: customTitles['weekly-plan'] || 'Master Plan' },
       { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: customTitles['smart-quote'] || 'AI Quoting' },
+      { id: 'print-templates' as ViewType, icon: Printer, label: customTitles['print-templates'] || 'Document Templates' },
     ];
 
     return items.filter(item => {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -28,7 +27,7 @@ import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
 import { UserManagement } from '@/components/user-management';
 import { UserDetailView } from '@/components/user-detail-view';
-import { DispatchLedger } from '@/components/dispatch-ledger';
+import { DispatchLedger } from '@/components/delivery-ledger'; // Assuming renaming occurred or original naming
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -270,6 +269,10 @@ function IndustrialERPInternal() {
     setDocumentNonBlocking(doc(db, 'customers', customer.id), customer, { merge: true });
   };
 
+  const handleSaveVendor = (vendor: Vendor) => {
+    setDocumentNonBlocking(doc(db, 'vendors', vendor.id), vendor, { merge: true });
+  };
+
   const handleNavigateToUserDetail = (userId: string) => {
     setSelectedDetailUserId(userId);
     setCurrentView('user-detail');
@@ -500,12 +503,11 @@ function IndustrialERPInternal() {
             )}
             {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
-            {currentView === 'customer-orders' && <CustomerOrders customers={customers} onSaveCustomer={handleSaveCustomer} />}
+            {currentView === 'customer-orders' && <CustomerOrders customers={customers} vendors={vendors} onSaveCustomer={handleSaveCustomer} onSaveVendor={handleSaveVendor} />}
             {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={handleSaveOrder} />}
             {currentView === 'production-planner' && <ProductionPlanner batches={batches} orders={orders} machines={machines} users={usersData} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
             {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
-            {currentView === 'vendor' && <VendorManagement vendors={vendors} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db, 'vendors', v.id), v, {merge:true})} />}
             {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} onNavigateToGantt={()=>handleViewChange('gantt')} />}
           </div>
         </main>

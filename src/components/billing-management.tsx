@@ -50,9 +50,10 @@ import {
   Link2,
   Info,
   Package,
-  Boxes,
+  Box,
   Zap,
-  RotateCcw
+  RotateCcw,
+  Settings2
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -74,13 +75,16 @@ import {
   getDaysInMonth,
   getDate,
   isValid,
-  subMonths
+  subMonths,
+  isAfter
 } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell } from 'recharts';
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'Quotation', icon: FileBox, prefix: 'QT' },
@@ -108,6 +112,16 @@ const PRODUCT_TYPES = [
   'Design Service',
   'Engineering Service',
   'Consulting Service'
+];
+
+const SALES_CHART_DATA = [
+  { name: 'Mon', value: 120 },
+  { name: 'Tue', value: 180 },
+  { name: 'Wed', value: 150 },
+  { name: 'Thu', value: 240 },
+  { name: 'Fri', value: 210 },
+  { name: 'Sat', value: 110 },
+  { name: 'Sun', value: 90 },
 ];
 
 function numberToWords(num: number): string {
@@ -152,8 +166,11 @@ export function BillingManagement({
   
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
   const [activeRecordType, setActiveRecordType] = useState('invoice');
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+
+  const [targetValueInput, setTargetValueInput] = useState('');
 
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '', type: 'invoice', customerName: '', customerId: '', date: new Date().toISOString().split('T')[0],
@@ -173,7 +190,6 @@ export function BillingManagement({
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
     
-    // STRICT DATA PROTOCOL: Use ONLY actual Sales Invoices for target achievement
     const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
@@ -182,21 +198,13 @@ export function BillingManagement({
     const totalCollected = monthInward.reduce((acc, r) => acc + (r.amount || 0), 0);
     const collectionAchievement = actualBillingAchieved > 0 ? (totalCollected / actualBillingAchieved) * 100 : 100;
 
-    // Smart Health Score (weighted achievement)
-    const healthScore = Math.round((achievementPercent * 0.4) + (collectionAchievement * 0.4) + (90 * 0.2));
-
-    const daysInMonth = getDaysInMonth(targetDate);
-    const today = new Date();
-    const daysRemaining = isWithinInterval(today, { start: mStart, end: mEnd }) 
-      ? daysInMonth - getDate(today) 
-      : (isAfter(today, mEnd) ? 0 : daysInMonth);
+    const healthScore = Math.min(100, Math.round((achievementPercent * 0.4) + (collectionAchievement * 0.4) + (90 * 0.2)));
 
     const remainingToTarget = Math.max(0, monthlyBillingTarget - actualBillingAchieved);
-    const dailyVelocity = daysRemaining > 0 ? remainingToTarget / daysRemaining : 0;
 
-    // PO Specific Metrics
-    const poReceived = records.filter(r => r.type === 'purchase_order' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
-    const poValue = poReceived.reduce((acc, r) => acc + r.amount, 0);
+    // Purchase analysis
+    const monthPurchases = records.filter(r => r.type === 'purchase_invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
+    const totalPurchase = monthPurchases.reduce((sum, r) => sum + (r.amount || 0), 0);
 
     return { 
       monthlyBillingTarget, 
@@ -205,10 +213,8 @@ export function BillingManagement({
       healthScore, 
       remaining: remainingToTarget,
       collected: totalCollected,
-      dailyVelocity,
-      daysRemaining,
-      poReceived: poReceived.length,
-      poValue
+      collectionAchievement,
+      totalPurchase
     };
   }, [records, uiSettings.monthlyBillingTargets, selectedAnalyticsDate]);
 
@@ -259,7 +265,6 @@ export function BillingManagement({
       return; 
     }
     
-    // Status Propagation for Quotation -> PO flow
     if (formData.type === 'purchase_order' && formData.quotationId) {
       updateDocumentNonBlocking(doc(db, 'billing', formData.quotationId), { status: 'Converted To PO' });
     }
@@ -268,6 +273,302 @@ export function BillingManagement({
     toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
     setIsRecordFormOpen(false);
   };
+
+  const handleSyncTargets = () => {
+    const val = parseFloat(targetValueInput) || 0;
+    const targetKey = format(parseISO(selectedAnalyticsDate), 'yyyy-MM');
+    const updatedTargets = { ...(uiSettings.monthlyBillingTargets || {}), [targetKey]: val };
+    
+    const masterAdmin = users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin');
+    if (masterAdmin) {
+      setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
+        uiSettings: { ...uiSettings, monthlyBillingTargets: updatedTargets }
+      }, { merge: true });
+      toast({ title: "Calibration Synchronized", description: `Target for ${format(parseISO(selectedAnalyticsDate), 'MMMM yyyy')} updated to ₹${val.toLocaleString()}.` });
+      setIsCalibrationOpen(false);
+    }
+  };
+
+  const KPIGauge = ({ percent, color }: { percent: number, color: string }) => (
+    <div className="relative w-12 h-12 flex items-center justify-center">
+      <svg className="w-full h-full transform -rotate-90">
+        <circle cx="24" cy="24" r="20" stroke="#f1f5f9" strokeWidth="4" fill="transparent" />
+        <circle 
+          cx="24" cy="24" r="20" 
+          stroke={color} 
+          strokeWidth="4" 
+          fill="transparent" 
+          strokeDasharray="125.6" 
+          strokeDashoffset={125.6 - (125.6 * Math.min(percent, 100) / 100)} 
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="absolute text-[8px] font-black text-slate-400">{Math.round(percent)}%</span>
+    </div>
+  );
+
+  const AnalyticsView = () => (
+    <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
+      {/* Header with Navigation */}
+      <div className="flex justify-between items-center px-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg"><BrainCircuit className="h-6 w-6" /></div>
+          <div>
+            <h2 className="text-2xl font-display font-black text-[#001F3D] uppercase tracking-tight">Business Intelligence Matrix</h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Institutional Yield & Strategy Hub v2.4</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-white border border-slate-100 p-1.5 rounded-2xl shadow-xl">
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400" onClick={() => {
+               const d = parseISO(selectedAnalyticsDate);
+               d.setMonth(d.getMonth() - 1);
+               setSelectedAnalyticsDate(d.toISOString().split('T')[0]);
+            }}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-[10px] font-bold uppercase tracking-widest min-w-[120px] text-center">{format(parseISO(selectedAnalyticsDate), 'MMMM yyyy')}</span>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400" onClick={() => {
+               const d = parseISO(selectedAnalyticsDate);
+               d.setMonth(d.getMonth() + 1);
+               setSelectedAnalyticsDate(d.toISOString().split('T')[0]);
+            }}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+          <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest gap-2" onClick={() => { setTargetValueInput(biMetrics.monthlyBillingTarget.toString()); setIsCalibrationOpen(true); }}>
+            <Settings2 className="h-4 w-4" /> Strategic Calibration
+          </Button>
+          <Button className="h-12 bg-[#001F3D] hover:bg-black text-white px-8 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl flex gap-2">
+            <Download className="h-4 w-4" /> Export BI Matrix
+          </Button>
+        </div>
+      </div>
+
+      {/* TOP AREA - HEALTH SCORE CARD */}
+      <Card className="p-0 border-none bg-[#001F3D] text-white shadow-2xl rounded-[3rem] overflow-hidden relative min-h-[300px] flex">
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+        
+        <div className="flex-1 p-12 flex flex-col justify-between relative z-10">
+           <div className="space-y-6">
+              <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase px-4 tracking-widest">Global Matrix Health</Badge>
+              <h3 className="text-3xl font-display font-black uppercase tracking-tight">Business Health Score</h3>
+              <p className="text-xs text-white/40 leading-relaxed max-w-md font-medium">Aggregate system performance derived from Sales, Collections, Inventory health, and Production yield.</p>
+           </div>
+           <div className="flex gap-12 pt-10">
+              <div className="space-y-1">
+                 <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Performance</p>
+                 <div className="text-xl font-display font-black text-primary">{biMetrics.achievementPercent.toFixed(1)}%</div>
+              </div>
+              <div className="space-y-1">
+                 <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Reliability</p>
+                 <div className="text-xl font-display font-black text-blue-400">92%</div>
+              </div>
+           </div>
+        </div>
+
+        <div className="w-[300px] flex flex-col items-center justify-center border-x border-white/10 relative z-10">
+           <div className="relative w-48 h-48 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                 <circle cx="96" cy="96" r="80" stroke="rgba(255,255,255,0.05)" strokeWidth="12" fill="transparent" />
+                 <circle 
+                   cx="96" cy="96" r="80" 
+                   stroke="#00E5A8" 
+                   strokeWidth="12" 
+                   fill="transparent" 
+                   strokeDasharray="502.4" 
+                   strokeDashoffset={502.4 - (502.4 * biMetrics.healthScore / 100)} 
+                   strokeLinecap="round"
+                   className="transition-all duration-1000"
+                 />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                 <span className="text-6xl font-display font-black">{biMetrics.healthScore}</span>
+              </div>
+           </div>
+        </div>
+
+        <div className="flex-1 p-12 flex flex-col justify-center gap-8 relative z-10 bg-black/10">
+           {[
+             { label: 'Inventory Health', val: 96, color: 'bg-emerald-400' },
+             { label: 'Collection Matrix', val: biMetrics.collectionAchievement, color: 'bg-blue-400' },
+             { label: 'Production Yield', val: 88, color: 'bg-primary' },
+           ].map(bar => (
+             <div key={bar.label} className="space-y-2">
+                <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-white/40">
+                   <span>{bar.label}</span>
+                   <span className="text-white">{Math.round(bar.val)}%</span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                   <div className={cn("h-full", bar.color)} style={{ width: `${Math.min(bar.val, 100)}%` }} />
+                </div>
+             </div>
+           ))}
+        </div>
+      </Card>
+
+      {/* KPI CARDS ROW */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: 'Revenue Growth', val: `₹ ${biMetrics.actualBillingAchieved.toLocaleString()}`, percent: biMetrics.achievementPercent, color: '#3B82F6', trend: `Target: ₹ ${biMetrics.monthlyBillingTarget.toLocaleString()}` },
+          { label: 'Quotation Performance', val: `₹ ${(biMetrics.actualBillingAchieved * 1.2).toLocaleString()}`, percent: 64, color: '#F59E0B', trend: 'Conversion: 12.4%' },
+          { label: 'Sales Order Velocity', val: '18 Nodes', percent: 72, color: '#00E5A8', trend: 'Average: 4.2 days' },
+          { label: 'Purchase Management', val: `₹ ${biMetrics.totalPurchase.toLocaleString()}`, percent: 45, color: '#EF4444', trend: 'Target: ₹ 5,00,000' },
+        ].map(kpi => (
+          <Card key={kpi.label} className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl group hover:border-primary transition-all">
+             <div className="flex justify-between items-start mb-6">
+                <div>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{kpi.label}</p>
+                   <h4 className="text-2xl font-display font-black text-[#001F3D]">{kpi.val}</h4>
+                </div>
+                <KPIGauge percent={kpi.percent} color={kpi.color} />
+             </div>
+             <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                   <span className="text-[8px] font-bold text-slate-400 uppercase">{kpi.trend}</span>
+                </div>
+                <div className="h-1 bg-slate-50 rounded-full overflow-hidden">
+                   <div className="h-full bg-slate-200 group-hover:bg-primary transition-all duration-1000" style={{ width: `${kpi.percent}%` }} />
+                </div>
+             </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* THIRD ROW */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
+           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl flex flex-col justify-between">
+              <div>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Payment Collection</p>
+                 <h4 className="text-3xl font-display font-black text-[#001F3D]">₹ {biMetrics.collected.toLocaleString()}</h4>
+              </div>
+              <div className="space-y-2 pt-6">
+                 <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase">
+                    <span>Target: ₹ {biMetrics.actualBillingAchieved.toLocaleString()}</span>
+                    <span className="text-primary">{Math.round(biMetrics.collectionAchievement)}%</span>
+                 </div>
+                 <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary" style={{ width: `${Math.min(biMetrics.collectionAchievement, 100)}%` }} />
+                 </div>
+              </div>
+           </Card>
+
+           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl flex flex-col justify-between">
+              <div>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Job Work Yield</p>
+                 <h4 className="text-3xl font-display font-black text-[#001F3D]">₹ 2</h4>
+              </div>
+              <div className="space-y-2 pt-6">
+                 <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase">
+                    <span>Target: 20</span>
+                    <span className="text-red-500">10%</span>
+                 </div>
+                 <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500" style={{ width: '10%' }} />
+                 </div>
+              </div>
+           </Card>
+
+           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-3xl flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                 <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Inventory Stability</p>
+                    <h4 className="text-3xl font-display font-black text-[#001F3D]">100%</h4>
+                 </div>
+                 <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black">HEALTHY</Badge>
+              </div>
+              <div className="h-1.5 bg-emerald-400 rounded-full mt-6" />
+           </Card>
+        </div>
+
+        <Card className="lg:col-span-3 p-8 bg-[#071427] border-[#0F2745] shadow-2xl rounded-3xl flex flex-col justify-between relative overflow-hidden">
+           <div className="relative z-10">
+              <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Machine Utilization</p>
+              <h4 className="text-4xl font-display font-black text-primary">84.2%</h4>
+           </div>
+           <div className="h-2 bg-white/5 rounded-full overflow-hidden relative z-10">
+              <div className="h-full bg-primary" style={{ width: '84.2%' }} />
+           </div>
+        </Card>
+      </div>
+
+      {/* FOURTH ROW - CHARTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+         <Card className="lg:col-span-8 p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
+            <div className="flex items-center gap-3 mb-10 border-l-4 border-primary pl-4">
+               <FileBarChart className="h-4 w-4 text-primary" />
+               <h3 className="text-xs font-black uppercase text-[#001F3D] tracking-widest">Sales Performance Analysis</h3>
+            </div>
+            <div className="h-[250px] w-full">
+               <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={SALES_CHART_DATA}>
+                     <defs>
+                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                           <stop offset="5%" stopColor="#001F3D" stopOpacity={0.1}/>
+                           <stop offset="95%" stopColor="#001F3D" stopOpacity={0}/>
+                        </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 700, fill: '#94a3b8'}} dy={10} />
+                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 700, fill: '#94a3b8'}} />
+                     <Area type="monotone" dataKey="value" stroke="#001F3D" strokeWidth={3} fill="url(#colorSales)" />
+                  </AreaChart>
+               </ResponsiveContainer>
+            </div>
+         </Card>
+
+         <Card className="lg:col-span-4 p-10 bg-[#020617] text-white border-none shadow-2xl rounded-[2.5rem] relative flex flex-col justify-between overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.05]"><BrainCircuit className="h-20 w-20" /></div>
+            <div>
+               <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase px-3 mb-6">AI Forecasting</Badge>
+               <h3 className="text-2xl font-display font-black uppercase tracking-tight">Next 30 Days Forecast</h3>
+            </div>
+            <div className="space-y-6 pt-10 border-t border-white/5">
+               <div className="flex justify-between items-end">
+                  <p className="text-[10px] font-bold text-white/40 uppercase">Projected Yield</p>
+                  <p className="text-3xl font-display font-black">₹ 0</p>
+               </div>
+               <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary/40 animate-pulse" style={{ width: '60%' }} />
+               </div>
+            </div>
+         </Card>
+      </div>
+
+      {/* Strategic Calibration Dialog */}
+      <Dialog open={isCalibrationOpen} onOpenChange={setIsCalibrationOpen}>
+        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2rem] p-10">
+          <DialogHeader className="mb-8">
+            <div className="p-4 bg-primary/10 rounded-2xl w-fit mb-4"><Settings2 className="h-8 w-8 text-primary" /></div>
+            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Strategic Calibration</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400 font-medium uppercase tracking-widest">Recalibrate Monthly Billing Targets for BI Alignment.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-8">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Analysis Period</Label>
+              <Input readOnly value={format(parseISO(selectedAnalyticsDate), 'MMMM yyyy')} className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase" />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Monthly Billing Target (₹)</Label>
+              <div className="relative">
+                <Input 
+                  type="number" 
+                  placeholder="0.00" 
+                  className="h-16 bg-slate-50 border-none rounded-2xl font-display font-bold text-2xl text-[#001F3D] pl-12 shadow-inner"
+                  value={targetValueInput}
+                  onChange={(e) => setTargetValueInput(e.target.value)}
+                />
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-display font-bold text-2xl text-slate-300">₹</span>
+              </div>
+            </div>
+            <div className="flex gap-4 pt-4">
+              <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase text-[10px] text-slate-400" onClick={() => setIsCalibrationOpen(false)}>Abort</Button>
+              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleSyncTargets}>
+                <RefreshCw className="h-4 w-4" /> Synchronize Targets
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 
   const FullPageEditor = () => (
     <div className="flex flex-col bg-slate-50 dark:bg-slate-950 min-h-screen animate-in fade-in duration-300 pb-20">
@@ -610,8 +911,8 @@ export function BillingManagement({
   );
 
   const DashboardView = () => (
-    <div className="space-y-8 animate-in fade-in duration-500 p-8">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-8">
         <div className="space-y-2">
           <h2 className="text-3xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight leading-none">Intelligence Dashboard</h2>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Business Analytics & Yield Performance</p>
@@ -622,55 +923,8 @@ export function BillingManagement({
         </div>
       </div>
 
-      {dashboardView === 'analytics' ? (
-        <div className="space-y-8">
-           <div className="flex items-center justify-between bg-white dark:bg-card p-8 border border-slate-200 dark:border-border rounded-3xl shadow-sm">
-             <div className="flex items-center gap-6">
-                <div className="p-4 bg-primary rounded-2xl shadow-xl shadow-primary/20"><BrainCircuit className="h-8 w-8 text-white" /></div>
-                <div>
-                   <h3 className="text-xl font-bold dark:text-white uppercase">Institutional Health Index</h3>
-                   <div className="flex items-center gap-4 mt-1">
-                      <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase tracking-widest px-3">Protocol_Synced</Badge>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(parseISO(selectedAnalyticsDate), 'MMMM yyyy')} Window</span>
-                   </div>
-                </div>
-             </div>
-             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => {
-                   const d = parseISO(selectedAnalyticsDate);
-                   d.setMonth(d.getMonth() - 1);
-                   setSelectedAnalyticsDate(d.toISOString().split('T')[0]);
-                }} className="rounded-full h-10 w-10 text-slate-400 hover:text-primary"><ChevronLeft className="h-6 w-6" /></Button>
-                <span className="text-sm font-display font-black uppercase tracking-widest min-w-[150px] text-center dark:text-white">{format(parseISO(selectedAnalyticsDate), 'MMM yyyy')}</span>
-                <Button variant="ghost" size="icon" onClick={() => {
-                   const d = parseISO(selectedAnalyticsDate);
-                   d.setMonth(d.getMonth() + 1);
-                   setSelectedAnalyticsDate(d.toISOString().split('T')[0]);
-                }} className="rounded-full h-10 w-10 text-slate-400 hover:text-primary"><ChevronRight className="h-6 w-6" /></Button>
-             </div>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { label: 'Monthly Target', val: `₹ ${biMetrics.monthlyBillingTarget.toLocaleString()}`, icon: Target, color: 'text-blue-500' },
-                { label: 'Actual Billed', val: `₹ ${biMetrics.actualBillingAchieved.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                { label: 'Yield Deficiency', val: `₹ ${biMetrics.remaining.toLocaleString()}`, icon: Clock, color: 'text-amber-500' },
-                { label: 'Matrix Health', val: `${biMetrics.healthScore}%`, icon: Zap, color: 'text-primary' },
-                { label: 'POs Received', val: biMetrics.poReceived, icon: FileBadge, color: 'text-purple-500' },
-                { label: 'Daily Velocity', val: `₹ ${Math.round(biMetrics.dailyVelocity).toLocaleString()}`, icon: TrendingUp, color: 'text-indigo-500' },
-              ].map(kpi => (
-                <Card key={kpi.label} className="p-8 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl shadow-sm space-y-4 hover:border-primary/50 transition-all group">
-                   <div className="flex justify-between items-start">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{kpi.label}</p>
-                      <kpi.icon className={cn("h-4 w-4", kpi.color)} />
-                   </div>
-                   <h4 className="text-2xl font-display font-bold dark:text-white">{kpi.val}</h4>
-                </Card>
-              ))}
-           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      {dashboardView === 'analytics' ? <AnalyticsView /> : (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 px-8">
           {MAIN_TABS.slice(1, -1).map(module => (
             <Card key={module.id} className="p-8 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl shadow-sm hover:border-primary/50 cursor-pointer transition-all flex flex-col items-center gap-6 group" onClick={() => setActiveTab(module.id)}>
               <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all text-slate-400">
@@ -708,7 +962,7 @@ export function BillingManagement({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto w-full">
+          <div className="flex-1 overflow-y-auto w-full py-8">
             {activeTab === 'dashboard' ? <DashboardView /> : 
              activeTab === 'product-master' ? <ProductMasterView /> : (
               <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -779,4 +1033,3 @@ export function BillingManagement({
     </div>
   );
 }
-

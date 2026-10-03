@@ -14,7 +14,7 @@ import {
   Settings,
   CreditCard,
   ClipboardList,
-  Boxes,
+  Box,
   LineChart,
   ShieldCheck,
   LayoutGrid,
@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarNavProps {
   currentView: ViewType;
@@ -76,7 +77,7 @@ export function SidebarNav({
       { id: 'quality', icon: ShieldCheck, label: 'Quality', cat: 'Quality' },
       { id: 'delivery', icon: PackageCheck, label: 'Dispatch', cat: 'Commercial' },
       { id: 'customer-orders', icon: Users, label: 'Registry', cat: 'Commercial' },
-      { id: 'inventory', icon: Boxes, label: 'Inventory', cat: 'Commercial' },
+      { id: 'inventory', icon: Box, label: 'Inventory', cat: 'Commercial' },
       { id: 'billing', icon: CreditCard, label: 'Finance', cat: 'Commercial' },
       { id: 'work-log', icon: ClipboardList, label: 'Logs', cat: 'Production' },
       { id: 'machine-utilization', icon: Cpu, label: 'Assets', cat: 'Resources' },

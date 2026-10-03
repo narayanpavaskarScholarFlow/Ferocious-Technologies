@@ -179,7 +179,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         numberPostfix: new Date().getFullYear().toString(),
         status: type === 'quotation' ? 'Draft' : 'Pending',
         note: '',
-        items: [{ id: '1', description: '', note: '', hsn: '', qty: 0, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }],
+        items: [{ id: '1', description: '', note: '', hsn: '', qty: 0, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage' as const, gstRate: 18, total: 0 }],
         subTotal: 0,
         taxTotal: 0,
         discountTotal: 0,
@@ -359,6 +359,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     };
   }, [records]);
 
+  const currentTabLabel = useMemo(() => {
+    return MAIN_TABS.find(t => t.id === activeTab)?.label || 'Document';
+  }, [activeTab]);
+
   return (
     <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] flex flex-col overflow-hidden animate-in fade-in duration-700 font-body">
       <div className="bg-white border-b border-slate-200 shrink-0 px-2 z-50 shadow-sm">
@@ -385,7 +389,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
       <div className="flex-1 overflow-hidden flex flex-col">
         <ScrollArea className="flex-1">
-          <div className="max-w-[1500px] mx-auto p-6 md:p-10 space-y-10">
+          <div className="max-w-[1700px] mx-auto p-4 md:p-8 space-y-6">
             
             {activeTab === 'dashboard' && (
               <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
@@ -529,19 +533,20 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             )}
 
             {activeTab === 'customer' && (
-              <div className="space-y-8 animate-in fade-in duration-700">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="space-y-4 animate-in fade-in duration-700">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                   <div className="flex items-center gap-4">
                      <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl">
                         <Building2 className="h-6 w-6" />
                      </div>
                      <div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3>
+                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Read-Only Financial View</p>
                      </div>
                   </div>
                 </div>
 
-                <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
+                <div className="overflow-hidden border-t border-slate-200 bg-white">
                   <Table>
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="hover:bg-transparent border-b border-slate-100">
@@ -579,13 +584,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       ))}
                     </TableBody>
                   </Table>
-                </Card>
+                </div>
               </div>
             )}
 
             {!['dashboard', 'customer', 'products', 'payment', 'expense', 'report'].includes(activeTab) && (
-              <div className="space-y-8 animate-in fade-in duration-700">
-                 <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="space-y-4 animate-in fade-in duration-700">
+                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                     <div className="flex items-center gap-4">
                        <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl">
                           {(() => {
@@ -594,18 +599,30 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           })()}
                        </div>
                        <div>
-                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{MAIN_TABS.find(t => t.id === activeTab)?.label} Ledger</h3>
+                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{currentTabLabel} Ledger</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial Commercial Registry V2.4</p>
                        </div>
                     </div>
-                    <Button 
-                      className="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
-                      onClick={() => handleOpenForm(activeTab)}
-                    >
-                      <Plus className="h-4 w-4" /> Create New Entry
-                    </Button>
+                    <div className="flex items-center gap-4">
+                      <div className="relative group">
+                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                         <Input 
+                            placeholder="SEARCH DOCUMENT NO OR PARTY..." 
+                            className="pl-9 h-10 w-72 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-widest focus-visible:ring-emerald-500/20"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                         />
+                      </div>
+                      <Button 
+                        className="h-10 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
+                        onClick={() => handleOpenForm(activeTab)}
+                      >
+                        <Plus className="h-4 w-4" /> Create New Entry
+                      </Button>
+                    </div>
                  </div>
 
-                 <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
+                 <div className="overflow-hidden border-t border-slate-200 bg-white">
                     <Table>
                       <TableHeader className="bg-slate-50/50">
                         <TableRow className="hover:bg-transparent border-b border-slate-100">
@@ -617,7 +634,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredRecords.map((record) => (
+                        {filteredRecords.length > 0 ? filteredRecords.map((record) => (
                           <TableRow key={record.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group transition-all">
                             <TableCell className="px-10">
                                <div className="flex flex-col">
@@ -644,10 +661,22 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                                </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="h-96 text-center">
+                               <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                                  <div className="p-10 bg-slate-50 rounded-[3rem] mb-6">
+                                     <ArchiveX className="h-16 w-16 text-slate-300" />
+                                  </div>
+                                  <p className="text-[#001F3D] font-headline font-bold text-xl uppercase tracking-tight">Ledger Matrix Null</p>
+                                  <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase">No commercial records detected for this node classification.</p>
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
-                 </Card>
+                 </div>
               </div>
             )}
           </div>
@@ -747,7 +776,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                 <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-8">
                   <div className="flex items-center justify-between border-b pb-4">
-                    <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">{MAIN_TABS.find(d => d.id === activeRecordType)?.label} Detail</h3>
+                    <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">{currentTabLabel} Detail</h3>
                     <div className="p-1.5 bg-slate-50 rounded-md border text-slate-400"><History className="h-3.5 w-3.5" /></div>
                   </div>
                   <div className="space-y-4">
@@ -765,7 +794,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Order No <span className="text-red-500">*</span></Label>
                       <div className="col-span-8 flex gap-2">
                         <Input className="h-10 bg-slate-100 border-slate-200 text-[10px] font-bold w-20 text-center uppercase" placeholder="Prefix" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
-                        <Input className="h-10 bg-white border-slate-200 text-xs font-bold flex-1 text-center" placeholder="1" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                        <div className="relative flex-1">
+                          <Input className="h-10 bg-white border-slate-200 text-xs font-bold w-full text-center pl-10" placeholder="1" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        </div>
                         <Input className="h-10 bg-slate-100 border-slate-200 text-[10px] font-bold w-24 text-center uppercase" placeholder="Postfix" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
                       </div>
                     </div>
@@ -805,13 +837,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
               <Card className="bg-white border-slate-200 shadow-sm rounded-2xl overflow-hidden">
                 <div className="p-6 bg-slate-50/50 border-b flex justify-between items-center">
-                  <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">Product Items</h3>
+                  <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">Commercial Line Items</h3>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border">
                       <Label className="text-[10px] font-bold text-slate-400 uppercase">Discount:</Label>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] font-bold uppercase">Rs</Button>
-                        <Button variant="secondary" size="sm" className="h-6 px-2 text-[9px] font-bold uppercase bg-emerald-500 text-white">%</Button>
+                        <Button variant="ghost" size="sm" className={cn("h-6 px-2 text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'amount' && "bg-emerald-500 text-white")}>Rs</Button>
+                        <Button variant="ghost" size="sm" className={cn("h-6 px-2 text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'percentage' && "bg-emerald-500 text-white")}>%</Button>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><Settings2 className="h-4 w-4" /></Button>
@@ -887,7 +919,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           </div>
                           <div className="space-y-2">
                              <Label className="text-[9px] font-bold uppercase text-slate-400">Detail</Label>
-                             <Textarea className="min-h-[120px] bg-slate-50 border-slate-200 text-xs font-medium p-4 resize-none" value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} />
+                             <Textarea className="min-h-[120px] bg-slate-50 border-slate-200 text-xs font-medium p-4 resize-none" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
                           </div>
                           <Button variant="outline" className="h-9 rounded-xl border-slate-200 text-[10px] font-bold uppercase gap-2"><Plus className="h-3.5 w-3.5" /> Add Notes</Button>
                        </div>
@@ -895,7 +927,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     
                     <div className="space-y-4 p-8 bg-white border border-slate-200 rounded-3xl">
                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Document Note / Remarks</h4>
-                       <Textarea className="min-h-[80px] bg-slate-50 border-slate-200 text-xs font-medium p-4 resize-none" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} placeholder="Not Visible on Print" />
+                       <Textarea className="min-h-[80px] bg-slate-50 border-slate-200 text-xs font-medium p-4 resize-none" placeholder="Not Visible on Print" />
                     </div>
                  </div>
 

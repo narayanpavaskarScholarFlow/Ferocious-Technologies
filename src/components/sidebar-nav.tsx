@@ -12,7 +12,6 @@ import {
   Truck,
   ShoppingCart,
   Settings,
-  HelpCircle,
   CreditCard,
   ClipboardList,
   Boxes,
@@ -20,21 +19,15 @@ import {
   ShieldCheck,
   LayoutGrid,
   BrainCircuit,
-  Zap,
   Factory,
   Kanban,
   GraduationCap,
-  ChevronRight,
-  ChevronLeft,
+  ChevronDown,
   Briefcase,
   Contact,
-  Building2,
-  Package,
-  UserCircle,
   PackageCheck,
-  Globe,
-  Landmark,
-  Printer
+  Printer,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -55,10 +48,9 @@ export function SidebarNav({
   currentView, 
   onViewChange, 
   permissions = {}, 
-  isSlim = true, 
+  isSlim = false, 
   customTitles = {}, 
   userRole, 
-  isReportingManager, 
   brandLogo = '',
   logoSize = 32
 }: SidebarNavProps) {
@@ -68,148 +60,130 @@ export function SidebarNav({
     setMounted(true);
   }, []);
 
-  const menuItems = useMemo(() => {
+  const menuSections = useMemo(() => {
     const isMasterAdmin = userRole === 'Master Admin';
     const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || isMasterAdmin;
 
-    const items = [
-      { id: 'overview' as ViewType, icon: LayoutDashboard, label: customTitles['overview'] || 'Command Matrix' },
-      { id: 'my-portal' as ViewType, icon: UserCircle, label: customTitles['my-portal'] || 'My Personnel Portal' },
-      { id: 'hr' as ViewType, icon: Briefcase, label: customTitles['hr'] || 'HR Command Hub' },
-      { id: 'agile' as ViewType, icon: Kanban, label: customTitles['agile'] || 'Agile Kanban' },
-      { id: 'orders' as ViewType, icon: ShoppingCart, label: customTitles['orders'] || 'Master Orders' },
-      { id: 'production-planner' as ViewType, icon: Factory, label: customTitles['production-planner'] || 'Mass Production' },
-      { id: 'gantt' as ViewType, icon: LayoutGrid, label: customTitles['gantt'] || 'Visual Gantt' },
-      { id: 'operations' as ViewType, icon: Layers, label: customTitles['operations'] || 'Spreadsheet' },
-      { id: 'quality' as ViewType, icon: ShieldCheck, label: customTitles['quality'] || 'Quality Hub' },
-      { id: 'delivery' as ViewType, icon: PackageCheck, label: customTitles['delivery'] || 'Dispatch Ledger' },
-      { id: 'customer-orders' as ViewType, icon: Contact, label: customTitles['customer-orders'] || 'Identity Registry' },
-      { id: 'inventory' as ViewType, icon: Boxes, label: customTitles['inventory'] || 'Stock Ledger' },
-      { id: 'billing' as ViewType, icon: CreditCard, label: customTitles['billing'] || 'Financial Hub' },
-      { id: 'work-log' as ViewType, icon: ClipboardList, label: customTitles['work-log'] || 'Daily Logs' },
-      { id: 'machine-utilization' as ViewType, icon: Cpu, label: customTitles['machine-utilization'] || 'Asset Fleet' },
-      { id: 'sqcdp' as ViewType, icon: LineChart, label: customTitles['sqcdp'] || 'Performance' },
-      { id: 'weekly-plan' as ViewType, icon: Calendar, label: customTitles['weekly-plan'] || 'Master Plan' },
-      { id: 'smart-quote' as ViewType, icon: BrainCircuit, label: customTitles['smart-quote'] || 'AI Quoting' },
-      { id: 'print-templates' as ViewType, icon: Printer, label: customTitles['print-templates'] || 'Document Templates' },
+    const allItems = [
+      { id: 'overview', icon: LayoutDashboard, label: 'Dashboard', cat: 'Mission Control' },
+      { id: 'my-portal', icon: Contact, label: 'My Portal', cat: 'Personnel' },
+      { id: 'hr', icon: Briefcase, label: 'HR Hub', cat: 'Resources' },
+      { id: 'agile', icon: Kanban, label: 'Kanban', cat: 'Strategic' },
+      { id: 'orders', icon: ShoppingCart, label: 'Orders', cat: 'Production' },
+      { id: 'production-planner', icon: Factory, label: 'Mass Prod', cat: 'Production' },
+      { id: 'gantt', icon: LayoutGrid, label: 'Timeline', cat: 'Production' },
+      { id: 'operations', icon: Layers, label: 'Sheet', cat: 'Production' },
+      { id: 'quality', icon: ShieldCheck, label: 'Quality', cat: 'Quality' },
+      { id: 'delivery', icon: PackageCheck, label: 'Dispatch', cat: 'Commercial' },
+      { id: 'customer-orders', icon: Users, label: 'Registry', cat: 'Commercial' },
+      { id: 'inventory', icon: Boxes, label: 'Inventory', cat: 'Commercial' },
+      { id: 'billing', icon: CreditCard, label: 'Finance', cat: 'Commercial' },
+      { id: 'work-log', icon: ClipboardList, label: 'Logs', cat: 'Production' },
+      { id: 'machine-utilization', icon: Cpu, label: 'Assets', cat: 'Resources' },
+      { id: 'sqcdp', icon: LineChart, label: 'Analytics', cat: 'Strategic' },
+      { id: 'weekly-plan', icon: Calendar, label: 'Schedule', cat: 'Production' },
+      { id: 'smart-quote', icon: BrainCircuit, label: 'AI Quoting', cat: 'Strategic' },
+      { id: 'print-templates', icon: Printer, label: 'Templates', cat: 'Governance' },
     ];
 
-    return items.filter(item => {
-      // Master Admin bypass: Sees EVERYTHING
+    const filtered = allItems.filter(item => {
       if (isMasterAdmin) return true;
-
-      // Portal is always visible for personal use
       if (item.id === 'my-portal') return true;
-
-      // HR hub is strictly for HR admins
       if (item.id === 'hr') return isHRAdmin;
-
-      // Check specific permissions for others
       const level = permissions[item.id];
       return level && level !== 'none';
     });
-  }, [permissions, customTitles, userRole, isReportingManager]);
 
-  if (!mounted) {
-    return <div className={cn("bg-[#001F3D] h-screen", isSlim ? "w-20" : "w-64")} />;
-  }
+    // Group by category
+    const sections: Record<string, typeof filtered> = {};
+    filtered.forEach(item => {
+      if (!sections[item.cat]) sections[item.cat] = [];
+      sections[item.cat].push(item);
+    });
+
+    return Object.entries(sections).map(([name, items]) => ({ name, items }));
+  }, [permissions, userRole]);
+
+  if (!mounted) return <div className="bg-primary h-full w-full" />;
 
   return (
     <div className={cn(
-      "bg-[#001F3D] flex flex-col py-6 gap-8 z-50 sticky top-0 h-screen overflow-y-auto hide-scrollbar border-r border-white/5 transition-all duration-500",
-      isSlim ? "w-20 items-center" : "w-64 px-4"
+      "bg-primary h-full flex flex-col border-r border-white/5 transition-all duration-300",
+      isSlim ? "w-20" : "w-64"
     )}>
-      <div 
-        className={cn(
-          "bg-white rounded-xl shadow-lg cursor-pointer group transition-all overflow-hidden shrink-0",
-          isSlim ? "flex items-center justify-center p-2" : "w-full flex items-center gap-3 p-3"
-        )} 
-        style={isSlim ? { width: Math.max(48, logoSize + 16), height: Math.max(48, logoSize + 16) } : undefined}
-        onClick={() => onViewChange('overview')}
-      >
-        <div 
-          className="relative shrink-0" 
-          style={{ width: logoSize, height: logoSize }}
-        >
-          <Image 
-            src={brandLogo} 
-            alt="Ferocious Tech" 
-            fill 
-            className="object-contain"
-            data-ai-hint="lion technology logo"
-          />
-        </div>
-        {!isSlim && <span className="text-[#001F3D] font-headline font-bold text-sm tracking-tight uppercase truncate">FEROCIOUS TECH</span>}
-      </div>
-
-      <div className="flex-1 flex flex-col gap-1 w-full mt-4">
-        <TooltipProvider delayDuration={0}>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            
-            if (isSlim) {
-              return (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onViewChange(item.id)}
-                      className={cn(
-                        "w-14 h-14 flex items-center justify-center rounded-xl transition-all duration-300 relative group outline-none",
-                        isActive 
-                          ? "bg-white text-[#001F3D] shadow-md" 
-                          : "text-white/30 hover:text-white hover:bg-white/5"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                      {isActive && (
-                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full" />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={15} className="bg-[#001F3D] text-white border-none text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-xl">
-                    {item.label}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => onViewChange(item.id)}
-                className={cn(
-                  "w-full h-11 flex items-center gap-3 px-4 rounded-xl transition-all duration-300 relative group outline-none",
-                  isActive 
-                    ? "bg-white text-[#001F3D] shadow-md font-bold" 
-                    : "text-white/40 hover:text-white hover:bg-white/5 font-medium"
-                )}
-              >
-                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#001F3D]" : "text-white/20")} />
-                <span className="text-[11px] uppercase tracking-wider truncate">{item.label}</span>
-                {isActive && (
-                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-r-full" />
-                )}
-              </button>
-            );
-          })}
-        </TooltipProvider>
-      </div>
-
+      {/* Branding Hub */}
       <div className={cn(
-        "flex flex-col gap-3 text-white/20 pt-6 border-t border-white/5 items-center",
-        isSlim ? "w-10" : "w-full"
+        "bg-white/5 border-b border-white/5 p-4 flex items-center gap-3",
+        isSlim && "justify-center"
       )}>
+        <div 
+          className="relative rounded bg-white p-1" 
+          style={{ width: logoSize + 8, height: logoSize + 8 }}
+        >
+          <Image src={brandLogo} alt="Logo" fill className="object-contain" />
+        </div>
+        {!isSlim && (
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-[10px] tracking-widest uppercase">Ferocious Tech</span>
+            <span className="text-white/40 text-[8px] font-medium tracking-tighter uppercase">Industrial Control</span>
+          </div>
+        )}
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="p-3 space-y-6">
+          {menuSections.map((section) => (
+            <div key={section.name} className="space-y-1">
+              {!isSlim && (
+                <div className="px-3 py-1 flex items-center justify-between">
+                  <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">{section.name}</span>
+                  <ChevronDown className="h-2.5 w-2.5 text-white/10" />
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+                  
+                  return (
+                    <TooltipProvider key={item.id} delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onViewChange(item.id as ViewType)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 h-10 rounded transition-all group",
+                              isActive 
+                                ? "bg-white/10 text-white font-bold shadow-inner" 
+                                : "text-white/40 hover:bg-white/5 hover:text-white"
+                            )}
+                          >
+                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-white/20 group-hover:text-white/60")} />
+                            {!isSlim && <span className="text-[11px] uppercase tracking-wider truncate">{customTitles[item.id] || item.label}</span>}
+                            {isActive && !isSlim && <ChevronRight className="h-3 w-3 ml-auto text-white/20" />}
+                          </button>
+                        </TooltipTrigger>
+                        {isSlim && <TooltipContent side="right" className="bg-slate-900 text-white border-none text-[10px] font-bold uppercase">{item.label}</TooltipContent>}
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+
+      <div className="p-3 mt-auto border-t border-white/5">
         <button 
           onClick={() => onViewChange('settings')}
           className={cn(
-            "flex items-center justify-center rounded-xl transition-colors",
-            isSlim ? "w-10 h-10" : "w-full h-11 px-4 gap-3",
-            currentView === 'settings' ? "bg-white/10 text-white" : "hover:text-white"
+            "w-full flex items-center gap-3 px-3 h-10 rounded text-white/40 hover:text-white hover:bg-white/5 transition-colors",
+            isSlim && "justify-center"
           )}
         >
           <Settings className="h-4 w-4 shrink-0" />
-          {!isSlim && <span className="text-[10px] font-bold uppercase tracking-widest flex-1 text-left">Configuration</span>}
+          {!isSlim && <span className="text-[10px] font-bold uppercase tracking-widest">Configuration</span>}
         </button>
       </div>
     </div>

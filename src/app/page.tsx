@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Image from 'next/image';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata, ProductMaster } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
@@ -28,9 +27,8 @@ import { UserDetailView } from '@/components/user-detail-view';
 import { DispatchLedger } from '@/components/dispatch-ledger'; 
 import { DocumentTemplateManager } from '@/components/document-template-manager';
 import { Toaster } from '@/components/ui/toaster';
-import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LogOut, User, ChevronRight, Home } from 'lucide-react';
+import { Menu, LogOut, User, ChevronRight, Home, LayoutGrid } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,8 +38,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 
@@ -51,7 +47,6 @@ import {
   useMemoFirebase,
   setDocumentNonBlocking,
   deleteDocumentNonBlocking,
-  addDocumentNonBlocking,
   FirebaseClientProvider
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
@@ -59,10 +54,10 @@ import { collection, doc } from 'firebase/firestore';
 const DEFAULT_UI_SETTINGS: UISettings = {
   fontSize: 13,
   tableDensity: 'compact',
-  borderRadius: 1,
-  primaryColor: '243 75% 59%',
-  sidebarMode: 'slim',
-  cardShadow: 'xl',
+  borderRadius: 0.25,
+  primaryColor: '215 60% 12%',
+  sidebarMode: 'full',
+  cardShadow: 'sm',
   labelCase: 'uppercase',
   headerAlignment: 'left',
   customTitles: {},
@@ -80,39 +75,38 @@ const DEFAULT_UI_SETTINGS: UISettings = {
       gst: 96,
       total: 192,
     },
-    rowHeight: 48,
+    rowHeight: 40,
   }
 };
 
 const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
-  overview: { title: 'Command Matrix', category: 'Strategic Hub' },
-  agile: { title: 'Agile Kanban', category: 'Strategic Hub' },
-  sqcdp: { title: 'Performance Analytics', category: 'Strategic Hub' },
+  overview: { title: 'Enterprise Dashboard', category: 'Mission Control' },
+  agile: { title: 'Kanban Matrix', category: 'Strategic Hub' },
+  sqcdp: { title: 'Operational Analytics', category: 'Strategic Hub' },
   'smart-quote': { title: 'AI Quoting Assistant', category: 'Strategic Hub' },
-  'team-matrix': { title: 'My Team Matrix', category: 'Strategic Hub' },
-  orders: { title: 'Master Orders', category: 'Production Management' },
+  'team-matrix': { title: 'Workforce Hub', category: 'Strategic Hub' },
+  orders: { title: 'Order Registry', category: 'Production Management' },
   'order-details': { title: 'Order Architecture', category: 'Production Management' },
   'production-planner': { title: 'Mass Production', category: 'Production Management' },
   gantt: { title: 'Visual Timeline', category: 'Production Management' },
-  operations: { title: 'Operational Spreadsheet', category: 'Production Management' },
+  operations: { title: 'Work Order Sheet', category: 'Production Management' },
   'weekly-plan': { title: 'Master Schedule', category: 'Production Management' },
-  'work-log': { title: 'Daily Work Logs', category: 'Production Management' },
+  'work-log': { title: 'Daily Yield Logs', category: 'Production Management' },
   quality: { title: 'Quality Hub', category: 'Quality Assurance' },
   delivery: { title: 'Dispatch Ledger', category: 'Commercial Operations' },
   'customer-orders': { title: 'Identity Registry', category: 'Commercial Operations' },
   inventory: { title: 'Stock Ledger', category: 'Commercial Operations' },
-  billing: { title: 'Financial Hub', category: 'Commercial Operations' },
+  billing: { title: 'Financial Matrix', category: 'Commercial Operations' },
   'machine-utilization': { title: 'Asset Fleet', category: 'Resources & Assets' },
   hr: { title: 'HR Command Hub', category: 'Resources & Assets' },
-  'my-portal': { title: 'Personal Portal', category: 'Personnel Gateway' },
+  'my-portal': { title: 'Personal Gateway', category: 'Personnel Gateway' },
   'user-detail': { title: 'Identity Profile', category: 'System Governance' },
   settings: { title: 'Control Center', category: 'System Governance' },
-  'print-templates': { title: 'Document Templates', category: 'System Governance' },
+  'print-templates': { title: 'Doc Templates', category: 'System Governance' },
   'product-master': { title: 'Product Master', category: 'Commercial Operations' },
-  // Billing sub-types share the main billing metadata
   'billing-quotation': { title: 'Quotation Ledger', category: 'Commercial Operations' },
   'billing-invoice': { title: 'Invoice Ledger', category: 'Commercial Operations' },
-  'billing-po': { title: 'Purchase Order Ledger', category: 'Commercial Operations' },
+  'billing-po': { title: 'Customer PO Ledger', category: 'Commercial Operations' },
   'billing-proforma': { title: 'Proforma Ledger', category: 'Commercial Operations' },
   'billing-inward': { title: 'Inward Payment Ledger', category: 'Commercial Operations' },
   'billing-outward': { title: 'Outward Payment Ledger', category: 'Commercial Operations' },
@@ -126,7 +120,6 @@ const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
 
 function IndustrialERPInternal() {
   const db = useFirestore();
-  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -187,9 +180,9 @@ function IndustrialERPInternal() {
   const slips = slipsData || [];
   const products = productsData || [];
 
-  // Derive Current User Data and Permissions
+  // Current User Context
   const currentUserData = useMemo(() => {
-    if (!currentUser || !usersData || usersData.length === 0) return null;
+    if (!currentUser || !usersData) return null;
     return usersData.find(u => 
       u.name?.toLowerCase() === currentUser.toLowerCase() || 
       u.email?.toLowerCase() === currentUser.toLowerCase() || 
@@ -198,47 +191,24 @@ function IndustrialERPInternal() {
   }, [currentUser, usersData]);
 
   const masterAdmin = useMemo(() => {
-    if (!usersData || usersData.length === 0) return null;
-    return usersData.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin');
+    return usersData.find(u => u.role === 'Master Admin' || u.username === 'admin');
   }, [usersData]);
 
   const brandLogo = useMemo(() => {
-    const masterLogo = masterAdmin?.uiSettings?.brandLogo;
-    return masterLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
+    return masterAdmin?.uiSettings?.brandLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
   }, [masterAdmin]);
 
   const globalSystemSettings = useMemo(() => {
-    const settings = masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
-    return {
-      ...DEFAULT_UI_SETTINGS,
-      ...settings,
-      woPrefix: settings.woPrefix ?? DEFAULT_UI_SETTINGS.woPrefix,
-      woNextNumber: settings.woNextNumber ?? DEFAULT_UI_SETTINGS.woNextNumber,
-      brandLogo: settings.brandLogo,
-      logoSize: settings.logoSize ?? DEFAULT_UI_SETTINGS.logoSize
-    };
+    return masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
   }, [masterAdmin]);
-
-  // Sync Browser Tab Title and Metadata
-  useEffect(() => {
-    if (mounted) {
-      const config = VIEW_CONFIG[currentView] || { title: 'Matrix Dashboard', category: 'Hub' };
-      const displayTitle = uiSettings.customTitles[currentView] || config.title;
-      document.title = `${displayTitle} | Ferocious Tech`;
-    }
-  }, [currentView, uiSettings.customTitles, mounted]);
 
   useEffect(() => {
     const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
     setUISettings(targetSettings);
     
     if (typeof document !== 'undefined') {
-      document.documentElement.style.setProperty('--base-font-size', `${targetSettings.fontSize}px`);
-      document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
       document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
-      
-      const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
-      document.documentElement.style.setProperty('--table-cell-padding', densityMap[targetSettings.tableDensity]);
+      document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
     }
   }, [currentUserData?.uiSettings]);
 
@@ -249,31 +219,11 @@ function IndustrialERPInternal() {
 
   const permissions = useMemo(() => {
     const isMasterAdminUser = currentUser?.toLowerCase() === 'master admin';
-    const isHR = currentUserData?.role === 'HR' || currentUserData?.role === 'HR Manager';
-
-    if (isMasterAdminUser || isHR) {
-      const clearance: Record<string, PermissionLevel> = {
-        overview: 'full', agile: 'full', orders: 'full', sqcdp: 'full', operations: 'full',
-        'machine-utilization': 'full', hr: 'full', 'my-portal': 'full', 'customer-orders': 'full',
-        'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
-        'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
-        'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full',
-        'team-matrix': 'full', delivery: 'full', 'print-templates': 'full', 'product-master': 'full',
-        'billing-quotation': 'full',
-        'billing-invoice': 'full',
-        'billing-po': 'full',
-        'billing-dc': 'full',
-        'billing-proforma': 'full',
-        'billing-inward': 'full',
-        'billing-outward': 'full',
-        'billing-bank': 'full',
-        'billing-edit': 'full',
-        'billing-delete': 'full',
-      };
-      if (isMasterAdminUser) clearance.users = 'full';
+    if (isMasterAdminUser) {
+      const clearance: Record<string, PermissionLevel> = {};
+      Object.keys(VIEW_CONFIG).forEach(k => clearance[k] = 'full');
       return clearance;
     }
-    
     return currentUserData?.permissions || {};
   }, [currentUser, currentUserData]);
 
@@ -286,61 +236,14 @@ function IndustrialERPInternal() {
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('jayasimha_user');
-    sessionStorage.removeItem('jayasimha_verify');
     setIsLoggedIn(false);
     setCurrentUser(null);
-    setCurrentView('overview');
   }, []);
 
   const handleViewChange = (view: ViewType) => {
     if (!hasAccess(view)) return;
     setCurrentView(view);
     setIsMobileMenuOpen(false);
-  };
-
-  const handleLogin = (user: string) => {
-    localStorage.setItem('jayasimha_user', user);
-    setCurrentUser(user);
-    setIsLoggedIn(true);
-  };
-
-  const handleSaveUser = (user: SystemUser) => {
-    setDocumentNonBlocking(doc(db, 'users', user.id), user, { merge: true });
-  };
-
-  const handleSaveCustomer = (customer: Customer) => {
-    setDocumentNonBlocking(doc(db, 'customers', customer.id), customer, { merge: true });
-  };
-
-  const handleSaveVendor = (vendor: Vendor) => {
-    setDocumentNonBlocking(doc(db, 'vendors', vendor.id), vendor, { merge: true });
-  };
-
-  const handleNavigateToUserDetail = (userId: string) => {
-    setSelectedDetailUserId(userId);
-    setCurrentView('user-detail');
-  };
-
-  const handleVerifyPortal = (userName: string) => {
-    handleLogin(userName);
-    setCurrentView('my-portal');
-  };
-
-  const handleSaveOrder = (order: Order) => {
-    const isNew = !orders.find(o => o.id === order.id);
-    setDocumentNonBlocking(doc(db, 'orders', order.id), order, { merge: true });
-    
-    if (isNew && masterAdmin) {
-      const currentUISettings = masterAdmin.uiSettings || DEFAULT_UI_SETTINGS;
-      setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
-        uiSettings: {
-          ...DEFAULT_UI_SETTINGS,
-          ...currentUISettings,
-          woNextNumber: (currentUISettings.woNextNumber || 1001) + 1
-        }
-      }, { merge: true });
-    }
-    setCurrentView('orders');
   };
 
   useEffect(() => {
@@ -355,54 +258,46 @@ function IndustrialERPInternal() {
   if (!mounted) return null;
 
   if (!isLoggedIn) {
-    return <><LoginScreen onLogin={handleLogin} users={usersData} brandLogo={brandLogo} /><Toaster /></>;
+    return <><LoginScreen onLogin={(user) => { localStorage.setItem('jayasimha_user', user); setCurrentUser(user); setIsLoggedIn(true); }} users={usersData} brandLogo={brandLogo} /><Toaster /></>;
   }
 
-  const isSlimSidebar = uiSettings.sidebarMode === 'slim';
-  const currentViewMetadata = VIEW_CONFIG[currentView] || { title: 'Command Matrix', category: 'Strategic Hub' };
+  const currentViewMetadata = VIEW_CONFIG[currentView] || { title: 'Mission Control', category: 'Command' };
   const pageDisplayTitle = uiSettings.customTitles[currentView] || currentViewMetadata.title;
 
   return (
-    <div className={cn(
-      "flex min-h-screen bg-background text-slate-900 font-body overflow-hidden print:h-auto print:block print:bg-white",
-      uiSettings.labelCase === 'uppercase' ? "labels-uppercase" : "labels-capitalize"
-    )}>
-      <div className={cn("hidden lg:block print:hidden transition-all duration-500", isSlimSidebar ? "w-20" : "w-64")}>
+    <div className="flex h-screen bg-[#F1F5F9] text-slate-900 font-body overflow-hidden enterprise-ui">
+      {/* High-Fidelity Sidebar */}
+      <div className={cn("hidden lg:block shrink-0 transition-all duration-300", uiSettings.sidebarMode === 'slim' ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 
           onViewChange={handleViewChange} 
           permissions={permissions} 
-          isSlim={isSlimSidebar}
+          isSlim={uiSettings.sidebarMode === 'slim'}
           customTitles={uiSettings.customTitles}
-          userRole={currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
+          userRole={currentUserData?.role || 'User'}
           isReportingManager={isReportingManager}
           brandLogo={brandLogo}
           logoSize={uiSettings.logoSize}
         />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:block">
-        <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-4 md:px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
+      {/* Main Execution Viewport */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <header className="h-14 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50">
           <div className="flex items-center gap-4">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10">
+                <Button variant="ghost" size="icon" className="lg:hidden">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[280px] bg-[#001F3D] border-none">
-                <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
-                <SheetDescription className="sr-only">Access all command nodes and operational ledgers.</SheetDescription>
+              <SheetContent side="left" className="p-0 w-64 bg-primary text-white border-none">
                 <SidebarNav 
                   currentView={currentView} 
                   onViewChange={handleViewChange} 
                   permissions={permissions} 
                   isSlim={false}
-                  customTitles={uiSettings.customTitles}
-                  userRole={currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : (currentUserData?.role || 'User')}
-                  isReportingManager={isReportingManager}
                   brandLogo={brandLogo}
-                  logoSize={uiSettings.logoSize}
                 />
               </SheetContent>
             </Sheet>
@@ -411,60 +306,58 @@ function IndustrialERPInternal() {
               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <Home className="h-2.5 w-2.5" />
                 <span>{currentViewMetadata.category}</span>
-                <ChevronRight className="h-2.5 w-2.5 text-slate-300" />
+                <ChevronRight className="h-2.5 w-2.5" />
                 <span className="text-primary">{pageDisplayTitle}</span>
               </div>
-              <h1 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight leading-none mt-0.5">
-                {pageDisplayTitle}
-              </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-6">
              <div className="text-right hidden sm:block">
-                <p className="text-[10px] md:text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
-                <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || (currentUser?.toLowerCase() === 'master admin' ? 'Master Admin' : 'User')}</p>
+                <p className="text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'Personnel'}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 ring-primary/20 transition-all">
+                   <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 ring-primary/10">
                       <AvatarImage src={currentUserData?.image} />
-                      <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">FT</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 text-primary text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl border-slate-100">
-                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-lg h-9 text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile Settings</DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-md shadow-xl">
+                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs gap-2"><User className="h-3.5 w-3.5" /> Identity Settings</DropdownMenuItem>
                    <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={handleLogout} className="rounded-lg h-9 text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Security Termination</DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleLogout} className="text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Security Termination</DropdownMenuItem>
                 </DropdownMenuContent>
              </DropdownMenu>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 print:p-0">
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <main className="flex-1 overflow-y-auto w-full p-6">
+          <div className="animate-in fade-in duration-500">
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
-            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} />}
-            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('settings')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}
+            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} />}
+            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => handleViewChange('settings')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); handleViewChange('my-portal'); }} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
-            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} billing={billing} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSystemSettings} />}
+            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} billing={billing} onBack={() => handleViewChange('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={globalSystemSettings} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
-            {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} onTabChange={(tab: any) => handleViewChange(tab)} />}
+            {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} onTabChange={(tab: any) => handleViewChange(tab)} />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
             {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
-            {currentView === 'customer-orders' && <CustomerOrders customers={customers} vendors={vendors} onSaveCustomer={handleSaveCustomer} onSaveVendor={handleSaveVendor} />}
-            {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={handleSaveOrder} />}
+            {currentView === 'customer-orders' && <CustomerOrders customers={customers} vendors={vendors} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
+            {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} />}
             {currentView === 'production-planner' && <ProductionPlanner batches={batches} orders={orders} machines={machines} users={usersData} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
             {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
             {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
             {currentView === 'weekly-plan' && <WeeklyPlan logs={logs} onNavigateToGantt={()=>handleViewChange('gantt')} />}
             {currentView === 'print-templates' && <DocumentTemplateManager />}
+            {currentView === 'product-master' && <div className="p-4"><ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} /></div>}
           </div>
         </main>
       </div>

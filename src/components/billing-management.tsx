@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -734,6 +735,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         <DialogContent className={cn("bg-[#F8FAFC] border-none shadow-2xl rounded-[1.5rem] p-0 overflow-hidden flex flex-col", isPaymentType ? "max-w-4xl h-[92vh]" : "max-w-7xl h-[94vh]")}>
           <DialogHeader className="p-4 bg-white border-b flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary shadow-sm">
+                {isPaymentType ? <Banknote className="h-5 w-5" /> : <Receipt className="h-5 w-5" />}
+              </div>
               <DialogTitle className="text-lg font-headline font-bold text-slate-800 uppercase tracking-tight">
                 {editingRecordId ? 'Edit' : 'Create'} {MAIN_TABS.find(d => d.id === activeRecordType)?.label}
               </DialogTitle>
@@ -850,9 +854,9 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                  </div>
               </div>
             ) : (
-              <div className="p-4 md:p-6 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl space-y-6 relative">
+              <div className="p-4 md:p-6 space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl space-y-4 relative">
                     <div className="flex items-center justify-between border-b pb-3">
                       <h3 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Vendor Information</h3>
                       <div className="p-1 bg-slate-50 rounded-md border text-slate-400"><MoreVertical className="h-3 w-3" /></div>
@@ -922,10 +926,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                   </Card>
 
-                  <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl space-y-6">
+                  <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl space-y-4">
                     <div className="flex items-center justify-between border-b pb-3">
                       <h3 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">{currentTabLabel} Detail</h3>
-                      <div className="p-1 bg-slate-50 rounded-md border text-slate-400"><History className="h-3 w-3" /></div>
+                      <div className="p-1 bg-slate-50 rounded-md border text-slate-400"><History className="h-3.5 w-3.5" /></div>
                     </div>
                     <div className="space-y-3">
                       <div className="grid grid-cols-12 items-center gap-3">

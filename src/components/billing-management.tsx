@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -161,11 +161,6 @@ const MAIN_TABS = [
   { id: 'report', label: 'Report', icon: FileBarChart },
 ];
 
-const MONTHS_LIST = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-
 function numberToWords(num: number): string {
   if (num === 0) return "ZERO RUPEES ONLY";
   const single = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN"];
@@ -224,7 +219,7 @@ const CircularGauge = ({ achievement, size = 120, strokeWidth = 10, children }: 
   );
 };
 
-const SmartKPICard = ({ title, value, target, achievement, icon: Icon, type = 'linear', colorScheme }: any) => {
+const SmartKPICard = ({ title, value, target, achievement, icon: Icon, type = 'linear' }: any) => {
   const isRed = achievement < 70;
   const isYellow = achievement >= 70 && achievement < 100;
   const isGreen = achievement >= 100;
@@ -348,6 +343,12 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     items: [],
     subTotal: 0,
     amount: 0,
+    taxTotal: 0,
+    discountTotal: 0,
+    additionalCharges: 0,
+    roundOff: 0,
+    notes: '',
+    terms: '',
   });
 
   const biMetrics = useMemo(() => {
@@ -359,7 +360,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
 
-    // Filter STRICTLY for Sales Invoices in the selected month
     const monthInvoices = records.filter(r => 
       r.type === 'invoice' && 
       isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd })
@@ -369,7 +369,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const remainingToTarget = Math.max(0, monthlyBillingTarget - actualBillingAchieved);
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
 
-    // Calculate Days Remaining and Required Daily Billing
     let daysRemaining = 1;
     const daysInM = getDaysInMonth(targetDate);
     const currentDay = getDate(today);
@@ -384,12 +383,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     const requiredDailyBilling = daysRemaining > 0 ? remainingToTarget / daysRemaining : 0;
 
-    // Business Health Score (Placeholder for other metrics while focusing on requested billing system)
     const collectionVal = records.filter(r => r.type === 'inward_payment').reduce((s, r) => s + r.amount, 0);
     const healthScore = Math.round(
       (Math.min(achievementPercent, 100) * 0.4) + 
       (Math.min((collectionVal / (monthlyBillingTarget || 1)) * 100, 100) * 0.3) +
-      (80 * 0.3) // Static high production/inventory score for MVP
+      (80 * 0.3)
     );
 
     return { 
@@ -422,9 +420,80 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         items: [{ id: '1', description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }],
         subTotal: 0,
         amount: 0,
+        taxTotal: 0,
+        discountTotal: 0,
+        additionalCharges: 0,
+        roundOff: 0,
+        notes: '',
+        terms: '',
       });
     }
     setIsRecordFormOpen(true);
+  };
+
+  const calculateTotals = (items: BillingLineItem[], addCharges: number = 0) => {
+    let sub = 0;
+    let tax = 0;
+    let disc = 0;
+
+    items.forEach(item => {
+      const lineBase = item.qty * item.price;
+      const lineDisc = item.discountType === 'percentage' ? (lineBase * item.discount / 100) : item.discount;
+      const lineTaxable = lineBase - lineDisc;
+      const lineTax = lineTaxable * item.gstRate / 100;
+      
+      sub += lineTaxable;
+      tax += lineTax;
+      disc += lineDisc;
+    });
+
+    const totalRaw = sub + tax + Number(addCharges);
+    const roundOff = Math.round(totalRaw) - totalRaw;
+    const grand = Math.round(totalRaw);
+
+    setFormData(prev => ({
+      ...prev,
+      subTotal: sub,
+      taxTotal: tax,
+      discountTotal: disc,
+      amount: grand,
+      roundOff: Number(roundOff.toFixed(2))
+    }));
+  };
+
+  const handleLineItemChange = (idx: number, field: keyof BillingLineItem, value: any) => {
+    const newItems = [...(formData.items || [])];
+    (newItems[idx] as any)[field] = value;
+    
+    // Auto recalculate total for row
+    const line = newItems[idx];
+    const base = line.qty * line.price;
+    const d = line.discountType === 'percentage' ? (base * line.discount / 100) : line.discount;
+    const taxable = base - d;
+    const t = taxable * line.gstRate / 100;
+    line.total = taxable + t;
+
+    setFormData({ ...formData, items: newItems });
+    calculateTotals(newItems, formData.additionalCharges);
+  };
+
+  const handleAddRow = () => {
+    const newItems = [...(formData.items || []), { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }];
+    setFormData({ ...formData, items: newItems as BillingLineItem[] });
+  };
+
+  const handleDuplicateRow = (idx: number) => {
+    const source = formData.items![idx];
+    const newItems = [...(formData.items || [])];
+    newItems.splice(idx + 1, 0, { ...source, id: Date.now().toString() });
+    setFormData({ ...formData, items: newItems });
+    calculateTotals(newItems, formData.additionalCharges);
+  };
+
+  const handleRemoveRow = (idx: number) => {
+    const newItems = formData.items!.filter((_, i) => i !== idx);
+    setFormData({ ...formData, items: newItems });
+    calculateTotals(newItems, formData.additionalCharges);
   };
 
   const handleSave = () => {
@@ -507,15 +576,285 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     </div>
   );
 
-  const DashboardView = () => {
-    if (dashboardView === 'analytics') return <AnalyticsView />;
+  const FullPageEditor = () => {
+    const selectedCustomer = customers.find(c => c.id === formData.customerId);
 
+    return (
+      <div className="flex flex-col bg-[#F1F5F9] min-h-screen font-sans text-slate-900 animate-in fade-in duration-300 pb-40">
+        {/* Top Sticky Header */}
+        <div className="sticky top-0 z-50 bg-white border-b border-slate-300 px-4 h-12 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)} className="h-8 px-2 hover:bg-slate-100"><ArrowLeft className="h-4 w-4" /></Button>
+            <div className="h-6 w-px bg-slate-200" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Transaction Registry</span>
+            <span className="text-sm font-bold uppercase text-[#001F3D]">{editingRecordId ? 'Edit' : 'Create'} {activeRecordType} Matrix</span>
+          </div>
+          <div className="flex items-center gap-2">
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                   <Button variant="outline" size="sm" className="h-8 rounded-md gap-2 font-bold text-[10px] uppercase border-slate-300"><MoreHorizontal className="h-3.5 w-3.5" /> Options</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 text-[10px] font-bold uppercase">
+                   <DropdownMenuItem onClick={handleAddRow}><PlusCircle className="h-3.5 w-3.5 mr-2" /> Add Product</DropdownMenuItem>
+                   <DropdownMenuItem><Briefcase className="h-3.5 w-3.5 mr-2" /> Add Service</DropdownMenuItem>
+                   <DropdownMenuItem><DollarSign className="h-3.5 w-3.5 mr-2" /> Add Additional Charge</DropdownMenuItem>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem><FileUp className="h-3.5 w-3.5 mr-2" /> Import Items</DropdownMenuItem>
+                   <DropdownMenuItem><FileDown className="h-3.5 w-3.5 mr-2" /> Export Items</DropdownMenuItem>
+                </DropdownMenuContent>
+             </DropdownMenu>
+          </div>
+        </div>
+
+        <div className="flex-1 w-full max-w-[1700px] mx-auto p-4 space-y-4">
+          {/* Header Section: Customer & Document Detail */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+             <Card className="bg-white border border-slate-300 rounded-none shadow-none p-4 space-y-4">
+                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 pb-2">Customer Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">M/S (Customer Name)</Label>
+                      <Select value={formData.customerId} onValueChange={(id) => {
+                        const c = customers.find(x => x.id === id);
+                        setFormData({ ...formData, customerId: id, customerName: c?.name || '' });
+                      }}>
+                         <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold bg-white"><SelectValue placeholder="Identify identity..." /></SelectTrigger>
+                         <SelectContent className="rounded-none border-slate-300 shadow-xl">{customers.map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">GSTIN / PAN</Label>
+                      <Input readOnly className="h-9 bg-slate-50 border-slate-300 rounded-none text-xs font-bold uppercase" value={selectedCustomer?.gstNumber || '---'} />
+                   </div>
+                   <div className="space-y-1 col-span-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Billing Address</Label>
+                      <Input readOnly className="h-9 bg-slate-50 border-slate-300 rounded-none text-xs font-medium" value={selectedCustomer?.address || '---'} />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Contact Person</Label>
+                      <Input readOnly className="h-9 bg-slate-50 border-slate-300 rounded-none text-xs font-medium" value={selectedCustomer?.contactPerson || '---'} />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Place of Supply</Label>
+                      <Input className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase" placeholder="e.g. Maharashtra (27)" value={formData.placeOfSupply} onChange={(e)=>setFormData({...formData, placeOfSupply: e.target.value})} />
+                   </div>
+                </div>
+             </Card>
+
+             <Card className="bg-white border border-slate-300 rounded-none shadow-none p-4 space-y-4">
+                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 pb-2">Document Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Document Type</Label>
+                      <Badge className="h-9 w-full rounded-none justify-center bg-[#001F3D] text-white text-[10px] font-bold uppercase border-none">{activeRecordType.replace('_', ' ')}</Badge>
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Document Number</Label>
+                      <Input readOnly className="h-9 bg-slate-50 border-slate-300 rounded-none text-xs font-bold font-code" value={formData.number} />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Document Date</Label>
+                      <DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-9 border-slate-300 rounded-none shadow-none" />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Ref. No / PO No.</Label>
+                      <Input className="h-9 border-slate-300 rounded-none text-xs font-bold" value={formData.itemName} onChange={(e)=>setFormData({...formData, itemName: e.target.value})} />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Delivery Mode</Label>
+                      <Input className="h-9 border-slate-300 rounded-none text-xs font-medium uppercase" value={formData.deliveryMode} onChange={(e)=>setFormData({...formData, deliveryMode: e.target.value})} />
+                   </div>
+                </div>
+             </Card>
+          </div>
+
+          {/* Item Entry Matrix - GoGSTBill Style */}
+          <Card className="border border-slate-300 rounded-none shadow-none bg-white overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-100">
+                <TableRow className="h-10 hover:bg-transparent border-b border-slate-300">
+                  <TableHead className="w-12 text-center font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">SR</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">Product / Service Description</TableHead>
+                  <TableHead className="w-24 text-center font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">HSN/SAC</TableHead>
+                  <TableHead className="w-20 text-center font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">Qty</TableHead>
+                  <TableHead className="w-20 text-center font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">UOM</TableHead>
+                  <TableHead className="w-32 text-right font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">Rate (₹)</TableHead>
+                  <TableHead className="w-24 text-right font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">Disc (%)</TableHead>
+                  <TableHead className="w-24 text-center font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">GST %</TableHead>
+                  <TableHead className="w-32 text-right font-bold text-[10px] uppercase text-slate-600 border-r border-slate-300">Amount (₹)</TableHead>
+                  <TableHead className="w-10 px-0"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {formData.items?.map((item, idx) => (
+                  <TableRow key={item.id} className="h-auto hover:bg-slate-50 border-b border-slate-200">
+                    <TableCell className="text-center font-bold text-[10px] border-r border-slate-200 bg-slate-50">{idx + 1}</TableCell>
+                    <TableCell className="p-0 border-r border-slate-200 min-w-[300px]">
+                      <div className="flex flex-col">
+                        <Input className="h-9 border-none rounded-none text-xs font-bold bg-transparent shadow-none" value={item.description} onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)} placeholder="Type product name..." />
+                        <Input className="h-7 border-t border-slate-100 rounded-none text-[10px] italic text-slate-400 bg-transparent shadow-none" value={item.note || ''} onChange={(e) => handleLineItemChange(idx, 'note', e.target.value)} placeholder="Add internal line note..." />
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-200">
+                      <Input className="h-9 border-none rounded-none text-xs text-center bg-transparent shadow-none font-code" value={item.hsn} onChange={(e) => handleLineItemChange(idx, 'hsn', e.target.value)} />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-200">
+                      <Input type="number" className="h-9 border-none rounded-none text-xs text-center bg-transparent shadow-none font-bold" value={item.qty} onChange={(e) => handleLineItemChange(idx, 'qty', Number(e.target.value))} />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-200">
+                      <Input className="h-9 border-none rounded-none text-xs text-center bg-transparent shadow-none uppercase font-medium" value={item.unit} onChange={(e) => handleLineItemChange(idx, 'unit', e.target.value)} />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-200">
+                      <Input type="number" className="h-9 border-none rounded-none text-xs text-right bg-transparent shadow-none font-bold pr-4" value={item.price} onChange={(e) => handleLineItemChange(idx, 'price', Number(e.target.value))} />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-200">
+                      <Input type="number" className="h-9 border-none rounded-none text-xs text-right bg-transparent shadow-none pr-4" value={item.discount} onChange={(e) => handleLineItemChange(idx, 'discount', Number(e.target.value))} />
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-200">
+                       <Select value={item.gstRate.toString()} onValueChange={(val) => handleLineItemChange(idx, 'gstRate', Number(val))}>
+                          <SelectTrigger className="h-9 border-none rounded-none shadow-none bg-transparent font-bold text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-none border-slate-300">
+                             {[0, 5, 12, 18, 28].map(v => <SelectItem key={v} value={v.toString()} className="text-xs font-bold">{v}%</SelectItem>)}
+                          </SelectContent>
+                       </Select>
+                    </TableCell>
+                    <TableCell className="text-right font-display font-bold text-xs pr-6 border-r border-slate-200 bg-slate-50/50">
+                      ₹ {item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="p-0">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-10 text-slate-300 hover:text-slate-900"><MoreVertical className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 text-[10px] font-bold uppercase">
+                           <DropdownMenuItem onClick={() => handleDuplicateRow(idx)}><Copy className="h-3.5 w-3.5 mr-2" /> Duplicate Row</DropdownMenuItem>
+                           <DropdownMenuItem className="text-red-600" onClick={() => handleRemoveRow(idx)}><Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Row</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="p-3 bg-slate-50 border-t border-slate-300 flex justify-between items-center">
+               <Button onClick={handleAddRow} variant="outline" className="h-9 px-6 rounded-none border-slate-300 bg-white gap-2 font-bold text-[10px] uppercase tracking-widest"><Plus className="h-3.5 w-3.5" /> Add New Row (Alt+A)</Button>
+               <div className="flex gap-4">
+                  <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase">Total Qty</p><p className="text-xs font-bold">{formData.items?.reduce((s,i)=>s+i.qty, 0)}</p></div>
+                  <div className="text-right pr-4"><p className="text-[8px] font-bold text-slate-400 uppercase">Sub-Total</p><p className="text-xs font-bold">₹ {formData.subTotal?.toLocaleString(undefined, {minimumFractionDigits: 2})}</p></div>
+               </div>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pb-24">
+             {/* Left Column: Bank, Terms, Remarks */}
+             <div className="lg:col-span-8 space-y-4">
+               <Card className="bg-white border border-slate-300 p-4 space-y-4 rounded-none shadow-none">
+                 <h3 className="text-[10px] font-black uppercase text-[#001F3D] tracking-widest border-b border-slate-100 pb-2 flex justify-between items-center">
+                   <div className="flex items-center gap-2"><Landmark className="h-3 w-3" /> Bank Details (Expand)</div>
+                   <Switch checked={true} onCheckedChange={()=>{}} />
+                 </h3>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                       <Label className="text-[9px] font-bold uppercase text-slate-400">Account Selection</Label>
+                       <Select defaultValue="main"><SelectTrigger className="h-9 border-slate-200 rounded-none text-xs"><SelectValue /></SelectTrigger><SelectContent className="rounded-none"><SelectItem value="main" className="text-xs">HDFC Bank - 50100XXXX</SelectItem></SelectContent></Select>
+                    </div>
+                    <div className="space-y-1">
+                       <Label className="text-[9px] font-bold uppercase text-slate-400">Digital Identity (UPI/QR)</Label>
+                       <div className="h-9 flex items-center px-4 bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-400 uppercase">UPI Node: ferocious@hdfc</div>
+                    </div>
+                 </div>
+               </Card>
+
+               <Card className="bg-white border border-slate-300 p-4 space-y-4 rounded-none shadow-none">
+                 <h3 className="text-[10px] font-black uppercase text-[#001F3D] tracking-widest border-b border-slate-100 pb-2 flex justify-between items-center">
+                   <div className="flex items-center gap-2"><ClipboardList className="h-3 w-3" /> Terms & Conditions</div>
+                   <Button variant="ghost" size="sm" className="h-7 text-[8px] uppercase font-bold text-primary">Save as Template</Button>
+                 </h3>
+                 <Textarea className="bg-slate-50 border-slate-100 rounded-none text-xs min-h-[100px] shadow-none" placeholder="1. Payment 100% against delivery. 2. GST extra as applicable..." value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} />
+               </Card>
+
+               <Card className="bg-white border border-slate-300 p-4 space-y-4 rounded-none shadow-none">
+                 <h3 className="text-[10px] font-black uppercase text-[#001F3D] tracking-widest border-b border-slate-100 pb-2">Document Remarks (Internal)</h3>
+                 <div className="flex gap-4 items-start">
+                    <Textarea className="bg-slate-50 border-slate-100 rounded-none text-xs min-h-[60px] shadow-none flex-1" placeholder="Add private notes or cross-references here..." value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                    <div className="w-48 p-3 bg-blue-50 border border-blue-100 text-blue-700 text-[9px] font-bold leading-relaxed uppercase">
+                       <Info className="h-3 w-3 mb-1" /> Not visible on print nodes or customer exports.
+                    </div>
+                 </div>
+               </Card>
+             </div>
+
+             {/* Right Column: Calculations */}
+             <div className="lg:col-span-4">
+               <Card className="bg-white border-2 border-[#001F3D] shadow-none rounded-none overflow-hidden">
+                  <div className="bg-[#001F3D] text-white p-4 font-black uppercase text-[10px] tracking-[0.2em] flex justify-between items-center">
+                     <span>Financial Summary</span>
+                     <Calculator className="h-4 w-4" />
+                  </div>
+                  <div className="p-6 space-y-4">
+                     <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase">
+                        <span>Total Taxable Amount</span>
+                        <span>₹ {formData.subTotal?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                     </div>
+                     <div className="space-y-3 pt-2">
+                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 uppercase">
+                           <span>Integrated GST (IGST)</span>
+                           <span>₹ {formData.taxTotal?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 uppercase">
+                           <span>Addl. Charges / Transport</span>
+                           <div className="flex items-center gap-2">
+                             <span className="text-[8px]">₹</span>
+                             <Input type="number" className="h-8 w-24 border-slate-200 rounded-none text-right font-bold pr-2 bg-slate-50" value={formData.additionalCharges} onChange={(e)=>{
+                               const val = Number(e.target.value);
+                               setFormData({...formData, additionalCharges: val});
+                               calculateTotals(formData.items!, val);
+                             }} />
+                           </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 uppercase">
+                           <span>Discount Total</span>
+                           <span className="text-red-500">- ₹ {formData.discountTotal?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-medium text-slate-400 uppercase">
+                           <span>Round Off</span>
+                           <span className="font-code">{formData.roundOff}</span>
+                        </div>
+                     </div>
+                     
+                     <div className="pt-6 border-t-2 border-slate-100 flex flex-col items-end gap-1">
+                        <span className="text-[9px] font-black text-primary uppercase tracking-[0.3em]">Payable Matrix Total</span>
+                        <h4 className="text-4xl font-display font-black text-[#001F3D]">₹ {formData.amount?.toLocaleString()}</h4>
+                     </div>
+
+                     <div className="mt-6 p-4 bg-slate-50 border border-slate-100 rounded-none space-y-2">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Amount in words:</span>
+                        <p className="text-[10px] font-bold text-[#001F3D] leading-relaxed uppercase">{numberToWords(formData.amount || 0)}</p>
+                     </div>
+                  </div>
+               </Card>
+             </div>
+          </div>
+        </div>
+
+        {/* Fixed Interaction Footer */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-300 p-3 flex justify-end gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-[100]">
+           <Button variant="outline" className="h-11 rounded-none px-8 font-bold uppercase text-[10px] tracking-widest border-slate-300 bg-white text-slate-600" onClick={()=>setIsRecordFormOpen(false)}>Back to Ledger</Button>
+           <Button variant="outline" className="h-11 rounded-none px-8 font-bold uppercase text-[10px] tracking-widest border-slate-300 bg-white text-blue-600">Save as Draft</Button>
+           <Button className="h-11 rounded-none px-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleSave}><Save className="h-4 w-4" /> Save & Commit</Button>
+           <Button className="h-11 rounded-none px-12 bg-[#001F3D] hover:bg-black text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleSave}><Printer className="h-4 w-4" /> Save & Print</Button>
+        </div>
+      </div>
+    );
+  };
+
+  const DashboardView = () => {
     const modules = [
       { id: 'quotation', label: 'Quotation', icon: FileBox, color: 'text-blue-500', bg: 'bg-blue-50', counts: { total: records.filter(r => r.type === 'quotation').length, pending: records.filter(r => r.type === 'quotation' && r.status === 'Pending').length } },
       { id: 'sale_order', label: 'Sales Order', icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-50', counts: { total: records.filter(r => r.type === 'sale_order').length, pending: records.filter(r => r.type === 'sale_order' && r.status === 'Pending').length } },
       { id: 'invoice', label: 'Sales Invoice', icon: Receipt, color: 'text-emerald-500', bg: 'bg-emerald-50', counts: { total: records.filter(r => r.type === 'invoice').length, unpaid: records.filter(r => r.type === 'invoice' && r.status !== 'Paid').length } },
       { id: 'purchase_invoice', label: 'Pur Inv', icon: ShoppingCart, color: 'text-rose-500', bg: 'bg-rose-50', counts: { total: records.filter(r => r.type === 'purchase_invoice').length, unpaid: records.filter(r => r.type === 'purchase_invoice' && r.status !== 'Paid').length } },
     ];
+
+    if (dashboardView === 'analytics') return <AnalyticsView />;
 
     return (
       <div className="p-8 space-y-8 animate-in fade-in duration-700">
@@ -543,51 +882,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       </div>
     );
   };
-
-  const FullPageEditor = () => (
-    <div className="flex flex-col bg-[#F8FAFC] min-h-screen animate-in fade-in duration-300 pb-40">
-      <div className="p-4 border-b bg-white flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-[#001F3D] rounded text-white"><Receipt className="h-5 w-5" /></div>
-          <h2 className="text-xl font-bold text-[#001F3D] uppercase tracking-tighter">{editingRecordId ? 'Edit' : 'Create'} {activeRecordType} Matrix</h2>
-        </div>
-        <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)}><X className="h-4 w-4 mr-2" /> Cancel</Button>
-      </div>
-      <div className="flex-1 w-full max-w-[1700px] mx-auto p-4 md:p-8 space-y-6">
-         {/* Form content mapping similar to restoration request */}
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="p-8 border-slate-200 bg-white rounded-2xl space-y-6">
-               <h3 className="text-xs font-bold uppercase text-slate-400 tracking-widest border-b pb-3">Customer Information</h3>
-               <div className="grid grid-cols-1 gap-4">
-                  <div className="grid grid-cols-12 items-center gap-4">
-                     <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">M/S</Label>
-                     <Select value={formData.customerId} onValueChange={(id) => {
-                       const c = customers.find(x => x.id === id);
-                       setFormData({ ...formData, customerId: id, customerName: c?.name || '' });
-                     }}>
-                        <SelectTrigger className="col-span-8 bg-slate-50 border-none h-10 text-xs font-bold uppercase"><SelectValue placeholder="Identify identity..." /></SelectTrigger>
-                        <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)}</SelectContent>
-                     </Select>
-                  </div>
-               </div>
-            </Card>
-            <Card className="p-8 border-slate-200 bg-white rounded-2xl space-y-6">
-               <h3 className="text-xs font-bold uppercase text-slate-400 tracking-widest border-b pb-3">Quotation Detail</h3>
-               <div className="grid grid-cols-1 gap-4">
-                  <div className="grid grid-cols-12 items-center gap-4">
-                     <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Doc No.</Label>
-                     <Input readOnly className="col-span-8 bg-slate-50 border-none h-10 font-code text-xs font-bold" value={formData.number} />
-                  </div>
-               </div>
-            </Card>
-         </div>
-         <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-end gap-3 z-50">
-            <Button variant="outline" className="rounded-xl h-12 px-8 font-bold uppercase text-[10px]" onClick={()=>setIsRecordFormOpen(false)}>Back</Button>
-            <Button className="bg-[#001F3D] hover:bg-black text-white rounded-xl h-12 px-12 font-bold uppercase text-[10px]" onClick={handleSave}>Save & Commit</Button>
-         </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="bg-[#F8FAFC] flex flex-col animate-in fade-in duration-700 min-h-screen">
@@ -678,7 +972,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         const val = Number(e.target.value);
                         const key = format(parseISO(selectedAnalyticsDate), 'yyyy-MM');
                         const updated = { ...(uiSettings.monthlyBillingTargets || {}), [key]: val };
-                        // Note: In real app, call a handler to update the database. For MVP simulation:
                         const adminUser = users.find(u => u.name?.toLowerCase() === 'master admin');
                         if (adminUser) {
                           setDocumentNonBlocking(doc(db, 'users', adminUser.id), {

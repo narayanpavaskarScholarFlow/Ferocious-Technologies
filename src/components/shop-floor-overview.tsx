@@ -38,7 +38,12 @@ import {
   Database,
   RefreshCw,
   FileBox,
-  Truck
+  Truck,
+  Boxes,
+  Banknote,
+  Settings,
+  FileBarChart,
+  UserCircle
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 

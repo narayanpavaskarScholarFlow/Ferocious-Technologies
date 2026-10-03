@@ -74,7 +74,8 @@ import {
   Maximize,
   Layout,
   Type,
-  Square
+  Square,
+  DollarSign
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
@@ -83,6 +84,7 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { UserManagement } from './user-management';
 import placeholderImages from '@/app/lib/placeholder-images.json';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const THEME_COLORS = [
   { name: 'Classic Navy', value: '243 75% 59%', color: 'bg-[#6366f1]' },
@@ -127,6 +129,12 @@ const ACCESS_NODES: { id: ViewType | string; label: string; category: string; ic
   { id: 'settings', label: 'Control Center', category: 'System Governance', icon: Settings },
 ];
 
+const MACHINE_ACCESS_LIST = ["VMC", "CNC Turning", "Surface Grinding", "VMM"];
+
+const DEPARTMENTS = [
+  "Admin", "Marketing", "R&D", "Design", "Engineering", "Tool Room", "Quality", "Production", "Accounts"
+];
+
 interface ProfileSettingsProps {
   currentUser: string | null;
   users: SystemUser[];
@@ -169,7 +177,10 @@ export function ProfileSettings({
     email: currentUserData?.email || '',
     phone: currentUserData?.phone || '',
     password: currentUserData?.password || '',
-    image: currentUserData?.image || ''
+    image: currentUserData?.image || '',
+    dept: currentUserData?.dept || 'Admin',
+    machineAccess: currentUserData?.machineAccess || [],
+    approvalLimit: currentUserData?.approvalLimit || 0
   });
 
   useEffect(() => {
@@ -180,7 +191,10 @@ export function ProfileSettings({
         email: currentUserData.email || '',
         phone: currentUserData.phone || '',
         password: currentUserData.password || '',
-        image: currentUserData.image || ''
+        image: currentUserData.image || '',
+        dept: currentUserData.dept || 'Admin',
+        machineAccess: currentUserData.machineAccess || [],
+        approvalLimit: currentUserData.approvalLimit || 0
       });
     }
   }, [currentUserData]);
@@ -217,7 +231,7 @@ export function ProfileSettings({
         ...personalInfo,
         name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim(),
         role: 'Master Admin',
-        dept: 'Admin',
+        dept: personalInfo.dept,
         permissions: {},
         lastLogin: new Date().toISOString(),
         status: 'active'
@@ -347,6 +361,14 @@ export function ProfileSettings({
     updateLocalUIField('customTitles', titles);
   };
 
+  const handleToggleMachineLocal = (machine: string) => {
+    const current = personalInfo.machineAccess || [];
+    const updated = current.includes(machine) 
+      ? current.filter(m => m !== machine) 
+      : [...current, machine];
+    setPersonalInfo(prev => ({ ...prev, machineAccess: updated }));
+  };
+
   const categories = Array.from(new Set(ACCESS_NODES.map(n => n.category)));
 
   const filteredNodes = ACCESS_NODES.filter(n => 
@@ -389,59 +411,107 @@ export function ProfileSettings({
           )}
         </TabsList>
 
-        <TabsContent value="profile" className="m-0 max-w-4xl">
-          <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] relative overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-            <div className="relative z-10 space-y-12">
-               <div className="flex items-center gap-6">
-                 <div className="relative group">
-                   <div className="h-24 w-24 rounded-3xl bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-all group-hover:opacity-80">
-                     {personalInfo.image ? <img src={personalInfo.image} alt="" className="h-full w-full object-cover" /> : <User className="h-10 w-10 text-slate-300" />}
+        <TabsContent value="profile" className="m-0 max-w-5xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <Card className="lg:col-span-8 p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+              <div className="relative z-10 space-y-12">
+                 <div className="flex items-center gap-6">
+                   <div className="relative group">
+                     <div className="h-24 w-24 rounded-3xl bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-all group-hover:opacity-80">
+                       {personalInfo.image ? <img src={personalInfo.image} alt="" className="h-full w-full object-cover" /> : <User className="h-10 w-10 text-slate-300" />}
+                     </div>
+                     <input type="file" id="profile-image-upload" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
+                     <label htmlFor="profile-image-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-20 border-2 border-white">
+                        <Camera className="h-4 w-4" />
+                     </label>
                    </div>
-                   <input type="file" id="profile-image-upload" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
-                   <label htmlFor="profile-image-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-20 border-2 border-white">
-                      <Camera className="h-4 w-4" />
-                   </label>
+                   <div>
+                     <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase">{currentUserData?.name || 'Master Admin'}</h3>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role || 'Master Admin'} • {currentUserData?.dept || 'Admin'} • ID: {currentUserData?.id || 'admin-master-node'}</p>
+                   </div>
                  </div>
-                 <div>
-                   <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase">{currentUserData?.name || 'Master Admin'}</h3>
-                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role || 'Master Admin'} • {currentUserData?.dept || 'Admin'} • ID: {currentUserData?.id || 'admin-master-node'}</p>
-                 </div>
-               </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">First Name</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.firstName} onChange={(e)=>setPersonalInfo({...personalInfo, firstName: e.target.value})} />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Last Name</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.lastName} onChange={(e)=>setPersonalInfo({...personalInfo, lastName: e.target.value})} />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Identity</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.email} onChange={(e)=>setPersonalInfo({...personalInfo, email: e.target.value})} />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Contact Node</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.phone} onChange={(e)=>setPersonalInfo({...personalInfo, phone: e.target.value})} />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Security Key</Label>
-                    <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 border-none rounded-xl pr-12 font-bold" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
-                      <button onClick={()=>setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary">
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">First Name</Label>
+                      <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.firstName} onChange={(e)=>setPersonalInfo({...personalInfo, firstName: e.target.value})} />
                     </div>
-                  </div>
-               </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Last Name</Label>
+                      <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.lastName} onChange={(e)=>setPersonalInfo({...personalInfo, lastName: e.target.value})} />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Identity</Label>
+                      <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.email} onChange={(e)=>setPersonalInfo({...personalInfo, email: e.target.value})} />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Department</Label>
+                      <Select value={personalInfo.dept} onValueChange={(val)=>setPersonalInfo({...personalInfo, dept: val})}>
+                        <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {DEPARTMENTS.map(d => <SelectItem key={d} value={d} className="text-[10px] font-bold uppercase">{d}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Security Key</Label>
+                      <div className="relative">
+                        <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 border-none rounded-xl pr-12 font-bold" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
+                        <button onClick={()=>setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary">
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Approval Limit (₹)</Label>
+                      <div className="relative">
+                        <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={personalInfo.approvalLimit} onChange={(e)=>setPersonalInfo({...personalInfo, approvalLimit: Number(e.target.value)})} />
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
+                    </div>
+                 </div>
 
-               <Button className="h-14 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleUpdatePersonal}>
-                 <Save className="h-4 w-4" /> SAVE DATA
-               </Button>
+                 <Button className="h-14 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleUpdatePersonal}>
+                   <Save className="h-4 w-4" /> SAVE DATA
+                 </Button>
+              </div>
+            </Card>
+
+            <div className="lg:col-span-4 space-y-8">
+              <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-6">
+                 <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
+                    <Cpu className="h-4 w-4 text-primary" />
+                    <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Asset Access Matrix</h4>
+                 </div>
+                 <div className="space-y-4 pt-2">
+                    {MACHINE_ACCESS_LIST.map(machine => (
+                      <div key={machine} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all hover:bg-white">
+                        <Checkbox 
+                          id={`profile-machine-${machine}`} 
+                          checked={personalInfo.machineAccess?.includes(machine)}
+                          onCheckedChange={() => handleToggleMachineLocal(machine)}
+                        />
+                        <Label htmlFor={`profile-machine-${machine}`} className="text-[10px] font-bold uppercase text-slate-600 cursor-pointer">{machine}</Label>
+                      </div>
+                    ))}
+                 </div>
+              </Card>
+
+              <Card className="p-8 bg-slate-900 text-white border-none shadow-2xl rounded-[2rem] relative overflow-hidden">
+                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+                 <div className="relative z-10 space-y-4">
+                    <div className="flex items-center gap-3">
+                       <ShieldAlert className="h-5 w-5 text-primary" />
+                       <h4 className="text-xs font-bold uppercase tracking-widest">Audit Notice</h4>
+                    </div>
+                    <p className="text-[10px] text-white/50 leading-relaxed font-medium">Any changes to identity metadata or machine access nodes will be logged in the primary system audit trail.</p>
+                 </div>
+              </Card>
             </div>
-          </Card>
+          </div>
         </TabsContent>
 
         {isMasterAdmin && (
@@ -682,7 +752,7 @@ export function ProfileSettings({
                            <p className="text-[9px] text-slate-400 font-medium leading-tight">This node will be synchronized across headers, sidebars, and watermarks.</p>
                            {localUI.brandLogo && (
                              <Button variant="ghost" size="sm" className="h-7 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 text-[9px] font-bold uppercase tracking-widest gap-2 mt-2" onClick={handleDeleteLogo}>
-                               <Trash2 className="h-3 w-3" /> Reset Node
+                               <Trash2 className="h-3.5 w-3.5" /> Reset Node
                              </Button>
                            )}
                         </div>

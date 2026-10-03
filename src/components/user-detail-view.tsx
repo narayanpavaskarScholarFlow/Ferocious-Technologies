@@ -57,7 +57,8 @@ import {
   Edit3,
   Trash2,
   PackageCheck,
-  Globe
+  Globe,
+  DollarSign
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -238,34 +239,71 @@ export function UserDetailView({ userId, users, onBack, onSaveUser, onVerifyPort
           </div>
         </TabsContent>
 
-        <TabsContent value="info" className="m-0">
-          <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-12">
-             <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
-                <div className="p-3 bg-[#001F3D] rounded-2xl text-white"><Briefcase className="h-7 w-7" /></div>
-                <div>
-                  <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Metadata</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Personnel organizational nodes.</p>
-                </div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="space-y-6">
+        <TabsContent value="info" className="m-0 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-12">
+               <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
+                  <div className="p-3 bg-[#001F3D] rounded-2xl text-white"><Briefcase className="h-7 w-7" /></div>
+                  <div>
+                    <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Metadata</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Personnel organizational nodes.</p>
+                  </div>
+               </div>
+               <div className="space-y-6">
                    <div className="flex justify-between items-center py-4 border-b border-slate-50">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Email</span>
                       <span className="text-sm font-bold text-slate-700">{localUser.email}</span>
                    </div>
                    <div className="flex justify-between items-center py-4 border-b border-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Departmental Node</span>
+                      <span className="text-sm font-bold text-primary uppercase">{localUser.dept}</span>
+                   </div>
+                   <div className="flex justify-between items-center py-4 border-b border-slate-50">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting Node</span>
                       <span className="text-sm font-bold text-slate-700">{localUser.reportingManager || '---'}</span>
                    </div>
-                </div>
-                <div className="space-y-6">
                    <div className="flex justify-between items-center py-4 border-b border-slate-50">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last Auth Sync</span>
                       <span className="text-xs font-code font-bold text-slate-500">{localUser.lastLogin}</span>
                    </div>
-                </div>
-             </div>
-          </Card>
+               </div>
+            </Card>
+
+            <div className="space-y-8">
+              <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-8">
+                 <div className="flex items-center gap-4 border-l-4 border-emerald-600 pl-6">
+                    <div className="p-3 bg-emerald-600/10 rounded-2xl text-emerald-600"><DollarSign className="h-7 w-7" /></div>
+                    <div>
+                      <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Commercial Node</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Financial Authorization Limits.</p>
+                    </div>
+                 </div>
+                 <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Approval Limit (₹)</span>
+                    <span className="text-2xl font-display font-bold text-[#001F3D]">₹ {(localUser.approvalLimit || 0).toLocaleString()}</span>
+                 </div>
+              </Card>
+
+              <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-8">
+                 <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                    <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Cpu className="h-7 w-7" /></div>
+                    <div>
+                      <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Asset Authorization</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Authorized machine access nodes.</p>
+                    </div>
+                 </div>
+                 <div className="flex flex-wrap gap-2">
+                    {localUser.machineAccess && localUser.machineAccess.length > 0 ? (
+                      localUser.machineAccess.map(m => (
+                        <Badge key={m} variant="outline" className="bg-primary/5 text-primary border-primary/10 font-bold text-[10px] px-4 py-1.5 rounded-full uppercase">{m}</Badge>
+                      ))
+                    ) : (
+                      <p className="text-[10px] text-slate-300 font-bold uppercase italic py-4">No Asset Authorization Nodes Discovered</p>
+                    )}
+                 </div>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

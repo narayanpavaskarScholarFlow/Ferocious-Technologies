@@ -32,7 +32,9 @@ import {
   Lock,
   ShieldAlert,
   Search,
-  ExternalLink
+  ExternalLink,
+  Cpu,
+  DollarSign
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -47,6 +49,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel } from '@/lib/types';
 import { sendCredentials } from '@/ai/flows/send-credentials-flow';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const JOB_TITLES = [
   "HR",
@@ -61,14 +64,21 @@ const JOB_TITLES = [
 
 const DEPARTMENTS = [
   "Admin",
-  "Account",
-  "Market",
+  "Marketing",
+  "R&D",
   "Design",
+  "Engineering",
   "Tool Room",
-  "VMC Milling",
+  "Quality",
+  "Production",
+  "Accounts"
+];
+
+const MACHINE_ACCESS_LIST = [
+  "VMC",
   "CNC Turning",
-  "Assembly",
-  "Quality"
+  "Surface Grinding",
+  "VMM"
 ];
 
 const REPORTING_MANAGERS = [
@@ -104,7 +114,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
     deptCode: '',
     reportingManager: '',
     password: '',
-    image: undefined as string | undefined
+    image: undefined as string | undefined,
+    machineAccess: [] as string[],
+    approvalLimit: 0
   });
 
   const filteredUsers = users.filter(u => 
@@ -118,6 +130,14 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleToggleMachine = (machine: string) => {
+    const current = formData.machineAccess || [];
+    const updated = current.includes(machine) 
+      ? current.filter(m => m !== machine) 
+      : [...current, machine];
+    updateField('machineAccess', updated);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,7 +178,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
         role: formData.jobTitle || editingUser.role,
         dept: formData.deptCode || editingUser.dept,
         reportingManager: formData.reportingManager || '',
-        image: formData.image || editingUser.image || ''
+        image: formData.image || editingUser.image || '',
+        machineAccess: formData.machineAccess,
+        approvalLimit: formData.approvalLimit
       };
       
       onSaveUser(updatedUser);
@@ -183,7 +205,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
         image: formData.image || '',
         permissions: { overview: 'read' },
         lastLogin: 'Never',
-        status: 'offline'
+        status: 'offline',
+        machineAccess: formData.machineAccess,
+        approvalLimit: formData.approvalLimit
       };
 
       onSaveUser(newUser);
@@ -226,7 +250,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
       deptCode: user.dept,
       reportingManager: user.reportingManager || '',
       password: user.password || '',
-      image: user.image
+      image: user.image,
+      machineAccess: user.machineAccess || [],
+      approvalLimit: user.approvalLimit || 0
     });
     setStep(1);
     setIsWizardOpen(true);
@@ -272,7 +298,9 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
       deptCode: '',
       reportingManager: '',
       password: '',
-      image: undefined
+      image: undefined,
+      machineAccess: [],
+      approvalLimit: 0
     });
   };
 
@@ -312,7 +340,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-8 border-r border-slate-100">User Identity</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">User name</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Functional Role</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Last Session</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100 text-center">Approval Limit</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">User login ID</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Pass</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
@@ -353,8 +381,8 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                         <span className="text-[9px] text-slate-400 font-medium uppercase mt-0.5">{user.dept}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="border-r border-slate-50">
-                      <span className="text-[10px] font-code text-slate-400 break-all max-w-[120px] inline-block">{user.lastLogin}</span>
+                    <TableCell className="border-r border-slate-50 text-center">
+                       <span className="text-[11px] font-display font-bold text-[#001F3D]">₹ {(user.approvalLimit || 0).toLocaleString()}</span>
                     </TableCell>
                     <TableCell className="border-r border-slate-50">
                       <div className="flex items-center gap-2">
@@ -482,7 +510,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
             </div>
 
             <div className="flex-1 p-12 flex flex-col justify-between overflow-hidden bg-white">
-              <div className="space-y-10 flex-grow overflow-hidden flex flex-col">
+              <div className="space-y-10 flex-grow overflow-y-auto pr-4 -mr-4 hide-scrollbar">
                 {step === 1 && (
                   <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
                     <div className="flex items-center gap-3">
@@ -523,7 +551,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                             <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Employee ID</Label>
                             <Input 
                               placeholder="e.g. ID_PR_001" 
-                              className="h-12 bg-slate-50 border-none text-xs rounded-xl focus-visible:ring-primary/20"
+                              className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl focus-visible:ring-primary/20"
                               value={formData.id}
                               onChange={(e) => updateField('id', e.target.value)}
                             />
@@ -594,7 +622,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Organizational Placement</p>
                       </div>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Functional Role</Label>
@@ -623,22 +651,56 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                           </Select>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Reporting manager</Label>
-                        <Select 
-                          value={formData.reportingManager} 
-                          onValueChange={(val) => updateField('reportingManager', val)}
-                        >
-                          <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl pl-10 relative focus:ring-primary/20">
-                            <Network className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                            <SelectValue placeholder="Identify supervisor node..." />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-2xl">
-                            {REPORTING_MANAGERS.map(manager => (
-                              <SelectItem key={manager} value={manager} className="text-xs font-bold uppercase">{manager}</SelectItem>
+
+                      <div className="space-y-3">
+                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] flex items-center gap-2">
+                           <Cpu className="h-3.5 w-3.5" /> Machine Access Authorization
+                         </Label>
+                         <div className="grid grid-cols-2 gap-4 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner">
+                            {MACHINE_ACCESS_LIST.map(machine => (
+                              <div key={machine} className="flex items-center space-x-3">
+                                <Checkbox 
+                                  id={`machine-${machine}`} 
+                                  checked={formData.machineAccess?.includes(machine)}
+                                  onCheckedChange={() => handleToggleMachine(machine)}
+                                />
+                                <Label htmlFor={`machine-${machine}`} className="text-[10px] font-bold uppercase text-slate-600 cursor-pointer">{machine}</Label>
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Approval Limit (₹)</Label>
+                          <div className="relative">
+                            <Input 
+                              type="number"
+                              placeholder="0.00" 
+                              className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl pl-10 focus-visible:ring-primary/20"
+                              value={formData.approvalLimit}
+                              onChange={(e) => updateField('approvalLimit', Number(e.target.value))}
+                            />
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Reporting manager</Label>
+                          <Select 
+                            value={formData.reportingManager} 
+                            onValueChange={(val) => updateField('reportingManager', val)}
+                          >
+                            <SelectTrigger className="h-12 bg-slate-50 border-none text-xs font-bold rounded-xl pl-10 relative focus:ring-primary/20">
+                              <Network className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                              <SelectValue placeholder="Identify supervisor node..." />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-2xl">
+                              {REPORTING_MANAGERS.map(manager => (
+                                <SelectItem key={manager} value={manager} className="text-xs font-bold uppercase">{manager}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -655,7 +717,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Identity Security Key (Password)</Label>
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Identity Security Key (Password)</Label>
                         <div className="relative">
                           <Input 
                             type={showPassword ? "text" : "password"} 

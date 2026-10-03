@@ -333,6 +333,8 @@ export interface SystemUser {
   leaveBalance?: UserLeaveBalance;
   salary?: SalaryStructure;
   uiSettings?: UISettings;
+  machineAccess?: string[];
+  approvalLimit?: number;
 }
 
 export interface QualityReport {

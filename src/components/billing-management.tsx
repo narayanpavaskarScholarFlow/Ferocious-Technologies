@@ -524,31 +524,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               </div>
             ) : (
               <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-                {/* Profile Completion Protocol */}
-                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><Building2 className="h-40 w-40" /></div>
-                   <div className="flex items-center gap-3 mb-8">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Complete Your Professional Identity</h3>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
-                         <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-700">Synchronize Corporate Branding</p>
-                            <p className="text-[10px] text-slate-400 font-medium">Print your business logo on all commercial documents for professional fidelity.</p>
-                         </div>
-                         <Button variant="outline" className="h-9 px-6 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest">Add Logo</Button>
-                      </div>
-                      <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
-                         <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-700">Configure Bank & Settlement Nodes</p>
-                            <p className="text-[10px] text-slate-400 font-medium">Enable UPI QR codes and Bank Details on invoices for rapid reconciliation.</p>
-                         </div>
-                         <Button variant="outline" className="h-9 px-6 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest">Add Bank</Button>
-                      </div>
-                   </div>
-                </Card>
-
                 {/* Quick Links Matrix */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
                   {DOCUMENT_TYPES.map((link) => (

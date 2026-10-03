@@ -54,7 +54,20 @@ import {
   Send,
   TableProperties,
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  FileDown,
+  Download,
+  Share2,
+  Copy,
+  Eye,
+  MoreHorizontal,
+  ChevronRightSquare,
+  MessageSquare,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  Clock,
+  Briefcase
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -66,9 +79,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
-import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
+import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, format, startOfToday, startOfWeek, startOfYear } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -99,7 +114,6 @@ const DOCUMENT_TYPES = [
 const MAIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
   { id: 'customer', label: 'Identity', icon: Building2 },
-  { id: 'products', label: 'Catalog', icon: Settings2 },
   ...DOCUMENT_TYPES.map(t => ({ id: t.id, label: t.label, icon: t.icon })),
   { id: 'report', label: 'Report', icon: FileBarChart },
 ];
@@ -156,13 +170,21 @@ const REPORT_STRUCTURE = [
 export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [dashboardSubView, setDashboardSubView] = useState<'analytics' | 'quick-links'>('analytics');
   
+  // Ledger Advanced States
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [activeRecordType, setActiveRecordType] = useState('invoice');
   const [editingRecordId, setEditingLogId] = useState<string | null>(null);
+  const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
+  const [previewRecord, setPreviewRecord] = useState<BillingRecord | null>(null);
   
+  // Advanced Filter Matrix States
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchGst, setSearchGst] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
 
   // Report State
   const [activeReportId, setActiveReportId] = useState('sales');
@@ -201,6 +223,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     isRoundOffActive: true,
     transportationCharges: 0,
   });
+
+  useEffect(() => {
+    setLastSyncTime(new Date().toLocaleString());
+  }, [records]);
 
   const handleOpenForm = (type: string, record?: BillingRecord) => {
     setActiveRecordType(type);
@@ -334,77 +360,73 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
+      const docTabs = DOCUMENT_TYPES.map(d => d.id);
+      if (docTabs.includes(activeTab) && r.type !== activeTab) return false;
+      
       const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!matchesSearch) return false;
+
+      if (searchGst && !(r.gstNumber || '').toLowerCase().includes(searchGst.toLowerCase())) return false;
+
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       
-      const docTabs = DOCUMENT_TYPES.map(d => d.id);
-      if (docTabs.includes(activeTab)) {
-        return matchesSearch && r.type === activeTab;
-      }
-      return matchesSearch;
+      const recordDate = parseISO(r.date);
+      if (dateFilter === 'today' && !isWithinInterval(recordDate, { start: startOfToday(), end: new Date() })) return false;
+      if (dateFilter === 'week' && !isWithinInterval(recordDate, { start: startOfWeek(new Date()), end: new Date() })) return false;
+      if (dateFilter === 'month' && !isWithinInterval(recordDate, { start: startOfMonth(new Date()), end: new Date() })) return false;
+      if (dateFilter === 'year' && !isWithinInterval(recordDate, { start: startOfYear(new Date()), end: new Date() })) return false;
+
+      return true;
     });
-  }, [records, searchTerm, activeTab]);
+  }, [records, searchTerm, searchGst, dateFilter, statusFilter, activeTab]);
 
-  const analyticsData = useMemo(() => {
-    const now = new Date();
-    const currentMonthInterval = { start: startOfMonth(now), end: endOfMonth(now) };
-
-    const monthlySales = records
-      .filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), currentMonthInterval))
-      .reduce((sum, r) => sum + r.amount, 0);
-
-    const monthlyPurchases = records
-      .filter(r => r.type === 'purchase_invoice' && isWithinInterval(parseISO(r.date), currentMonthInterval))
-      .reduce((sum, r) => sum + r.amount, 0);
-
+  const summaryMetrics = useMemo(() => {
+    const list = filteredRecords;
     return {
-      monthlySales,
-      monthlyPurchases,
-      income: monthlySales, 
-      expense: monthlyPurchases
+      count: list.length,
+      total: list.reduce((sum, r) => sum + (r.amount || 0), 0),
+      pending: list.filter(r => r.status === 'Pending' || r.status === 'Draft').length,
+      approved: list.filter(r => r.status === 'Approved' || r.status === 'Paid').length,
     };
-  }, [records]);
+  }, [filteredRecords]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRecords(filteredRecords.map(r => r.id));
+    } else {
+      setSelectedRecords([]);
+    }
+  };
+
+  const toggleRecordSelection = (id: string) => {
+    setSelectedRecords(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const getStatusBadgeStyles = (status: string) => {
+    switch (status) {
+      case 'Pending': return "bg-orange-50 text-orange-700 border-orange-100";
+      case 'Approved': case 'Paid': return "bg-green-50 text-green-700 border-green-100";
+      case 'Rejected': return "bg-red-50 text-red-700 border-red-100";
+      case 'Draft': return "bg-slate-100 text-slate-500 border-slate-200";
+      case 'Expired': return "bg-yellow-50 text-yellow-700 border-yellow-100";
+      case 'Converted': return "bg-blue-50 text-blue-700 border-blue-100";
+      default: return "bg-slate-50 text-slate-400";
+    }
+  };
 
   const currentTabLabel = useMemo(() => {
     return MAIN_TABS.find(t => t.id === activeTab)?.label || 'Document';
   }, [activeTab]);
 
-  const reportRecords = useMemo(() => {
-    if (activeTab !== 'report') return [];
-    
-    let currentReportItem: any = null;
-    REPORT_STRUCTURE.forEach(cat => {
-      const found = cat.items.find(i => i.id === activeReportId);
-      if (found) currentReportItem = found;
-    });
-
-    if (!currentReportItem) return [];
-
-    return records.filter(r => {
-      let matches = true;
-      if (currentReportItem.type !== 'all' && r.type !== currentReportItem.type) matches = false;
-      if (currentReportItem.status && r.status !== currentReportItem.status) matches = false;
-      if (reportStartDate && r.date < reportStartDate) matches = false;
-      if (reportEndDate && r.date > reportEndDate) matches = false;
-      return matches;
-    });
-  }, [records, activeReportId, activeTab, reportStartDate, reportEndDate]);
-
-  const reportAggregates = useMemo(() => {
-    return {
-      taxable: reportRecords.reduce((acc, r) => acc + ((r.subTotal || 0) - (r.discountTotal || 0)), 0),
-      tax: reportRecords.reduce((acc, r) => acc + (r.taxTotal || 0), 0),
-      total: reportRecords.reduce((acc, r) => acc + (r.amount || 0), 0)
-    };
-  }, [reportRecords]);
-
-  const isPaymentType = activeRecordType === 'inward_payment' || activeRecordType === 'outward_payment';
-
-  // Component for Page-based entry form
   const FullPageEditor = () => {
+    const isPaymentType = activeRecordType === 'inward_payment' || activeRecordType === 'outward_payment';
+    
     if (isPaymentType) {
       return (
-        <div className="flex flex-col bg-white min-h-full animate-in fade-in duration-300 pb-20">
+        <div className="flex flex-col bg-white min-h-full animate-in fade-in duration-300 pb-20 font-body">
           <div className="p-4 border-b bg-slate-50 flex items-center justify-between sticky top-0 z-50">
             <div className="flex items-center gap-4">
               <div className="p-2 bg-[#001F3D] rounded text-white shadow-sm">
@@ -508,7 +530,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     return (
       <div className="flex flex-col bg-[#F8FAFC] min-h-full animate-in fade-in duration-300 pb-40 font-body">
-        {/* Full Page Header */}
         <div className="p-4 border-b bg-white flex items-center justify-between sticky top-0 z-50 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-[#001F3D] rounded text-white shadow-sm">
@@ -518,20 +539,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               {editingRecordId ? 'Edit' : 'Create'} {DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.label} Matrix
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-             <Badge variant="outline" className="border-slate-300 font-bold uppercase text-[9px] h-7 px-3">Master Thread Protocol v2.4</Badge>
-             <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)}><X className="h-4 w-4 mr-2" /> Cancel</Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)}><X className="h-4 w-4 mr-2" /> Cancel</Button>
         </div>
 
         <div className="flex-1 w-full max-w-[1700px] mx-auto p-4 md:p-6 space-y-6">
-          {/* Bilateral Header Matrix */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Left Section: Customer Information */}
             <div className="bg-white border border-slate-300 p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2">
-                <Building2 className="h-3.5 w-3.5" /> Customer Information
-              </h3>
+              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> Customer Information</h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">M/S <span className="text-red-500">*</span></Label>
@@ -539,14 +553,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <Select value={formData.customerId || ''} onValueChange={(id) => {
                       const identity = customers.find(c => c.id === id) || vendors.find(v => v.id === id);
                       setFormData({
-                        ...formData, 
-                        customerId: id, 
-                        customerName: identity?.name || '', 
-                        shipTo: identity?.address || '',
+                        ...formData, customerId: id, customerName: identity?.name || '', shipTo: identity?.address || '',
                         contactPerson: (identity as any)?.contactPerson || (identity as any)?.contact || '',
                         contactNumber: (identity as any)?.contactNumber || (identity as any)?.contact || '',
-                        gstNumber: identity?.gstNumber || '',
-                        panNumber: (identity as any)?.pan || ''
+                        gstNumber: identity?.gstNumber || '', panNumber: (identity as any)?.pan || ''
                       });
                     }}>
                       <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Identify Partner..." /></SelectTrigger>
@@ -569,49 +579,16 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
                   <div className="col-span-8 flex gap-2">
-                    <Input className="h-8 border-slate-300 rounded-none text-xs font-code uppercase" value={formData.gstNumber || ''} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} />
-                    <Input className="h-8 border-slate-300 rounded-none text-xs font-code uppercase" placeholder="PAN" value={formData.panNumber || ''} onChange={(e)=>setFormData({...formData, panNumber: e.target.value})} />
+                    <Input className="h-8 border-slate-300 rounded-none text-xs uppercase" value={formData.gstNumber || ''} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} />
+                    <Input className="h-8 border-slate-300 rounded-none text-xs uppercase" placeholder="PAN" value={formData.panNumber || ''} onChange={(e)=>setFormData({...formData, panNumber: e.target.value})} />
                   </div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
-                  <div className="col-span-8">
-                    <Select value={formData.revCharge || 'No'} onValueChange={(val: any) => setFormData({...formData, revCharge: val})}>
-                      <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="No">No</SelectItem><SelectItem value="Yes">Yes</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Ship To</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.shipTo || ''} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Distance (km)</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.distanceEWay || ''} onChange={(e) => setFormData({...formData, distanceEWay: e.target.value})} /></div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Place of Supply</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.placeOfSupply || ''} onChange={(e) => setFormData({...formData, placeOfSupply: e.target.value})} /></div>
                 </div>
               </div>
             </div>
 
-            {/* Right Section: Quotation Detail */}
             <div className="bg-white border border-slate-300 p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2">
-                <Hash className="h-3.5 w-3.5" /> {currentTabLabel} Detail
-              </h3>
+              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><Hash className="h-3.5 w-3.5" /> {currentTabLabel} Detail</h3>
               <div className="space-y-3">
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Type</Label>
-                  <div className="col-span-8">
-                    <Select value={formData.type || ''} onValueChange={(val) => setFormData({...formData, type: val})}>
-                      <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
-                      <SelectContent>{DOCUMENT_TYPES.map(t => <SelectItem key={t.id} value={t.id} className="text-xs font-bold uppercase">{t.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Document No <span className="text-red-500">*</span></Label>
                   <div className="col-span-8 flex gap-1">
@@ -625,23 +602,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-8 rounded-none" /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan No.</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.challanNo || ''} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} /></div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan Date</Label>
-                  <div className="col-span-8"><DatePicker value={formData.challanDate || ''} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-8 rounded-none" /></div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">L.R. No.</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.lrNo || ''} onChange={(e)=>setFormData({...formData, lrNo: e.target.value})} /></div>
-                </div>
-                <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Delivery</Label>
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Delivery Mode</Label>
                   <div className="col-span-8">
                     <Select value={formData.deliveryMode || ''} onValueChange={(val) => setFormData({...formData, deliveryMode: val})}>
-                      <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs uppercase"><SelectValue placeholder="Select Delivery Mode" /></SelectTrigger>
-                      <SelectContent><SelectItem value="Truck">Road (Truck)</SelectItem><SelectItem value="Courier">Courier</SelectItem><SelectItem value="Hand">Hand Delivery</SelectItem></SelectContent>
+                      <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs uppercase"><SelectValue placeholder="Select Mode" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Truck">Road (Truck)</SelectItem><SelectItem value="Courier">Courier</SelectItem></SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -649,196 +614,289 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </div>
 
-          {/* Product Items Table */}
           <div className="bg-white border border-slate-300 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table className="border-collapse">
-                <TableHeader className="bg-slate-100">
-                  <TableRow className="hover:bg-transparent border-b border-slate-300">
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-12 text-center border-r border-slate-300">SR.</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300">Product / Other Charges</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-32 border-r border-slate-300">HSN/SAC Code</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Qty.</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">UOM</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-32 text-center border-r border-slate-300">Price</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Discount</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">IGST</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-40 text-right">Total</TableHead>
-                    <TableHead className="w-10 print:hidden"></TableHead>
+            <Table className="border-collapse">
+              <TableHeader className="bg-slate-100">
+                <TableRow className="hover:bg-transparent border-b border-slate-300">
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-12 text-center border-r border-slate-300">SR.</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300">Product / Other Charges</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-32 border-r border-slate-300">HSN/SAC</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Qty.</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">UOM</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-32 text-center border-r border-slate-300">Price</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-40 text-right">Total</TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {formData.items?.map((item, idx) => (
+                  <TableRow key={item.id} className="border-b border-slate-300 h-12">
+                    <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300">{idx + 1}</TableCell>
+                    <TableCell className="p-1 border-r border-slate-300"><Input className="h-8 border-none bg-transparent text-xs font-bold" value={item.description || ''} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} /></TableCell>
+                    <TableCell className="p-1 border-r border-slate-300"><Input className="h-8 border-none bg-transparent text-xs text-center" value={item.hsn || ''} onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} /></TableCell>
+                    <TableCell className="p-1 border-r border-slate-300"><Input type="number" className="h-8 text-center text-xs border-none bg-transparent" value={item.qty || 0} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} /></TableCell>
+                    <TableCell className="p-1 border-r border-slate-300"><Input className="h-8 text-center text-xs border-none bg-transparent" value={item.unit || ''} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} /></TableCell>
+                    <TableCell className="p-1 border-r border-slate-300"><Input type="number" className="h-8 text-center text-xs border-none bg-transparent" value={item.price || 0} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} /></TableCell>
+                    <TableCell className="text-right px-4 text-xs font-bold">₹ {(item.total ?? 0).toLocaleString()}</TableCell>
+                    <TableCell className="p-1 text-center"><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500" onClick={()=>handleRemoveItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {formData.items?.map((item, idx) => (
-                    <TableRow key={item.id} className="border-b border-slate-300 hover:bg-slate-50 transition-all h-12">
-                      <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300">{idx + 1}</TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                        <Input className="h-8 border-none bg-transparent text-xs font-bold" placeholder="Enter product..." value={item.description || ''} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
-                      </TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                        <Input className="h-8 border-none bg-transparent text-xs font-bold text-center" placeholder="HSN" value={item.hsn || ''} onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} />
-                      </TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.qty || 0} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} />
-                      </TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                        <Input className="h-8 text-center text-xs font-bold uppercase border-none bg-transparent" value={item.unit || ''} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} />
-                      </TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.price || 0} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} />
-                      </TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.discount || 0} onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} />
-                      </TableCell>
-                      <TableCell className="p-1 border-r border-slate-300">
-                         <Select value={item.gstRate?.toString() || '18'} onValueChange={(val)=>updateItem(item.id, 'gstRate', Number(val))}>
-                            <SelectTrigger className="h-8 border-none bg-transparent text-xs font-bold"><SelectValue /></SelectTrigger>
-                            <SelectContent>{[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="text-xs">{r}%</SelectItem>)}</SelectContent>
-                         </Select>
-                      </TableCell>
-                      <TableCell className="text-right font-display font-bold text-slate-700 px-4 text-xs">
-                        ₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="p-1 print:hidden text-center"><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-red-500" onClick={()=>handleRemoveItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-slate-100 font-bold border-t border-slate-400 h-10">
-                    <TableCell colSpan={3} className="text-right py-2 px-4 text-[10px] uppercase text-slate-700 border-r border-slate-300">Total Value:</TableCell>
-                    <TableCell className="text-center text-xs border-r border-slate-300">{formData.items?.reduce((acc, i)=>acc+i.qty,0) || 0}</TableCell>
-                    <TableCell className="border-r border-slate-300"></TableCell>
-                    <TableCell className="border-r border-slate-300"></TableCell>
-                    <TableCell className="border-r border-slate-300"></TableCell>
-                    <TableCell className="border-r border-slate-300"></TableCell>
-                    <TableCell className="text-right px-4 font-display text-xs text-[#001F3D]">₹ {(formData.amount || 0).toLocaleString()}</TableCell>
-                    <TableCell className="print:hidden"></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            <div className="p-2 border-t bg-white">
-               <Button variant="ghost" onClick={handleAddItem} className="h-8 px-4 text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5">
-                  <Plus className="h-3 w-3" /> Add New Item
-               </Button>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="p-2 border-t"><Button variant="ghost" onClick={handleAddItem} className="h-8 px-4 text-primary font-bold uppercase text-[9px] gap-2"><Plus className="h-3 w-3" /> Add Row</Button></div>
           </div>
 
-          {/* Lower Column Matrix */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-             {/* Left: T&C and Remarks */}
-             <div className="lg:col-span-7 space-y-6">
-                <div className="bg-white border border-slate-300 p-6 space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Bank Selection</Label>
-                    <Select defaultValue="Primary">
-                      <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs"><SelectValue placeholder="Select Bank" /></SelectTrigger>
-                      <SelectContent><SelectItem value="Primary">HDFC BANK - 502000xxxx (Primary)</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-4 pt-4">
-                    <h4 className="text-[10px] font-bold uppercase text-[#001F3D] tracking-widest border-b pb-2">Terms & Condition / Additional Note</h4>
-                    <div className="space-y-3">
-                      <Input placeholder="Enter Title..." className="h-9 border-slate-300 rounded-none text-xs font-bold" value={formData.paymentTerms || ''} onChange={(e)=>setFormData({...formData, paymentTerms: e.target.value})} />
-                      <Textarea placeholder="Enter Detail..." className="min-h-[80px] border-slate-300 rounded-none text-xs bg-slate-50" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
-                      <Button variant="outline" className="h-8 px-4 text-[9px] font-bold uppercase tracking-widest rounded-none border-slate-300">Add Notes</Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 pt-4">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Document Note / Remarks</Label>
-                    <Textarea placeholder="Enter Remarks..." className="min-h-[60px] border-slate-300 rounded-none text-xs bg-slate-50" />
-                  </div>
-                </div>
-             </div>
-
-             {/* Right: Financial Summary */}
-             <div className="lg:col-span-5 space-y-4">
-                <div className="bg-white border border-slate-300 p-8 space-y-4">
-                  <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600">
-                    <span>Taxable</span>
-                    <span>₹ {(formData.subTotal || 0).toLocaleString()}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600 pt-2 border-t">
-                    <span>Add Additional Charge</span>
-                    <Input type="number" className="h-8 w-24 text-right border-slate-300 rounded-none text-xs" value={formData.transportationCharges || 0} onChange={(e)=>setFormData(calculateTotals({...formData, transportationCharges: Number(e.target.value)}))} />
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-900 pt-4 border-t">
-                    <span>Total Taxable</span>
-                    <span>₹ {((formData.subTotal || 0) + (formData.transportationCharges || 0)).toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600">
-                    <span>Total Tax</span>
-                    <span className="text-primary">₹ {(formData.taxTotal || 0).toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600">
-                    <div className="flex items-center gap-2">
-                       <span>TCS</span>
-                       <Input type="number" className="h-7 w-12 text-center border-slate-300 rounded-none text-[10px]" value={formData.tcsRate || 0} onChange={(e)=>setFormData(calculateTotals({...formData, tcsRate: Number(e.target.value)}))} />
-                       <span>%</span>
-                    </div>
-                    <span>₹ {(formData.tcsAmount || 0).toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs font-bold uppercase text-emerald-600">
-                    <span>Discount</span>
-                    <span>- ₹ {(formData.discountTotal || 0).toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2 border-t">
-                     <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-600">
-                        <span>Round Off</span>
-                        <Switch checked={formData.isRoundOffActive || false} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
-                     </div>
-                     <span className="text-xs font-bold font-code">{(formData.roundOff || 0).toFixed(2)}</span>
-                  </div>
-
-                  <div className="bg-yellow-400 p-6 flex justify-between items-center -mx-8">
-                     <span className="text-sm font-black uppercase text-[#001F3D]">Grand Total</span>
-                     <span className="text-3xl font-display font-black text-[#001F3D]">₹ {(formData.amount || 0).toLocaleString()}</span>
-                  </div>
-
-                  <div className="pt-4 space-y-2 border-t">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center">Total in Words</p>
-                    <p className="text-[10px] font-bold text-[#001F3D] uppercase text-center flex items-center justify-center gap-2">
-                      <DollarSign className="h-3 w-3 text-emerald-600" /> RUPEES {formData.amount ? 'SELECTED AMOUNT' : 'ZERO'} ONLY
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 flex items-center justify-between group cursor-pointer hover:bg-emerald-100 transition-all">
-                     <div className="flex items-center gap-3">
-                        <Sparkles className="h-4 w-4 text-emerald-600" />
-                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">Smart Suggestion Protocol</span>
-                     </div>
-                     <ChevronRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-all" />
-                  </div>
-                </div>
-             </div>
+            <div className="lg:col-span-7 bg-white border border-slate-300 p-6 space-y-4">
+              <Label className="text-[10px] font-bold uppercase text-slate-500">Terms & Conditions</Label>
+              <Textarea className="min-h-[100px] border-slate-300 rounded-none text-xs bg-slate-50" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+            </div>
+            <div className="lg:col-span-5 bg-white border border-slate-300 p-8 space-y-4">
+              <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600"><span>Taxable Value</span><span>₹ {(formData.subTotal || 0).toLocaleString()}</span></div>
+              <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600"><span>Total Tax</span><span className="text-primary">₹ {(formData.taxTotal || 0).toLocaleString()}</span></div>
+              <div className="bg-yellow-400 p-6 flex justify-between items-center -mx-8"><span className="text-sm font-black uppercase text-[#001F3D]">Grand Total</span><span className="text-3xl font-display font-black text-[#001F3D]">₹ {(formData.amount || 0).toLocaleString()}</span></div>
+            </div>
           </div>
         </div>
 
-        {/* Global Page Action Node */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex items-center justify-between z-50 px-8 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-           <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-10 px-8 font-bold uppercase text-[10px] tracking-widest text-slate-400 border border-slate-200 rounded-none hover:bg-slate-50">
-             Back to Matrix
-           </Button>
-           <div className="flex gap-4">
-              <Button variant="outline" className="h-10 px-8 border-slate-300 text-slate-600 font-bold uppercase text-[10px] tracking-widest gap-2 rounded-none">
-                Save Draft
-              </Button>
-              <Button variant="outline" className="h-10 px-8 border-[#001F3D] text-[#001F3D] font-bold uppercase text-[10px] tracking-widest gap-2 rounded-none">
-                <Printer className="h-4 w-4" /> Save & Print
-              </Button>
-              <Button 
-                onClick={handleSave}
-                className="h-10 px-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-none shadow-xl flex gap-2"
-              >
-                <Save className="h-4 w-4" /> Save Ledger
-              </Button>
+        <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-end gap-3 z-50">
+           <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-10 px-8 font-bold uppercase text-xs border border-slate-300">Back</Button>
+           <Button className="h-10 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-xs" onClick={handleSave}>Save</Button>
+        </div>
+      </div>
+    );
+  };
+
+  const LedgerView = () => {
+    return (
+      <div className="flex flex-col bg-white min-h-screen font-body">
+        {/* Advanced Page Header */}
+        <header className="px-6 py-4 border-b border-slate-100 flex flex-col gap-4 bg-white sticky top-0 z-40">
+           <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                 <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <span>Commercial Operations</span> <ChevronRight className="h-2.5 w-2.5" /> <span>Financial Hub</span> <ChevronRight className="h-2.5 w-2.5" /> <span className="text-[#001F3D]">{currentTabLabel} Ledger</span>
+                 </div>
+                 <h2 className="text-2xl font-display font-black text-[#001F3D] uppercase tracking-tighter">{currentTabLabel} Ledger</h2>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Industrial Commercial Registry v2.4</p>
+              </div>
+              <div className="flex items-center gap-3">
+                 <Button variant="outline" className="h-10 rounded-xl border-slate-200 text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm" onClick={() => {}}><FileDown className="h-3.5 w-3.5" /> Export PDF</Button>
+                 <Button variant="outline" className="h-10 rounded-xl border-slate-200 text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm" onClick={() => {}}><Download className="h-3.5 w-3.5" /> Export Excel</Button>
+                 <Button variant="outline" className="h-10 rounded-xl border-slate-200 text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm" onClick={() => window.print()}><Printer className="h-3.5 w-3.5" /> Print</Button>
+                 <Button variant="outline" className="h-10 rounded-xl border-slate-200 text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm" onClick={() => window.location.reload()}><RefreshCw className="h-3.5 w-3.5" /> Refresh</Button>
+                 <Button className="h-10 rounded-xl bg-[#001F3D] hover:bg-black text-white px-8 text-[10px] font-bold uppercase tracking-widest shadow-xl flex gap-2" onClick={() => handleOpenForm(activeTab)}>
+                    <Plus className="h-4 w-4" /> New {currentTabLabel}
+                 </Button>
+              </div>
+           </div>
+
+           {/* Metrics Node */}
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+              <Card className="p-4 border-slate-100 shadow-sm flex flex-col gap-1 bg-slate-50/50">
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total {currentTabLabel}s</span>
+                 <p className="text-2xl font-display font-bold text-[#001F3D]">{summaryMetrics.count}</p>
+              </Card>
+              <Card className="p-4 border-slate-100 shadow-sm flex flex-col gap-1 bg-slate-50/50">
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Valuation</span>
+                 <p className="text-2xl font-display font-bold text-emerald-600">₹ {summaryMetrics.total.toLocaleString()}</p>
+              </Card>
+              <Card className="p-4 border-slate-100 shadow-sm flex flex-col gap-1 bg-slate-50/50">
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Pending Protocol</span>
+                 <p className="text-2xl font-display font-bold text-orange-600">{summaryMetrics.pending}</p>
+              </Card>
+              <Card className="p-4 border-slate-100 shadow-sm flex flex-col gap-1 bg-slate-50/50">
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Authorized Nodes</span>
+                 <p className="text-2xl font-display font-bold text-blue-600">{summaryMetrics.approved}</p>
+              </Card>
+           </div>
+        </header>
+
+        {/* Advanced Filter Matrix */}
+        <div className="px-6 py-4 bg-white border-b border-slate-100 flex flex-wrap items-center gap-4">
+           <div className="flex-1 min-w-[200px] relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+              <Input placeholder="SEARCH NUMBER OR CUSTOMER..." className="pl-9 h-10 border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+           </div>
+           <div className="w-48 relative">
+              <Input placeholder="SEARCH GSTIN..." className="h-10 border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest" value={searchGst} onChange={(e)=>setSearchGst(e.target.value)} />
+           </div>
+           <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-40 h-10 border-slate-200 rounded-xl text-[10px] font-bold uppercase"><SelectValue placeholder="Period" /></SelectTrigger>
+              <SelectContent className="rounded-xl"><SelectItem value="all">All Time</SelectItem><SelectItem value="today">Today</SelectItem><SelectItem value="week">This Week</SelectItem><SelectItem value="month">This Month</SelectItem><SelectItem value="year">This Year</SelectItem></SelectContent>
+           </Select>
+           <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40 h-10 border-slate-200 rounded-xl text-[10px] font-bold uppercase"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent className="rounded-xl">
+                 <SelectItem value="all">All Status</SelectItem><SelectItem value="Draft">Draft</SelectItem><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Rejected">Rejected</SelectItem><SelectItem value="Expired">Expired</SelectItem>
+              </SelectContent>
+           </Select>
+           <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Clock className="h-3 w-3" /> Last Sync: {lastSyncTime}
            </div>
         </div>
+
+        {/* Bulk Operation Bar */}
+        {selectedRecords.length > 0 && (
+          <div className="mx-6 mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2 duration-300">
+             <div className="flex items-center gap-4 px-2">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">{selectedRecords.length} Rows Selected for Bulk Protocol</span>
+             </div>
+             <div className="flex gap-2">
+                <Button variant="ghost" size="sm" className="h-8 rounded-lg text-[9px] font-bold uppercase text-emerald-700 gap-2"><Send className="h-3 w-3" /> Email</Button>
+                <Button variant="ghost" size="sm" className="h-8 rounded-lg text-[9px] font-bold uppercase text-emerald-700 gap-2"><Printer className="h-3 w-3" /> Print</Button>
+                <Button variant="ghost" size="sm" className="h-8 rounded-lg text-[9px] font-bold uppercase text-red-600 gap-2"><Trash2 className="h-3 w-3" /> Delete</Button>
+                <Button variant="ghost" size="sm" className="h-8 rounded-lg text-[9px] font-bold uppercase text-slate-400" onClick={()=>setSelectedRecords([])}>Cancel</Button>
+             </div>
+          </div>
+        )}
+
+        {/* Data Matrix Table */}
+        <div className="flex-1 overflow-auto px-6 py-4">
+           <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm bg-white">
+              <Table>
+                <TableHeader className="bg-slate-50/80 sticky top-0 z-20 border-b">
+                   <TableRow className="hover:bg-transparent h-14">
+                      <TableHead className="w-12 px-6"><Checkbox checked={selectedRecords.length === filteredRecords.length && filteredRecords.length > 0} onCheckedChange={(val)=>handleSelectAll(!!val)} /></TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-6 whitespace-nowrap">Document No</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-4">Date</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-4">Customer Identity</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-4">GST Number</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-4">Tax Amt</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-4 text-right">Grand Total</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-8 text-center">Status</TableHead>
+                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 px-4">Last Sync</TableHead>
+                      <TableHead className="sticky right-0 bg-slate-50/80 z-30 font-bold text-[10px] uppercase text-slate-400 px-6 text-right">Actions</TableHead>
+                   </TableRow>
+                </TableHeader>
+                <TableBody>
+                   {filteredRecords.map((record) => (
+                      <TableRow key={record.id} className="h-16 border-b border-slate-50 group hover:bg-slate-50/50 cursor-pointer" onClick={() => setPreviewRecord(record)}>
+                         <TableCell className="px-6" onClick={(e)=>e.stopPropagation()}><Checkbox checked={selectedRecords.includes(record.id)} onCheckedChange={()=>toggleRecordSelection(record.id)} /></TableCell>
+                         <TableCell className="px-6 font-code text-[11px] font-bold text-primary whitespace-nowrap">{record.numberPrefix}-{record.number}</TableCell>
+                         <TableCell className="px-4 text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">{record.date}</TableCell>
+                         <TableCell className="px-4"><span className="text-[12px] font-bold text-[#001F3D] uppercase truncate max-w-[200px] inline-block">{record.customerName}</span></TableCell>
+                         <TableCell className="px-4 text-[10px] font-code text-slate-500 uppercase">{record.gstNumber || '---'}</TableCell>
+                         <TableCell className="px-4 text-[11px] font-display font-bold text-slate-400">₹ {(record.taxTotal || 0).toLocaleString()}</TableCell>
+                         <TableCell className="px-4 text-right font-display font-black text-[#001F3D] text-[13px]">₹ {(record.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                         <TableCell className="px-8 text-center">
+                            <Badge className={cn("text-[9px] font-bold uppercase px-3 py-1 rounded-full border shadow-sm", getStatusBadgeStyles(record.status))}>{record.status}</Badge>
+                         </TableCell>
+                         <TableCell className="px-4 text-[9px] font-code text-slate-300">2025.03.04</TableCell>
+                         <TableCell className="sticky right-0 bg-white group-hover:bg-slate-50/50 z-30 px-6 text-right" onClick={(e)=>e.stopPropagation()}>
+                            <DropdownMenu>
+                               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-[#001F3D]"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                               <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-slate-100 p-1">
+                                  <DropdownMenuItem onClick={() => setPreviewRecord(record)} className="rounded-lg gap-2 text-xs font-bold uppercase"><Eye className="h-3.5 w-3.5" /> View Ledger</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleOpenForm(record.type, record)} className="rounded-lg gap-2 text-xs font-bold uppercase"><Edit3 className="h-3.5 w-3.5" /> Edit Record</DropdownMenuItem>
+                                  <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase text-blue-600"><ChevronRightSquare className="h-3.5 w-3.5" /> Convert to Invoice</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase"><Share2 className="h-3.5 w-3.5" /> Share WhatsApp</DropdownMenuItem>
+                                  <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase"><Copy className="h-3.5 w-3.5" /> Duplicate</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => onDeleteRecord(record.id)} className="rounded-lg gap-2 text-xs font-bold uppercase text-red-600"><Trash2 className="h-3.5 w-3.5" /> Delete Protocol</DropdownMenuItem>
+                               </DropdownMenuContent>
+                            </DropdownMenu>
+                         </TableCell>
+                      </TableRow>
+                   ))}
+                   {filteredRecords.length === 0 && (
+                     <TableRow>
+                        <TableCell colSpan={10} className="h-96 text-center">
+                           <div className="flex flex-col items-center justify-center opacity-30">
+                              <ArchiveX className="h-16 w-16 text-slate-300 mb-6" />
+                              <p className="text-xl font-display font-black text-[#001F3D] uppercase tracking-tighter">Identity Query Null</p>
+                              <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">No commercial records detected in this functional node.</p>
+                              <Button className="mt-8 bg-[#001F3D] text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase tracking-widest" onClick={() => handleOpenForm(activeTab)}>Initialize First Document</Button>
+                           </div>
+                        </TableCell>
+                     </TableRow>
+                   )}
+                </TableBody>
+              </Table>
+           </div>
+        </div>
+
+        {/* Dynamic Quick Preview Panel */}
+        <Sheet open={!!previewRecord} onOpenChange={(open) => !open && setPreviewRecord(null)}>
+           <SheetContent className="w-[500px] sm:max-w-[600px] p-0 border-none shadow-2xl bg-white flex flex-col font-body">
+              {previewRecord && (
+                <>
+                  <div className="p-8 bg-[#001F3D] text-white flex justify-between items-start shrink-0">
+                     <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 bg-primary/20 rounded-lg"><FileText className="h-6 w-6 text-primary" /></div>
+                           <h3 className="text-2xl font-display font-black uppercase tracking-tight">{previewRecord.numberPrefix}-{previewRecord.number}</h3>
+                        </div>
+                        <div className="space-y-1">
+                           <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Client Identity</p>
+                           <p className="text-lg font-bold uppercase">{previewRecord.customerName}</p>
+                        </div>
+                     </div>
+                     <Badge className={cn("text-[10px] font-bold uppercase py-2 px-6 rounded-full", getStatusBadgeStyles(previewRecord.status))}>{previewRecord.status}</Badge>
+                  </div>
+                  
+                  <ScrollArea className="flex-1 p-8">
+                     <div className="space-y-10 pb-20">
+                        <div className="grid grid-cols-2 gap-8">
+                           <div className="space-y-1">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Document Date</p>
+                              <p className="text-xs font-bold text-slate-700">{previewRecord.date}</p>
+                           </div>
+                           <div className="space-y-1">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">GST Number</p>
+                              <p className="text-xs font-bold font-code text-slate-700">{previewRecord.gstNumber || 'UNREGISTERED'}</p>
+                           </div>
+                        </div>
+
+                        <div className="space-y-4">
+                           <h4 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest border-b pb-2">Line Item Matrix</h4>
+                           <div className="space-y-2">
+                              {previewRecord.items?.map((item, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center group">
+                                   <div className="flex flex-col gap-1">
+                                      <span className="text-[11px] font-bold text-slate-700 uppercase">{item.description}</span>
+                                      <span className="text-[9px] text-slate-400 font-bold uppercase">{item.qty} {item.unit} • ₹{item.price}/ea</span>
+                                   </div>
+                                   <span className="text-[11px] font-display font-black text-[#001F3D]">₹ {item.total.toLocaleString()}</span>
+                                </div>
+                              ))}
+                           </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 rounded-2xl space-y-4">
+                           <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-500"><span>Taxable Base</span><span>₹ {(previewRecord.subTotal || 0).toLocaleString()}</span></div>
+                           <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-500"><span>Integrated Tax</span><span className="text-primary">₹ {(previewRecord.taxTotal || 0).toLocaleString()}</span></div>
+                           <div className="pt-4 border-t flex justify-between items-end">
+                              <span className="text-xs font-black uppercase text-[#001F3D]">Total Settlement</span>
+                              <span className="text-2xl font-display font-black text-[#001F3D]">₹ {(previewRecord.amount || 0).toLocaleString()}</span>
+                           </div>
+                        </div>
+
+                        <div className="space-y-2">
+                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><History className="h-3 w-3" /> Operational Log</p>
+                           <div className="border-l-2 border-slate-100 pl-4 py-2 space-y-4">
+                              <div className="relative"><div className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-primary" /><p className="text-[10px] font-bold text-slate-700 uppercase">Document Synchronized</p><p className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">2025.03.04 • 14:20</p></div>
+                              <div className="relative"><div className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-slate-200" /><p className="text-[10px] font-bold text-slate-700 uppercase">Manual Node Initialized</p><p className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">2025.03.04 • 14:15</p></div>
+                           </div>
+                        </div>
+                     </div>
+                  </ScrollArea>
+                  
+                  <div className="p-8 border-t bg-slate-50 flex justify-between items-center shrink-0">
+                     <div className="flex gap-2">
+                        <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl text-slate-400"><Printer className="h-5 w-5" /></Button>
+                        <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl text-slate-400"><Share2 className="h-5 w-5" /></Button>
+                     </div>
+                     <div className="flex gap-3">
+                        <Button variant="ghost" onClick={()=>setPreviewRecord(null)} className="h-11 px-6 rounded-xl font-bold uppercase text-[10px] tracking-widest text-slate-400">Close</Button>
+                        <Button className="h-11 px-10 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl" onClick={() => handleOpenForm(previewRecord.type, previewRecord)}>Edit Ledger</Button>
+                     </div>
+                  </div>
+                </>
+              )}
+           </SheetContent>
+        </Sheet>
       </div>
     );
   };
@@ -873,117 +931,48 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <ScrollArea className="flex-1">
-              <div className="max-w-[1700px] mx-auto p-4 md:p-6 space-y-6">
+              <div className="p-0 space-y-0 h-full">
                 
                 {activeTab === 'dashboard' && (
-                  <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex flex-col items-center justify-center gap-8 mb-4">
-                      <div className="flex bg-white border border-slate-200 p-1 rounded-full shadow-sm">
-                        <button 
-                          onClick={() => setDashboardSubView('analytics')}
-                          className={cn(
-                            "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
-                            dashboardSubView === 'analytics' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
-                          )}
-                        >
-                          Analytics
-                        </button>
-                        <button 
-                          onClick={() => setDashboardSubView('quick-links')}
-                          className={cn(
-                            "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
-                            dashboardSubView === 'quick-links' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
-                          )}
-                        >
-                          Quick Links
-                        </button>
-                      </div>
-                    </div>
-
-                    {dashboardSubView === 'analytics' ? (
-                      <div className="space-y-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                          <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl relative group">
-                            <div className="flex justify-between items-start mb-6">
-                               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale</span>
-                               <TrendingUp className="h-4 w-4 text-emerald-500" />
-                            </div>
-                            <div className="space-y-2">
-                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
-                               <h3 className="text-3xl font-display font-bold text-slate-900">₹ {(analyticsData.monthlySales || 0).toLocaleString('en-IN')}</h3>
-                            </div>
-                          </Card>
-                          <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl relative group">
-                            <div className="flex justify-between items-start mb-6">
-                               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase</span>
-                               <ShoppingCart className="h-4 w-4 text-slate-400" />
-                            </div>
-                            <div className="space-y-2">
-                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
-                               <h3 className="text-3xl font-display font-bold text-slate-900">₹ {(analyticsData.monthlyPurchases || 0).toLocaleString('en-IN')}</h3>
-                            </div>
-                          </Card>
-                          <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col justify-between group">
-                            <div className="flex justify-between items-start">
-                               <div className="space-y-1">
-                                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Expense</span>
-                                  <p className="text-xl font-display font-bold text-slate-900">₹ {(analyticsData.expense || 0).toLocaleString('en-IN')}</p>
-                               </div>
-                               <div className="text-right space-y-1">
-                                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Income</span>
-                                  <p className="text-xl font-display font-bold text-slate-900">₹ {(analyticsData.income || 0).toLocaleString('en-IN')}</p>
-                               </div>
-                            </div>
-                          </Card>
+                  <div className="p-6 md:p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-700">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group">
+                        <div className="flex justify-between items-start mb-6">
+                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale Velocity</span>
+                           <TrendingUp className="h-4 w-4 text-emerald-500" />
                         </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-                        {DOCUMENT_TYPES.map((link) => (
-                          <Card 
-                            key={link.id} 
-                            onClick={() => handleOpenForm(link.id)}
-                            className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
-                          >
-                            <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
-                              <link.icon className="h-8 w-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                            </div>
-                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest leading-tight">{link.label}</span>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MTD Aggregation</p>
+                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {records.filter(r => r.type === 'invoice').reduce((sum, r) => sum + r.amount, 0).toLocaleString('en-IN')}</h3>
+                        </div>
+                      </Card>
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group">
+                        <div className="flex justify-between items-start mb-6">
+                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase Flow</span>
+                           <ShoppingCart className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MTD Aggregation</p>
+                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {records.filter(r => r.type === 'purchase_invoice').reduce((sum, r) => sum + r.amount, 0).toLocaleString('en-IN')}</h3>
+                        </div>
+                      </Card>
+                    </div>
                   </div>
                 )}
 
                 {activeTab === 'customer' && (
-                  <div className="space-y-4 animate-in fade-in duration-700">
+                  <div className="p-8 space-y-4 animate-in fade-in duration-700">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                       <div className="flex items-center gap-4">
                          <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg"><Building2 className="h-6 w-6" /></div>
-                         <div>
-                            <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Read-Only Financial View</p>
-                         </div>
+                         <div><h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Read-Only Financial View</p></div>
                       </div>
                     </div>
                     <Table>
-                      <TableHeader className="bg-slate-50/50">
-                        <TableRow className="hover:bg-transparent border-b border-slate-100">
-                          <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Partner Node</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase text-slate-400">GSTIN / Tax ID</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
-                        </TableRow>
-                      </TableHeader>
+                      <TableHeader className="bg-slate-50/50"><TableRow className="hover:bg-transparent border-b border-slate-100"><TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Partner Node</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400">GSTIN / Tax ID</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {[...customers, ...vendors].map((partner) => (
-                          <TableRow key={partner.id} className="hover:bg-slate-50/50 h-20 border-b border-slate-50">
-                            <TableCell className="px-10"><span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{partner.name}</span></TableCell>
-                            <TableCell><Badge variant="outline" className="text-[8px] font-bold uppercase">{ (partner as any).companyType || 'Node' }</Badge></TableCell>
-                            <TableCell><span className="text-xs font-bold text-slate-500 font-code">{partner.gstNumber || '---'}</span></TableCell>
-                            <TableCell><span className="text-[11px] font-bold text-slate-700">{partner.contactPerson || (partner as any).contact || '---'}</span></TableCell>
-                          </TableRow>
+                          <TableRow key={partner.id} className="hover:bg-slate-50/50 h-20 border-b border-slate-50"><TableCell className="px-10"><span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{partner.name}</span></TableCell><TableCell><Badge variant="outline" className="text-[8px] font-bold uppercase">{ (partner as any).companyType || 'Node' }</Badge></TableCell><TableCell><span className="text-xs font-bold text-slate-500 font-code">{partner.gstNumber || '---'}</span></TableCell><TableCell><span className="text-[11px] font-bold text-slate-700">{partner.contactPerson || (partner as any).contact || '---'}</span></TableCell></TableRow>
                         ))}
                       </TableBody>
                     </Table>
@@ -1002,23 +991,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       <div className="p-2 space-y-6 py-6">
                         {REPORT_STRUCTURE.map((cat) => (
                           <div key={cat.title} className="space-y-1">
-                            <div className="px-4 py-2 bg-emerald-50/50 rounded-lg">
-                              <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">{cat.title}</h5>
-                            </div>
+                            <div className="px-4 py-2 bg-emerald-50/50 rounded-lg"><h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">{cat.title}</h5></div>
                             <div className="space-y-0.5 pt-1">
                               {cat.items.map((item) => (
-                                <button
-                                  key={item.id}
-                                  onClick={() => setActiveReportId(item.id)}
-                                  className={cn(
-                                    "w-full text-left px-4 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-all",
-                                    activeReportId === item.id 
-                                      ? "bg-[#001F3D] text-white shadow-lg shadow-blue-900/10" 
-                                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                                  )}
-                                >
-                                  {item.label}
-                                </button>
+                                <button key={item.id} onClick={() => setActiveReportId(item.id)} className={cn("w-full text-left px-4 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-all", activeReportId === item.id ? "bg-[#001F3D] text-white shadow-lg shadow-blue-900/10" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900")}>{item.label}</button>
                               ))}
                             </div>
                           </div>
@@ -1028,132 +1004,25 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                     <div className="flex-1 flex flex-col bg-white overflow-hidden">
                       <div className="p-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-4">
-                          <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
-                            {(() => {
-                              let label = '';
-                              REPORT_STRUCTURE.forEach(c => c.items.forEach(i => { if(i.id === activeReportId) label = i.label; }));
-                              return label;
-                            })()}
-                          </h3>
-                        </div>
+                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{REPORT_STRUCTURE.flatMap(c => c.items).find(i => i.id === activeReportId)?.label}</h3>
                         <div className="flex items-center gap-3">
-                           <div className="flex items-center gap-2 bg-white border border-slate-200 p-1 rounded-xl shadow-sm">
-                              <DatePicker value={reportStartDate} onChange={setReportStartDate} placeholder="Start Date" className="h-9 border-none bg-transparent w-36" />
-                              <div className="h-4 w-px bg-slate-200" />
-                              <DatePicker value={reportEndDate} onChange={setReportEndDate} placeholder="End Date" className="h-9 border-none bg-transparent w-36" />
-                           </div>
-                           <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold uppercase text-[9px] gap-2 border-slate-200 shadow-sm" onClick={() => window.print()}>
-                              <Printer className="h-3.5 w-3.5" /> Print Protocol
-                           </Button>
+                           <div className="flex items-center gap-2 bg-white border border-slate-200 p-1 rounded-xl shadow-sm"><DatePicker value={reportStartDate} onChange={setReportStartDate} placeholder="Start" className="h-9 border-none bg-transparent w-28" /><div className="h-4 w-px bg-slate-200" /><DatePicker value={reportEndDate} onChange={setReportEndDate} placeholder="End" className="h-9 border-none bg-transparent w-28" /></div>
+                           <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold uppercase text-[9px] gap-2 border-slate-200" onClick={() => window.print()}><Printer className="h-3.5 w-3.5" /> Print Protocol</Button>
                         </div>
                       </div>
-
-                      <ScrollArea className="flex-1">
-                        <div className="p-8">
-                           <Table>
-                              <TableHeader className="bg-slate-50/50">
-                                <TableRow className="border-b-2 border-slate-200">
-                                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Ref</TableHead>
-                                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Party Node</TableHead>
-                                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Date</TableHead>
-                                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Taxable</TableHead>
-                                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Tax</TableHead>
-                                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right px-10">Net Amount</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {reportRecords.map((r) => (
-                                  <TableRow key={r.id} className="h-16 border-b border-slate-50 hover:bg-slate-50/30">
-                                    <TableCell className="px-10 font-code font-bold text-xs text-primary">{r.number}</TableCell>
-                                    <TableCell className="text-[11px] font-bold text-slate-700 uppercase">{r.customerName}</TableCell>
-                                    <TableCell className="text-center font-code text-[10px] text-slate-400">{r.date}</TableCell>
-                                    <TableCell className="text-right font-display text-xs font-bold text-slate-600">₹ {((r.subTotal || 0) - (r.discountTotal || 0)).toLocaleString()}</TableCell>
-                                    <TableCell className="text-right font-display text-xs font-bold text-slate-600">₹ {(r.taxTotal || 0).toLocaleString()}</TableCell>
-                                    <TableCell className="text-right px-10 font-display text-sm font-black text-[#001F3D]">₹ {(r.amount || 0).toLocaleString()}</TableCell>
-                                  </TableRow>
-                                ))}
-                                {reportRecords.length > 0 && (
-                                  <TableRow className="bg-emerald-50/30 border-t-2 border-emerald-500">
-                                    <TableCell colSpan={3} className="text-right font-black uppercase text-[10px] text-emerald-800">Report Aggregate Matrix:</TableCell>
-                                    <TableCell className="text-right font-display text-sm font-bold text-emerald-800">₹ {reportAggregates.taxable.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right font-display text-sm font-bold text-emerald-800">₹ {reportAggregates.tax.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right px-10 font-display text-lg font-black text-emerald-900">₹ {reportAggregates.total.toLocaleString()}</TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                           </Table>
-                        </div>
-                      </ScrollArea>
+                      <ScrollArea className="flex-1"><div className="p-8">
+                        <Table><TableHeader className="bg-slate-50/50"><TableRow className="border-b-2 border-slate-200"><TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Ref</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400">Party Node</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Date</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Taxable</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Tax</TableHead><TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right px-10">Net Amount</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {records.filter(r => r.type === REPORT_STRUCTURE.flatMap(c => c.items).find(i => i.id === activeReportId)?.type || r.type !== 'all').map((r) => (
+                            <TableRow key={r.id} className="h-16 border-b border-slate-50 hover:bg-slate-50/30"><TableCell className="px-10 font-code font-bold text-xs text-primary">{r.number}</TableCell><TableCell className="text-[11px] font-bold text-slate-700 uppercase">{r.customerName}</TableCell><TableCell className="text-center font-code text-[10px] text-slate-400">{r.date}</TableCell><TableCell className="text-right font-display text-xs font-bold text-slate-600">₹ {(r.subTotal || 0).toLocaleString()}</TableCell><TableCell className="text-right font-display text-xs font-bold text-slate-600">₹ {(r.taxTotal || 0).toLocaleString()}</TableCell><TableCell className="text-right px-10 font-display text-sm font-black text-[#001F3D]">₹ {(r.amount || 0).toLocaleString()}</TableCell></TableRow>
+                          ))}
+                        </TableBody></Table>
+                      </div></ScrollArea>
                     </div>
                   </div>
                 )}
 
-                {!['dashboard', 'customer', 'products', 'report'].includes(activeTab) && (
-                  <div className="space-y-4 animate-in fade-in duration-700">
-                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
-                        <div className="flex items-center gap-4">
-                           <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg">
-                              {(() => {
-                                const Icon = MAIN_TABS.find(t => t.id === activeTab)?.icon || FileBox;
-                                return <Icon className="h-6 w-6" />;
-                              })()}
-                           </div>
-                           <div>
-                              <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{currentTabLabel} Ledger</h3>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial Commercial Registry V2.4</p>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="relative group">
-                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                             <Input 
-                                placeholder="SEARCH DOCUMENT..." 
-                                className="pl-9 h-10 w-72 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-widest"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                             />
-                          </div>
-                          <Button className="h-10 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase text-[10px] tracking-widest shadow-lg flex gap-3" onClick={() => handleOpenForm(activeTab)}>
-                            <Plus className="h-4 w-4" /> Create New Entry
-                          </Button>
-                        </div>
-                     </div>
-
-                     <Table>
-                        <TableHeader className="bg-slate-50/50">
-                          <TableRow className="hover:bg-transparent border-b border-slate-100">
-                            <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Window</TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase text-slate-400">Identity / Party Node</TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Amount (₹)</TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Status</TableHead>
-                            <TableHead className="text-right px-10 w-20"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredRecords.map((record) => (
-                            <TableRow key={record.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
-                              <TableCell className="px-10">
-                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-[#001F3D] font-code">{record.number}</span>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">{record.date}</span>
-                                 </div>
-                              </TableCell>
-                              <TableCell><span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{record.customerName}</span></TableCell>
-                              <TableCell className="text-center"><span className="text-lg font-display font-bold text-[#001F3D]">₹ {(record.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></TableCell>
-                              <TableCell className="text-center"><Badge className={cn("text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm", record.status === 'Paid' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100")}>{record.status}</Badge></TableCell>
-                              <TableCell className="text-right px-10">
-                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-primary" onClick={() => handleOpenForm(record.type, record)}><Edit3 className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500" onClick={() => onDeleteRecord(record.id)}><Trash2 className="h-4 w-4" /></Button>
-                                 </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                     </Table>
-                  </div>
-                )}
+                {!['dashboard', 'customer', 'report'].includes(activeTab) && <LedgerView />}
               </div>
             </ScrollArea>
           </div>

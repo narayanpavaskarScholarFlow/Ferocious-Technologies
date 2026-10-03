@@ -157,11 +157,17 @@ export interface Customer {
   id: string;
   name: string;
   address: string;
+  addressLine2?: string;
+  landmark?: string;
+  city?: string;
   shippingAddress: string;
   contactNumber: string;
   gstNumber: string;
   contactPerson: string;
   type: 'Corporate' | 'Individual';
+  companyType?: 'Customer' | 'Both';
+  registrationType?: string;
+  pan?: string;
   email: string;
   location: string;
   totalOrders: number;

@@ -321,22 +321,22 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   return (
     <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] flex flex-col overflow-hidden animate-in fade-in duration-700 font-body">
-      {/* Top professional navigation bar */}
-      <div className="bg-white border-b border-slate-200 shrink-0 px-6 z-50 shadow-sm">
-        <div className="max-w-[1600px] mx-auto overflow-x-auto hide-scrollbar">
-          <div className="flex h-16 items-center">
+      {/* Top professional navigation bar - Optimized to fit all items without scrolling */}
+      <div className="bg-white border-b border-slate-200 shrink-0 px-4 z-50 shadow-sm">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="flex h-16 items-center justify-between">
             {MAIN_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "px-6 h-full text-[11px] font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap flex items-center gap-3",
+                  "px-3 h-full text-[10px] font-bold uppercase tracking-tight border-b-2 transition-all whitespace-nowrap flex items-center gap-2",
                   activeTab === tab.id 
                     ? "border-emerald-500 text-emerald-600 bg-emerald-50/10" 
                     : "border-transparent text-slate-500 hover:text-slate-900"
                 )}
               >
-                <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
+                <tab.icon className={cn("h-3.5 w-3.5", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
                 {tab.label}
               </button>
             ))}
@@ -818,12 +818,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-4">
                        <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
-                          {MAIN_TABS.find(t => t.id === activeTab)?.icon && (
-                            (() => {
-                              const Icon = MAIN_TABS.find(t => t.id === activeTab)!.icon;
-                              return <Icon className="h-6 w-6" />;
-                            })()
-                          )}
+                          {(() => {
+                            const Icon = MAIN_TABS.find(t => t.id === activeTab)?.icon || FileBox;
+                            return <Icon className="h-6 w-6" />;
+                          })()}
                        </div>
                        <div>
                           <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{MAIN_TABS.find(t => t.id === activeTab)?.label} Ledger</h3>
@@ -862,7 +860,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                       </TableHeader>
                       <TableBody>
                         {filteredRecords.map((record) => (
-                          <TableRow key={record.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-50 group transition-all">
+                          <TableRow key={record.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group transition-all">
                             <TableCell className="px-10">
                                <div className="flex flex-col">
                                   <span className="text-sm font-bold text-[#001F3D] font-code">{record.number}</span>
@@ -920,12 +918,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           <DialogHeader className="p-8 border-b bg-slate-50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-5">
               <div className="p-4 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
-                {DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.icon ? 
-                  (() => {
-                    const Icon = DOCUMENT_TYPES.find(d => d.id === activeRecordType)!.icon;
-                    return <Icon className="h-8 w-8" />;
-                  })() : <Receipt className="h-8 w-8" />
-                }
+                {(() => {
+                  const Icon = DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.icon || Receipt;
+                  return <Icon className="h-8 w-8" />;
+                })()}
               </div>
               <div>
                 <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight leading-none">

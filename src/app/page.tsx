@@ -27,7 +27,7 @@ import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
 import { UserManagement } from '@/components/user-management';
 import { UserDetailView } from '@/components/user-detail-view';
-import { DispatchLedger } from '@/components/delivery-ledger'; // Assuming renaming occurred or original naming
+import { DispatchLedger } from '@/components/dispatch-ledger'; 
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

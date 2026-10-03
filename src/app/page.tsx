@@ -28,7 +28,7 @@ import { DispatchLedger } from '@/components/dispatch-ledger';
 import { DocumentTemplateManager } from '@/components/document-template-manager';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LogOut, User, ChevronRight, Home, LayoutGrid } from 'lucide-react';
+import { Menu, LogOut, User, ChevronRight, Home, LayoutGrid, Sun, Moon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +52,7 @@ import {
 import { collection, doc } from 'firebase/firestore';
 
 const DEFAULT_UI_SETTINGS: UISettings = {
+  theme: 'light',
   fontSize: 13,
   tableDensity: 'compact',
   borderRadius: 0.25,
@@ -209,8 +210,32 @@ function IndustrialERPInternal() {
     if (typeof document !== 'undefined') {
       document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
       document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
+      
+      // Apply theme class
+      if (targetSettings.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   }, [currentUserData?.uiSettings]);
+
+  const handleToggleTheme = useCallback(() => {
+    if (!currentUserData) return;
+    const nextTheme = uiSettings.theme === 'dark' ? 'light' : 'dark';
+    const updatedSettings = { ...uiSettings, theme: nextTheme };
+    
+    setUISettings(updatedSettings);
+    setDocumentNonBlocking(doc(db, 'users', currentUserData.id), {
+      uiSettings: updatedSettings
+    }, { merge: true });
+
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [uiSettings, currentUserData, db]);
 
   const isReportingManager = useMemo(() => {
     if (!currentUser || !usersData) return false;
@@ -265,7 +290,7 @@ function IndustrialERPInternal() {
   const pageDisplayTitle = uiSettings.customTitles[currentView] || currentViewMetadata.title;
 
   return (
-    <div className="flex h-screen bg-[#F1F5F9] text-slate-900 font-body overflow-hidden enterprise-ui">
+    <div className={cn("flex h-screen bg-background text-foreground font-body overflow-hidden transition-colors duration-500", uiSettings.theme === 'dark' ? "dark" : "")}>
       {/* High-Fidelity Sidebar */}
       <div className={cn("hidden lg:block shrink-0 transition-all duration-300", uiSettings.sidebarMode === 'slim' ? "w-20" : "w-64")}>
         <SidebarNav 
@@ -283,7 +308,7 @@ function IndustrialERPInternal() {
 
       {/* Main Execution Viewport */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-14 bg-white border-b border-slate-200 shrink-0 px-6 flex items-center justify-between shadow-sm z-50">
+        <header className="h-14 bg-white dark:bg-card border-b border-slate-200 dark:border-border shrink-0 px-6 flex items-center justify-between shadow-sm z-50">
           <div className="flex items-center gap-4">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -313,18 +338,21 @@ function IndustrialERPInternal() {
           </div>
 
           <div className="flex items-center gap-6">
+             <Button variant="ghost" size="icon" onClick={handleToggleTheme} className="h-9 w-9 text-slate-400 hover:text-primary">
+                {uiSettings.theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+             </Button>
              <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-bold text-[#001F3D] leading-none">{currentUser}</p>
+                <p className="text-[11px] font-bold text-[#001F3D] dark:text-white leading-none">{currentUser}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'Personnel'}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                    <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 ring-primary/10">
                       <AvatarImage src={currentUserData?.image} />
-                      <AvatarFallback className="bg-slate-100 text-primary text-[10px] font-bold">FT</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 dark:bg-slate-800 text-primary text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1 rounded-md shadow-xl">
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-md shadow-xl dark:bg-card">
                    <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs gap-2"><User className="h-3.5 w-3.5" /> Identity Settings</DropdownMenuItem>
                    <DropdownMenuSeparator />
                    <DropdownMenuItem onClick={handleLogout} className="text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Security Termination</DropdownMenuItem>
@@ -333,9 +361,9 @@ function IndustrialERPInternal() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full p-6">
+        <main className="flex-1 overflow-y-auto w-full p-6 bg-background">
           <div className="animate-in fade-in duration-500">
-            {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
+            {currentView === 'overview' && <ShopFloorOverview orders={orders} reports={reports} logs={logs} machines={machines} inventory={inventory} billing={billing} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => handleViewChange('settings')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); handleViewChange('my-portal'); }} />}

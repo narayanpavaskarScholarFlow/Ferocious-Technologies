@@ -77,7 +77,9 @@ import {
   Square,
   DollarSign,
   SwitchCamera,
-  RotateCcw
+  RotateCcw,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType, NumberSeries } from '@/lib/types';
@@ -426,11 +428,27 @@ export function ProfileSettings({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-1000">
-      <header className="px-2">
-        <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
-          <Settings className="h-3.5 w-3.5" /> System Configuration
+      <header className="px-2 flex justify-between items-center">
+        <div>
+          <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
+            <Settings className="h-3.5 w-3.5" /> System Configuration
+          </div>
+          <h2 className="text-3xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight mt-1">{title}</h2>
         </div>
-        <h2 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight mt-1">{title}</h2>
+        <div className="flex gap-4 items-center bg-slate-100 dark:bg-card p-1.5 rounded-2xl border dark:border-border">
+          <button 
+            onClick={() => updateLocalUIField('theme', 'light')}
+            className={cn("h-10 px-6 rounded-xl font-bold uppercase text-[9px] tracking-widest flex items-center gap-2 transition-all", localUI.theme === 'light' ? "bg-white text-primary shadow-md" : "text-slate-400")}
+          >
+            <Sun className="h-3.5 w-3.5" /> Light Mode
+          </button>
+          <button 
+            onClick={() => updateLocalUIField('theme', 'dark')}
+            className={cn("h-10 px-6 rounded-xl font-bold uppercase text-[9px] tracking-widest flex items-center gap-2 transition-all", localUI.theme === 'dark' ? "bg-primary text-card shadow-md" : "text-slate-400")}
+          >
+            <Moon className="h-3.5 w-3.5" /> Dark Mode
+          </button>
+        </div>
       </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -464,21 +482,21 @@ export function ProfileSettings({
 
         <TabsContent value="profile" className="m-0 max-w-5xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <Card className="lg:col-span-8 p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] relative overflow-hidden">
+            <Card className="lg:col-span-8 p-10 border-slate-200 dark:border-border bg-white dark:bg-card shadow-2xl rounded-[2.5rem] relative overflow-hidden">
               <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
               <div className="relative z-10 space-y-12">
                  <div className="flex items-center gap-6">
                    <div className="relative group">
-                     <div className="h-24 w-24 rounded-3xl bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden transition-all group-hover:opacity-80">
+                     <div className="h-24 w-24 rounded-3xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center border-4 border-white dark:border-border shadow-lg overflow-hidden transition-all group-hover:opacity-80">
                        {personalInfo.image ? <img src={personalInfo.image} alt="" className="h-full w-full object-cover" /> : <User className="h-10 w-10 text-slate-300" />}
                      </div>
                      <input type="file" id="profile-image-upload" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
-                     <label htmlFor="profile-image-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-20 border-2 border-white">
+                     <label htmlFor="profile-image-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] dark:bg-primary text-white dark:text-card rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-20 border-2 border-white dark:border-border">
                         <Camera className="h-4 w-4" />
                      </label>
                    </div>
                    <div>
-                     <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase">{currentUserData?.name || 'Master Admin'}</h3>
+                     <h3 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase">{currentUserData?.name || 'Master Admin'}</h3>
                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role || 'Master Admin'} • {currentUserData?.dept || 'Admin'} • ID: {currentUserData?.id || 'admin-master-node'}</p>
                    </div>
                  </div>
@@ -486,20 +504,20 @@ export function ProfileSettings({
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">First Name</Label>
-                      <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.firstName} onChange={(e)=>setPersonalInfo({...personalInfo, firstName: e.target.value})} />
+                      <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold" value={personalInfo.firstName} onChange={(e)=>setPersonalInfo({...personalInfo, firstName: e.target.value})} />
                     </div>
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Last Name</Label>
-                      <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.lastName} onChange={(e)=>setPersonalInfo({...personalInfo, lastName: e.target.value})} />
+                      <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold" value={personalInfo.lastName} onChange={(e)=>setPersonalInfo({...personalInfo, lastName: e.target.value})} />
                     </div>
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Email Identity</Label>
-                      <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={personalInfo.email} onChange={(e)=>setPersonalInfo({...personalInfo, email: e.target.value})} />
+                      <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold" value={personalInfo.email} onChange={(e)=>setPersonalInfo({...personalInfo, email: e.target.value})} />
                     </div>
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Department</Label>
                       <Select value={personalInfo.dept} onValueChange={(val)=>setPersonalInfo({...personalInfo, dept: val})}>
-                        <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase">
+                        <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold uppercase">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -510,7 +528,7 @@ export function ProfileSettings({
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Security Key</Label>
                       <div className="relative">
-                        <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 border-none rounded-xl pr-12 font-bold" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
+                        <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl pr-12 font-bold" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
                         <button onClick={()=>setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary">
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -519,46 +537,35 @@ export function ProfileSettings({
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Approval Limit (₹)</Label>
                       <div className="relative">
-                        <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={personalInfo.approvalLimit} onChange={(e)=>setPersonalInfo({...personalInfo, approvalLimit: Number(e.target.value)})} />
+                        <Input type="number" className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl pl-10 font-bold" value={personalInfo.approvalLimit} onChange={(e)=>setPersonalInfo({...personalInfo, approvalLimit: Number(e.target.value)})} />
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       </div>
                     </div>
                  </div>
 
-                 <Button className="h-14 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleUpdatePersonal}>
+                 <Button className="h-14 bg-[#001F3D] dark:bg-primary hover:bg-black dark:hover:bg-primary/90 text-white dark:text-card px-10 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleUpdatePersonal}>
                    <Save className="h-4 w-4" /> SAVE DATA
                  </Button>
               </div>
             </Card>
 
             <div className="lg:col-span-4 space-y-8">
-              <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-6">
+              <Card className="p-8 border-slate-200 dark:border-border bg-white dark:bg-card shadow-xl rounded-[2rem] space-y-6">
                  <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                     <Cpu className="h-4 w-4 text-primary" />
-                    <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Asset Access Matrix</h4>
+                    <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D] dark:text-white">Asset Access Matrix</h4>
                  </div>
                  <div className="space-y-4 pt-2">
                     {MACHINE_ACCESS_LIST.map(machine => (
-                      <div key={machine} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all hover:bg-white">
+                      <div key={machine} className="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-border transition-all hover:bg-white dark:hover:bg-slate-800">
                         <Checkbox 
                           id={`profile-machine-${machine}`} 
                           checked={personalInfo.machineAccess?.includes(machine)}
                           onCheckedChange={() => handleToggleMachineLocal(machine)}
                         />
-                        <Label htmlFor={`profile-machine-${machine}`} className="text-[10px] font-bold uppercase text-slate-600 cursor-pointer">{machine}</Label>
+                        <Label htmlFor={`profile-machine-${machine}`} className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 cursor-pointer">{machine}</Label>
                       </div>
                     ))}
-                 </div>
-              </Card>
-
-              <Card className="p-8 bg-slate-900 text-white border-none shadow-2xl rounded-[2rem] relative overflow-hidden">
-                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-                 <div className="relative z-10 space-y-4">
-                    <div className="flex items-center gap-3">
-                       <ShieldAlert className="h-5 w-5 text-primary" />
-                       <h4 className="text-xs font-bold uppercase tracking-widest">Audit Notice</h4>
-                    </div>
-                    <p className="text-[10px] text-white/50 leading-relaxed font-medium">Any changes to identity metadata or machine access nodes will be logged in the primary system audit trail.</p>
                  </div>
               </Card>
             </div>
@@ -572,20 +579,20 @@ export function ProfileSettings({
             </TabsContent>
 
             <TabsContent value="access-matrix" className="m-0 space-y-10">
-              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
+              <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-xl rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg"><ShieldCheck className="h-6 w-6" /></div>
+                    <div className="p-3 bg-[#001F3D] dark:bg-primary rounded-xl text-white dark:text-card shadow-lg"><ShieldCheck className="h-6 w-6" /></div>
                     <div>
-                       <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Access Matrix Hub</h3>
+                       <h3 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Access Matrix Hub</h3>
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Select identity to govern operational nodes.</p>
                     </div>
                  </div>
                  <div className="flex items-center gap-4 w-full md:w-auto">
                     <Select value={selectedMatrixUserId || ''} onValueChange={setSelectedMatrixUserId}>
-                       <SelectTrigger className="w-full md:w-64 h-12 bg-slate-50 border-none rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-inner">
+                       <SelectTrigger className="w-full md:w-64 h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-inner">
                           <SelectValue placeholder="Identify Personnel..." />
                        </SelectTrigger>
-                       <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                       <SelectContent className="rounded-xl border-slate-100 dark:border-border shadow-2xl">
                           {users.map(u => (
                             <SelectItem key={u.id} value={u.id} className="text-[10px] font-bold uppercase py-2">
                               {u.name} ({u.role})
@@ -604,14 +611,14 @@ export function ProfileSettings({
               {selectedMatrixUserId ? (
                 <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
                   {categories.map((cat) => (
-                    <Card key={cat} className="overflow-hidden border-slate-200 bg-white shadow-xl rounded-[2rem]">
-                      <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex items-center justify-between">
-                        <h3 className="text-[11px] font-bold text-[#001F3D] uppercase tracking-[0.2em]">{cat}</h3>
-                        <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 text-[8px] font-bold px-3 uppercase tracking-tighter">GATED_NODES</Badge>
+                    <Card key={cat} className="overflow-hidden border-slate-200 dark:border-border bg-white dark:bg-card shadow-xl rounded-[2rem]">
+                      <div className="bg-slate-50/50 dark:bg-slate-900/10 p-6 border-b border-slate-100 dark:border-border flex items-center justify-between">
+                        <h3 className="text-[11px] font-bold text-[#001F3D] dark:text-white uppercase tracking-[0.2em]">{cat}</h3>
+                        <Badge variant="outline" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-border text-slate-400 text-[8px] font-bold px-3 uppercase tracking-tighter">GATED_NODES</Badge>
                       </div>
                       <Table>
                         <TableHeader>
-                          <TableRow className="hover:bg-transparent bg-white">
+                          <TableRow className="hover:bg-transparent bg-white dark:bg-card">
                             <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-5 px-10">Functional Node</TableHead>
                             <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">None</TableHead>
                             <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">Read-Only</TableHead>
@@ -621,11 +628,11 @@ export function ProfileSettings({
                         </TableHeader>
                         <TableBody>
                           {ACCESS_NODES.filter(n => n.category === cat).map((node) => (
-                            <TableRow key={node.id} className="hover:bg-slate-50/30 h-20 border-b border-slate-50 transition-colors">
+                            <TableRow key={node.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-900/30 h-20 border-b border-slate-50 dark:border-border transition-colors">
                               <TableCell className="px-10">
                                 <div className="flex items-center gap-4">
-                                  <div className="p-2 bg-slate-50 rounded-lg text-slate-400"><node.icon className="h-4 w-4" /></div>
-                                  <span className="text-[12px] font-bold text-slate-700 uppercase tracking-tight">{node.label}</span>
+                                  <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-slate-400"><node.icon className="h-4 w-4" /></div>
+                                  <span className="text-[12px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight">{node.label}</span>
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
@@ -664,401 +671,12 @@ export function ProfileSettings({
                   ))}
                 </div>
               ) : (
-                <div className="h-[400px] flex flex-col items-center justify-center opacity-30 text-center border-4 border-dashed border-slate-200 rounded-[3rem]">
+                <div className="h-[400px] flex flex-col items-center justify-center opacity-30 text-center border-4 border-dashed border-slate-200 dark:border-border rounded-[3rem]">
                    <ShieldAlert className="h-16 w-16 mb-6 text-slate-300" />
-                   <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Required</h4>
+                   <h4 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Identity Required</h4>
                    <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity from the ledger above to initialize the access matrix protocol.</p>
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="ui" className="m-0 space-y-12 max-w-6xl pb-20">
-              <div className="flex items-center justify-between px-2">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-xl shadow-primary/5"><Palette className="h-8 w-8" /></div>
-                    <div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">UI Architecture Governance</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Global aesthetic and ergonomic layout protocols.</p>
-                    </div>
-                 </div>
-                 <Button className="h-12 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                   <Save className="h-4 w-4" /> SAVE DATA
-                 </Button>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
-                   <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
-                      <Type className="h-4 w-4 text-primary" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Typography Matrix</h4>
-                   </div>
-                   <div className="space-y-10">
-                      <div className="space-y-6">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">Base Font Size (px) <span className="text-primary font-code">{localUI.fontSize}px</span></Label>
-                        <Slider value={[localUI.fontSize]} min={11} max={16} step={1} onValueChange={([v]) => updateLocalUIField('fontSize', v)} />
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Global Label Case</Label>
-                        <Select value={localUI.labelCase} onValueChange={(val: any) => updateLocalUIField('labelCase', val)}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="uppercase" className="uppercase font-bold text-[10px]">ALL CAPS PROTOCOL</SelectItem>
-                            <SelectItem value="capitalize" className="capitalize font-bold text-[10px]">Standard Capitalize</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                   </div>
-                </Card>
-
-                <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
-                   <div className="flex items-center gap-3 border-l-4 border-accent pl-4">
-                      <Square className="h-4 w-4 text-accent" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Aesthetic Matrix (Box Engine)</h4>
-                   </div>
-                   <div className="space-y-10">
-                      <div className="space-y-6">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">Border Radius (rem) <span className="text-accent font-code">{localUI.borderRadius}rem</span></Label>
-                        <Slider value={[localUI.borderRadius]} min={0} max={2} step={0.25} onValueChange={([v]) => updateLocalUIField('borderRadius', v)} />
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Card Shadow Intensity</Label>
-                        <Select value={localUI.cardShadow} onValueChange={(val: any) => updateLocalUIField('cardShadow', val)}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="none" className="uppercase font-bold text-[10px]">None (Flat Matrix)</SelectItem>
-                            <SelectItem value="sm" className="uppercase font-bold text-[10px]">Small Depth</SelectItem>
-                            <SelectItem value="xl" className="uppercase font-bold text-[10px]">Industrial XL Shadow</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Primary Brand Core</Label>
-                        <div className="grid grid-cols-6 gap-3">
-                          {THEME_COLORS.map(color => (
-                            <button key={color.value} onClick={() => updateLocalUIField('primaryColor', color.value)} className={cn("h-10 w-full rounded-xl transition-all border-4", localUI.primaryColor === color.value ? "border-white ring-2 ring-slate-900" : "border-transparent", color.color)} />
-                          ))}
-                        </div>
-                      </div>
-                   </div>
-                </Card>
-
-                <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
-                   <div className="flex items-center gap-3 border-l-4 border-blue-500 pl-4">
-                      <PanelLeft className="h-4 w-4 text-blue-500" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Layout Matrix</h4>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Sidebar Protocol</Label>
-                        <Select value={localUI.sidebarMode} onValueChange={(val: any) => updateLocalUIField('sidebarMode', val)}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="slim" className="uppercase font-bold text-[10px]">Slim Node</SelectItem>
-                            <SelectItem value="full" className="uppercase font-bold text-[10px]">Full Scale Sidebar</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Header Alignment</Label>
-                        <Select value={localUI.headerAlignment} onValueChange={(val: any) => updateLocalUIField('headerAlignment', val)}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="left" className="uppercase font-bold text-[10px]">Left Justified</SelectItem>
-                            <SelectItem value="center" className="uppercase font-bold text-[10px]">Centered Protocol</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-2 space-y-3">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Table Density Matrix</Label>
-                        <Select value={localUI.tableDensity} onValueChange={(val: any) => updateLocalUIField('tableDensity', val)}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="compact" className="uppercase font-bold text-[10px]">Compact (Industrial)</SelectItem>
-                            <SelectItem value="standard" className="uppercase font-bold text-[10px]">Standard ERP</SelectItem>
-                            <SelectItem value="comfortable" className="uppercase font-bold text-[10px]">Comfortable Padding</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                   </div>
-                </Card>
-
-                <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
-                   <div className="flex items-center gap-3 border-l-4 border-emerald-500 pl-4">
-                      <QrCode className="h-4 w-4 text-emerald-500" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Identity Matrix</h4>
-                   </div>
-                   <div className="space-y-8">
-                      <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div className="relative group">
-                           <div className="h-20 w-20 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-2 shadow-sm">
-                              <img src={localUI.brandLogo || defaultBrandLogo} alt="Corporate Logo" className="h-full w-full object-contain" />
-                           </div>
-                           <input type="file" id="logo-upload" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                           <label htmlFor="logo-upload" className="absolute -bottom-2 -right-2 h-8 w-8 bg-[#001F3D] text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
-                              <Camera className="h-4 w-4" />
-                           </label>
-                        </div>
-                        <div className="flex-1 space-y-1">
-                           <p className="text-[11px] font-bold text-[#001F3D] uppercase">Corporate Emblem</p>
-                           <p className="text-[9px] text-slate-400 font-medium leading-tight">This node will be synchronized across headers, sidebars, and watermarks.</p>
-                           {localUI.brandLogo && (
-                             <Button variant="ghost" size="sm" className="h-7 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 text-[9px] font-bold uppercase tracking-widest gap-2 mt-2" onClick={handleDeleteLogo}>
-                               <Trash2 className="h-3.5 w-3.5" /> Reset Node
-                             </Button>
-                           )}
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">Logo UI Scaling (px) <span className="text-emerald-500 font-code">{localUI.logoSize}px</span></Label>
-                        <Slider value={[localUI.logoSize || 32]} min={24} max={64} step={2} onValueChange={([v]) => updateLocalUIField('logoSize', v)} />
-                      </div>
-                   </div>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="page-governance" className="m-0 space-y-8 max-w-6xl pb-20">
-               <div className="flex items-center justify-between px-2">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-600/10"><Layout className="h-8 w-8" /></div>
-                    <div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Page Architecture Governance</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Manage functional identifiers and operational prefixes.</p>
-                    </div>
-                 </div>
-                 <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                   <Save className="h-4 w-4" /> SAVE DATA
-                 </Button>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <div className="lg:col-span-8 space-y-6">
-                  <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem]">
-                    <div className="flex items-center justify-between mb-8">
-                       <div className="flex items-center gap-3">
-                          <Settings2 className="h-4 w-4 text-primary" />
-                          <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Functional Node Identifiers (Page Edit)</h4>
-                       </div>
-                       <div className="relative w-64">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                          <Input 
-                            placeholder="Filter nodes..." 
-                            className="h-9 pl-9 bg-slate-50 border-none rounded-lg text-xs" 
-                            value={pageSearch} 
-                            onChange={(e) => setPageSearch(e.target.value)} 
-                          />
-                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                       {filteredNodes.map((node) => (
-                         <div key={node.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-6 group hover:border-primary/20 transition-all">
-                            <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors border shadow-sm">
-                               <node.icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                               <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-tighter">Current Label: {node.label}</Label>
-                               <Input 
-                                 placeholder={`Enter new identifier for ${node.id}...`} 
-                                 className="h-10 bg-white border-none rounded-lg text-[11px] font-bold uppercase shadow-sm"
-                                 value={localUI.customTitles[node.id] || ''}
-                                 onChange={(e) => handleUpdatePageTitle(node.id, e.target.value)}
-                               />
-                            </div>
-                            <Badge variant="outline" className="text-[8px] font-code border-slate-200 text-slate-300 bg-white">ID_{node.id.toUpperCase()}</Badge>
-                         </div>
-                       ))}
-                       {filteredNodes.length === 0 && (
-                         <div className="py-20 text-center opacity-20"><Search className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-bold uppercase">No nodes match criteria</p></div>
-                       )}
-                    </div>
-                  </Card>
-                </div>
-
-                <div className="lg:col-span-4 space-y-6">
-                   <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
-                      <div className="flex items-center gap-3 border-l-4 border-red-500 pl-4">
-                         <Hash className="h-4 w-4 text-red-500" />
-                         <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D]">Sequence Governance</h4>
-                      </div>
-                      <div className="space-y-6">
-                         <div className="space-y-2">
-                           <Label className="text-[9px] font-bold uppercase text-slate-400">Master Work Order Prefix</Label>
-                           <Input className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold text-primary" value={localUI.woPrefix} onChange={(e) => updateLocalUIField('woPrefix', e.target.value)} />
-                         </div>
-                         <div className="space-y-2">
-                           <Label className="text-[9px] font-bold uppercase text-slate-400">Next Sequence Value</Label>
-                           <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold text-[#001F3D]" value={localUI.woNextNumber} onChange={(e) => updateLocalUIField('woNextNumber', Number(e.target.value))} />
-                         </div>
-                         <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex gap-3 items-start">
-                            <ShieldAlert className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                            <p className="text-[9px] text-red-700 leading-relaxed font-medium uppercase">Warning: Modifying sequence values can cause ledger fragmentation. Proceed with organizational authority.</p>
-                         </div>
-                      </div>
-                   </Card>
-
-                   <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2rem] relative overflow-hidden">
-                      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-                      <div className="relative z-10 space-y-6">
-                         <div className="flex items-center gap-3">
-                            <Lock className="h-5 w-5 text-primary" />
-                            <h4 className="text-xs font-bold uppercase tracking-widest">Architecture Lock</h4>
-                         </div>
-                         <p className="text-[10px] text-white/40 leading-relaxed font-medium">These settings are applied globally across all functional threads of the Ferocious Matrix.</p>
-                      </div>
-                   </Card>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="financial-matrix" className="m-0 space-y-8 max-w-4xl">
-               <div className="flex justify-between items-center px-2">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-xl"><TableProperties className="h-8 w-8" /></div>
-                    <div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Financial Matrix Architect</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Spatial dimension protocols for commercial registry.</p>
-                    </div>
-                 </div>
-                 <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                   <Save className="h-4 w-4" /> SAVE DATA
-                 </Button>
-              </div>
-
-               <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-12">
-                  <div className="space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
-                       {[
-                         { id: 'description', label: 'Description Field Width' },
-                         { id: 'hsn', label: 'HSN/SAC Field Width' },
-                         { id: 'qty', label: 'Quantity Field Width' },
-                         { id: 'unit', label: 'Unit Field Width' },
-                         { id: 'price', label: 'Rate/Price Field Width' },
-                         { id: 'discount', label: 'Disc % Field Width' },
-                         { id: 'gst', label: 'GST % Field Width' },
-                         { id: 'total', label: 'Total (₹) Field Width' },
-                       ].map(node => (
-                         <div key={node.id} className="space-y-5">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">
-                               {node.label} <span>{localUI.billingTableSettings?.colWidths?.[node.id as keyof typeof localUI.billingTableSettings.colWidths] || 100}px</span>
-                            </Label>
-                            <Slider 
-                              value={[localUI.billingTableSettings?.colWidths?.[node.id as keyof typeof localUI.billingTableSettings.colWidths] || 100]} 
-                              min={60} max={600} step={10} 
-                              onValueChange={([v]) => handleUpdateBillingTableLocal(node.id, v)} 
-                            />
-                         </div>
-                       ))}
-                    </div>
-
-                    <div className="pt-10 border-t space-y-6">
-                       <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-widest flex justify-between">
-                          Global Entry Row Height <span>{localUI.billingTableSettings?.rowHeight || 48}px</span>
-                       </Label>
-                       <Slider 
-                        value={[localUI.billingTableSettings?.rowHeight || 48]} 
-                        min={32} max={120} step={4} 
-                        onValueChange={([v]) => handleUpdateBillingTableLocal('rowHeight', v)} 
-                       />
-                    </div>
-                  </div>
-               </Card>
-            </TabsContent>
-
-            <TabsContent value="number-governance" className="m-0 space-y-8 pb-20">
-               <div className="flex justify-between items-center px-2">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-xl"><Hash className="h-8 w-8" /></div>
-                    <div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Document Numbering Matrix</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Configure automated serialization protocols for commercial nodes.</p>
-                    </div>
-                 </div>
-                 <Button className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                   <Save className="h-4 w-4" /> SAVE DATA
-                 </Button>
-              </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {DOC_TYPES_FOR_SERIES.map((docType) => {
-                    const series = localUI.numberSeries?.[docType.id] || DEFAULT_NUMBER_SERIES;
-                    return (
-                      <Card key={docType.id} className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8 relative overflow-hidden group">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">{docType.label} Protocol</h4>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">NEXT IDENTIFIER PREVIEW:</p>
-                            <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 text-sm font-code font-bold mt-2 h-10 px-6 rounded-xl">
-                              {getSeriesPreview(docType.id)}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-col items-end gap-4">
-                             <div className="flex items-center gap-3">
-                                <Label className="text-[8px] font-bold uppercase text-slate-400">Manual Override</Label>
-                                <Switch 
-                                  checked={series.manualOverride} 
-                                  onCheckedChange={(val) => handleUpdateSeries(docType.id, 'manualOverride', val)} 
-                                />
-                             </div>
-                             <div className="flex items-center gap-3">
-                                <Label className="text-[8px] font-bold uppercase text-slate-400">FY Reset</Label>
-                                <Switch 
-                                  checked={series.resetEveryFY} 
-                                  onCheckedChange={(val) => handleUpdateSeries(docType.id, 'resetEveryFY', val)} 
-                                />
-                             </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-50">
-                           <div className="space-y-2">
-                              <Label className="text-[8px] font-bold uppercase text-slate-500">Prefix</Label>
-                              <Input className="h-10 bg-slate-50 border-none font-bold uppercase" value={series.prefix} onChange={(e) => handleUpdateSeries(docType.id, 'prefix', e.target.value)} />
-                           </div>
-                           <div className="space-y-2">
-                              <Label className="text-[8px] font-bold uppercase text-slate-500">Starting No.</Label>
-                              <Input type="number" className="h-10 bg-slate-50 border-none font-bold" value={series.startingNumber} onChange={(e) => handleUpdateSeries(docType.id, 'startingNumber', Number(e.target.value))} />
-                           </div>
-                           <div className="space-y-2">
-                              <Label className="text-[8px] font-bold uppercase text-slate-500">Padding Length</Label>
-                              <Select value={series.length.toString()} onValueChange={(val) => handleUpdateSeries(docType.id, 'length', Number(val))}>
-                                 <SelectTrigger className="h-10 bg-slate-50 border-none text-[10px] font-bold"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="rounded-xl">
-                                    <SelectItem value="3">3 Digits (001)</SelectItem>
-                                    <SelectItem value="4">4 Digits (0001)</SelectItem>
-                                    <SelectItem value="5">5 Digits (00001)</SelectItem>
-                                 </SelectContent>
-                              </Select>
-                           </div>
-                           <div className="space-y-2">
-                              <Label className="text-[8px] font-bold uppercase text-slate-500">FY Format</Label>
-                              <Select value={series.fyFormat} onValueChange={(val: any) => handleUpdateSeries(docType.id, 'fyFormat', val)}>
-                                 <SelectTrigger className="h-10 bg-slate-50 border-none text-[10px] font-bold"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="rounded-xl">
-                                    <SelectItem value="YYYY">YYYY (2024)</SelectItem>
-                                    <SelectItem value="YY-YY">YY-YY (24-25)</SelectItem>
-                                    <SelectItem value="NONE">No Suffix</SelectItem>
-                                 </SelectContent>
-                              </Select>
-                           </div>
-                        </div>
-
-                        <div className="space-y-2">
-                           <Label className="text-[8px] font-bold uppercase text-slate-500">Separator</Label>
-                           <Select value={series.separator} onValueChange={(val) => handleUpdateSeries(docType.id, 'separator', val)}>
-                              <SelectTrigger className="h-10 bg-slate-50 border-none text-[10px] font-bold"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                 <SelectItem value="-">Dash (-)</SelectItem>
-                                 <SelectItem value="/">Slash (/)</SelectItem>
-                                 <SelectItem value=" ">Space ( )</SelectItem>
-                                 <SelectItem value="">None</SelectItem>
-                              </SelectContent>
-                           </Select>
-                        </div>
-                      </Card>
-                    );
-                  })}
-               </div>
             </TabsContent>
           </>
         )}

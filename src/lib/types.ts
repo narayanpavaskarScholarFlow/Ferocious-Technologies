@@ -31,7 +31,7 @@ export interface Machine {
   bedSize: string;
   costPerHour: number;
   load: number;
-  status: 'active' | 'maintenance' | 'fault';
+  status: 'active' | 'maintenance' | 'fault' | 'Running' | 'Idle' | 'Maintenance' | 'Breakdown';
   image: string;
 }
 
@@ -320,6 +320,7 @@ export interface NumberSeries {
 }
 
 export interface UISettings {
+  theme?: 'light' | 'dark';
   fontSize: number;
   tableDensity: 'compact' | 'standard' | 'comfortable';
   borderRadius: number;

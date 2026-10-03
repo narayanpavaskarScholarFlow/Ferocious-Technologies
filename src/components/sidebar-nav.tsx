@@ -109,12 +109,12 @@ export function SidebarNav({
 
   return (
     <div className={cn(
-      "bg-primary h-full flex flex-col border-r border-white/5 transition-all duration-300",
+      "bg-primary dark:bg-card h-full flex flex-col border-r border-white/5 dark:border-border transition-all duration-300",
       isSlim ? "w-20" : "w-64"
     )}>
       {/* Branding Hub */}
       <div className={cn(
-        "bg-white/5 border-b border-white/5 p-4 flex items-center gap-3",
+        "bg-white/5 dark:bg-card border-b border-white/5 dark:border-border p-4 flex items-center gap-3",
         isSlim && "justify-center"
       )}>
         <div 
@@ -125,8 +125,8 @@ export function SidebarNav({
         </div>
         {!isSlim && (
           <div className="flex flex-col">
-            <span className="text-white font-bold text-[10px] tracking-widest uppercase">Ferocious Tech</span>
-            <span className="text-white/40 text-[8px] font-medium tracking-tighter uppercase">Industrial Control</span>
+            <span className="text-white dark:text-primary font-bold text-[10px] tracking-widest uppercase">Ferocious Tech</span>
+            <span className="text-white/40 dark:text-slate-400 text-[8px] font-medium tracking-tighter uppercase">Industrial Control</span>
           </div>
         )}
       </div>
@@ -137,7 +137,7 @@ export function SidebarNav({
             <div key={section.name} className="space-y-1">
               {!isSlim && (
                 <div className="px-3 py-1 flex items-center justify-between">
-                  <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">{section.name}</span>
+                  <span className="text-[8px] font-black text-white/30 dark:text-slate-500 uppercase tracking-[0.2em]">{section.name}</span>
                   <ChevronDown className="h-2.5 w-2.5 text-white/10" />
                 </div>
               )}
@@ -155,11 +155,11 @@ export function SidebarNav({
                             className={cn(
                               "w-full flex items-center gap-3 px-3 h-10 rounded transition-all group",
                               isActive 
-                                ? "bg-white/10 text-white font-bold shadow-inner" 
-                                : "text-white/40 hover:bg-white/5 hover:text-white"
+                                ? "bg-white/10 dark:bg-primary/20 text-white dark:text-primary font-bold shadow-inner" 
+                                : "text-white/40 dark:text-slate-400 hover:bg-white/5 dark:hover:bg-slate-900 hover:text-white dark:hover:text-primary"
                             )}
                           >
-                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-white/20 group-hover:text-white/60")} />
+                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? (uiRole === 'dark' ? "text-primary" : "text-white") : "text-white/20 dark:text-slate-600 group-hover:text-white/60 dark:group-hover:text-primary")} />
                             {!isSlim && <span className="text-[11px] uppercase tracking-wider truncate">{customTitles[item.id] || item.label}</span>}
                             {isActive && !isSlim && <ChevronRight className="h-3 w-3 ml-auto text-white/20" />}
                           </button>
@@ -175,11 +175,11 @@ export function SidebarNav({
         </div>
       </ScrollArea>
 
-      <div className="p-3 mt-auto border-t border-white/5">
+      <div className="p-3 mt-auto border-t border-white/5 dark:border-border">
         <button 
           onClick={() => onViewChange('settings')}
           className={cn(
-            "w-full flex items-center gap-3 px-3 h-10 rounded text-white/40 hover:text-white hover:bg-white/5 transition-colors",
+            "w-full flex items-center gap-3 px-3 h-10 rounded text-white/40 dark:text-slate-400 hover:text-white dark:hover:text-primary hover:bg-white/5 dark:hover:bg-slate-900 transition-colors",
             isSlim && "justify-center"
           )}
         >

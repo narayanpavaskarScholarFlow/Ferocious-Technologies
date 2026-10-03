@@ -697,7 +697,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
              <span className="text-7xl font-display font-black text-white">{biMetrics.healthScore}</span>
              <span className={cn(
                "text-[10px] font-bold uppercase tracking-widest mt-2 px-4 py-1 rounded-full",
-               biMetrics.healthScore >= 80 ? "bg-emerald-500 text-white" : biMetrics.healthScore >= 50 ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
+               biMetrics.healthScore >= 80 ? "bg-emerald-50 text-white" : biMetrics.healthScore >= 50 ? "bg-amber-50 text-white" : "bg-rose-50 text-white"
              )}>
                {biMetrics.healthScore >= 80 ? 'Excellent' : biMetrics.healthScore >= 50 ? 'Average' : 'Critical'}
              </span>
@@ -930,62 +930,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const isPaymentType = activeRecordType === 'inward_payment' || activeRecordType === 'outward_payment';
     const seriesConfig = (uiSettings.numberSeries && uiSettings.numberSeries[activeRecordType]) || DEFAULT_NUMBER_SERIES;
     
-    if (isPaymentType) {
-      return (
-        <div className="flex flex-col bg-white min-h-full animate-in fade-in duration-300 pb-20 font-body">
-          <div className="p-4 border-b bg-slate-50 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-[#001F3D] rounded text-white shadow-sm">
-                <Banknote className="h-5 w-5" />
-              </div>
-              <h2 className="text-lg font-bold text-[#001F3D] uppercase tracking-tight">
-                {editingRecordId ? 'Edit' : 'Create'} {DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.label}
-              </h2>
-            </div>
-            <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)}><X className="h-5 w-5 mr-2" /> Back to Ledger</Button>
-          </div>
-          <div className="max-w-4xl mx-auto w-full p-8 space-y-8 mt-4">
-            <div className="grid grid-cols-12 items-center gap-6">
-              <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Receipt No <span className="text-red-500">*</span></Label>
-              <div className="col-span-9">
-                <Input 
-                  readOnly={!seriesConfig.manualOverride}
-                  className={cn("h-9 border-slate-300 text-xs font-bold px-3 rounded-none", !seriesConfig.manualOverride && "bg-slate-50 opacity-60")} 
-                  value={formData.number || ''} 
-                  onChange={(e)=>setFormData({...formData, number: e.target.value})} 
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-12 items-center gap-6">
-              <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Company Name <span className="text-red-500">*</span></Label>
-              <div className="col-span-9">
-                <Select value={formData.customerId || ''} onValueChange={(id) => {
-                  const identity = customers.find(c => c.id === id) || vendors.find(v => v.id === id);
-                  setFormData({
-                    ...formData, customerId: id, customerName: identity?.name || '', shipTo: identity?.address || '',
-                    contactPerson: (identity as any)?.contactPerson || (identity as any)?.contact || '',
-                    contactNumber: (identity as any)?.contactNumber || (identity as any)?.contact || '',
-                    gstNumber: identity?.gstNumber || '', panNumber: (identity as any)?.pan || ''
-                  });
-                }}>
-                  <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Identify Partner..." /></SelectTrigger>
-                  <SelectContent>{[...customers, ...vendors].map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-12 items-center gap-6">
-              <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Amount <span className="text-red-500">*</span></Label>
-              <div className="col-span-9"><Input type="number" className="h-9 border-slate-300 rounded-none text-sm font-bold" value={formData.amount || 0} onChange={(e)=>setFormData({...formData, amount: Number(e.target.value)})} /></div>
-            </div>
-          </div>
-          <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-end gap-3 z-50 shadow-lg">
-             <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-10 px-8 font-bold uppercase text-xs rounded-none border border-slate-300">Back</Button>
-             <Button className="h-10 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-xs rounded-none shadow-lg" onClick={handleSave}>Save</Button>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="flex flex-col bg-[#F8FAFC] min-h-screen animate-in fade-in duration-300 pb-40 font-body">
         <div className="p-4 border-b bg-white flex items-center justify-between sticky top-0 z-50 shadow-sm">
@@ -997,11 +941,27 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               {editingRecordId ? 'Edit' : 'Create'} {activeRecordType} Matrix
             </h2>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)}><X className="h-4 w-4 mr-2" /> Cancel</Button>
+          <div className="flex items-center gap-3">
+             <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)}><X className="h-4 w-4 mr-2" /> Cancel</Button>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-[#001F3D]"><MoreVertical className="h-5 w-5" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl">
+                   <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase"><Plus className="h-3.5 w-3.5" /> Add Product</DropdownMenuItem>
+                   <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase"><Briefcase className="h-3.5 w-3.5" /> Add Service</DropdownMenuItem>
+                   <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase"><DollarSign className="h-3.5 w-3.5" /> Add Charges</DropdownMenuItem>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem className="rounded-lg gap-2 text-xs font-bold uppercase"><Copy className="h-3.5 w-3.5" /> Copy Previous</DropdownMenuItem>
+                </DropdownMenuContent>
+             </DropdownMenu>
+          </div>
         </div>
+
         <div className="flex-1 w-full max-w-[1700px] mx-auto p-4 md:p-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-300 p-6 space-y-4">
+            {/* Customer Information Card */}
+            <Card className="bg-white border border-slate-300 p-8 space-y-4 rounded-none shadow-none">
               <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> Customer Information</h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-12 items-center gap-4">
@@ -1013,49 +973,112 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         ...formData, customerId: id, customerName: identity?.name || '', shipTo: identity?.address || '',
                         contactPerson: (identity as any)?.contactPerson || (identity as any)?.contact || '',
                         contactNumber: (identity as any)?.contactNumber || (identity as any)?.contact || '',
-                        gstNumber: identity?.gstNumber || '', panNumber: (identity as any)?.pan || ''
+                        gstNumber: identity?.gstNumber || '', panNumber: (identity as any)?.pan || '',
+                        placeOfSupply: identity?.location || 'Karnataka'
                       });
                     }}>
-                      <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Identify Partner..." /></SelectTrigger>
+                      <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase shadow-none"><SelectValue placeholder="Identify Partner..." /></SelectTrigger>
                       <SelectContent>{[...customers, ...vendors].map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-12 items-start gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase mt-2">Address</Label>
-                  <div className="col-span-8"><Textarea className="min-h-[60px] border-slate-300 rounded-none text-xs p-2 bg-slate-50" value={formData.shipTo || ''} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
+                  <div className="col-span-8"><Textarea className="min-h-[60px] border-slate-300 rounded-none text-xs p-2 bg-slate-50 shadow-none" value={formData.address || ''} onChange={(e)=>setFormData({...formData, address: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Contact Person</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value={formData.contactPerson || ''} onChange={(e)=>setFormData({...formData, contactPerson: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Phone No</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value={formData.contactNumber || ''} onChange={(e)=>setFormData({...formData, contactNumber: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase shadow-none" value={formData.gstNumber || ''} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
+                  <div className="col-span-8">
+                    <Select value={formData.revCharge || 'No'} onValueChange={(val: any) => setFormData({...formData, revCharge: val})}>
+                      <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-none"><SelectItem value="No">No</SelectItem><SelectItem value="Yes">Yes</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Ship To</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value={formData.shipTo || ''} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Distance (km)</Label>
+                  <div className="col-span-8"><Input type="number" className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value={formData.distanceEWay || ''} onChange={(e)=>setFormData({...formData, distanceEWay: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Place Supply</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value={formData.placeOfSupply || ''} onChange={(e)=>setFormData({...formData, placeOfSupply: e.target.value})} /></div>
                 </div>
               </div>
-            </div>
-            <div className="bg-white border border-slate-300 p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><FileText className="h-3.5 w-3.5" /> Document Detail</h3>
+            </Card>
+
+            {/* Quotation Detail Card */}
+            <Card className="bg-white border border-slate-300 p-8 space-y-4 rounded-none shadow-none">
+              <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><FileText className="h-3.5 w-3.5" /> Quotation Details</h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Document No <span className="text-red-500">*</span></Label>
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Type</Label>
+                  <div className="col-span-8">
+                    <Select value={formData.type || activeRecordType} onValueChange={(val: any) => setFormData({...formData, type: val})}>
+                      <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase shadow-none"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-none">{DOCUMENT_TYPES.map(d => <SelectItem key={d.id} value={d.id} className="text-xs font-bold uppercase">{d.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Quotation No <span className="text-red-500">*</span></Label>
                   <div className="col-span-8">
                     <Input 
                       readOnly={!seriesConfig.manualOverride}
-                      className={cn("h-8 border-slate-300 rounded-none text-xs font-bold w-full text-center", !seriesConfig.manualOverride && "bg-slate-50 opacity-60")} 
+                      className={cn("h-9 border-slate-300 rounded-none text-xs font-bold w-full text-center shadow-none", !seriesConfig.manualOverride && "bg-slate-50 opacity-60")} 
                       value={formData.number || ''} 
                       onChange={(e)=>setFormData({...formData, number: e.target.value})} 
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Document Date <span className="text-red-500">*</span></Label>
-                  <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-8 rounded-none" /></div>
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Quotation Date <span className="text-red-500">*</span></Label>
+                  <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-9 rounded-none shadow-none" /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan No</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase shadow-none" value={formData.challanNo || ''} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan Date</Label>
+                  <div className="col-span-8"><DatePicker value={formData.challanDate} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-9 rounded-none shadow-none" /></div>
+                </div>
+                <div className="grid grid-cols-12 items-center gap-4">
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Delivery Mode</Label>
+                  <div className="col-span-8"><Input className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value={formData.deliveryMode || ''} onChange={(e)=>setFormData({...formData, deliveryMode: e.target.value})} /></div>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
-          <div className="bg-white border border-slate-300 overflow-hidden shadow-sm">
+
+          {/* Product Items Table */}
+          <div className="bg-white border border-slate-300 overflow-hidden shadow-none">
             <Table className="border-collapse">
               <TableHeader className="bg-slate-50">
                 <TableRow className="hover:bg-transparent border-b border-slate-300">
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-12 text-center border-r border-slate-300">SR.</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300 min-w-[300px]">Product / Other Charges</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300 w-32">HSN/SAC</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Qty.</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">UOM</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-32 text-center border-r border-slate-300">Price</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Discount</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">GST %</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-40 text-right">Total</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
@@ -1065,35 +1088,190 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <TableRow key={item.id} className="border-b border-slate-300 align-top group">
                     <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300 py-4">{idx + 1}</TableCell>
                     <TableCell className="p-0 border-r border-slate-300">
-                      <Input placeholder="Enter Product name" className="h-10 border-none bg-white text-xs font-bold px-4 rounded-none" value={item.description || ''} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
+                      <Input placeholder="Enter Product name" className="h-10 border-none bg-white text-xs font-bold px-4 rounded-none shadow-none" value={item.description || ''} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
+                      <Textarea placeholder="Item Note..." className="min-h-[40px] border-none bg-slate-50/50 text-[10px] px-4 py-2 rounded-none shadow-none italic" value={item.note || ''} onChange={(e)=>updateItem(item.id, 'note', e.target.value)} />
                     </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300"><Input type="number" className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold" value={item.qty || 0} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} /></TableCell>
-                    <TableCell className="p-0 border-r border-slate-300"><Input type="number" className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold text-primary" value={item.price || 0} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} /></TableCell>
+                    <TableCell className="p-0 border-r border-slate-300"><Input className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold shadow-none" value={item.hsn || ''} onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} /></TableCell>
+                    <TableCell className="p-0 border-r border-slate-300"><Input type="number" className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold shadow-none" value={item.qty || 0} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} /></TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Select value={item.unit} onValueChange={(v)=>updateItem(item.id, 'unit', v)}>
+                        <SelectTrigger className="h-10 border-none bg-transparent rounded-none text-xs font-bold shadow-none justify-center"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-none"><SelectItem value="Nos">Nos</SelectItem><SelectItem value="Kg">Kg</SelectItem><SelectItem value="Set">Set</SelectItem><SelectItem value="Hr">Hr</SelectItem></SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="p-0 border-r border-slate-300"><Input type="number" className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold text-primary shadow-none" value={item.price || 0} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} /></TableCell>
+                    <TableCell className="p-0 border-r border-slate-300"><Input type="number" className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold shadow-none" value={item.discount || 0} onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} /></TableCell>
+                    <TableCell className="p-0 border-r border-slate-300">
+                      <Select value={item.gstRate.toString()} onValueChange={(v)=>updateItem(item.id, 'gstRate', Number(v))}>
+                        <SelectTrigger className="h-10 border-none bg-transparent rounded-none text-xs font-bold shadow-none justify-center"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-none"><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell className="text-right px-4 text-xs font-bold py-4">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="p-1 text-center"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleRemoveItem(item.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    <TableCell className="p-1 text-center">
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-[#001F3D]"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 p-1 rounded-lg">
+                             <DropdownMenuItem className="gap-2 text-[10px] font-bold uppercase" onClick={() => {
+                               const newItem = { ...item, id: Math.random().toString(36).substr(2, 9) };
+                               setFormData(prev => calculateTotals({...prev, items: [...(prev.items || []), newItem]}));
+                             }}><Copy className="h-3.5 w-3.5" /> Duplicate Node</DropdownMenuItem>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem className="gap-2 text-[10px] font-bold uppercase text-red-600" onClick={() => handleRemoveItem(item.id)}><Trash2 className="h-3.5 w-3.5" /> Purge row</DropdownMenuItem>
+                          </DropdownMenuContent>
+                       </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
+                <TableRow className="bg-yellow-400 font-bold border-t-2 border-slate-900">
+                   <TableCell colSpan={2} className="py-4 px-6 text-xs uppercase text-[#001F3D]">Total Quotation Val.</TableCell>
+                   <TableCell className="border-r border-slate-900/10"></TableCell>
+                   <TableCell className="text-center font-code border-r border-slate-900/10">{formData.items?.reduce((s,i)=>s+i.qty, 0)}</TableCell>
+                   <TableCell className="border-r border-slate-900/10"></TableCell>
+                   <TableCell className="text-center font-code border-r border-slate-900/10">₹ {formData.items?.reduce((s,i)=>s+i.price, 0).toLocaleString()}</TableCell>
+                   <TableCell className="text-center font-code border-r border-slate-900/10">{formData.discountTotal ? `₹ ${formData.discountTotal.toLocaleString()}` : '---'}</TableCell>
+                   <TableCell className="border-r border-slate-900/10"></TableCell>
+                   <TableCell className="text-right px-4 font-display text-sm">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                   <TableCell></TableCell>
+                </TableRow>
               </TableBody>
             </Table>
             <div className="p-4 border-t bg-white flex justify-start">
-               <Button variant="ghost" onClick={handleAddItem} className="h-9 px-6 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5"><Plus className="h-4 w-4" /> Add Row</Button>
+               <Button variant="ghost" onClick={handleAddItem} className="h-9 px-6 rounded-none text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5 border border-slate-200"><Plus className="h-4 w-4" /> Add Row</Button>
             </div>
           </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div className="bg-white border border-slate-300 p-6 space-y-6">
-              <div className="space-y-2 border-t pt-6"><Label className="text-[10px] font-bold uppercase text-slate-400">Internal Document Note / Remarks</Label><Textarea className="min-h-[80px] border-slate-200 rounded-none text-xs font-medium bg-slate-50/50" placeholder="Not Visible on Print" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} /></div>
+            <div className="space-y-6">
+              {/* Bank Details Section */}
+              <Card className="bg-white border border-slate-300 p-6 space-y-4 rounded-none shadow-none">
+                <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 flex justify-between items-center">
+                  <div className="flex items-center gap-2"><Landmark className="h-3.5 w-3.5" /> Bank Details</div>
+                  <Switch checked={true} onCheckedChange={()=>{}} />
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-12 items-center gap-4">
+                    <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Select Bank</Label>
+                    <div className="col-span-8">
+                       <Select defaultValue="main">
+                          <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs font-bold shadow-none"><SelectValue placeholder="Identify Ledger..." /></SelectTrigger>
+                          <SelectContent className="rounded-none"><SelectItem value="main">HDFC BANK - 501000...78</SelectItem></SelectContent>
+                       </Select>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-slate-50 border border-slate-200 text-[10px] space-y-1 font-bold text-slate-600">
+                     <p>BANK: HDFC BANK LTD</p>
+                     <p>A/C: 50100012345678</p>
+                     <p>IFSC: HDFC0001234</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Terms & Conditions Section */}
+              <Card className="bg-white border border-slate-300 p-6 space-y-4 rounded-none shadow-none">
+                <h3 className="text-xs font-bold uppercase text-[#001F3D] tracking-widest border-b pb-3 mb-4 flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5" /> Terms & Conditions</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-bold uppercase text-slate-400">Section Title</Label>
+                    <Input className="h-9 border-slate-300 rounded-none text-xs font-bold shadow-none" value="Standard Terms" onChange={()=>{}} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-bold uppercase text-slate-400">Detailed Clause</Label>
+                    <Textarea className="min-h-[100px] border-slate-300 rounded-none text-xs font-medium bg-slate-50 shadow-none" value={formData.paymentTerms || ''} onChange={(e)=>setFormData({...formData, paymentTerms: e.target.value})} />
+                  </div>
+                  <div className="flex gap-2">
+                     <Button variant="ghost" className="h-8 rounded-none border border-slate-200 text-[9px] font-bold uppercase tracking-widest gap-2"><Plus className="h-3 w-3" /> Add Note</Button>
+                     <Button variant="ghost" className="h-8 rounded-none border border-slate-200 text-[9px] font-bold uppercase tracking-widest gap-2"><History className="h-3 w-3" /> Load Template</Button>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-400">Document Note / Remarks <span className="text-red-400 font-bold ml-2">(Not Visible on Print)</span></Label>
+                <Textarea className="min-h-[80px] border-slate-300 rounded-none text-xs font-medium bg-slate-50 shadow-none" placeholder="Internal protocol notes..." value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+              </div>
             </div>
-            <div className="bg-white border border-slate-300 p-8 space-y-6">
-              <div className="bg-yellow-400 p-6 flex justify-between items-center -mx-8 shadow-inner"><div className="space-y-1"><span className="text-xs font-black uppercase text-[#001F3D] tracking-tighter">Grand Total Settlement</span></div><span className="text-4xl font-display font-black text-[#001F3D] tracking-tighter">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+
+            <div className="space-y-6">
+              {/* Summary Section */}
+              <Card className="bg-white border border-slate-300 p-8 space-y-6 rounded-none shadow-none">
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-slate-500">
+                      <span>Taxable Amount</span>
+                      <span>₹ {(formData.subTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-slate-500">
+                      <span>Additional Charge</span>
+                      <div className="flex items-center gap-2 w-32">
+                         <Input type="number" className="h-7 text-right border-slate-200 rounded-none text-xs shadow-none" value={formData.transportationCharges || 0} onChange={(e)=>setFormData(calculateTotals({...formData, transportationCharges: Number(e.target.value)}))} />
+                      </div>
+                   </div>
+                   <div className="flex justify-between items-center py-2 border-y border-slate-100 text-[11px] font-black uppercase text-[#001F3D]">
+                      <span>Total Taxable</span>
+                      <span>₹ {((formData.subTotal || 0) + (formData.transportationCharges || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-slate-500">
+                      <span>Integrated Tax (GST)</span>
+                      <span className="text-primary">₹ {(formData.taxTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-slate-500">
+                      <span>TCS @ {formData.tcsRate}%</span>
+                      <div className="flex items-center gap-2 w-32">
+                         <Input type="number" step="0.01" className="h-7 text-right border-slate-200 rounded-none text-xs shadow-none" value={formData.tcsRate || 0} onChange={(e)=>setFormData(calculateTotals({...formData, tcsRate: Number(e.target.value)}))} />
+                      </div>
+                   </div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-slate-500">
+                      <span>Global Discount</span>
+                      <span className="text-red-500">- ₹ {(formData.discountTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                   </div>
+                   <div className="flex justify-between items-center py-4 border-t-2 border-[#001F3D] bg-yellow-400 -mx-8 px-8">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-black uppercase text-[#001F3D] tracking-tighter">Grand Total</span>
+                        <div className="flex items-center gap-2">
+                           <span className="text-[8px] font-bold uppercase text-[#001F3D]/60">Round Off</span>
+                           <Switch checked={formData.isRoundOffActive} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
+                        </div>
+                      </div>
+                      <span className="text-4xl font-display font-black text-[#001F3D] tracking-tighter">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                   </div>
+                </div>
+                <div className="p-4 bg-slate-50 border border-slate-200">
+                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total in words</p>
+                   <p className="text-xs font-bold text-[#001F3D] leading-tight">{numberToWords(formData.amount || 0)}</p>
+                </div>
+              </Card>
+
+              {/* Smart Suggestion Section */}
+              <Card className="bg-slate-900 text-white border-none p-6 space-y-4 rounded-none shadow-2xl relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles className="h-10 w-10 text-primary" /></div>
+                 <div className="relative z-10 space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-primary"><Zap className="h-4 w-4" /> Smart Suggestive Matrix</h3>
+                    <div className="space-y-2">
+                       <p className="text-[10px] text-white/50 leading-relaxed font-medium italic">"Based on client history, you might want to include 'Installation Charges' node @ 5% baseline."</p>
+                       <div className="flex flex-wrap gap-2 pt-2">
+                          <Badge variant="outline" className="bg-white/5 border-white/10 text-[8px] font-bold uppercase cursor-pointer hover:bg-white/10">+ Installation Node</Badge>
+                          <Badge variant="outline" className="bg-white/5 border-white/10 text-[8px] font-bold uppercase cursor-pointer hover:bg-white/10">+ Maintenance Buffer</Badge>
+                       </div>
+                    </div>
+                 </div>
+              </Card>
             </div>
           </div>
         </div>
-        <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-between items-center z-50 shadow-lg">
+
+        {/* Command Bar Footer */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-between items-center z-50 shadow-2xl">
            <div className="flex items-center gap-4">
-             <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border border-slate-200 rounded-xl">Back</Button>
+             <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border border-slate-200 rounded-none">Back to Matrix</Button>
            </div>
-           <div className="flex items-center gap-4">
-             <Button className="h-12 px-12 bg-[#001F3D] hover:bg-black text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-xl flex gap-3" onClick={handleSave}><Save className="h-4 w-4" /> Commit to Ledger</Button>
+           <div className="flex items-center gap-3">
+             <Button variant="outline" className="h-12 px-8 font-bold uppercase text-[10px] tracking-widest border border-slate-300 rounded-none hover:bg-slate-50">Save Draft</Button>
+             <Button variant="outline" className="h-12 px-8 bg-emerald-50 border-emerald-200 text-emerald-700 font-bold uppercase text-[10px] tracking-widest rounded-none flex gap-2">
+               <Printer className="h-4 w-4" /> Save & Print
+             </Button>
+             <Button className="h-12 px-16 bg-[#001F3D] hover:bg-black text-white font-bold uppercase text-[10px] tracking-[0.2em] rounded-none shadow-xl flex gap-3 group" onClick={handleSave}>
+               <Save className="h-4 w-4 transition-transform group-hover:scale-110" /> Commit to Ledger
+             </Button>
            </div>
         </div>
       </div>

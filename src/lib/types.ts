@@ -69,7 +69,8 @@ export type ViewType =
   | 'salary'
   | 'team-matrix'
   | 'delivery'
-  | 'print-templates';
+  | 'print-templates'
+  | 'product-master';
 
 export interface ViewMetadata {
   title: string;
@@ -125,6 +126,7 @@ export interface Order {
 
 export interface BillingLineItem {
   id: string;
+  productId?: string;
   description: string;
   note?: string;
   hsn: string;
@@ -135,6 +137,24 @@ export interface BillingLineItem {
   discountType: 'percentage' | 'amount';
   gstRate: number;
   total: number;
+}
+
+export interface ProductMaster {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  hsn: string;
+  gstRate: number;
+  uom: string;
+  saleRate: number;
+  purchaseRate: number;
+  drawingNumber?: string;
+  revisionNumber?: string;
+  category: string;
+  type: 'Product' | 'Service';
+  status: 'Active' | 'Inactive';
+  updatedAt: string;
 }
 
 export interface BillingRecord {

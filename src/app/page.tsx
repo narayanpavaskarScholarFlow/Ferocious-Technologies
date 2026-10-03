@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata, ProductMaster } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -108,6 +108,7 @@ const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
   'user-detail': { title: 'Identity Profile', category: 'System Governance' },
   settings: { title: 'Control Center', category: 'System Governance' },
   'print-templates': { title: 'Document Templates', category: 'System Governance' },
+  'product-master': { title: 'Product Master', category: 'Commercial Operations' },
   // Billing sub-types share the main billing metadata
   'billing-quotation': { title: 'Quotation Ledger', category: 'Commercial Operations' },
   'billing-invoice': { title: 'Invoice Ledger', category: 'Commercial Operations' },
@@ -152,7 +153,7 @@ function IndustrialERPInternal() {
   const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
   const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
-  const testQuery = useMemoFirebase(() => collection(db, 'test_connection'), [db]);
+  const productsQuery = useMemoFirebase(() => collection(db, 'products'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -168,7 +169,7 @@ function IndustrialERPInternal() {
   const { data: reportsData } = useCollection<QualityReport>(reportsQuery);
   const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
   const { data: slipsData } = useCollection<SalarySlip>(slipsQuery);
-  const { data: testData } = useCollection<any>(testQuery);
+  const { data: productsData } = useCollection<ProductMaster>(productsQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -184,6 +185,7 @@ function IndustrialERPInternal() {
   const reports = reportsData || [];
   const leaves = leavesData || [];
   const slips = slipsData || [];
+  const products = productsData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -256,7 +258,7 @@ function IndustrialERPInternal() {
         'weekly-plan': 'full', vendor: 'full', 'order-details': 'full', billing: 'full',
         'work-log': 'full', inventory: 'full', quality: 'full', settings: 'full', gantt: 'full',
         'smart-quote': 'full', 'quality-review': 'full', 'production-planner': 'full', training: 'full',
-        'team-matrix': 'full', delivery: 'full', 'print-templates': 'full',
+        'team-matrix': 'full', delivery: 'full', 'print-templates': 'full', 'product-master': 'full',
         'billing-quotation': 'full',
         'billing-invoice': 'full',
         'billing-po': 'full',
@@ -449,7 +451,7 @@ function IndustrialERPInternal() {
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} billing={billing} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={globalSystemSettings} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
-            {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} onTabChange={(tab: any) => handleViewChange(tab)} />}
+            {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db, 'billing', r.id), r, {merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} onTabChange={(tab: any) => handleViewChange(tab)} />}
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}

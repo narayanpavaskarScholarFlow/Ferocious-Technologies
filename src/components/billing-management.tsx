@@ -46,7 +46,8 @@ import {
   MoreVertical,
   Settings2,
   DollarSign,
-  Sparkles
+  Sparkles,
+  History
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -61,15 +62,6 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as ChartTooltip, 
-  ResponsiveContainer
-} from 'recharts';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -367,7 +359,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] flex flex-col overflow-hidden animate-in fade-in duration-700 font-body">
       <div className="bg-white border-b border-slate-200 shrink-0 px-2 z-50 shadow-sm">
         <div className="max-w-[1700px] mx-auto">
-          <div className="flex h-16 items-center justify-between gap-1">
+          <div className="flex h-14 items-center justify-between gap-1">
             {MAIN_TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -389,7 +381,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
       <div className="flex-1 overflow-hidden flex flex-col">
         <ScrollArea className="flex-1">
-          <div className="max-w-[1700px] mx-auto p-4 md:p-8 space-y-6">
+          <div className="max-w-[1700px] mx-auto p-4 md:p-6 space-y-6">
             
             {activeTab === 'dashboard' && (
               <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
@@ -536,7 +528,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <div className="space-y-4 animate-in fade-in duration-700">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                   <div className="flex items-center gap-4">
-                     <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl">
+                     <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-xl">
                         <Building2 className="h-6 w-6" />
                      </div>
                      <div>
@@ -592,7 +584,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <div className="space-y-4 animate-in fade-in duration-700">
                  <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                     <div className="flex items-center gap-4">
-                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl">
+                       <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-xl">
                           {(() => {
                             const Icon = MAIN_TABS.find(t => t.id === activeTab)?.icon || FileBox;
                             return <Icon className="h-6 w-6" />;
@@ -842,8 +834,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border">
                       <Label className="text-[10px] font-bold text-slate-400 uppercase">Discount:</Label>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className={cn("h-6 px-2 text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'amount' && "bg-emerald-500 text-white")}>Rs</Button>
-                        <Button variant="ghost" size="sm" className={cn("h-6 px-2 text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'percentage' && "bg-emerald-500 text-white")}>%</Button>
+                        <button className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'amount' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>Rs</button>
+                        <button className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'percentage' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>%</button>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><Settings2 className="h-4 w-4" /></Button>

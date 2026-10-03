@@ -7,34 +7,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
-  ExternalLink, 
   Plus, 
-  ChevronDown, 
-  ChevronUp, 
-  CircleDot,
-  Trash2,
-  FileSpreadsheet,
-  ArrowUp,
-  ArrowDown,
-  CheckCircle2
+  Trash2, 
+  FileSpreadsheet, 
+  ArrowUp, 
+  ArrowDown, 
+  CheckCircle2, 
+  Clock, 
+  User, 
+  Target, 
+  Building2, 
+  CalendarDays, 
+  AlertTriangle,
+  ChevronRight,
+  LayoutGrid,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
-import React from 'react';
-import { Order, RoutingOperation, SubTask, SystemUser, Vendor, Machine, QualityReport, BillingRecord } from '@/lib/types';
-import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
-import { AnnualLeaveEntry } from './manpower-utilization';
+import { Order, RoutingOperation, SystemUser, Machine } from '@/lib/types';
+import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
+import { differenceInDays, parseISO, isValid, format, isAfter } from 'date-fns';
 
 const INITIAL_STEPS = [
   "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
@@ -43,51 +39,35 @@ const INITIAL_STEPS = [
 ];
 
 const STATUS_OPTIONS = [
-  { label: "Yet to start", color: "text-purple-600 bg-purple-50 border-purple-200" },
+  { label: "Yet To Start", color: "text-slate-500 bg-slate-100 border-slate-200" },
+  { label: "In Progress", color: "text-blue-600 bg-blue-50 border-blue-200" },
   { label: "Completed", color: "text-green-600 bg-green-50 border-green-200" },
-  { label: "WIP", color: "text-blue-600 bg-blue-50 border-blue-200" },
-  { label: "Hold", color: "text-red-600 bg-red-50 border-red-200" },
-  { label: "Review Pending", color: "text-amber-600 bg-amber-50 border-amber-200" },
-  { label: "Pending", color: "text-amber-600 bg-amber-50 border-amber-200" },
-  { label: "NA", color: "text-slate-400 bg-slate-100 border-slate-200" },
+  { label: "On Hold", color: "text-amber-600 bg-amber-50 border-amber-200" },
+  { label: "Cancelled", color: "text-red-600 bg-red-50 border-red-200" },
+  { label: "NA", color: "text-slate-300 bg-slate-50 border-slate-100" },
 ];
+
+const DEPARTMENTS = ["Design", "Engineering", "Tool Room", "Quality", "Production", "Accounts", "R&D"];
 
 interface OperationsStatusProps {
   initialOrderId?: string | null;
   onOrderIdChange?: (orderId: string | null) => void;
-  onNavigateToVendor?: () => void;
-  onStatusChange?: (orderId: string, operation: string, status: string) => void;
   orders?: Order[];
   users?: SystemUser[];
-  vendors?: Vendor[];
   machines?: Machine[];
 }
 
 export function OperationsStatus({ 
   initialOrderId, 
   onOrderIdChange, 
-  onNavigateToVendor,
-  onStatusChange,
   orders = [],
   users = [],
-  vendors = [],
   machines = []
 }: OperationsStatusProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(initialOrderId || null);
   const [newOpName, setNewOpName] = useState('');
-  const [expandedOps, setExpandedOps] = useState<Record<number, boolean>>({});
-
-  const holidaysQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
-  const { data: holidaysData } = useCollection<AnnualLeaveEntry>(holidaysQuery);
-  const holidays = holidaysData || [];
-
-  const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
-  const { data: allReports } = useCollection<QualityReport>(reportsQuery);
-
-  const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
-  const { data: allBilling } = useCollection<BillingRecord>(billingQuery);
 
   const orderDocRef = useMemoFirebase(() => 
     selectedWorkOrder ? doc(db, 'orders', selectedWorkOrder) : null,
@@ -97,509 +77,356 @@ export function OperationsStatus({
   const { data: orderData } = useDoc<Order>(orderDocRef);
   const operations = orderData?.routing || [];
 
-  const formatToInputDate = (dateStr?: string) => {
-    if (!dateStr) return new Date().toISOString().split('T')[0];
-    if (dateStr.includes('-')) return dateStr;
-    const parts = dateStr.split('.');
-    if (parts.length === 3) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-    return new Date().toISOString().split('T')[0];
-  };
-
-  const orderMinDate = orderData ? formatToInputDate(orderData.startDate) : undefined;
-  const orderMaxDate = orderData ? formatToInputDate(orderData.endDate) : undefined;
-
-  const isHoliday = (dateStr: string) => {
-    if (!dateStr) return false;
-    const target = new Date(dateStr);
-    target.setHours(0, 0, 0, 0);
-    return holidays.some(h => {
-      const start = new Date(h.startDate);
-      const end = new Date(h.endDate);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      return target >= start && target <= end;
-    });
-  };
-
-  const getNextAvailableDay = (dateStr: string, days = 1) => {
-    let date = new Date(dateStr);
-    for(let i = 0; i < days; i++) {
-      date.setDate(date.getDate() + 1);
-      while (isHoliday(date.toISOString().split('T')[0])) {
-        date.setDate(date.getDate() + 1);
+  const woBounds = useMemo(() => {
+    if (!orderData) return { start: null, end: null };
+    const parse = (str?: string) => {
+      if (!str) return null;
+      if (str.includes('.')) {
+        const [d, m, y] = str.split('.');
+        return `${y}-${m}-${d}`;
       }
-    }
-    const result = date.toISOString().split('T')[0];
-    if (orderMaxDate && result > orderMaxDate) return orderMaxDate;
-    return result;
-  };
+      return str;
+    };
+    return { start: parse(orderData.startDate), end: parse(orderData.endDate) };
+  }, [orderData]);
 
-  const propagateSequentialDates = (ops: RoutingOperation[], startIndex: number) => {
-    if (startIndex < 0 || startIndex >= ops.length) return ops;
-    
-    const updated = ops.map(op => ({
-      ...op, 
-      subTasks: op.subTasks ? op.subTasks.map(st => ({...st})) : []
-    }));
+  const summary = useMemo(() => {
+    const today = new Date();
+    const activeOps = operations.filter(o => o.status !== 'NA');
+    const completed = activeOps.filter(o => o.status === 'Completed').length;
+    const pending = activeOps.filter(o => o.status === 'Yet To Start' || o.status === 'In Progress').length;
+    const delayed = activeOps.filter(o => {
+      if (o.status === 'Completed') return false;
+      const end = parseISO(o.endDate);
+      return isValid(end) && isAfter(today, end);
+    }).length;
 
-    for (let i = startIndex; i < updated.length; i++) {
-      const current = updated[i];
-      if (!current) continue;
-      
-      if (isHoliday(current.startDate)) {
-        current.startDate = getNextAvailableDay(new Date(new Date(current.startDate).getTime() - 86400000).toISOString().split('T')[0]);
-      }
+    const progress = activeOps.length > 0 
+      ? Math.round((activeOps.reduce((acc, op) => acc + (op.progress || 0), 0)) / activeOps.length) 
+      : 0;
 
-      const start = new Date(current.startDate);
-      const end = new Date(current.endDate || current.startDate);
-      const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-
-      if (current.status === 'NA') {
-        current.endDate = current.startDate;
-      } else {
-        current.endDate = getNextAvailableDay(current.startDate, durationDays);
-      }
-      
-      if (i + 1 < updated.length) {
-        updated[i + 1].startDate = current.endDate;
-      }
-    }
-    return updated;
-  };
-
-  useEffect(() => {
-    if (initialOrderId) {
-      setSelectedWorkOrder(initialOrderId);
-    }
-  }, [initialOrderId]);
+    return { total: activeOps.length, completed, pending, delayed, progress };
+  }, [operations]);
 
   const saveRouting = (newRouting: RoutingOperation[]) => {
     if (!selectedWorkOrder) return;
-
-    const enforcedRouting = newRouting.map(op => {
-      if (op.subTasks && op.subTasks.length > 0 && op.status !== 'NA') {
-        const allCompleted = op.subTasks.every(s => s.status === 'Completed' || s.isCompleted);
-        if (!allCompleted) {
-          const anyStarted = op.subTasks.some(s => s.status === 'Completed' || s.isCompleted || s.status === 'WIP');
-          if (anyStarted && op.status !== 'Hold') {
-            return { ...op, status: 'WIP' };
-          }
-        } else if (allCompleted) {
-          return { ...op, status: 'Completed' };
-        }
-      }
-      return op;
-    });
-
-    let totalApplicableTasks = 0;
-    let completedTasksCount = 0;
-
-    enforcedRouting.forEach(op => {
-      if (op.status === 'NA') return;
-
-      if (op.subTasks && op.subTasks.length > 0) {
-        totalApplicableTasks += op.subTasks.length;
-        completedTasksCount += op.subTasks.filter(s => s.status === 'Completed' || s.isCompleted).length;
-      } else {
-        totalApplicableTasks += 1;
-        if (op.status === 'Completed') {
-          completedTasksCount += 1;
-        } else if (op.status === 'WIP') {
-          completedTasksCount += 0.5;
-        }
-      }
-    });
-
-    const progress = totalApplicableTasks > 0 ? Math.round((completedTasksCount / totalApplicableTasks) * 100) : 0;
-
-    let orderStatus: Order['status'] = orderData?.status || 'Pending';
-    const opsFinished = progress === 100;
     
-    if (opsFinished) {
-      const orderReports = allReports?.filter(r => r.workOrderId === selectedWorkOrder) || [];
-      const qualityReleased = orderReports.length > 0 && orderReports.every(r => r.status === 'Released');
-      const orderBilling = allBilling?.filter(b => b.orderId === selectedWorkOrder && b.type === 'invoice') || [];
-      const billingCleared = orderBilling.length > 0 && orderBilling.every(b => b.status === 'Paid');
-
-      if (qualityReleased && billingCleared) {
-        orderStatus = 'Ready for Delivery';
-      } else {
-        orderStatus = 'Completed'; 
-      }
-    } else if (progress > 0) {
-      if (orderStatus === 'Yet to start' || orderStatus === 'Pending') {
-        orderStatus = 'Active';
-      }
-    }
+    // Auto-update overall progress based on operation completion
+    const activeOps = newRouting.filter(o => o.status !== 'NA');
+    const completedCount = activeOps.filter(o => o.status === 'Completed').length;
+    const calculatedProgress = activeOps.length > 0 ? Math.round((completedCount / activeOps.length) * 100) : 0;
 
     setDocumentNonBlocking(doc(db, 'orders', selectedWorkOrder), {
-      routing: enforcedRouting,
-      progress: progress,
-      status: orderStatus
+      routing: newRouting,
+      progress: calculatedProgress,
+      status: calculatedProgress === 100 ? 'Completed' : calculatedProgress > 0 ? 'Active' : 'Pending'
     }, { merge: true });
   };
 
-  const handleSelectChange = (val: string) => {
-    setSelectedWorkOrder(val);
-    onOrderIdChange?.(val);
-  };
-
-  const handleStartDateChange = (opId: string, idx: number, newDate: string) => {
-    if (orderMinDate && newDate < orderMinDate) return;
-    if (orderMaxDate && newDate > orderMaxDate) return;
-
-    const updated = [...operations];
-    updated[idx] = { ...updated[idx], startDate: newDate };
-    const final = propagateSequentialDates(updated, idx);
-    saveRouting(final);
-  };
-
-  const handleEndDateChange = (opId: string, idx: number, newDate: string) => {
-    if (orderMinDate && newDate < orderMinDate) return;
-    if (orderMaxDate && newDate > orderMaxDate) return;
-
-    const updated = [...operations];
-    updated[idx] = { ...updated[idx], endDate: newDate };
-    if (idx + 1 < updated.length) {
-      updated[idx + 1].startDate = newDate;
-      const final = propagateSequentialDates(updated, idx + 1);
-      saveRouting(final);
-    } else {
-      saveRouting(updated);
-    }
-  };
-
-  const moveOperation = (idx: number, direction: 'up' | 'down') => {
+  const handleUpdateOp = (idx: number, updates: Partial<RoutingOperation>) => {
     const newRouting = [...operations];
-    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= newRouting.length) return;
-    
-    [newRouting[idx], newRouting[targetIdx]] = [newRouting[targetIdx], newRouting[idx]];
-    
-    const final = propagateSequentialDates(newRouting, Math.min(idx, targetIdx));
-    saveRouting(final);
-  };
+    const op = { ...newRouting[idx], ...updates };
 
-  const handleAddOperation = () => {
-    if (newOpName) {
-      const lastOp = operations[operations.length - 1];
-      const startFrom = lastOp ? lastOp.endDate : (orderData ? formatToInputDate(orderData.startDate) : new Date().toISOString().split('T')[0]);
+    // Validation: Check bounds
+    if (updates.startDate || updates.endDate) {
+      const start = updates.startDate || op.startDate;
+      const end = updates.endDate || op.endDate;
       
-      if (orderMaxDate && startFrom >= orderMaxDate) {
-        toast({ variant: "destructive", title: "Limit Reached", description: "Timeline exceeded." });
+      if (woBounds.start && start < woBounds.start) {
+        toast({ variant: "destructive", title: "Date Validation", description: `Operation cannot start before Work Order (${woBounds.start}).` });
         return;
       }
-
-      const newOp: RoutingOperation = {
-        id: `OP-${Math.random().toString(36).substr(2, 9)}`,
-        name: newOpName,
-        startDate: startFrom,
-        endDate: getNextAvailableDay(startFrom),
-        status: "Yet to start",
-        subTasks: []
-      };
-      saveRouting([...operations, newOp]);
-      setNewOpName('');
+      if (woBounds.end && end > woBounds.end) {
+        toast({ variant: "destructive", title: "Date Validation", description: `Operation cannot end after Work Order (${woBounds.end}).` });
+        return;
+      }
+      if (start > end) {
+        toast({ variant: "destructive", title: "Logic Error", description: "Start date cannot exceed end date." });
+        return;
+      }
     }
+
+    // Sequential Dependency logic: Op N cannot start before Op N-1 ends
+    if (idx > 0 && updates.startDate) {
+      const prevEnd = operations[idx - 1].endDate;
+      if (updates.startDate < prevEnd) {
+        toast({ variant: "destructive", title: "Dependency Conflict", description: `Sequence Error: Cannot start before previous operation (${operations[idx-1].name}) finishes.` });
+        return;
+      }
+    }
+
+    newRouting[idx] = op;
+    saveRouting(newRouting);
   };
 
-  const handleAddSubTask = (idx: number, taskName: string) => {
-    if (!taskName.trim()) return;
+  const handleAddOp = () => {
+    if (!newOpName) return;
+    const lastOp = operations[operations.length - 1];
+    const startFrom = lastOp ? lastOp.endDate : (woBounds.start || new Date().toISOString().split('T')[0]);
     
-    const op = operations[idx];
-    const lastSub = op.subTasks[op.subTasks.length - 1];
-    const startFrom = lastSub ? lastSub.endDate || op.startDate : op.startDate;
-
-    if (startFrom >= op.endDate) {
-      toast({ variant: "destructive", title: "Boundary Error", description: "End date reached." });
-      return;
-    }
-
-    const calcEnd = getNextAvailableDay(startFrom);
-    const finalEnd = calcEnd > op.endDate ? op.endDate : calcEnd;
-
-    const newSubTask: SubTask = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: taskName.trim(),
+    const newOp: RoutingOperation = {
+      id: `OP-${Date.now()}`,
+      name: newOpName,
       startDate: startFrom,
-      endDate: finalEnd,
-      status: 'Yet to start',
-      isCompleted: false
+      endDate: startFrom,
+      status: "Yet To Start",
+      progress: 0,
+      subTasks: []
     };
-    
-    const updatedRouting = operations.map((op, i) => 
-      i === idx ? { ...op, subTasks: [...op.subTasks, newSubTask] } : op
-    );
-    saveRouting(updatedRouting);
+    saveRouting([...operations, newOp]);
+    setNewOpName('');
   };
 
-  const handleUpdateSubTask = (opIdx: number, subIdx: number, updates: Partial<SubTask>) => {
-    const parent = operations[opIdx];
-    const parentStart = parent.startDate;
-    const parentEnd = parent.endDate;
-
-    const updatedRouting = operations.map((op, i) => {
-      if (i !== opIdx) return op;
-      
-      const subTasks = op.subTasks.map(st => ({...st}));
-      const currentSub = { ...subTasks[subIdx] };
-
-      let nextStart = updates.startDate !== undefined ? updates.startDate : (currentSub.startDate || parentStart);
-      let nextEnd = updates.endDate !== undefined ? updates.endDate : (currentSub.endDate || nextStart);
-
-      if (nextStart < parentStart) nextStart = parentStart;
-      if (nextStart > parentEnd) nextStart = parentEnd;
-
-      if (updates.startDate !== undefined) {
-        nextEnd = getNextAvailableDay(nextStart);
-        if (nextEnd > parentEnd) nextEnd = parentEnd;
-      } else if (updates.endDate !== undefined) {
-        if (nextEnd > parentEnd) nextEnd = parentEnd;
-        if (nextEnd < nextStart) nextEnd = nextStart;
-      }
-
-      subTasks[subIdx] = { ...currentSub, ...updates, startDate: nextStart, endDate: nextEnd };
-      
-      for (let j = subIdx + 1; j < subTasks.length; j++) {
-        const prevEnd = subTasks[j-1].endDate!;
-        subTasks[j].startDate = prevEnd;
-        
-        let calcEnd = getNextAvailableDay(prevEnd);
-        if (calcEnd > parentEnd) calcEnd = parentEnd;
-        subTasks[j].endDate = calcEnd;
-      }
-
-      return { ...op, subTasks };
-    });
-    
-    saveRouting(updatedRouting);
+  const moveOp = (idx: number, dir: 'up' | 'down') => {
+    const newRouting = [...operations];
+    const target = dir === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= newRouting.length) return;
+    [newRouting[idx], newRouting[target]] = [newRouting[target], newRouting[idx]];
+    saveRouting(newRouting);
   };
 
-  const handleRemoveSubTask = (opIdx: number, taskIdx: number) => {
-    const updatedRouting = operations.map((op, i) => 
-      i === opIdx ? { ...op, subTasks: op.subTasks.filter((_, j) => j !== taskIdx) } : op
-    );
-    saveRouting(updatedRouting);
-  };
-
-  const handleLocalStatusChange = (opId: string, status: string, vendorName?: string) => {
-    let finalStatus = status;
-    if (status === 'Vendor' && vendorName) {
-      finalStatus = `Vendor: ${vendorName}`;
-    }
-    const idx = operations.findIndex(o => o.id === opId);
-    if (idx === -1) return;
-
-    const updatedRouting = operations.map(op => op.id === opId ? { ...op, status: finalStatus } : op);
-    const final = propagateSequentialDates(updatedRouting, idx);
-    saveRouting(final);
-  };
-
-  const getStatusStyles = (status?: string) => {
-    if (status?.startsWith('Vendor')) return "text-purple-600 bg-purple-50 border-purple-200";
-    const match = STATUS_OPTIONS.find(opt => opt.label === status);
-    return match?.color || "text-slate-400 bg-slate-100 border-slate-200";
+  const getDuration = (start: string, end: string) => {
+    const s = parseISO(start);
+    const e = parseISO(end);
+    if (!isValid(s) || !isValid(e)) return 0;
+    return Math.max(0, differenceInDays(e, s) + 1);
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-             <FileSpreadsheet className="h-5 w-5 text-primary" />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <header className="flex flex-col md:flex-row justify-between items-center gap-6 px-2">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-blue-900/10">
+            <FileSpreadsheet className="h-7 w-7" />
           </div>
           <div>
-            <h2 className="text-base md:text-lg font-headline font-bold uppercase text-slate-900">Spreadsheet</h2>
+            <h2 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Execution Control Matrix</h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Master Production Routing & Temporal Tracking</p>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <Select 
-            value={selectedWorkOrder || undefined} 
-            onValueChange={handleSelectChange}
-          >
-            <SelectTrigger className="w-full sm:w-[200px] h-9 bg-white text-[10px] font-bold uppercase border-slate-200 rounded-lg">
-              <SelectValue placeholder="Select WO..." />
-            </SelectTrigger>
-            <SelectContent>
-              {orders.map(order => (
-                <SelectItem key={order.id} value={order.id} className="text-[10px] font-bold uppercase">{order.id} - {order.customer}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={onNavigateToVendor} className="h-9 px-4 text-[10px] uppercase font-bold rounded-lg border-slate-200">
-            Vendors <ExternalLink className="ml-2 h-3 w-3" />
-          </Button>
-        </div>
-      </div>
+        <Select 
+          value={selectedWorkOrder || undefined} 
+          onValueChange={(val) => { setSelectedWorkOrder(val); onOrderIdChange?.(val); }}
+        >
+          <SelectTrigger className="w-full md:w-[300px] h-12 bg-white border-slate-200 rounded-xl text-[11px] font-bold uppercase shadow-sm">
+            <SelectValue placeholder="Identify Work Order Thread..." />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+            {orders.map(o => (
+              <SelectItem key={o.id} value={o.id} className="text-[10px] font-bold uppercase">WO #{o.id} - {o.customer}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </header>
 
-      <Card className="overflow-hidden border-slate-200 bg-white rounded-xl shadow-sm">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[800px]">
-            <TableHeader className="bg-slate-50/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="font-bold text-[9px] uppercase text-slate-400 py-3 px-4 w-20">Seq.</TableHead>
-                <TableHead className="font-bold text-[9px] uppercase text-slate-400">Operation</TableHead>
-                <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center w-28">Start</TableHead>
-                <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center w-28">End</TableHead>
-                <TableHead className="font-bold text-[9px] uppercase text-center w-32">Status</TableHead>
-                <TableHead className="w-10"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {selectedWorkOrder ? (
-                <>
-                  {operations.map((op, idx) => {
-                    const currentStatus = op.status || "Yet to start";
-                    const isExpanded = !!expandedOps[idx];
-                    const isNA = currentStatus === 'NA';
-                    
-                    return (
-                      <React.Fragment key={op.id}>
-                        <TableRow className={cn(
-                          "h-12 border-b border-slate-50 hover:bg-slate-50/30 group",
-                          isNA && "opacity-50 grayscale"
-                        )}>
-                          <TableCell className="px-4">
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => setExpandedOps(prev => ({ ...prev, [idx]: !prev[idx] }))}>
-                                {isExpanded ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />}
-                              </button>
-                              <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => moveOperation(idx, 'up')} disabled={idx === 0}><ArrowUp className="h-2 w-2" /></button>
-                                <button onClick={() => moveOperation(idx, 'down')} disabled={idx === operations.length - 1}><ArrowDown className="h-2 w-2" /></button>
-                              </div>
-                              <span className="text-[10px] font-bold text-slate-300">{(idx + 1).toString().padStart(2, '0')}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Select 
-                              disabled={op.name === 'QC'}
-                              value={op.name} 
-                              onValueChange={(newName) => {
-                                const updated = operations.map(o => o.id === op.id ? { ...o, name: newName } : o);
-                                saveRouting(updated);
-                              }}
-                            >
-                              <SelectTrigger className="h-7 border-none bg-transparent p-0 text-[11px] font-bold uppercase tracking-tight focus:ring-0">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {INITIAL_STEPS.map(step => (
-                                  <SelectItem key={step} value={step} className="text-[10px] font-bold uppercase">{step}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="p-0">
-                            <DatePicker 
-                              value={op.startDate}
-                              onChange={(val) => handleStartDateChange(op.id, idx, val)}
-                              className="h-8 border-none bg-transparent text-center text-[10px]"
-                            />
-                          </TableCell>
-                          <TableCell className="p-0">
-                            <DatePicker 
-                              disabled={isNA}
-                              value={op.endDate}
-                              onChange={(val) => handleEndDateChange(op.id, idx, val)}
-                              className="h-8 border-none bg-transparent text-center text-[10px]"
-                            />
-                          </TableCell>
-                          <TableCell className="px-2">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Badge variant="outline" className={cn("text-[8px] font-bold uppercase py-1 w-full justify-center rounded-md cursor-pointer", getStatusStyles(currentStatus))}>
-                                  {currentStatus}
-                                </Badge>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="w-48 text-[10px] font-bold uppercase">
-                                {STATUS_OPTIONS.map(opt => (
-                                  <DropdownMenuItem key={opt.label} onClick={() => handleLocalStatusChange(op.id, opt.label)}>{opt.label}</DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                          <TableCell className="px-4">
-                             <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-200 hover:text-red-500" onClick={() => saveRouting(operations.filter(o => o.id !== op.id))}>
-                               <Trash2 className="h-3.5 w-3.5" />
-                             </Button>
-                          </TableCell>
-                        </TableRow>
-                        
-                        {isExpanded && !isNA && (
-                          <TableRow className="bg-slate-50/20">
-                            <TableCell colSpan={6} className="pl-6 md:pl-12 py-4">
-                              <div className="space-y-3">
-                                {op.subTasks.map((task, sIdx) => (
-                                  <div key={task.id} className={cn(
-                                    "flex flex-wrap items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 transition-opacity",
-                                    (task.status === 'Completed' || task.isCompleted) && "opacity-60"
-                                  )}>
-                                    <div className="px-2">
-                                      <Checkbox 
-                                        checked={task.status === 'Completed' || task.isCompleted} 
-                                        onCheckedChange={(checked) => handleUpdateSubTask(idx, sIdx, { status: checked ? 'Completed' : 'Yet to start', isCompleted: !!checked })}
-                                      />
-                                    </div>
-                                    <Input 
-                                      defaultValue={task.name}
-                                      onBlur={(e) => handleUpdateSubTask(idx, sIdx, { name: e.target.value })}
-                                      className={cn(
-                                        "h-7 bg-slate-50 border-none text-[10px] font-bold flex-1 min-w-[120px]",
-                                        (task.status === 'Completed' || task.isCompleted) && "line-through"
-                                      )} 
-                                    />
-                                    <DatePicker value={task.startDate} onChange={(val) => handleUpdateSubTask(idx, sIdx, { startDate: val })} className="h-7 w-28 text-[9px]" />
-                                    <Select value={task.machineId} onValueChange={(val) => handleUpdateSubTask(idx, sIdx, { machineId: val })}>
-                                      <SelectTrigger className="h-7 w-32 text-[9px] bg-slate-50 border-none"><SelectValue placeholder="Resource" /></SelectTrigger>
-                                      <SelectContent className="max-h-[300px]">
-                                        {machines.map(m => <SelectItem key={m.id} value={m.id} className="text-[9px] font-bold uppercase">{m.name}</SelectItem>)}
-                                        {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[9px] font-bold uppercase">{u.name}</SelectItem>)}
-                                      </SelectContent>
-                                    </Select>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300" onClick={() => handleRemoveSubTask(idx, sIdx)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                  </div>
-                                ))}
-                                <div className="flex gap-2">
-                                  <Input 
-                                    placeholder="Add sub-task..." 
-                                    className="h-8 text-[10px] font-bold"
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { handleAddSubTask(idx, e.currentTarget.value); e.currentTarget.value = ''; } }}
-                                  />
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                  <TableRow>
-                    <TableCell colSpan={6} className="p-4 bg-slate-50/30">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <Select value={newOpName} onValueChange={setNewOpName}>
-                          <SelectTrigger className="h-9 bg-white text-[10px] font-bold uppercase sm:w-[200px]"><SelectValue placeholder="New Operation..." /></SelectTrigger>
-                          <SelectContent>
-                            {INITIAL_STEPS.map(step => <SelectItem key={step} value={step} className="text-[10px] font-bold uppercase">{step}</SelectItem>)}
+      {orderData ? (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <Card className="md:col-span-8 p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+              <div className="flex justify-between items-start relative z-10">
+                <div className="space-y-4">
+                  <div>
+                    <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold uppercase px-3 mb-2">Active Protocol</Badge>
+                    <h3 className="text-4xl font-display font-bold tracking-tighter uppercase leading-none">#{orderData.id}</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-12 gap-y-2">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-4 w-4 text-white/30" />
+                      <span className="text-xs font-bold text-white/60 uppercase">{orderData.customer}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <User className="h-4 w-4 text-white/30" />
+                      <span className="text-xs font-bold text-white/60 uppercase">{orderData.owner}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CalendarDays className="h-4 w-4 text-white/30" />
+                      <span className="text-xs font-code font-bold text-white/40">{orderData.startDate} - {orderData.endDate}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right space-y-2">
+                   <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Aggregate Completion</p>
+                   <div className="text-6xl font-display font-black text-primary tracking-tighter">{summary.progress}%</div>
+                </div>
+              </div>
+              <div className="mt-8 space-y-3 relative z-10">
+                 <div className="h-2.5 bg-white/5 rounded-full overflow-hidden p-[1px] shadow-inner">
+                    <div className="h-full bg-primary rounded-full transition-all duration-1000 shadow-[0_0_20px_rgba(var(--primary),0.5)]" style={{ width: `${summary.progress}%` }} />
+                 </div>
+              </div>
+            </Card>
+
+            <div className="md:col-span-4 grid grid-cols-2 gap-4">
+               {[
+                 { label: 'Total Nodes', val: summary.total, icon: LayoutGrid, color: 'text-blue-600', bg: 'bg-blue-50' },
+                 { label: 'Completed', val: summary.completed, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                 { label: 'Pending', val: summary.pending, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+                 { label: 'Delayed', val: summary.delayed, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-50' },
+               ].map((item) => (
+                 <Card key={item.label} className="p-6 bg-white border-slate-200 shadow-xl rounded-3xl flex flex-col justify-between group hover:border-primary transition-all">
+                    <div className={cn("p-2 rounded-xl w-fit mb-4 transition-transform group-hover:scale-110", item.bg, item.color)}>
+                       <item.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</p>
+                       <p className={cn("text-3xl font-display font-bold mt-1", item.color)}>{item.val}</p>
+                    </div>
+                 </Card>
+               ))}
+            </div>
+          </div>
+
+          <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
+            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
+               <div className="flex items-center gap-4">
+                  <div className="p-2 bg-[#001F3D] rounded-lg text-white"><ClipboardList className="h-4 w-4" /></div>
+                  <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-[0.2em]">Sequential Routing & Planning Ledger</h3>
+               </div>
+               <div className="flex items-center gap-4 w-full md:w-auto">
+                  <Select value={newOpName} onValueChange={setNewOpName}>
+                    <SelectTrigger className="w-full md:w-64 h-10 bg-white text-[10px] font-bold uppercase rounded-xl">
+                      <SelectValue placeholder="Append Sequence node..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {INITIAL_STEPS.map(step => (
+                        <SelectItem key={step} value={step} className="text-[10px] font-bold uppercase">{step}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleAddOp} className="h-10 px-8 bg-[#001F3D] hover:bg-black text-white text-[10px] font-bold uppercase rounded-xl shadow-lg flex gap-2">
+                    <Plus className="h-4 w-4" /> Add Sequence
+                  </Button>
+               </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table className="min-w-[1400px]">
+                <TableHeader className="bg-white border-b border-slate-100">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400 py-6 px-10 w-24">Seq.</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400">Operation Identity</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400">Responsible Node</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400">Department</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center">Planned Matrix</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center">Actual Matrix</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center">Dur.</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center w-24">Yield %</TableHead>
+                    <TableHead className="font-bold text-[9px] uppercase text-center w-32">Status</TableHead>
+                    <TableHead className="w-20"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {operations.map((op, idx) => (
+                    <TableRow key={op.id} className="h-20 border-slate-50 hover:bg-slate-50/50 group transition-colors">
+                      <TableCell className="px-10">
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => moveOp(idx, 'up')} disabled={idx === 0} className="hover:text-primary"><ArrowUp className="h-2.5 w-2.5" /></button>
+                            <button onClick={() => moveOp(idx, 'down')} disabled={idx === operations.length - 1} className="hover:text-primary"><ArrowDown className="h-2.5 w-2.5" /></button>
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-300">{(idx + 1).toString().padStart(2, '0')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          className="h-9 border-none bg-transparent font-bold text-xs uppercase focus-visible:ring-primary/20" 
+                          value={op.name} 
+                          onChange={(e) => handleUpdateOp(idx, { name: e.target.value })} 
+                        />
+                      </TableCell>
+                      <TableCell>
+                         <Select value={op.responsiblePersonId} onValueChange={(val) => handleUpdateOp(idx, { responsiblePersonId: val, responsiblePersonName: users.find(u => u.id === val)?.name })}>
+                            <SelectTrigger className="h-9 border-none bg-slate-100/50 text-[10px] font-bold uppercase rounded-lg px-3">
+                              <SelectValue placeholder="Identify Personnel..." />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-lg shadow-xl">
+                              {users.map(u => <SelectItem key={u.id} value={u.id} className="text-[10px] font-bold uppercase">{u.name}</SelectItem>)}
+                            </SelectContent>
+                         </Select>
+                      </TableCell>
+                      <TableCell>
+                         <Select value={op.department} onValueChange={(val) => handleUpdateOp(idx, { department: val })}>
+                            <SelectTrigger className="h-9 border-none bg-slate-100/50 text-[10px] font-bold uppercase rounded-lg px-3">
+                              <SelectValue placeholder="Dept..." />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-lg shadow-xl">
+                              {DEPARTMENTS.map(d => <SelectItem key={d} value={d} className="text-[10px] font-bold uppercase">{d}</SelectItem>)}
+                            </SelectContent>
+                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col items-center gap-2">
+                           <div className="flex gap-2">
+                             <DatePicker value={op.startDate} onChange={(val) => handleUpdateOp(idx, { startDate: val })} className="h-7 w-28 text-[8px] border-none shadow-none" />
+                             <DatePicker value={op.endDate} onChange={(val) => handleUpdateOp(idx, { endDate: val })} className="h-7 w-28 text-[8px] border-none shadow-none" />
+                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-center">
+                          <DatePicker value={op.actualStartDate} onChange={(val) => handleUpdateOp(idx, { actualStartDate: val })} className="h-7 w-28 text-[8px] border-none bg-emerald-50/30 shadow-none" placeholder="Actual Start" />
+                          <DatePicker value={op.actualEndDate} onChange={(val) => handleUpdateOp(idx, { actualEndDate: val })} className="h-7 w-28 text-[8px] border-none bg-emerald-50/30 shadow-none" placeholder="Actual End" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[9px] font-bold text-slate-400 border-slate-200">
+                          {getDuration(op.startDate, op.endDate)}d
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          type="number" 
+                          className="h-9 text-center font-bold text-xs bg-slate-50 border-none rounded-lg" 
+                          value={op.progress || 0} 
+                          onChange={(e) => handleUpdateOp(idx, { progress: Number(e.target.value) })} 
+                        />
+                      </TableCell>
+                      <TableCell className="text-center px-4">
+                        <Select value={op.status} onValueChange={(val: any) => handleUpdateOp(idx, { status: val })}>
+                          <SelectTrigger className={cn("h-9 border-none rounded-lg text-[9px] font-bold uppercase shadow-sm", STATUS_OPTIONS.find(o => o.label === op.status)?.color)}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-lg shadow-2xl">
+                            {STATUS_OPTIONS.map(opt => (
+                              <SelectItem key={opt.label} value={opt.label} className="text-[10px] font-bold uppercase">{opt.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <Button onClick={handleAddOperation} className="h-9 px-6 bg-[#001F3D] text-white text-[10px] font-bold uppercase rounded-lg">Add Sequence Node</Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </>
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-slate-400 text-xs italic">Select a Work Order Identity to initialize the operational matrix.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell className="text-right px-10">
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" onClick={() => saveRouting(operations.filter(o => o.id !== op.id))}>
+                            <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {operations.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={10} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center opacity-30">
+                           <LayoutGrid className="h-16 w-16 text-slate-300 mb-6" />
+                           <p className="text-[#001F3D] font-headline font-bold text-xl uppercase tracking-tight">Sequence Matrix Offline</p>
+                           <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">Select a routing node from the menu to initialize production planning.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
         </div>
-      </Card>
+      ) : (
+        <div className="h-[600px] flex flex-col items-center justify-center opacity-30 text-center border-4 border-dashed border-slate-200 rounded-[3rem] px-4">
+          <div className="p-12 bg-slate-100 rounded-full mb-10 shadow-inner">
+            <Target className="h-24 w-24 text-slate-300" />
+          </div>
+          <h4 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Node Target Required</h4>
+          <p className="text-sm text-slate-400 mt-4 max-w-sm mx-auto font-medium leading-relaxed">Identify a Work Order thread from the registry to initialize the operational execution matrix and sequential planning logic.</p>
+        </div>
+      )}
     </div>
   );
 }

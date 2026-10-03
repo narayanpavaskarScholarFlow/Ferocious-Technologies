@@ -91,7 +91,13 @@ export interface RoutingOperation {
   name: string;
   startDate: string;
   endDate: string;
-  status?: string;
+  actualStartDate?: string;
+  actualEndDate?: string;
+  status?: 'Yet To Start' | 'In Progress' | 'Completed' | 'On Hold' | 'Cancelled' | 'NA';
+  responsiblePersonId?: string;
+  responsiblePersonName?: string;
+  department?: string;
+  progress?: number;
   subTasks: SubTask[];
 }
 
@@ -107,7 +113,7 @@ export interface Order {
   startDate: string;
   endDate: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'Draft' | 'Planning' | 'Production' | 'Inspection' | 'Dispatch' | 'Completed' | 'Delivered';
+  status: 'Draft' | 'Planning' | 'Production' | 'Inspection' | 'Dispatch' | 'Completed' | 'Delivered' | 'Active' | 'Yet to start' | 'Pending';
   owner?: string;
   progress?: number;
   amountSpent?: string;

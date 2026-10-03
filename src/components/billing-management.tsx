@@ -51,7 +51,10 @@ import {
   Archive,
   ArchiveX,
   BarChart3,
-  ChevronDown
+  ChevronDown,
+  PieChart,
+  Package,
+  Layers
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -64,7 +67,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
-import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
+import { 
+  BarChart as ReBarChart, 
+  Bar as ReBar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as ChartTooltip, 
+  ResponsiveContainer,
+  Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
+} from 'recharts';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -97,9 +114,9 @@ const MAIN_TABS = [
   { id: 'sale', label: 'Sale Invoice', icon: FileText },
   { id: 'purchase', label: 'Purchase Invoice', icon: ShoppingCart },
   { id: 'payment', label: 'Payment', icon: Banknote },
-  { id: 'expense', label: 'Expense Income', icon: Receipt, locked: true },
-  { id: 'other', label: 'Other Documents', icon: FileBox, locked: true },
-  { id: 'report', label: 'Report', icon: FileBarChart, locked: true },
+  { id: 'expense', label: 'Expense Income', icon: Receipt },
+  { id: 'other', label: 'Other Documents', icon: FileBox },
+  { id: 'report', label: 'Report', icon: FileBarChart },
 ];
 
 export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
@@ -236,13 +253,14 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     return records.filter(r => {
       const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = (activeTab === 'sale' && r.type === 'invoice') || 
-                         (activeTab === 'purchase' && r.type === 'purchase_invoice') ||
-                         (activeTab === 'other' && !['invoice', 'purchase_invoice'].includes(r.type)) ||
-                         (activeTab === 'payment' && r.type === 'payment');
       
-      if (activeTab === 'dashboard' || activeTab === 'customer' || activeTab === 'products') return true;
-      return matchesSearch && matchesType;
+      if (activeTab === 'sale') return matchesSearch && (r.type === 'invoice' || r.type === 'sale_order' || r.type === 'quotation');
+      if (activeTab === 'purchase') return matchesSearch && (r.type === 'purchase_invoice' || r.type === 'purchase_order');
+      if (activeTab === 'payment') return matchesSearch && (r.type === 'payment');
+      if (activeTab === 'expense') return matchesSearch && (r.type === 'inward' || r.type === 'debit_note');
+      if (activeTab === 'other') return matchesSearch && ['delivery_challan', 'proforma', 'credit_note', 'outward'].includes(r.type);
+      
+      return matchesSearch;
     });
   }, [records, searchTerm, activeTab]);
 
@@ -320,418 +338,581 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               >
                 <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
                 {tab.label}
-                {tab.locked && <Lock className="h-2.5 w-2.5 text-slate-300" />}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="max-w-[1500px] mx-auto p-6 md:p-10 space-y-10">
-          
-          {activeTab === 'dashboard' && (
-            <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-              <div className="flex flex-col items-center justify-center gap-8 mb-4">
-                <div className="flex bg-white border border-slate-200 p-1 rounded-full shadow-sm">
-                  <button 
-                    onClick={() => setDashboardSubView('analytics')}
-                    className={cn(
-                      "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
-                      dashboardSubView === 'analytics' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
-                    )}
-                  >
-                    Analytics
-                  </button>
-                  <button 
-                    onClick={() => setDashboardSubView('quick-links')}
-                    className={cn(
-                      "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
-                      dashboardSubView === 'quick-links' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
-                    )}
-                  >
-                    Quick Links
-                  </button>
-                </div>
-                
-                {dashboardSubView === 'analytics' && (
-                  <div className="w-full flex flex-col md:flex-row justify-end items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <span>Last Updated {lastUpdated}</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg shadow-sm">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date().toLocaleDateString('en-GB')} TO {new Date().toLocaleDateString('en-GB')}</span>
-                      <ChevronDown className="h-3 w-3 ml-2" />
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      className="h-10 px-6 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border-none gap-3 shadow-lg"
-                      onClick={() => setLastUpdated(new Date().toLocaleTimeString())}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <ScrollArea className="flex-1">
+          <div className="max-w-[1500px] mx-auto p-6 md:p-10 space-y-10">
+            
+            {activeTab === 'dashboard' && (
+              <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
+                <div className="flex flex-col items-center justify-center gap-8 mb-4">
+                  <div className="flex bg-white border border-slate-200 p-1 rounded-full shadow-sm">
+                    <button 
+                      onClick={() => setDashboardSubView('analytics')}
+                      className={cn(
+                        "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
+                        dashboardSubView === 'analytics' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                      )}
                     >
-                      Refresh <RefreshCw className="h-4 w-4" />
-                    </Button>
+                      Analytics
+                    </button>
+                    <button 
+                      onClick={() => setDashboardSubView('quick-links')}
+                      className={cn(
+                        "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
+                        dashboardSubView === 'quick-links' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                      )}
+                    >
+                      Quick Links
+                    </button>
+                  </div>
+                  
+                  {dashboardSubView === 'analytics' && (
+                    <div className="w-full flex flex-col md:flex-row justify-end items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <span>Last Updated {lastUpdated}</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg shadow-sm">
+                        <Calendar className="h-3 w-3" />
+                        <span>{format(new Date(), "dd MMM yyyy").toUpperCase()}</span>
+                        <ChevronDown className="h-3 w-3 ml-2" />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        className="h-10 px-6 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border-none gap-3 shadow-lg"
+                        onClick={() => setLastUpdated(new Date().toLocaleTimeString())}
+                      >
+                        Refresh <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {dashboardSubView === 'analytics' ? (
+                  <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
+                        <div className="flex justify-between items-start mb-6">
+                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale</span>
+                           <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
+                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlySales.toLocaleString('en-IN')}</h3>
+                        </div>
+                        <div className="mt-10 flex gap-1">
+                           {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-1 rounded-full bg-emerald-500/20" />)}
+                        </div>
+                      </Card>
+
+                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
+                        <div className="flex justify-between items-start mb-6">
+                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase</span>
+                           <ShoppingCart className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
+                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlyPurchases.toLocaleString('en-IN')}</h3>
+                        </div>
+                        <div className="mt-10 flex gap-1">
+                           {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-1 rounded-full bg-emerald-500/20" />)}
+                        </div>
+                      </Card>
+
+                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col justify-between group">
+                        <div className="flex justify-between items-start">
+                           <div className="space-y-1">
+                              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Expense</span>
+                              <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.expense.toLocaleString('en-IN')}</p>
+                           </div>
+                           <div className="text-right space-y-1">
+                              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Income</span>
+                              <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.income.toLocaleString('en-IN')}</p>
+                           </div>
+                           <BarChart3 className="absolute right-4 bottom-4 h-6 w-6 text-slate-100" />
+                        </div>
+                        <div className="h-12 w-full flex items-center justify-center opacity-10">
+                           <div className="h-px w-full bg-slate-900" />
+                        </div>
+                      </Card>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
+                         <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Sales Outstanding</h3>
+                               <Filter className="h-3 w-3 text-slate-300" />
+                            </div>
+                         </div>
+                         <div className="space-y-4">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                               <span>Total Receivables</span>
+                               <span>₹ {analyticsData.salesOutstanding.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                               <div className="h-full bg-emerald-500" style={{ width: '100%' }} />
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-4 gap-4 pt-4">
+                            <div className="space-y-1">
+                               <span className="text-[9px] font-bold text-slate-400 uppercase">Current</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.current.toFixed(2)}</span>
+                               </div>
+                            </div>
+                            <div className="space-y-1 border-l pl-4">
+                               <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue1_15.toFixed(2)}</span>
+                               </div>
+                               <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">1-15 Days</p>
+                            </div>
+                            <div className="space-y-1">
+                               <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-orange-500" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue16_30.toFixed(2)}</span>
+                               </div>
+                               <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">16-30 Days</p>
+                            </div>
+                            <div className="space-y-1">
+                               <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-red-600" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue30Plus.toFixed(2)}</span>
+                               </div>
+                               <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">30+ Days</p>
+                            </div>
+                         </div>
+                      </Card>
+
+                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
+                         <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                               <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Purchase Outstanding</h3>
+                               <Filter className="h-3 w-3 text-slate-300" />
+                            </div>
+                         </div>
+                         <div className="space-y-4">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                               <span>Total Payables</span>
+                               <span>₹ {analyticsData.purchaseOutstanding.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                               <div className="h-full bg-emerald-500" style={{ width: '100%' }} />
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-4 gap-4 pt-4">
+                            <div className="space-y-1">
+                               <span className="text-[9px] font-bold text-slate-400 uppercase">Current</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.current.toFixed(2)}</span>
+                               </div>
+                            </div>
+                            <div className="space-y-1 border-l pl-4">
+                               <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue1_15.toFixed(2)}</span>
+                               </div>
+                               <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">1-15 Days</p>
+                            </div>
+                            <div className="space-y-1">
+                               <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-orange-500" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue16_30.toFixed(2)}</span>
+                               </div>
+                               <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">16-30 Days</p>
+                            </div>
+                            <div className="space-y-1">
+                               <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-red-600" />
+                                  <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue30Plus.toFixed(2)}</span>
+                               </div>
+                               <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">30+ Days</p>
+                            </div>
+                         </div>
+                      </Card>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+                      {DOCUMENT_TYPES.map((link) => (
+                        <Card 
+                          key={link.id} 
+                          onClick={() => handleOpenForm(link.id)}
+                          className="bg-white border-slate-200 shadow-sm hover:shadow-2xl hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
+                        >
+                          <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
+                            <link.icon className="h-8 w-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest leading-tight">{link.label}</span>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
+            )}
 
-              {dashboardSubView === 'analytics' ? (
-                <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
-                      <div className="flex justify-between items-start mb-6">
-                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale</span>
-                         <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      </div>
-                      <div className="space-y-2">
-                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
-                         <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlySales.toLocaleString('en-IN')}</h3>
-                      </div>
-                      <div className="mt-10 flex gap-1">
-                         {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-1 rounded-full bg-emerald-500/20" />)}
-                      </div>
-                    </Card>
-
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
-                      <div className="flex justify-between items-start mb-6">
-                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase</span>
-                         <ShoppingCart className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <div className="space-y-2">
-                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
-                         <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlyPurchases.toLocaleString('en-IN')}</h3>
-                      </div>
-                      <div className="mt-10 flex gap-1">
-                         {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-1 rounded-full bg-emerald-500/20" />)}
-                      </div>
-                    </Card>
-
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col justify-between group">
-                      <div className="flex justify-between items-start">
-                         <div className="space-y-1">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Expense</span>
-                            <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.expense.toLocaleString('en-IN')}</p>
-                         </div>
-                         <div className="text-right space-y-1">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Income</span>
-                            <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.income.toLocaleString('en-IN')}</p>
-                         </div>
-                         <BarChart3 className="absolute right-4 bottom-4 h-6 w-6 text-slate-100" />
-                      </div>
-                      <div className="h-12 w-full flex items-center justify-center opacity-10">
-                         <div className="h-px w-full bg-slate-900" />
-                      </div>
-                    </Card>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
-                       <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                             <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Sales Outstanding</h3>
-                             <Filter className="h-3 w-3 text-slate-300" />
-                          </div>
-                       </div>
-                       <div className="space-y-4">
-                          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                             <span>Total Receivables</span>
-                             <span>₹ {analyticsData.salesOutstanding.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                             <div className="h-full bg-emerald-500" style={{ width: '100%' }} />
-                          </div>
-                       </div>
-                       <div className="grid grid-cols-4 gap-4 pt-4">
-                          <div className="space-y-1">
-                             <span className="text-[9px] font-bold text-slate-400 uppercase">Current</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                                <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.current.toFixed(2)}</span>
-                             </div>
-                          </div>
-                          <div className="space-y-1 border-l pl-4">
-                             <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-amber-500" />
-                                <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue1_15.toFixed(2)}</span>
-                             </div>
-                             <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">1-15 Days</p>
-                          </div>
-                          <div className="space-y-1">
-                             <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-orange-500" />
-                                <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue16_30.toFixed(2)}</span>
-                             </div>
-                             <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">16-30 Days</p>
-                          </div>
-                          <div className="space-y-1">
-                             <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-red-600" />
-                                <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue30Plus.toFixed(2)}</span>
-                             </div>
-                             <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">30+ Days</p>
-                          </div>
-                       </div>
-                    </Card>
-
-                    <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
-                       <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                             <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Purchase Outstanding</h3>
-                             <Filter className="h-3 w-3 text-slate-300" />
-                          </div>
-                       </div>
-                       <div className="space-y-4">
-                          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                             <span>Total Payables</span>
-                             <span>₹ {analyticsData.purchaseOutstanding.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                             <div className="h-full bg-emerald-500" style={{ width: '100%' }} />
-                          </div>
-                       </div>
-                       <div className="grid grid-cols-4 gap-4 pt-4">
-                          <div className="space-y-1">
-                             <span className="text-[9px] font-bold text-slate-400 uppercase">Current</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                                <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.current.toFixed(2)}</span>
-                             </div>
-                          </div>
-                          <div className="space-y-1 border-l pl-4">
-                             <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-amber-500" />
-                                <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue1_15.toFixed(2)}</span>
-                             </div>
-                             <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">1-15 Days</p>
-                          </div>
-                          <div className="space-y-1">
-                             <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-orange-500" />
-                                <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue16_30.toFixed(2)}</span>
-                             </div>
-                             <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">16-30 Days</p>
-                          </div>
-                          <div className="space-y-1">
-                             <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
-                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-red-600" />
-                                <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue30Plus.toFixed(2)}</span>
-                             </div>
-                             <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">30+ Days</p>
-                          </div>
-                       </div>
-                    </Card>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-                    {DOCUMENT_TYPES.map((link) => (
-                      <Card 
-                        key={link.id} 
-                        onClick={() => handleOpenForm(link.id)}
-                        className="bg-white border-slate-200 shadow-sm hover:shadow-2xl hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
-                      >
-                        <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
-                          <link.icon className="h-8 w-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest leading-tight">{link.label}</span>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'customer' && (
-            <div className="space-y-8 animate-in fade-in duration-700">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="flex items-center gap-4">
-                   <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
-                      <Building2 className="h-6 w-6" />
-                   </div>
-                   <div>
-                      <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Global Partner Matrix (Read Only)</p>
-                   </div>
-                </div>
-                <div className="relative w-full md:w-80">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                  <Input 
-                    placeholder="Search partner by name or GST..." 
-                    className="pl-10 h-11 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm"
-                    value={partnerSearch}
-                    onChange={(e) => setPartnerSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
-                <Table>
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-b border-slate-100">
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Partner Node</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">GSTIN / Tax ID</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
-                      <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPartners.map((partner) => (
-                      <TableRow key={partner.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-50 transition-all">
-                        <TableCell className="px-10">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{partner.name}</span>
-                            <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-1">ID: {partner.id}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn(
-                            "text-[8px] font-bold uppercase px-3 py-1",
-                            partner.partnerType === 'Customer' ? "border-emerald-200 text-emerald-600 bg-emerald-50/30" : "border-blue-200 text-blue-600 bg-blue-50/30"
-                          )}>
-                            {partner.partnerType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-xs font-bold text-slate-500 font-code">{partner.gstNumber || '---'}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-bold text-slate-700">{partner.contactPerson || (partner as any).contact || '---'}</span>
-                            <span className="text-[9px] text-slate-400 font-medium">{partner.contactNumber || (partner as any).email || '---'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-bold uppercase px-3 py-1">Active</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredPartners.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-96 text-center">
-                           <div className="flex flex-col items-center justify-center opacity-30 py-10">
-                              <div className="p-10 bg-slate-50 rounded-[3rem] mb-8">
-                                 <ArchiveX className="h-20 w-20 text-slate-300" />
-                              </div>
-                              <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Identity Hub Offline</p>
-                              <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium">No partner identities detected in the master registry.</p>
-                           </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-          )}
-
-          {!['dashboard', 'customer', 'products'].includes(activeTab) && (
-            <div className="space-y-8 animate-in fade-in duration-700">
-               <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            {activeTab === 'customer' && (
+              <div className="space-y-8 animate-in fade-in duration-700">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                   <div className="flex items-center gap-4">
                      <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
-                        {MAIN_TABS.find(t => t.id === activeTab)?.icon && (
-                          (() => {
-                            const Icon = MAIN_TABS.find(t => t.id === activeTab)!.icon;
-                            return <Icon className="h-6 w-6" />;
-                          })()
-                        )}
+                        <Building2 className="h-6 w-6" />
                      </div>
                      <div>
-                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{MAIN_TABS.find(t => t.id === activeTab)?.label} Ledger</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial Commercial Registry v2.4</p>
+                        <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Global Partner Matrix (Read Only)</p>
                      </div>
                   </div>
-                  <div className="flex items-center gap-4 w-full md:w-auto">
-                     <div className="relative flex-1 md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                        <Input 
-                          placeholder="Search document no or party..." 
-                          className="pl-10 h-11 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                     </div>
-                     <Button 
-                      className="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
-                      onClick={() => handleOpenForm(activeTab === 'sale' ? 'invoice' : activeTab === 'purchase' ? 'purchase_invoice' : 'quotation')}
-                     >
-                       <Plus className="h-4 w-4" /> Create New Entry
-                     </Button>
+                  <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <Input 
+                      placeholder="Search partner by name or GST..." 
+                      className="pl-10 h-11 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm"
+                      value={partnerSearch}
+                      onChange={(e) => setPartnerSearch(e.target.value)}
+                    />
                   </div>
-               </div>
+                </div>
 
-               <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
+                <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
                   <Table>
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="hover:bg-transparent border-b border-slate-100">
-                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Window</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase text-slate-400">Identity / Party Node</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Amount (₹)</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Status</TableHead>
-                        <TableHead className="text-right px-10 w-20"></TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Partner Node</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400">GSTIN / Tax ID</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRecords.map((record) => (
-                        <TableRow key={record.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-50 group transition-all">
+                      {filteredPartners.map((partner) => (
+                        <TableRow key={partner.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-50 transition-all">
                           <TableCell className="px-10">
-                             <div className="flex flex-col">
-                                <span className="text-sm font-bold text-[#001F3D] font-code">{record.number}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">{record.date}</span>
-                             </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{partner.name}</span>
+                              <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-1">ID: {partner.id}</span>
+                            </div>
                           </TableCell>
                           <TableCell>
-                             <div className="flex flex-col">
-                                <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{record.customerName}</span>
-                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">PO: {record.orderId || '---'}</span>
-                             </div>
+                            <Badge variant="outline" className={cn(
+                              "text-[8px] font-bold uppercase px-3 py-1",
+                              partner.partnerType === 'Customer' ? "border-emerald-200 text-emerald-600 bg-emerald-50/30" : "border-blue-200 text-blue-600 bg-blue-50/30"
+                            )}>
+                              {partner.partnerType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs font-bold text-slate-500 font-code">{partner.gstNumber || '---'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold text-slate-700">{partner.contactPerson || (partner as any).contact || '---'}</span>
+                              <span className="text-[9px] text-slate-400 font-medium">{partner.contactNumber || (partner as any).email || '---'}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
-                             <span className="text-lg font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                             <Badge className={cn(
-                               "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm",
-                               record.status === 'Paid' || record.status === 'Completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
-                             )}>{record.status}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right px-10">
-                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl" onClick={() => handleOpenForm(record.type, record)}><Edit3 className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => onDeleteRecord(record.id)}><Trash2 className="h-4 w-4" /></Button>
-                             </div>
+                            <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-bold uppercase px-3 py-1">Active</Badge>
                           </TableCell>
                         </TableRow>
                       ))}
-                      {filteredRecords.length === 0 && (
+                      {filteredPartners.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={5} className="h-96 text-center">
                              <div className="flex flex-col items-center justify-center opacity-30 py-10">
                                 <div className="p-10 bg-slate-50 rounded-[3rem] mb-8">
                                    <ArchiveX className="h-20 w-20 text-slate-300" />
                                 </div>
-                                <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Ledger Matrix Null</p>
-                                <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">No commercial records detected for this node classification.</p>
+                                <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Identity Hub Offline</p>
+                                <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium">No partner identities detected in the master registry.</p>
                              </div>
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
-               </Card>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'products' && (
+               <div className="space-y-8 animate-in fade-in duration-700">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                          <Package className="h-6 w-6" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Products & Services Matrix</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Master Billable Ledger</p>
+                       </div>
+                    </div>
+                    <Button className="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3">
+                       <Plus className="h-4 w-4" /> Add Product/Service
+                    </Button>
+                  </div>
+                  
+                  <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-[2.5rem] text-center opacity-30">
+                     <Layers className="h-20 w-20 text-slate-300 mb-6" />
+                     <p className="text-[#001F3D] font-headline font-bold text-xl uppercase tracking-tight">Billable Node Placeholder</p>
+                     <p className="text-xs text-slate-400 mt-2 max-w-xs font-medium">Initialize your commercial catalog by registering specific machining products or job-work services.</p>
+                  </Card>
+               </div>
+            )}
+
+            {activeTab === 'payment' && (
+               <div className="space-y-8 animate-in fade-in duration-700">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                          <Banknote className="h-6 w-6" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Payment Ledger</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Inbound & Outbound Settlement Registry</p>
+                       </div>
+                    </div>
+                    <Button className="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3">
+                       <Plus className="h-4 w-4" /> Record Payment
+                    </Button>
+                  </div>
+                  
+                  <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-[2.5rem] text-center opacity-30">
+                     <Wallet className="h-20 w-20 text-slate-300 mb-6" />
+                     <p className="text-[#001F3D] font-headline font-bold text-xl uppercase tracking-tight">Temporal Settlement Matrix</p>
+                     <p className="text-xs text-slate-400 mt-2 max-w-xs font-medium">Awaiting first payment signal to synchronize the commercial ledger.</p>
+                  </Card>
+               </div>
+            )}
+
+            {activeTab === 'expense' && (
+               <div className="space-y-8 animate-in fade-in duration-700">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                          <Receipt className="h-6 w-6" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Expense Management</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Operational Burn & Outward Matrix</p>
+                       </div>
+                    </div>
+                    <Button className="h-11 px-8 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3">
+                       <Plus className="h-4 w-4" /> Log Expense
+                    </Button>
+                  </div>
+                  
+                  <Card className="p-20 flex flex-col items-center justify-center bg-white border-slate-200 rounded-[2.5rem] text-center opacity-30">
+                     <TrendingUp className="h-20 w-20 text-slate-300 mb-6" />
+                     <p className="text-[#001F3D] font-headline font-bold text-xl uppercase tracking-tight">Operational Burn Registry</p>
+                     <p className="text-xs text-slate-400 mt-2 max-w-xs font-medium">Log your industrial overheads, consumables, and sub-contracting fees here.</p>
+                  </Card>
+               </div>
+            )}
+
+            {activeTab === 'other' && (
+               <div className="space-y-8 animate-in fade-in duration-700">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                          <FileBox className="h-6 w-6" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Auxiliary Documents</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Proforma, DC & Credit/Debit Ledger</p>
+                       </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {['quotation', 'proforma', 'delivery_challan', 'credit_note', 'debit_note'].map(type => {
+                      const count = records.filter(r => r.type === type).length;
+                      const icon = DOCUMENT_TYPES.find(d => d.id === type)?.icon || FileBox;
+                      const Icon = icon;
+                      return (
+                        <Card key={type} className="p-6 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all shadow-sm">
+                           <div className="flex items-center gap-4">
+                              <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-emerald-50 transition-colors"><Icon className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" /></div>
+                              <div className="flex flex-col">
+                                 <span className="text-xs font-bold text-slate-700 uppercase">{type.replace('_', ' ')}</span>
+                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{count} Records</span>
+                              </div>
+                           </div>
+                           <Button variant="ghost" size="icon" className="text-slate-300 group-hover:text-emerald-500" onClick={() => handleOpenForm(type)}><Plus className="h-4 w-4" /></Button>
+                        </Card>
+                      )
+                    })}
+                  </div>
+               </div>
+            )}
+
+            {activeTab === 'report' && (
+               <div className="space-y-10 animate-in fade-in duration-700">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                          <FileBarChart className="h-6 w-6" />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Commercial Analytics</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Command-Level Performance Insights</p>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                     <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-8">Yield Analysis (Last 6 Months)</h4>
+                        <div className="h-[300px] w-full">
+                           <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={[
+                                 { name: 'Sep', value: 450000 },
+                                 { name: 'Oct', value: 520000 },
+                                 { name: 'Nov', value: 480000 },
+                                 { name: 'Dec', value: 610000 },
+                                 { name: 'Jan', value: 550000 },
+                                 { name: 'Feb', value: analyticsData.monthlySales },
+                              ]}>
+                                 <defs>
+                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                                       <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                    </linearGradient>
+                                 </defs>
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} dy={10} />
+                                 <YAxis hide />
+                                 <ChartTooltip />
+                                 <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                              </AreaChart>
+                           </ResponsiveContainer>
+                        </div>
+                     </Card>
+
+                     <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col justify-center items-center text-center opacity-30">
+                        <PieChart className="h-20 w-20 text-slate-300 mb-6" />
+                        <p className="text-sm font-bold uppercase tracking-widest text-[#001F3D]">Profitability Matrix Coming Soon</p>
+                        <p className="text-[9px] text-slate-400 mt-2 max-w-xs font-medium uppercase">AI Engine is compiling historical data to identify net margin trends.</p>
+                     </Card>
+                  </div>
+               </div>
+            )}
+
+            {!['dashboard', 'customer', 'products', 'payment', 'expense', 'other', 'report'].includes(activeTab) && (
+              <div className="space-y-8 animate-in fade-in duration-700">
+                 <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                          {MAIN_TABS.find(t => t.id === activeTab)?.icon && (
+                            (() => {
+                              const Icon = MAIN_TABS.find(t => t.id === activeTab)!.icon;
+                              return <Icon className="h-6 w-6" />;
+                            })()
+                          )}
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{MAIN_TABS.find(t => t.id === activeTab)?.label} Ledger</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Industrial Commercial Registry v2.4</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                       <div className="relative flex-1 md:w-80">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          <Input 
+                            placeholder="Search document no or party..." 
+                            className="pl-10 h-11 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                       </div>
+                       <Button 
+                        className="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
+                        onClick={() => handleOpenForm(activeTab === 'sale' ? 'invoice' : activeTab === 'purchase' ? 'purchase_invoice' : 'quotation')}
+                       >
+                         <Plus className="h-4 w-4" /> Create New Entry
+                       </Button>
+                    </div>
+                 </div>
+
+                 <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow className="hover:bg-transparent border-b border-slate-100">
+                          <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Window</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase text-slate-400">Identity / Party Node</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Amount (₹)</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Status</TableHead>
+                          <TableHead className="text-right px-10 w-20"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRecords.map((record) => (
+                          <TableRow key={record.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-50 group transition-all">
+                            <TableCell className="px-10">
+                               <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-[#001F3D] font-code">{record.number}</span>
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">{record.date}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell>
+                               <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{record.customerName}</span>
+                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">PO: {record.orderId || '---'}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                               <span className="text-lg font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                               <Badge className={cn(
+                                 "text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm",
+                                 record.status === 'Paid' || record.status === 'Completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
+                               )}>{record.status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right px-10">
+                               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-primary rounded-xl" onClick={() => handleOpenForm(record.type, record)}><Edit3 className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500 rounded-xl" onClick={() => onDeleteRecord(record.id)}><Trash2 className="h-4 w-4" /></Button>
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {filteredRecords.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="h-96 text-center">
+                               <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                                  <div className="p-10 bg-slate-50 rounded-[3rem] mb-8">
+                                     <ArchiveX className="h-20 w-20 text-slate-300" />
+                                  </div>
+                                  <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Ledger Matrix Null</p>
+                                  <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium">No commercial records detected for this node classification.</p>
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                 </Card>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
 
       {/* Main Billing Form Dialog */}
       <Dialog open={isRecordFormOpen} onOpenChange={setIsRecordFormOpen}>

@@ -32,7 +32,8 @@ import {
   Save,
   Search,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  LayoutGrid
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -284,7 +285,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               onClick={() => setViewMode('quick-links')}
               className={cn(
                 "px-8 h-9 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-                viewMode === 'quick-links' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400"
+                viewMode === 'quick-links' ? "bg-emerald-50 text-white shadow-lg" : "text-slate-400"
               )}
             >
               Quick Links
@@ -505,7 +506,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                            <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Place of Supply</Label>
                            <Input 
                             placeholder="e.g. Maharashtra" 
-                            className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase" 
+                            className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase" 
                             value={formData.placeOfSupply}
                             onChange={(e) => setFormData({...formData, placeOfSupply: e.target.value})}
                            />

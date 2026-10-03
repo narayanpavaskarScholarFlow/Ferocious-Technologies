@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -43,8 +44,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 
@@ -151,16 +150,20 @@ function IndustrialERPInternal() {
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
-    if (!currentUser || !usersData) return null;
-    return usersData.find(u => u.name?.toLowerCase() === currentUser.toLowerCase() || u.email?.toLowerCase() === currentUser.toLowerCase() || u.username?.toLowerCase() === currentUser.toLowerCase());
+    if (!currentUser || !usersData || usersData.length === 0) return null;
+    return usersData.find(u => 
+      u.name?.toLowerCase() === currentUser.toLowerCase() || 
+      u.email?.toLowerCase() === currentUser.toLowerCase() || 
+      u.username?.toLowerCase() === currentUser.toLowerCase()
+    );
   }, [currentUser, usersData]);
 
   const masterAdmin = useMemo(() => {
+    if (!usersData || usersData.length === 0) return null;
     return usersData.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin');
   }, [usersData]);
 
   const brandLogo = useMemo(() => {
-    // Priority: Master Admin custom logo > Default placeholder
     const masterLogo = masterAdmin?.uiSettings?.brandLogo;
     return masterLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
   }, [masterAdmin]);
@@ -181,16 +184,18 @@ function IndustrialERPInternal() {
     const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
     setUISettings(targetSettings);
     
-    document.documentElement.style.setProperty('--base-font-size', `${targetSettings.fontSize}px`);
-    document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
-    document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
-    
-    const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
-    document.documentElement.style.setProperty('--table-cell-padding', densityMap[targetSettings.tableDensity]);
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--base-font-size', `${targetSettings.fontSize}px`);
+      document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
+      document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
+      
+      const densityMap = { compact: '0.5rem', standard: '1rem', comfortable: '1.5rem' };
+      document.documentElement.style.setProperty('--table-cell-padding', densityMap[targetSettings.tableDensity]);
+    }
   }, [currentUserData?.uiSettings]);
 
   const isReportingManager = useMemo(() => {
-    if (!currentUser) return false;
+    if (!currentUser || !usersData) return false;
     return usersData.some(u => u.reportingManager === currentUser);
   }, [usersData, currentUser]);
 
@@ -333,7 +338,6 @@ function IndustrialERPInternal() {
       "flex min-h-screen bg-background text-slate-900 font-body overflow-hidden print:h-auto print:block print:bg-white",
       uiSettings.labelCase === 'uppercase' ? "labels-uppercase" : "labels-capitalize"
     )}>
-      {/* Desktop Sidebar */}
       <div className={cn("hidden lg:block print:hidden transition-all duration-500", isSlimSidebar ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 

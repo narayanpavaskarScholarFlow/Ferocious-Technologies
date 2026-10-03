@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -51,7 +52,10 @@ import {
   Coins,
   ImageIcon,
   Upload,
-  Send
+  Send,
+  TableProperties,
+  ArrowLeft,
+  BookOpen
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -102,6 +106,55 @@ const MAIN_TABS = [
   { id: 'report', label: 'Report', icon: FileBarChart },
 ];
 
+const REPORT_STRUCTURE = [
+  {
+    title: 'Sales Reports',
+    items: [
+      { id: 'sales', label: 'Sales', type: 'invoice' },
+      { id: 'sales_outstanding', label: 'Sales Outstanding', type: 'invoice', status: 'Pending' },
+      { id: 'sales_product', label: 'Sales Product Report', type: 'invoice' },
+      { id: 'inward_payment', label: 'Inward Payment', type: 'inward_payment' },
+    ]
+  },
+  {
+    title: 'Purchase Reports',
+    items: [
+      { id: 'purchase', label: 'Purchase', type: 'purchase_invoice' },
+      { id: 'purchase_outstanding', label: 'Purchase Outstanding', type: 'purchase_invoice', status: 'Pending' },
+      { id: 'purchase_product', label: 'Purchase Product Report', type: 'purchase_invoice' },
+      { id: 'outward_payment', label: 'Outward Payment', type: 'outward_payment' },
+    ]
+  },
+  {
+    title: 'Other Reports',
+    items: [
+      { id: 'other_document', label: 'Other Document', type: 'quotation' },
+      { id: 'other_document_product', label: 'Other Document Product Report', type: 'quotation' },
+      { id: 'company_ledger', label: 'Company Ledger', type: 'all' },
+      { id: 'company_outstanding', label: 'Company Outstanding', type: 'all', status: 'Pending' },
+      { id: 'p_l', label: 'Profit & Loss Report', type: 'all' },
+      { id: 'bill_p_l', label: 'Bill Wise Profit & Loss', type: 'invoice' },
+      { id: 'product_p_l', label: 'Product Wise Profit & Loss', type: 'invoice' },
+      { id: 'customer_p_l', label: 'Customer Wise Profit & Loss', type: 'invoice' },
+      { id: 'day_p_l', label: 'Day Wise Profit & Loss', type: 'invoice' },
+      { id: 'stock_report', label: 'Stock Report', type: 'all' },
+      { id: 'manufacture_report', label: 'Manufacture Report', type: 'all' },
+      { id: 'product_report', label: 'Product Report', type: 'all' },
+      { id: 'daily_expenses', label: 'Daily Expenses', type: 'outward_payment' },
+      { id: 'other_income', label: 'Other Income', type: 'inward_payment' },
+      { id: 'daybook', label: 'Daybook', type: 'all' },
+    ]
+  },
+  {
+    title: 'GST Reports',
+    items: [
+      { id: 'gstr1', label: 'GSTR-1', type: 'invoice' },
+      { id: 'gstr2b', label: 'GSTR-2B', type: 'purchase_invoice' },
+      { id: 'gstr3b', label: 'GSTR-3B', type: 'all' },
+    ]
+  }
+];
+
 export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -113,6 +166,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   
   const [searchTerm, setSearchTerm] = useState('');
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
+
+  // Report State
+  const [activeReportId, setActiveReportId] = useState('sales');
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
 
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '',
@@ -288,6 +346,37 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
   }, [records, searchTerm, activeTab]);
 
+  const reportRecords = useMemo(() => {
+    if (activeTab !== 'report') return [];
+    
+    let currentReportItem: any = null;
+    REPORT_STRUCTURE.forEach(cat => {
+      const found = cat.items.find(i => i.id === activeReportId);
+      if (found) currentReportItem = found;
+    });
+
+    if (!currentReportItem) return [];
+
+    return records.filter(r => {
+      let matches = true;
+      if (currentReportItem.type !== 'all' && r.type !== currentReportItem.type) matches = false;
+      if (currentReportItem.status && r.status !== currentReportItem.status) matches = false;
+      
+      if (reportStartDate && r.date < reportStartDate) matches = false;
+      if (reportEndDate && r.date > reportEndDate) matches = false;
+      
+      return matches;
+    });
+  }, [records, activeReportId, activeTab, reportStartDate, reportEndDate]);
+
+  const reportAggregates = useMemo(() => {
+    return {
+      taxable: reportRecords.reduce((acc, r) => acc + ((r.subTotal || 0) - (r.discountTotal || 0)), 0),
+      tax: reportRecords.reduce((acc, r) => acc + (r.taxTotal || 0), 0),
+      total: reportRecords.reduce((acc, r) => acc + (r.amount || 0), 0)
+    };
+  }, [reportRecords]);
+
   const analyticsData = useMemo(() => {
     const now = new Date();
     const currentMonthInterval = { start: startOfMonth(now), end: endOfMonth(now) };
@@ -324,7 +413,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   return (
     <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] flex flex-col overflow-hidden animate-in fade-in duration-700 font-body">
-      <div className="bg-white border-b border-slate-200 shrink-0 px-1 z-50 shadow-sm overflow-x-hidden">
+      <div className="bg-white border-b border-slate-200 shrink-0 px-1 z-50 shadow-sm overflow-x-hidden no-print">
         <div className="max-w-[1700px] mx-auto">
           <div className="flex h-12 items-center justify-between gap-0.5">
             {MAIN_TABS.map((tab) => (
@@ -465,6 +554,127 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               </div>
             )}
 
+            {activeTab === 'report' && (
+              <div className="h-[calc(100vh-140px)] flex gap-0 animate-in fade-in duration-700 no-print">
+                {/* Side Report Navigator */}
+                <div className="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto hide-scrollbar">
+                  <div className="p-6 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><FileBarChart className="h-4 w-4" /></div>
+                      <h4 className="text-xs font-bold text-[#001F3D] uppercase tracking-widest">Report Matrix</h4>
+                    </div>
+                  </div>
+                  <div className="p-2 space-y-6 py-6">
+                    {REPORT_STRUCTURE.map((cat) => (
+                      <div key={cat.title} className="space-y-1">
+                        <div className="px-4 py-2 bg-emerald-50/50 rounded-lg">
+                          <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">{cat.title}</h5>
+                        </div>
+                        <div className="space-y-0.5 pt-1">
+                          {cat.items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => setActiveReportId(item.id)}
+                              className={cn(
+                                "w-full text-left px-4 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-all",
+                                activeReportId === item.id 
+                                  ? "bg-[#001F3D] text-white shadow-lg shadow-blue-900/10" 
+                                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                              )}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Report Display Node */}
+                <div className="flex-1 flex flex-col bg-white overflow-hidden">
+                  <div className="p-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
+                        {(() => {
+                          let label = '';
+                          REPORT_STRUCTURE.forEach(c => c.items.forEach(i => { if(i.id === activeReportId) label = i.label; }));
+                          return label;
+                        })()}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                       <div className="flex items-center gap-2 bg-white border border-slate-200 p-1 rounded-xl shadow-sm">
+                          <DatePicker 
+                            value={reportStartDate} 
+                            onChange={setReportStartDate} 
+                            placeholder="Start Date" 
+                            className="h-9 border-none bg-transparent w-36" 
+                          />
+                          <div className="h-4 w-px bg-slate-200" />
+                          <DatePicker 
+                            value={reportEndDate} 
+                            onChange={setReportEndDate} 
+                            placeholder="End Date" 
+                            className="h-9 border-none bg-transparent w-36" 
+                          />
+                       </div>
+                       <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold uppercase text-[9px] gap-2 border-slate-200 shadow-sm" onClick={() => window.print()}>
+                          <Printer className="h-3.5 w-3.5" /> Print Protocol
+                       </Button>
+                    </div>
+                  </div>
+
+                  <ScrollArea className="flex-1">
+                    <div className="p-8">
+                       <Table>
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow className="border-b-2 border-slate-200">
+                              <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Ref</TableHead>
+                              <TableHead className="font-bold text-[10px] uppercase text-slate-400">Party Node</TableHead>
+                              <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Date</TableHead>
+                              <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Taxable</TableHead>
+                              <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Tax</TableHead>
+                              <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right px-10">Net Amount</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {reportRecords.map((r) => (
+                              <TableRow key={r.id} className="h-16 border-b border-slate-50 hover:bg-slate-50/30">
+                                <TableCell className="px-10 font-code font-bold text-xs text-primary">{r.number}</TableCell>
+                                <TableCell className="text-[11px] font-bold text-slate-700 uppercase">{r.customerName}</TableCell>
+                                <TableCell className="text-center font-code text-[10px] text-slate-400">{r.date}</TableCell>
+                                <TableCell className="text-right font-display text-xs font-bold text-slate-600">₹ {((r.subTotal || 0) - (r.discountTotal || 0)).toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-display text-xs font-bold text-slate-600">₹ {(r.taxTotal || 0).toLocaleString()}</TableCell>
+                                <TableCell className="text-right px-10 font-display text-sm font-black text-[#001F3D]">₹ {(r.amount || 0).toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
+                            {reportRecords.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={6} className="h-64 text-center opacity-30">
+                                   <div className="flex flex-col items-center gap-4">
+                                      <ArchiveX className="h-12 w-12 text-slate-300" />
+                                      <p className="text-xs font-bold uppercase tracking-[0.2em]">Query Yield Null</p>
+                                   </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                            {reportRecords.length > 0 && (
+                              <TableRow className="bg-emerald-50/30 border-t-2 border-emerald-500">
+                                <TableCell colSpan={3} className="text-right font-black uppercase text-[10px] text-emerald-800">Report Aggregate Matrix:</TableCell>
+                                <TableCell className="text-right font-display text-sm font-bold text-emerald-800">₹ {reportAggregates.taxable.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-display text-sm font-bold text-emerald-800">₹ {reportAggregates.tax.toLocaleString()}</TableCell>
+                                <TableCell className="text-right px-10 font-display text-lg font-black text-emerald-900">₹ {reportAggregates.total.toLocaleString()}</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                       </Table>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            )}
+
             {!['dashboard', 'customer', 'products', 'report'].includes(activeTab) && (
               <div className="space-y-4 animate-in fade-in duration-700">
                  <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
@@ -502,7 +712,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Doc Window</TableHead>
                         <TableHead className="font-bold text-[10px] uppercase text-slate-400">Identity / Party Node</TableHead>
                         <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Amount (₹)</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase text-center">Status</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase text-center text-slate-400">Status</TableHead>
                         <TableHead className="text-right px-10 w-20"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -551,7 +761,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           <ScrollArea className="flex-1">
             {isPaymentType ? (
               <div className="p-10 space-y-8 bg-white max-w-3xl mx-auto mt-6 mb-10 rounded-2xl shadow-sm border border-slate-100">
-                 {/* Receipt Number Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Receipt No <span className="text-red-500">*</span></Label>
                     <div className="col-span-9 flex gap-3">
@@ -561,7 +770,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Company Name Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Company Name <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
@@ -582,7 +790,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Address Row */}
                  <div className="grid grid-cols-12 items-start gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase mt-4">Address</Label>
                     <div className="col-span-9">
@@ -590,7 +797,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* GSTIN Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">GSTIN / PAN</Label>
                     <div className="col-span-9">
@@ -598,7 +804,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Outstanding Display */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Total Outstanding</Label>
                     <div className="col-span-9">
@@ -606,7 +811,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Payment Date Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Payment Date <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
@@ -614,7 +818,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Amount Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Amount <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
@@ -622,7 +825,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Payment Type Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Payment Type <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
@@ -633,7 +835,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Share Checkboxes Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Share</Label>
                     <div className="col-span-9 flex items-center gap-10">
@@ -648,7 +849,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Remarks Row */}
                  <div className="grid grid-cols-12 items-center gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Remarks</Label>
                     <div className="col-span-9">
@@ -656,7 +856,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 {/* Attachment Area */}
                  <div className="grid grid-cols-12 items-start gap-6">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase mt-4">Attachment</Label>
                     <div className="col-span-9">

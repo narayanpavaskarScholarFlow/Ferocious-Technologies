@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -71,18 +70,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-
-interface BillingManagementProps {
-  customers: Customer[];
-  vendors: Vendor[];
-  records: BillingRecord[];
-  orders: Order[];
-  users: SystemUser[];
-  permissions?: Record<string, PermissionLevel>;
-  onSaveRecord: (record: BillingRecord) => void;
-  onDeleteRecord: (id: string) => void;
-  uiSettings: UISettings;
-}
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'Quotation', icon: FileBox, prefix: 'QT' },
@@ -165,7 +152,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const [editingRecordId, setEditingLogId] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
 
   // Report State
   const [activeReportId, setActiveReportId] = useState('sales');
@@ -746,31 +732,28 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
       <Dialog open={isRecordFormOpen} onOpenChange={setIsRecordFormOpen}>
         <DialogContent className={cn("bg-[#F8FAFC] border-none shadow-2xl rounded-[1.5rem] p-0 overflow-hidden flex flex-col", isPaymentType ? "max-w-4xl h-[92vh]" : "max-w-7xl h-[94vh]")}>
-          <DialogHeader className="p-6 bg-white border-b flex items-center justify-between shrink-0">
+          <DialogHeader className="p-4 bg-white border-b flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
-              <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                {isPaymentType ? <ArrowDownLeft className="h-5 w-5" /> : (MAIN_TABS.find(d => d.id === activeRecordType)?.icon ? <Receipt className="h-5 w-5" /> : <Plus className="h-5 w-5" />)}
-              </div>
-              <DialogTitle className="text-xl font-headline font-bold text-slate-800 uppercase tracking-tight">
+              <DialogTitle className="text-lg font-headline font-bold text-slate-800 uppercase tracking-tight">
                 {editingRecordId ? 'Edit' : 'Create'} {MAIN_TABS.find(d => d.id === activeRecordType)?.label}
               </DialogTitle>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full h-10 w-10 text-slate-400 hover:text-red-500"><X className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full h-8 w-8 text-slate-400 hover:text-red-500"><X className="h-5 w-5" /></Button>
           </DialogHeader>
 
           <ScrollArea className="flex-1">
             {isPaymentType ? (
-              <div className="p-10 space-y-8 bg-white max-w-3xl mx-auto mt-6 mb-10 rounded-2xl shadow-sm border border-slate-100">
-                 <div className="grid grid-cols-12 items-center gap-6">
+              <div className="p-6 space-y-6 bg-white max-w-3xl mx-auto mt-4 mb-6 rounded-2xl shadow-sm border border-slate-100">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Receipt No <span className="text-red-500">*</span></Label>
-                    <div className="col-span-9 flex gap-3">
-                       <Input className="h-10 bg-slate-50 border-slate-200 text-[10px] font-bold w-32 uppercase px-4" placeholder="Receipt Prefix" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
-                       <Input className="h-10 bg-white border-slate-200 text-xs font-bold flex-1 px-4" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
-                       <Input className="h-10 bg-slate-50 border-slate-200 text-[10px] font-bold w-32 uppercase px-4" placeholder="Receipt Postfix" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
+                    <div className="col-span-9 flex gap-2">
+                       <Input className="h-9 bg-slate-50 border-slate-200 text-[10px] font-bold w-28 uppercase px-3" placeholder="Receipt Prefix" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
+                       <Input className="h-9 bg-white border-slate-200 text-xs font-bold flex-1 px-3" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                       <Input className="h-9 bg-slate-50 border-slate-200 text-[10px] font-bold w-28 uppercase px-3" placeholder="Receipt Postfix" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Company Name <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
                       <Select 
@@ -780,7 +763,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                           setFormData({...formData, customerId: id, customerName: identity?.name || ''});
                         }}
                       >
-                        <SelectTrigger className="h-12 bg-white border-slate-200 rounded-md text-xs font-bold uppercase">
+                        <SelectTrigger className="h-10 bg-white border-slate-200 rounded-md text-xs font-bold uppercase">
                           <SelectValue placeholder="Identify Partner..." />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
@@ -790,93 +773,93 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-start gap-6">
-                    <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase mt-4">Address</Label>
+                 <div className="grid grid-cols-12 items-start gap-4">
+                    <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase mt-3">Address</Label>
                     <div className="col-span-9">
-                       <Textarea className="min-h-[80px] bg-slate-100 border-none rounded-md p-4 text-xs font-medium resize-none" readOnly placeholder="Address matrix node..." value={formData.shipTo} />
+                       <Textarea className="min-h-[60px] bg-slate-100 border-none rounded-md p-3 text-xs font-medium resize-none" readOnly placeholder="Address matrix node..." value={formData.shipTo} />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">GSTIN / PAN</Label>
                     <div className="col-span-9">
-                       <Input className="h-12 bg-slate-100 border-none rounded-md px-4 font-code text-xs font-bold" readOnly />
+                       <Input className="h-10 bg-slate-100 border-none rounded-md px-3 font-code text-xs font-bold" readOnly />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Total Outstanding</Label>
                     <div className="col-span-9">
                        <span className="text-sm font-display font-bold text-[#001F3D]">₹ 0.00</span>
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Payment Date <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
-                       <DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} placeholder="Enter your payment date" className="h-12 rounded-md border-slate-200 bg-white" />
+                       <DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} placeholder="Enter your payment date" className="h-10 rounded-md border-slate-200 bg-white" />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Amount <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
-                       <Input type="number" placeholder="Enter your amount" className="h-12 border-slate-200 rounded-md px-4 text-sm font-bold" value={formData.amount} onChange={(e)=>setFormData({...formData, amount: Number(e.target.value)})} />
+                       <Input type="number" placeholder="Enter your amount" className="h-10 border-slate-200 rounded-md px-3 text-sm font-bold" value={formData.amount} onChange={(e)=>setFormData({...formData, amount: Number(e.target.value)})} />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Payment Type <span className="text-red-500">*</span></Label>
                     <div className="col-span-9">
                        <Select value={formData.paymentMethod} onValueChange={(val: any) => setFormData({...formData, paymentMethod: val})}>
-                          <SelectTrigger className="h-12 border-slate-200 rounded-md text-xs font-bold uppercase"><SelectValue placeholder="Select Payment Type" /></SelectTrigger>
+                          <SelectTrigger className="h-10 border-slate-200 rounded-md text-xs font-bold uppercase"><SelectValue placeholder="Select Payment Type" /></SelectTrigger>
                           <SelectContent className="rounded-xl"><SelectItem value="Cash">Cash</SelectItem><SelectItem value="Bank Transfer">Bank Transfer</SelectItem></SelectContent>
                        </Select>
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Share</Label>
-                    <div className="col-span-9 flex items-center gap-10">
-                       <div className="flex items-center space-x-3">
+                    <div className="col-span-9 flex items-center gap-8">
+                       <div className="flex items-center space-x-2">
                           <Checkbox id="email-share" />
                           <Label htmlFor="email-share" className="text-xs font-bold text-slate-500 cursor-pointer">Email</Label>
                        </div>
-                       <div className="flex items-center space-x-3">
+                       <div className="flex items-center space-x-2">
                           <Checkbox id="sms-share" />
                           <Label htmlFor="sms-share" className="text-xs font-bold text-slate-500 cursor-pointer">SMS</Label>
                        </div>
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-center gap-6">
+                 <div className="grid grid-cols-12 items-center gap-4">
                     <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase">Remarks</Label>
                     <div className="col-span-9">
-                       <Input placeholder="Enter your Remarks" className="h-14 border-slate-200 rounded-md px-4 text-xs font-medium" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                       <Input placeholder="Enter your Remarks" className="h-10 border-slate-200 rounded-md px-3 text-xs font-medium" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-12 items-start gap-6">
-                    <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase mt-4">Attachment</Label>
+                 <div className="grid grid-cols-12 items-start gap-4">
+                    <Label className="col-span-3 text-[11px] font-bold text-slate-600 uppercase mt-3">Attachment</Label>
                     <div className="col-span-9">
-                       <div className="h-32 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-3 bg-slate-50/30 text-slate-400 group cursor-pointer hover:bg-white hover:border-emerald-500 transition-all">
-                          <div className="p-3 bg-white rounded-full shadow-sm"><ImageIcon className="h-6 w-6 text-slate-300 group-hover:text-emerald-500 transition-colors" /></div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Click To Upload</span>
+                       <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50/30 text-slate-400 group cursor-pointer hover:bg-white hover:border-emerald-500 transition-all">
+                          <div className="p-2 bg-white rounded-full shadow-sm"><ImageIcon className="h-4 w-4 text-slate-300 group-hover:text-emerald-500 transition-colors" /></div>
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Click To Upload</span>
                        </div>
                     </div>
                  </div>
               </div>
             ) : (
-              <div className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-8 relative">
-                    <div className="flex items-center justify-between border-b pb-4">
-                      <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">Vendor Information</h3>
-                      <div className="p-1.5 bg-slate-50 rounded-md border text-slate-400"><MoreVertical className="h-3.5 w-3.5" /></div>
+              <div className="p-4 md:p-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl space-y-6 relative">
+                    <div className="flex items-center justify-between border-b pb-3">
+                      <h3 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Vendor Information</h3>
+                      <div className="p-1 bg-slate-50 rounded-md border text-slate-400"><MoreVertical className="h-3 w-3" /></div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">M/S <span className="text-red-500">*</span></Label>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">M/S <span className="text-red-500">*</span></Label>
                         <div className="col-span-8">
                           <Select 
                             value={formData.customerId} 
@@ -885,7 +868,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                               setFormData({...formData, customerId: id, customerName: identity?.name || ''});
                             }}
                           >
-                            <SelectTrigger className="h-10 bg-slate-50 border-slate-200 text-xs font-bold uppercase">
+                            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-xs font-bold uppercase">
                               <SelectValue placeholder="Identify Partner..." />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
@@ -895,11 +878,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-start gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase mt-3">Address</Label>
+                      <div className="grid grid-cols-12 items-start gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase mt-2">Address</Label>
                         <div className="col-span-8">
                           <Textarea 
-                            className="min-h-[80px] bg-slate-50 border-slate-200 text-xs font-medium resize-none p-3" 
+                            className="min-h-[60px] bg-slate-50 border-slate-200 text-xs font-medium resize-none p-2" 
                             placeholder="Partner Address Ledger..."
                             value={formData.shipTo}
                             onChange={(e) => setFormData({...formData, shipTo: e.target.value})}
@@ -907,91 +890,91 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Contact Person</Label>
-                        <div className="col-span-8"><Input className="h-10 bg-slate-50 border-slate-200 text-xs font-bold" /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Contact Person</Label>
+                        <div className="col-span-8"><Input className="h-9 bg-slate-50 border-slate-200 text-xs font-bold" /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Phone No</Label>
-                        <div className="col-span-8"><Input className="h-10 bg-slate-50 border-slate-200 text-xs font-bold" /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Phone No</Label>
+                        <div className="col-span-8"><Input className="h-9 bg-slate-50 border-slate-200 text-xs font-bold" /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
-                        <div className="col-span-8"><Input className="h-10 bg-slate-50 border-slate-200 text-xs font-bold uppercase" /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
+                        <div className="col-span-8"><Input className="h-9 bg-slate-50 border-slate-200 text-xs font-bold uppercase" /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
                         <div className="col-span-8">
                           <Select value={formData.revCharge} onValueChange={(val: any) => setFormData({...formData, revCharge: val})}>
-                            <SelectTrigger className="h-10 bg-slate-50 border-slate-200 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                             <SelectContent><SelectItem value="No">No</SelectItem><SelectItem value="Yes">Yes</SelectItem></SelectContent>
                           </Select>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Place of Supply <span className="text-red-500">*</span></Label>
-                        <div className="col-span-8"><Input className="h-10 bg-slate-50 border-slate-200 text-xs font-bold" value={formData.placeOfSupply} onChange={(e)=>setFormData({...formData, placeOfSupply: e.target.value})} /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Place of Supply <span className="text-red-500">*</span></Label>
+                        <div className="col-span-8"><Input className="h-9 bg-slate-50 border-slate-200 text-xs font-bold" value={formData.placeOfSupply} onChange={(e)=>setFormData({...formData, placeOfSupply: e.target.value})} /></div>
                       </div>
                     </div>
                   </Card>
 
-                  <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-8">
-                    <div className="flex items-center justify-between border-b pb-4">
-                      <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">{currentTabLabel} Detail</h3>
-                      <div className="p-1.5 bg-slate-50 rounded-md border text-slate-400"><History className="h-3.5 w-3.5" /></div>
+                  <Card className="p-6 bg-white border-slate-200 shadow-sm rounded-2xl space-y-6">
+                    <div className="flex items-center justify-between border-b pb-3">
+                      <h3 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">{currentTabLabel} Detail</h3>
+                      <div className="p-1 bg-slate-50 rounded-md border text-slate-400"><History className="h-3 w-3" /></div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Type</Label>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Type</Label>
                         <div className="col-span-8">
                           <Select value={formData.type} onValueChange={(val) => setFormData({...formData, type: val})}>
-                            <SelectTrigger className="h-10 bg-slate-50 border-slate-200 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                             <SelectContent>{DOCUMENT_TYPES.map(t => <SelectItem key={t.id} value={t.id} className="text-xs font-bold uppercase">{t.label}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Order No <span className="text-red-500">*</span></Label>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Order No <span className="text-red-500">*</span></Label>
                         <div className="col-span-8 flex gap-2">
-                          <Input className="h-10 bg-slate-100 border-slate-200 text-[10px] font-bold w-20 text-center uppercase" placeholder="Prefix" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
+                          <Input className="h-9 bg-slate-100 border-slate-200 text-[9px] font-bold w-16 text-center uppercase" placeholder="Prefix" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
                           <div className="relative flex-1">
-                            <Input className="h-10 bg-white border-slate-200 text-xs font-bold w-full text-center pl-10" placeholder="1" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
-                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                            <Input className="h-9 bg-white border-slate-200 text-xs font-bold w-full text-center pl-8" placeholder="1" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                            <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
                           </div>
-                          <Input className="h-10 bg-slate-100 border-slate-200 text-[10px] font-bold w-24 text-center uppercase" placeholder="Postfix" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
+                          <Input className="h-9 bg-slate-100 border-slate-200 text-[9px] font-bold w-20 text-center uppercase" placeholder="Postfix" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Order Date <span className="text-red-500">*</span></Label>
-                        <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-10 border-slate-200 bg-white" /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Order Date <span className="text-red-500">*</span></Label>
+                        <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-9 border-slate-200 bg-white" /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan No.</Label>
-                        <div className="col-span-8"><Input className="h-10 bg-white border-slate-200 text-xs font-bold" value={formData.challanNo} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Challan No.</Label>
+                        <div className="col-span-8"><Input className="h-9 bg-white border-slate-200 text-xs font-bold" value={formData.challanNo} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan Date</Label>
-                        <div className="col-span-8"><DatePicker value={formData.challanDate} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-10 border-slate-200 bg-white" /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Challan Date</Label>
+                        <div className="col-span-8"><DatePicker value={formData.challanDate} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-9 border-slate-200 bg-white" /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">L.R. No.</Label>
-                        <div className="col-span-8"><Input className="h-10 bg-white border-slate-200 text-xs font-bold" value={formData.lrNo} onChange={(e)=>setFormData({...formData, lrNo: e.target.value})} /></div>
+                      <div className="grid grid-cols-12 items-center gap-3">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">L.R. No.</Label>
+                        <div className="col-span-8"><Input className="h-9 bg-white border-slate-200 text-xs font-bold" value={formData.lrNo} onChange={(e)=>setFormData({...formData, lrNo: e.target.value})} /></div>
                       </div>
 
-                      <div className="grid grid-cols-12 items-center gap-4 pt-4 border-t">
-                        <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Delivery</Label>
+                      <div className="grid grid-cols-12 items-center gap-3 pt-3 border-t">
+                        <Label className="col-span-4 text-[10px] font-bold text-slate-500 uppercase">Delivery</Label>
                         <div className="col-span-8">
                           <Select value={formData.deliveryMode} onValueChange={(val) => setFormData({...formData, deliveryMode: val})}>
-                            <SelectTrigger className="h-10 bg-slate-50 border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="Select Delivery Mode" /></SelectTrigger>
+                            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="Select Delivery Mode" /></SelectTrigger>
                             <SelectContent><SelectItem value="Truck">Road (Truck)</SelectItem><SelectItem value="Courier">Courier</SelectItem><SelectItem value="Hand">Hand Delivery</SelectItem></SelectContent>
                           </Select>
                         </div>
@@ -1001,162 +984,161 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 </div>
 
                 <Card className="bg-white border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                  <div className="p-6 bg-slate-50/50 border-b flex justify-between items-center">
-                    <h3 className="text-xs font-bold uppercase text-slate-500 tracking-widest">Commercial Line Items</h3>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border">
-                        <Label className="text-[10px] font-bold text-slate-400 uppercase">Discount:</Label>
+                  <div className="p-4 bg-slate-50/50 border-b flex justify-between items-center">
+                    <h3 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Commercial Line Items</h3>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Discount:</Label>
                         <div className="flex gap-1">
-                          <button className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'amount' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>Rs</button>
-                          <button className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", formData.items?.[0]?.discountType === 'percentage' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>%</button>
+                          <button className={cn("px-1.5 py-0.5 rounded text-[8px] font-bold uppercase", formData.items?.[0]?.discountType === 'amount' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>Rs</button>
+                          <button className={cn("px-1.5 py-0.5 rounded text-[8px] font-bold uppercase", formData.items?.[0]?.discountType === 'percentage' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>%</button>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><Settings2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400"><Settings2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <Table className="border-collapse">
                       <TableHeader className="bg-white">
                         <TableRow className="hover:bg-transparent border-b">
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-12 text-center">SR.</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4">PRODUCT / OTHER CHARGES</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-24 text-center">QTY.</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-24 text-center">UOM</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-32 text-center">PRICE (RS)</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-24 text-center">DISCOUNT</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-24 text-center">IGST</TableHead>
-                          <TableHead className="text-[9px] font-bold uppercase text-slate-400 py-3 px-4 w-32 text-right">TOTAL</TableHead>
-                          <TableHead className="w-10"></TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-10 text-center">SR.</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3">PRODUCT / OTHER CHARGES</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-20 text-center">QTY.</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-20 text-center">UOM</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-28 text-center">PRICE (RS)</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-20 text-center">DISCOUNT</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-20 text-center">IGST</TableHead>
+                          <TableHead className="text-[8px] font-bold uppercase text-slate-400 py-2 px-3 w-28 text-right">TOTAL</TableHead>
+                          <TableHead className="w-8"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {formData.items?.map((item, idx) => (
                           <TableRow key={item.id} className="border-b hover:bg-slate-50/30 transition-all">
-                            <TableCell className="text-center font-bold text-slate-400">{idx + 1}</TableCell>
-                            <TableCell className="p-4 space-y-2">
-                              <Input className="h-9 border-slate-200 text-xs font-bold" placeholder="Enter Product name" value={item.description} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
-                              <Input className="h-7 bg-slate-50 border-none text-[10px] font-medium" placeholder="Item Note..." value={item.note} onChange={(e)=>updateItem(item.id, 'note', e.target.value)} />
+                            <TableCell className="text-center text-xs font-bold text-slate-400">{idx + 1}</TableCell>
+                            <TableCell className="p-3 space-y-1.5">
+                              <Input className="h-8 border-slate-200 text-xs font-bold" placeholder="Enter Product name" value={item.description} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
+                              <Input className="h-6 bg-slate-50 border-none text-[9px] font-medium" placeholder="Item Note..." value={item.note} onChange={(e)=>updateItem(item.id, 'note', e.target.value)} />
                             </TableCell>
-                            <TableCell className="px-2"><Input type="number" className="h-9 text-center text-xs font-bold" value={item.qty} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} /></TableCell>
-                            <TableCell className="px-2"><Input className="h-9 text-center text-xs font-bold uppercase" value={item.unit} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} /></TableCell>
-                            <TableCell className="px-2"><Input type="number" className="h-9 text-center text-xs font-bold text-primary" value={item.price} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} /></TableCell>
-                            <TableCell className="px-2"><Input type="number" className="h-9 text-center text-xs font-bold text-emerald-600" value={item.discount} onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} /></TableCell>
-                            <TableCell className="px-2">
+                            <TableCell className="px-1.5"><Input type="number" className="h-8 text-center text-xs font-bold" value={item.qty} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} /></TableCell>
+                            <TableCell className="px-1.5"><Input className="h-8 text-center text-xs font-bold uppercase" value={item.unit} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} /></TableCell>
+                            <TableCell className="px-1.5"><Input type="number" className="h-8 text-center text-xs font-bold text-primary" value={item.price} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} /></TableCell>
+                            <TableCell className="px-1.5"><Input type="number" className="h-8 text-center text-xs font-bold text-emerald-600" value={item.discount} onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} /></TableCell>
+                            <TableCell className="px-1.5">
                                <Select value={item.gstRate.toString()} onValueChange={(val)=>updateItem(item.id, 'gstRate', Number(val))}>
-                                  <SelectTrigger className="h-9 text-[10px] font-bold border-slate-200"><SelectValue /></SelectTrigger>
-                                  <SelectContent>{[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="text-[10px] font-bold">{r}%</SelectItem>)}</SelectContent>
+                                  <SelectTrigger className="h-8 text-[9px] font-bold border-slate-200"><SelectValue /></SelectTrigger>
+                                  <SelectContent>{[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="text-[9px] font-bold">{r}%</SelectItem>)}</SelectContent>
                                </Select>
                             </TableCell>
-                            <TableCell className="text-right font-display font-bold text-slate-700 px-4">
+                            <TableCell className="text-right font-display font-bold text-slate-700 px-3 text-xs">
                               ₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </TableCell>
-                            <TableCell className="px-2"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500" onClick={()=>handleRemoveItem(item.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                            <TableCell className="px-1.5"><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-200 hover:text-red-500" onClick={()=>handleRemoveItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="bg-yellow-50/50">
-                          <TableCell colSpan={2} className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase text-right">Total Order Val:</TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{formData.items?.reduce((acc, i)=>acc+i.qty,0) || 0}</TableCell>
+                        <TableRow className="bg-yellow-50/30">
+                          <TableCell colSpan={2} className="py-2 px-4 text-[9px] font-bold text-slate-500 uppercase text-right">Total Order Val:</TableCell>
+                          <TableCell className="text-center text-xs font-bold text-slate-900">{formData.items?.reduce((acc, i)=>acc+i.qty,0) || 0}</TableCell>
                           <TableCell></TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{(formData.subTotal || 0).toLocaleString()}</TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{(formData.discountTotal || 0).toLocaleString()}</TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{(formData.taxTotal || 0).toLocaleString()}</TableCell>
-                          <TableCell className="text-right font-display font-black text-slate-900 px-4">₹ {(formData.amount || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-center text-xs font-bold text-slate-900">{(formData.subTotal || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-center text-xs font-bold text-slate-900">{(formData.discountTotal || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-center text-xs font-bold text-slate-900">{(formData.taxTotal || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-display font-black text-slate-900 px-3 text-xs">₹ {(formData.amount || 0).toLocaleString()}</TableCell>
                           <TableCell></TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="p-4 border-t bg-white flex justify-start">
-                     <Button variant="ghost" onClick={handleAddItem} className="h-9 px-6 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5">
-                        <Plus className="h-4 w-4" /> Add New Row
+                  <div className="p-3 border-t bg-white flex justify-start">
+                     <Button variant="ghost" onClick={handleAddItem} className="h-8 px-4 rounded-xl text-primary font-bold uppercase text-[8px] tracking-widest gap-2 hover:bg-primary/5">
+                        <Plus className="h-3.5 w-3.5" /> Add New Row
                      </Button>
                   </div>
                 </Card>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8">
-                   <div className="lg:col-span-7 space-y-8">
-                      <div className="space-y-6 p-8 bg-white border border-slate-200 rounded-3xl">
-                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Terms & Condition / Additional Note</h4>
-                         <div className="space-y-4">
-                            <div className="space-y-2">
-                               <Label className="text-[9px] font-bold uppercase text-slate-400">Title</Label>
-                               <Input className="h-10 bg-slate-50 border-slate-200 text-xs font-bold" value={formData.paymentTerms} onChange={(e)=>setFormData({...formData, paymentTerms: e.target.value})} />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4">
+                   <div className="lg:col-span-7 space-y-6">
+                      <div className="space-y-4 p-6 bg-white border border-slate-200 rounded-3xl">
+                         <h4 className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Terms & Condition / Additional Note</h4>
+                         <div className="space-y-3">
+                            <div className="space-y-1.5">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Title</Label>
+                               <Input className="h-8 bg-slate-50 border-slate-200 text-xs font-bold" value={formData.paymentTerms} onChange={(e)=>setFormData({...formData, paymentTerms: e.target.value})} />
                             </div>
-                            <div className="space-y-2">
-                               <Label className="text-[9px] font-bold uppercase text-slate-400">Detail</Label>
-                               <Textarea className="min-h-[120px] bg-slate-50 border-slate-200 text-xs font-medium p-4 resize-none" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                            <div className="space-y-1.5">
+                               <Label className="text-[8px] font-bold uppercase text-slate-400">Detail</Label>
+                               <Textarea className="min-h-[80px] bg-slate-50 border-slate-200 text-xs font-medium p-3 resize-none" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
                             </div>
-                            <Button variant="outline" className="h-9 rounded-xl border-slate-200 text-[10px] font-bold uppercase gap-2"><Plus className="h-3.5 w-3.5" /> Add Notes</Button>
                          </div>
                       </div>
                       
-                      <div className="space-y-4 p-8 bg-white border border-slate-200 rounded-3xl">
-                         <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Document Note / Remarks</h4>
-                         <Textarea className="min-h-[80px] bg-slate-50 border-slate-200 text-xs font-medium p-4 resize-none" placeholder="Not Visible on Print" />
+                      <div className="space-y-3 p-6 bg-white border border-slate-200 rounded-3xl">
+                         <h4 className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Document Note / Remarks</h4>
+                         <Textarea className="min-h-[60px] bg-slate-50 border-slate-200 text-xs font-medium p-3 resize-none" placeholder="Not Visible on Print" />
                       </div>
                    </div>
 
-                   <div className="lg:col-span-5 space-y-6">
+                   <div className="lg:col-span-5 space-y-4">
                       <Card className="bg-white border-slate-200 shadow-sm rounded-3xl overflow-hidden">
-                         <div className="p-8 space-y-6">
-                            <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
+                         <div className="p-6 space-y-4">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-tight">
                                <span>Taxable</span>
                                <span>₹ {((formData.subTotal || 0) - (formData.discountTotal || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <button className="text-[10px] font-bold text-emerald-600 uppercase flex items-center gap-1.5 hover:underline"><Plus className="h-3 w-3" /> Add Additional Charge</button>
+                            <button className="text-[9px] font-bold text-emerald-600 uppercase flex items-center gap-1 hover:underline"><Plus className="h-2.5 w-2.5" /> Add Additional Charge</button>
                             
-                            <div className="pt-6 border-t space-y-4">
-                               <div className="flex justify-between items-center text-xs font-black text-slate-800 uppercase">
+                            <div className="pt-4 border-t space-y-3">
+                               <div className="flex justify-between items-center text-[11px] font-black text-slate-800 uppercase">
                                   <span>Total Taxable</span>
                                   <span>₹ {((formData.subTotal || 0) - (formData.discountTotal || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                </div>
-                               <div className="flex justify-between items-center text-xs font-black text-slate-800 uppercase">
+                               <div className="flex justify-between items-center text-[11px] font-black text-slate-800 uppercase">
                                   <span>Total Tax</span>
                                   <span>₹ {(formData.taxTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                </div>
                             </div>
 
-                            <div className="pt-6 border-t space-y-4">
-                               <div className="flex gap-4 items-center">
-                                  <div className="flex-1 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                                     <span className="text-[10px] font-bold text-slate-400 uppercase">TCS</span>
-                                     <div className="flex items-center gap-2">
-                                        <Input type="number" className="w-16 h-8 text-center bg-white font-bold" value={formData.tcsRate} onChange={(e)=>setFormData(calculateTotals({...formData, tcsRate: Number(e.target.value)}))} />
-                                        <span className="text-[10px] font-bold">%</span>
+                            <div className="pt-4 border-t space-y-3">
+                               <div className="flex gap-3 items-center">
+                                  <div className="flex-1 p-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                                     <span className="text-[9px] font-bold text-slate-400 uppercase">TCS</span>
+                                     <div className="flex items-center gap-1.5">
+                                        <Input type="number" className="w-14 h-7 text-center bg-white font-bold text-xs" value={formData.tcsRate} onChange={(e)=>setFormData(calculateTotals({...formData, tcsRate: Number(e.target.value)}))} />
+                                        <span className="text-[9px] font-bold">%</span>
                                      </div>
                                   </div>
                                   <span className="text-xs font-bold text-slate-800">₹ {(formData.tcsAmount || 0).toFixed(2)}</span>
                                </div>
                             </div>
 
-                            <div className="pt-6 border-t flex justify-between items-center">
+                            <div className="pt-4 border-t flex justify-between items-center">
                                <div className="flex items-center gap-3">
-                                  <span className="text-11px font-bold text-slate-800 uppercase">Round Off</span>
+                                  <span className="text-[10px] font-bold text-slate-800 uppercase">Round Off</span>
                                   <Switch checked={formData.isRoundOffActive} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
                                </div>
                                <span className="text-xs font-bold text-slate-800">{(formData.roundOff || 0).toFixed(2)}</span>
                             </div>
 
-                            <div className="pt-8 mt-4 border-t-4 border-slate-900 flex justify-between items-center bg-yellow-50/30 p-4 -mx-8">
-                               <span className="text-lg font-black text-slate-900 uppercase tracking-tighter">Grand Total</span>
-                               <span className="text-3xl font-display font-black text-slate-900">₹ {(formData.amount || 0).toLocaleString('en-IN')}</span>
+                            <div className="pt-6 mt-2 border-t-4 border-slate-900 flex justify-between items-center bg-yellow-50/30 p-3 -mx-6">
+                               <span className="text-base font-black text-slate-900 uppercase tracking-tighter">Grand Total</span>
+                               <span className="text-2xl font-display font-black text-slate-900">₹ {(formData.amount || 0).toLocaleString('en-IN')}</span>
                             </div>
 
-                            <div className="pt-6 text-center space-y-1">
-                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total in Words</p>
-                               <p className="text-[11px] font-bold text-[#001F3D] uppercase flex items-center justify-center gap-3">
-                                  <DollarSign className="h-3.5 w-3.5 text-primary" /> INDIAN RUPEES ONLY
+                            <div className="pt-4 text-center space-y-1">
+                               <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Total in Words</p>
+                               <p className="text-[10px] font-bold text-[#001F3D] uppercase flex items-center justify-center gap-2">
+                                  <DollarSign className="h-3 w-3 text-primary" /> INDIAN RUPEES ONLY
                                </p>
                             </div>
                          </div>
                       </Card>
 
-                      <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-emerald-100 transition-all">
-                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm"><Sparkles className="h-4 w-4" /></div>
-                            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">Smart Suggestion Protocol</span>
+                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-emerald-100 transition-all">
+                         <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-white rounded-lg text-emerald-600 shadow-sm"><Sparkles className="h-3.5 w-3.5" /></div>
+                            <span className="text-[9px] font-bold text-emerald-800 uppercase tracking-widest">Smart Suggestion Protocol</span>
                          </div>
-                         <Plus className="h-4 w-4 text-emerald-400 group-hover:rotate-90 transition-transform" />
+                         <Plus className="h-3.5 w-3.5 text-emerald-400 group-hover:rotate-90 transition-transform" />
                       </div>
                    </div>
                 </div>
@@ -1164,24 +1146,24 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             )}
           </ScrollArea>
 
-          <DialogFooter className="p-8 bg-white border-t flex items-center justify-between shrink-0">
-             <div className="flex gap-4">
-                <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-12 px-8 font-bold uppercase text-[10px] tracking-widest text-slate-400 border border-slate-200 rounded-lg flex items-center gap-2">
-                  <X className="h-4 w-4" /> Close
+          <DialogFooter className="p-4 bg-white border-t flex items-center justify-between shrink-0">
+             <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-10 px-6 font-bold uppercase text-[9px] tracking-widest text-slate-400 border border-slate-200 rounded-lg flex items-center gap-2">
+                  <X className="h-3.5 w-3.5" /> Close
                 </Button>
                 {!isPaymentType && (
-                  <Button variant="outline" className="h-12 px-8 border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest gap-3 shadow-sm hover:bg-slate-50"><Save className="h-4 w-4" /> Save Draft</Button>
+                  <Button variant="outline" className="h-10 px-6 border-slate-200 text-slate-600 font-bold uppercase text-[9px] tracking-widest gap-2 shadow-sm hover:bg-slate-50"><Save className="h-3.5 w-3.5" /> Save Draft</Button>
                 )}
              </div>
-             <div className="flex gap-4">
+             <div className="flex gap-2">
                 {!isPaymentType && (
-                  <Button className="h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex gap-3"><Printer className="h-4 w-4" /> Save & Print</Button>
+                  <Button className="h-10 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[9px] tracking-widest shadow-lg flex gap-2"><Printer className="h-3.5 w-3.5" /> Save & Print</Button>
                 )}
                 <Button 
                   onClick={handleSave}
-                  className="h-12 px-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex gap-3"
+                  className="h-10 px-10 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold uppercase text-[9px] tracking-widest shadow-lg flex gap-2"
                 >
-                  <Save className="h-4 w-4" /> {editingRecordId ? 'Update' : 'Save'}
+                  <Save className="h-3.5 w-3.5" /> {editingRecordId ? 'Update' : 'Save'}
                 </Button>
              </div>
           </DialogFooter>

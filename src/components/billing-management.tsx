@@ -53,7 +53,8 @@ import {
   Box,
   Zap,
   RotateCcw,
-  Settings2
+  Settings2,
+  RefreshCw
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -926,7 +927,7 @@ export function BillingManagement({
       {dashboardView === 'analytics' ? <AnalyticsView /> : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 px-8">
           {MAIN_TABS.slice(1, -1).map(module => (
-            <Card key={module.id} className="p-8 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl shadow-sm hover:border-primary/50 cursor-pointer transition-all flex flex-col items-center gap-6 group" onClick={() => setActiveTab(module.id)}>
+            <Card className="p-8 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl shadow-sm hover:border-primary/50 cursor-pointer transition-all flex flex-col items-center gap-6 group" onClick={() => setActiveTab(module.id)}>
               <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all text-slate-400">
                  <module.icon className="h-8 w-8" />
               </div>

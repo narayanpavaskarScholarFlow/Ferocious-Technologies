@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -113,6 +114,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   
   // Filter States for listing
   const [searchTerm, setSearchTerm] = useState('');
+  const [partnerSearch, setPartnerSearch] = useState('');
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
 
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
@@ -236,12 +238,24 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                            r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = (activeTab === 'sale' && r.type === 'invoice') || 
                          (activeTab === 'purchase' && r.type === 'purchase_invoice') ||
-                         (activeTab === 'other' && !['invoice', 'purchase_invoice'].includes(r.type));
+                         (activeTab === 'other' && !['invoice', 'purchase_invoice'].includes(r.type)) ||
+                         (activeTab === 'payment' && r.type === 'payment');
       
-      if (activeTab === 'dashboard') return true;
+      if (activeTab === 'dashboard' || activeTab === 'customer' || activeTab === 'products') return true;
       return matchesSearch && matchesType;
     });
   }, [records, searchTerm, activeTab]);
+
+  const filteredPartners = useMemo(() => {
+    const combined = [
+      ...customers.map(c => ({ ...c, partnerType: 'Customer' })),
+      ...vendors.map(v => ({ ...v, partnerType: 'Vendor' }))
+    ];
+    return combined.filter(p => 
+      p.name.toLowerCase().includes(partnerSearch.toLowerCase()) ||
+      (p.gstNumber && p.gstNumber.toLowerCase().includes(partnerSearch.toLowerCase()))
+    );
+  }, [customers, vendors, partnerSearch]);
 
   const analyticsData = useMemo(() => {
     const now = new Date();
@@ -544,7 +558,91 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           </div>
         )}
 
-        {activeTab !== 'dashboard' && (
+        {activeTab === 'customer' && (
+          <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="flex items-center gap-4">
+                 <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
+                    <Building2 className="h-6 w-6" />
+                 </div>
+                 <div>
+                    <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Registry</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Global Partner Matrix (Read Only)</p>
+                 </div>
+              </div>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                <Input 
+                  placeholder="Search partner by name or GST..." 
+                  className="pl-10 h-11 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm"
+                  value={partnerSearch}
+                  onChange={(e) => setPartnerSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2.5rem]">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-b border-slate-100">
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-10">Partner Node</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">GSTIN / Tax ID</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Primary Contact</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase text-center w-32">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPartners.map((partner) => (
+                    <TableRow key={partner.id} className="hover:bg-slate-50/50 h-24 border-b border-slate-50 transition-all">
+                      <TableCell className="px-10">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-[#001F3D] uppercase tracking-tight">{partner.name}</span>
+                          <span className="text-[9px] text-slate-400 font-code font-bold uppercase mt-1">ID: {partner.id}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(
+                          "text-[8px] font-bold uppercase px-3 py-1",
+                          partner.partnerType === 'Customer' ? "border-emerald-200 text-emerald-600 bg-emerald-50/30" : "border-blue-200 text-blue-600 bg-blue-50/30"
+                        )}>
+                          {partner.partnerType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs font-bold text-slate-500 font-code">{partner.gstNumber || '---'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-slate-700">{partner.contactPerson || (partner as any).contact || '---'}</span>
+                          <span className="text-[9px] text-slate-400 font-medium">{partner.contactNumber || (partner as any).email || '---'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-bold uppercase px-3 py-1">Active</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredPartners.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-96 text-center">
+                         <div className="flex flex-col items-center justify-center opacity-30 py-10">
+                            <div className="p-10 bg-slate-50 rounded-[3rem] mb-8">
+                               <ArchiveX className="h-20 w-20 text-slate-300" />
+                            </div>
+                            <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Identity Hub Offline</p>
+                            <p className="text-xs text-slate-400 mt-2 max-sm mx-auto font-medium">No partner identities detected in the master registry.</p>
+                         </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+        )}
+
+        {!['dashboard', 'customer', 'products'].includes(activeTab) && (
           <div className="space-y-8 animate-in fade-in duration-700">
              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex items-center gap-4">
@@ -702,7 +800,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                             <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                             <SelectValue placeholder="Identify Partner Node..." />
                          </SelectTrigger>
-                         <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                         <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                             <div className="px-4 py-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Customer Ledger</div>
                             {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase py-3">{c.name}</SelectItem>)}
                             <div className="px-4 py-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b my-1">Vendor Ledger</div>

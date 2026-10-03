@@ -27,24 +27,24 @@
   }
 
   .dark {
-    --background: 229 84% 5%; /* #020617 */
+    --background: 229 84% 5%; /* #020617 Deep Navy */
     --foreground: 210 40% 98%;
-    --card: 216 69% 9%; /* #071427 */
+    --card: 222 69% 9%; /* #071427 Stealth Navy */
     --card-foreground: 210 40% 98%;
-    --popover: 216 69% 9%;
+    --popover: 222 69% 9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 164 100% 45%; /* #00E5A8 teal */
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217 91% 60%; /* #3B82F6 blue */
+    --primary: 164 100% 45%; /* #00E5A8 Neon Teal */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 91% 60%; /* #3B82F6 Electric Blue */
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84% 60%; /* #EF4444 Alert Red */
     --destructive-foreground: 210 40% 98%;
-    --border: 213 64% 16%; /* #0F2745 */
-    --input: 217.2 32.6% 17.5%;
+    --border: 220 64% 16%; /* #0F2745 Industrial Blue */
+    --input: 220 64% 16%;
     --ring: 164 100% 45%;
   }
 }
@@ -64,6 +64,18 @@
 
   .control-center-gradient {
     @apply bg-gradient-to-br from-[#071427] to-[#020617];
+  }
+
+  .glow-primary {
+    @apply shadow-[0_0_15px_rgba(0,229,168,0.3)];
+  }
+  
+  .glow-secondary {
+    @apply shadow-[0_0_15px_rgba(59,130,246,0.3)];
+  }
+
+  .neon-border {
+    @apply border border-primary/20 hover:border-primary/50 transition-colors;
   }
 }
 

@@ -97,10 +97,10 @@ interface BillingManagementProps {
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'Quotation', icon: FileBox, prefix: 'QT' },
+  { id: 'proforma', label: 'Proforma Invoice', icon: FileCheck, prefix: 'PFI' },
   { id: 'invoice', label: 'Sale Invoice', icon: FileText, prefix: 'INV' },
   { id: 'purchase_invoice', label: 'Purchase Invoice', icon: ShoppingCart, prefix: 'PI' },
   { id: 'delivery_challan', label: 'Delivery Challan', icon: Truck, prefix: 'DC' },
-  { id: 'proforma', label: 'Proforma Invoice', icon: FileCheck, prefix: 'PFI' },
   { id: 'purchase_order', label: 'Purchase Order', icon: ShoppingCart, prefix: 'PO' },
   { id: 'sale_order', label: 'Sale Order', icon: FileText, prefix: 'SO' },
   { id: 'credit_note', label: 'Credit Note', icon: ArrowDownLeft, prefix: 'CN' },
@@ -109,13 +109,19 @@ const DOCUMENT_TYPES = [
 
 const MAIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { id: 'customer', label: 'Customer / Vendor', icon: Building2 },
-  { id: 'products', label: 'Products / Services', icon: Settings2 },
-  { id: 'sale', label: 'Sale Invoice', icon: FileText },
-  { id: 'purchase', label: 'Purchase Invoice', icon: ShoppingCart },
+  { id: 'customer', label: 'Identity', icon: Building2 },
+  { id: 'products', label: 'Catalog', icon: Settings2 },
+  { id: 'quotation', label: 'Quotation', icon: FileBox },
+  { id: 'proforma', label: 'Proforma', icon: FileCheck },
+  { id: 'invoice', label: 'Sale Inv', icon: FileText },
+  { id: 'purchase_invoice', label: 'Pur Inv', icon: ShoppingCart },
+  { id: 'delivery_challan', label: 'Challan', icon: Truck },
+  { id: 'purchase_order', label: 'Pur Order', icon: ShoppingCart },
+  { id: 'sale_order', label: 'Sale Order', icon: FileText },
+  { id: 'credit_note', label: 'Cr Note', icon: ArrowDownLeft },
+  { id: 'debit_note', label: 'Db Note', icon: ArrowUpRight },
   { id: 'payment', label: 'Payment', icon: Banknote },
-  { id: 'expense', label: 'Expense Income', icon: Receipt },
-  { id: 'other', label: 'Other Documents', icon: FileBox },
+  { id: 'expense', label: 'Expense', icon: Receipt },
   { id: 'report', label: 'Report', icon: FileBarChart },
 ];
 
@@ -254,11 +260,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
       
-      if (activeTab === 'sale') return matchesSearch && (r.type === 'invoice' || r.type === 'sale_order' || r.type === 'quotation');
-      if (activeTab === 'purchase') return matchesSearch && (r.type === 'purchase_invoice' || r.type === 'purchase_order');
-      if (activeTab === 'payment') return matchesSearch && (r.type === 'payment');
-      if (activeTab === 'expense') return matchesSearch && (r.type === 'inward' || r.type === 'debit_note');
-      if (activeTab === 'other') return matchesSearch && ['delivery_challan', 'proforma', 'credit_note', 'outward'].includes(r.type);
+      const docTabs = DOCUMENT_TYPES.map(d => d.id);
+      if (docTabs.includes(activeTab)) {
+        return matchesSearch && r.type === activeTab;
+      }
+      
+      if (activeTab === 'payment') return matchesSearch && r.type === 'payment';
+      if (activeTab === 'expense') return matchesSearch && (r.type === 'inward' || r.type === 'expense');
       
       return matchesSearch;
     });
@@ -322,21 +330,21 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   return (
     <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] flex flex-col overflow-hidden animate-in fade-in duration-700 font-body">
       {/* Top professional navigation bar - Optimized to fit all items without scrolling */}
-      <div className="bg-white border-b border-slate-200 shrink-0 px-4 z-50 shadow-sm">
-        <div className="max-w-[1600px] mx-auto">
-          <div className="flex h-16 items-center justify-between">
+      <div className="bg-white border-b border-slate-200 shrink-0 px-2 z-50 shadow-sm">
+        <div className="max-w-[1700px] mx-auto">
+          <div className="flex h-16 items-center justify-between gap-1">
             {MAIN_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "px-3 h-full text-[10px] font-bold uppercase tracking-tight border-b-2 transition-all whitespace-nowrap flex items-center gap-2",
+                  "px-2 h-full text-[9px] font-bold uppercase tracking-tighter border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5",
                   activeTab === tab.id 
                     ? "border-emerald-500 text-emerald-600 bg-emerald-50/10" 
                     : "border-transparent text-slate-500 hover:text-slate-900"
                 )}
               >
-                <tab.icon className={cn("h-3.5 w-3.5", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
+                <tab.icon className={cn("h-3 w-3", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
                 {tab.label}
               </button>
             ))}
@@ -726,42 +734,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                </div>
             )}
 
-            {activeTab === 'other' && (
-               <div className="space-y-8 animate-in fade-in duration-700">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-4">
-                       <div className="p-3 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
-                          <FileBox className="h-6 w-6" />
-                       </div>
-                       <div>
-                          <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Auxiliary Documents</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Proforma, DC & Credit/Debit Ledger</p>
-                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {['quotation', 'proforma', 'delivery_challan', 'credit_note', 'debit_note'].map(type => {
-                      const count = records.filter(r => r.type === type).length;
-                      const icon = DOCUMENT_TYPES.find(d => d.id === type)?.icon || FileBox;
-                      const Icon = icon;
-                      return (
-                        <Card key={type} className="p-6 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all shadow-sm">
-                           <div className="flex items-center gap-4">
-                              <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-emerald-50 transition-colors"><Icon className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" /></div>
-                              <div className="flex flex-col">
-                                 <span className="text-xs font-bold text-slate-700 uppercase">{type.replace('_', ' ')}</span>
-                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{count} Records</span>
-                              </div>
-                           </div>
-                           <Button variant="ghost" size="icon" className="text-slate-300 group-hover:text-emerald-500" onClick={() => handleOpenForm(type)}><Plus className="h-4 w-4" /></Button>
-                        </Card>
-                      )
-                    })}
-                  </div>
-               </div>
-            )}
-
             {activeTab === 'report' && (
                <div className="space-y-10 animate-in fade-in duration-700">
                   <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -813,7 +785,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                </div>
             )}
 
-            {!['dashboard', 'customer', 'products', 'payment', 'expense', 'other', 'report'].includes(activeTab) && (
+            {!['dashboard', 'customer', 'products', 'payment', 'expense', 'report'].includes(activeTab) && (
               <div className="space-y-8 animate-in fade-in duration-700">
                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-4">
@@ -840,7 +812,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                        </div>
                        <Button 
                         className="h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
-                        onClick={() => handleOpenForm(activeTab === 'sale' ? 'invoice' : activeTab === 'purchase' ? 'purchase_invoice' : 'quotation')}
+                        onClick={() => handleOpenForm(activeTab)}
                        >
                          <Plus className="h-4 w-4" /> Create New Entry
                        </Button>
@@ -919,13 +891,13 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="flex items-center gap-5">
               <div className="p-4 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-primary/20">
                 {(() => {
-                  const Icon = DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.icon || Receipt;
+                  const Icon = MAIN_TABS.find(d => d.id === activeRecordType)?.icon || Receipt;
                   return <Icon className="h-8 w-8" />;
                 })()}
               </div>
               <div>
                 <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight leading-none">
-                  {DOCUMENT_TYPES.find(d => d.id === activeRecordType)?.label} Protocol
+                  {MAIN_TABS.find(d => d.id === activeRecordType)?.label} Protocol
                 </DialogTitle>
                 <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-2">Master Commercial Matrix v2.4 • Secure Session Active</DialogDescription>
               </div>

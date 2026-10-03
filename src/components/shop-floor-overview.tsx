@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart, 
   ArrowUpRight, 
@@ -33,7 +34,10 @@ import {
   AlertCircle,
   Settings2,
   Globe,
-  Database
+  Database,
+  RefreshCw,
+  FileBox,
+  Truck
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 

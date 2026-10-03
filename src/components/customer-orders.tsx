@@ -23,7 +23,7 @@ import {
   Check,
   Printer,
   XCircle,
-  Users
+  Truck
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 interface CustomerOrdersProps {
   customers: Customer[];
@@ -61,6 +62,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     address: '',
+    shippingAddress: '',
     contactNumber: '',
     gstNumber: '',
     contactPerson: '',
@@ -82,6 +84,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
     setNewCustomer({
       name: customer.name,
       address: customer.address,
+      shippingAddress: customer.shippingAddress || '',
       contactNumber: customer.contactNumber,
       gstNumber: customer.gstNumber,
       contactPerson: customer.contactPerson,
@@ -117,8 +120,10 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
 
   const scrollToSection = (step: number) => {
     setActiveStep(step);
-    const ref = step === 1 ? sectionRefs.step1 : step === 2 ? sectionRefs.step2 : sectionRefs.step3;
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const ref = step === 1 ? sectionRefs.step1 : step === 2 ? sectionRefs.step2 : step === 3;
+    if (ref && typeof ref !== 'number' && ref.current) {
+        ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleAddCustomer = () => {
@@ -139,6 +144,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
         contactPerson: newCustomer.contactPerson.trim(),
         contactNumber: newCustomer.contactNumber.trim() || 'N/A',
         address: newCustomer.address.trim() || 'N/A',
+        shippingAddress: newCustomer.shippingAddress.trim() || 'N/A',
         type: newCustomer.type,
         email: customers.find(c => c.id === editingCustomerId)?.email || '',
         location: newCustomer.address.trim() || 'Global',
@@ -158,6 +164,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
         contactPerson: newCustomer.contactPerson.trim(),
         contactNumber: newCustomer.contactNumber.trim() || 'N/A',
         address: newCustomer.address.trim() || 'N/A',
+        shippingAddress: newCustomer.shippingAddress.trim() || 'N/A',
         type: newCustomer.type,
         email: '',
         location: newCustomer.address.trim() || 'Global',
@@ -174,13 +181,13 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
     
     setIsAddCustomerOpen(false);
     setEditingCustomerId(null);
-    setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
+    setNewCustomer({ name: '', address: '', shippingAddress: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
   };
 
   const isStepComplete = (step: number) => {
     if (step === 1) return !!(newCustomer.name && newCustomer.gstNumber);
     if (step === 2) return !!(newCustomer.contactPerson && newCustomer.contactNumber);
-    if (step === 3) return !!newCustomer.address;
+    if (step === 3) return !!(newCustomer.address && newCustomer.shippingAddress);
     return false;
   };
 
@@ -211,7 +218,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
           <Button 
             onClick={() => {
               setEditingCustomerId(null);
-              setNewCustomer({ name: '', address: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
+              setNewCustomer({ name: '', address: '', shippingAddress: '', contactNumber: '', gstNumber: '', contactPerson: '', type: 'Corporate' });
               setIsAddCustomerOpen(true);
               setActiveStep(1);
             }}
@@ -358,7 +365,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
           <DialogTitle className="sr-only">Identity Onboarding Protocol</DialogTitle>
           <DialogDescription className="sr-only">Sequence for initializing or updating legal identities in the ERP directory.</DialogDescription>
           
-          <div className="flex flex-col md:flex-row h-[600px]">
+          <div className="flex flex-col md:flex-row h-[650px]">
             {/* Sidebar Protocol Map */}
             <div className="w-full md:w-80 bg-slate-50/50 p-10 border-r border-slate-100 flex flex-col justify-between">
               <div className="space-y-10">
@@ -403,8 +410,8 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
             </div>
 
             {/* Main Form Area */}
-            <div className="flex-1 p-8 md:p-16 flex flex-col bg-white overflow-y-auto hide-scrollbar">
-              <div className="space-y-12 flex-grow pb-10">
+            <div className="flex-1 p-8 md:p-12 flex flex-col bg-white overflow-y-auto hide-scrollbar">
+              <div className="space-y-10 flex-grow pb-10">
                 <div className="flex items-center gap-4">
                   <div className="h-1 w-10 bg-red-500 rounded-full" />
                   <div>
@@ -413,79 +420,101 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   </div>
                 </div>
 
-                <div className="space-y-16">
+                <div className="space-y-12">
                   {/* Step 1: Identity */}
-                  <div ref={sectionRefs.step1} className="space-y-8" onFocus={() => setActiveStep(1)}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
+                  <div ref={sectionRefs.step1} className="space-y-6" onFocus={() => setActiveStep(1)}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Customer Identity Name</Label>
                         <div className="relative">
                           <Input 
                             placeholder="Legal Account Identity" 
-                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                            className="h-12 bg-slate-50/50 border-none rounded-xl text-[11px] font-bold pl-10 focus-visible:ring-primary/20"
                             value={newCustomer.name}
                             onChange={(e) => handleInputChange('name', e.target.value)}
                           />
-                          <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                         </div>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Number</Label>
                         <div className="relative">
                           <Input 
                             placeholder="TAX_ID / GSTIN" 
-                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20 uppercase"
+                            className="h-12 bg-slate-50/50 border-none rounded-xl text-[11px] font-bold pl-10 focus-visible:ring-primary/20 uppercase"
                             value={newCustomer.gstNumber}
                             onChange={(e) => handleInputChange('gstNumber', e.target.value)}
                           />
-                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Step 2: Liaison */}
-                  <div ref={sectionRefs.step2} className="space-y-8" onFocus={() => setActiveStep(2)}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
+                  <div ref={sectionRefs.step2} className="space-y-6" onFocus={() => setActiveStep(2)}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Liaison</Label>
                         <div className="relative">
                           <Input 
                             placeholder="Authorized Signatory / Liaison" 
-                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                            className="h-12 bg-slate-50/50 border-none rounded-xl text-[11px] font-bold pl-10 focus-visible:ring-primary/20"
                             value={newCustomer.contactPerson}
                             onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                           />
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                         </div>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact Node (Phone)</Label>
                         <div className="relative">
                           <Input 
                             placeholder="+91 (000) 000-0000" 
-                            className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
+                            className="h-12 bg-slate-50/50 border-none rounded-xl text-[11px] font-bold pl-10 focus-visible:ring-primary/20"
                             value={newCustomer.contactNumber}
                             onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                           />
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Step 3: Logistics */}
-                  <div ref={sectionRefs.step3} className="space-y-8" onFocus={() => setActiveStep(3)}>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Address</Label>
-                      <div className="relative">
-                        <Input 
-                          placeholder="Operational Base / Node Location" 
-                          className="h-14 bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-12 focus-visible:ring-primary/20"
-                          value={newCustomer.address}
-                          onChange={(e) => handleInputChange('address', e.target.value)}
-                        />
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                  <div ref={sectionRefs.step3} className="space-y-6" onFocus={() => setActiveStep(3)}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Present Address (Billing)</Label>
+                        <div className="relative">
+                          <Textarea 
+                            placeholder="Current Registered Billing Address" 
+                            className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-10 focus-visible:ring-primary/20 pt-4"
+                            value={newCustomer.address}
+                            onChange={(e) => handleInputChange('address', e.target.value)}
+                          />
+                          <MapPin className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Shipping Address</Label>
+                        <div className="relative">
+                          <Textarea 
+                            placeholder="Operational Base / Delivery Node" 
+                            className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-[11px] font-bold pl-10 focus-visible:ring-primary/20 pt-4"
+                            value={newCustomer.shippingAddress}
+                            onChange={(e) => handleInputChange('shippingAddress', e.target.value)}
+                          />
+                          <Truck className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-[8px] uppercase font-bold p-0 text-primary hover:bg-transparent"
+                          onClick={() => handleInputChange('shippingAddress', newCustomer.address)}
+                        >
+                          Same as Billing
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -493,16 +522,16 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
               </div>
 
               {/* Action Toolbar */}
-              <div className="flex gap-6 mt-12 pt-10 border-t border-slate-100">
+              <div className="flex gap-4 mt-6 pt-6 border-t border-slate-100">
                 <Button 
                   variant="ghost" 
-                  className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:text-[#001F3D] hover:bg-slate-50"
+                  className="flex-1 h-12 rounded-xl font-bold uppercase tracking-[0.2em] text-[9px] text-slate-400 hover:text-[#001F3D] hover:bg-slate-50"
                   onClick={() => setIsAddCustomerOpen(false)}
                 >
                   Abort Protocol
                 </Button>
                 <Button 
-                  className="flex-[2] h-14 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-red-600/30 flex gap-3 group"
+                  className="flex-[2] h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-[0.2em] text-[9px] shadow-xl shadow-red-600/30 flex gap-3 group"
                   onClick={handleAddCustomer}
                 >
                   {editingCustomerId ? 'Synchronize Identity' : 'Commit to Matrix'}

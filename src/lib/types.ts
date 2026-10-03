@@ -157,6 +157,7 @@ export interface Customer {
   id: string;
   name: string;
   address: string;
+  shippingAddress: string;
   contactNumber: string;
   gstNumber: string;
   contactPerson: string;

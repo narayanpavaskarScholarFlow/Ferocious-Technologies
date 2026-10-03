@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,7 +45,12 @@ import {
   ArrowRight,
   Hash,
   Edit3,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw,
+  Archive,
+  ArchiveX,
+  BarChart3,
+  ChevronDown
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -58,6 +63,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
+import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -98,15 +104,16 @@ const MAIN_TABS = [
 export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardSubView, setDashboardSubView] = useState<'analytics' | 'quick-links'>('analytics');
   
   // Record Form State
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [activeRecordType, setActiveRecordType] = useState('invoice');
-  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [editingRecordId, setEditingLogId] = useState<string | null>(null);
   
   // Filter States for listing
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
 
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '',
@@ -130,14 +137,14 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
   const handleOpenForm = (type: string, record?: BillingRecord) => {
     setActiveRecordType(type);
     if (record) {
-      setEditingRecordId(record.id);
+      setEditingLogId(record.id);
       setFormData(record);
     } else {
       const docType = DOCUMENT_TYPES.find(d => d.id === type);
       const nextNum = records.filter(r => r.type === type).length + 1;
       const formattedNum = `${docType?.prefix || 'DOC'}-${new Date().getFullYear()}-${nextNum.toString().padStart(4, '0')}`;
       
-      setEditingRecordId(null);
+      setEditingLogId(null);
       setFormData({
         id: `REC-${Date.now()}`,
         type,
@@ -236,6 +243,51 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
   }, [records, searchTerm, activeTab]);
 
+  const analyticsData = useMemo(() => {
+    const now = new Date();
+    const currentMonthInterval = { start: startOfMonth(now), end: endOfMonth(now) };
+
+    const monthlySales = records
+      .filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), currentMonthInterval))
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    const monthlyPurchases = records
+      .filter(r => r.type === 'purchase_invoice' && isWithinInterval(parseISO(r.date), currentMonthInterval))
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    // Aging analysis for Outstanding
+    const calculateOutstanding = (type: 'invoice' | 'purchase_invoice') => {
+      const outstandingRecords = records.filter(r => r.type === type && r.status !== 'Paid' && r.status !== 'Completed');
+      const total = outstandingRecords.reduce((sum, r) => sum + r.amount, 0);
+      
+      const buckets = {
+        current: 0,
+        overdue1_15: 0,
+        overdue16_30: 0,
+        overdue30Plus: 0
+      };
+
+      outstandingRecords.forEach(r => {
+        const days = differenceInDays(now, parseISO(r.date));
+        if (days <= 0) buckets.current += r.amount;
+        else if (days <= 15) buckets.overdue1_15 += r.amount;
+        else if (days <= 30) buckets.overdue16_30 += r.amount;
+        else buckets.overdue30Plus += r.amount;
+      });
+
+      return { total, ...buckets };
+    };
+
+    return {
+      monthlySales,
+      monthlyPurchases,
+      salesOutstanding: calculateOutstanding('invoice'),
+      purchaseOutstanding: calculateOutstanding('purchase_invoice'),
+      income: monthlySales, // Simplified for MVP
+      expense: monthlyPurchases // Simplified for MVP
+    };
+  }, [records]);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] animate-in fade-in duration-700 font-body">
       {/* Top professional navigation bar */}
@@ -266,69 +318,254 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         
         {activeTab === 'dashboard' && (
           <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-            {/* Profile Completion Protocol */}
-            <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><Building2 className="h-40 w-40" /></div>
-               <div className="flex items-center gap-3 mb-8">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Complete Your Professional Identity</h3>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
-                     <div className="space-y-1">
-                        <p className="text-xs font-bold text-slate-700">Synchronize Corporate Branding</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Print your business logo on all commercial documents for professional fidelity.</p>
-                     </div>
-                     <Button variant="outline" className="h-9 px-6 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest">Add Logo</Button>
-                  </div>
-                  <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
-                     <div className="space-y-1">
-                        <p className="text-xs font-bold text-slate-700">Configure Bank & Settlement Nodes</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Enable UPI QR codes and Bank Details on invoices for rapid reconciliation.</p>
-                     </div>
-                     <Button variant="outline" className="h-9 px-6 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest">Add Bank</Button>
-                  </div>
-               </div>
-            </Card>
-
-            {/* Quick Links Matrix */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-              {DOCUMENT_TYPES.map((link) => (
-                <Card 
-                  key={link.id} 
-                  onClick={() => handleOpenForm(link.id)}
-                  className="bg-white border-slate-200 shadow-sm hover:shadow-2xl hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
+            {/* Analysis Toggle Control */}
+            <div className="flex flex-col items-center justify-center gap-8 mb-4">
+              <div className="flex bg-white border border-slate-200 p-1 rounded-full shadow-sm">
+                <button 
+                  onClick={() => setDashboardSubView('analytics')}
+                  className={cn(
+                    "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
+                    dashboardSubView === 'analytics' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                  )}
                 >
-                  <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
-                    <link.icon className="h-8 w-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                  Analytics
+                </button>
+                <button 
+                  onClick={() => setDashboardSubView('quick-links')}
+                  className={cn(
+                    "px-10 h-10 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
+                    dashboardSubView === 'quick-links' ? "bg-emerald-500 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  Quick Links
+                </button>
+              </div>
+              
+              {dashboardSubView === 'analytics' && (
+                <div className="w-full flex flex-col md:flex-row justify-end items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <span>Last Updated {lastUpdated}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest leading-tight">{link.label}</span>
-                </Card>
-              ))}
+                  <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg shadow-sm">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date().toLocaleDateString('en-GB')} TO {new Date().toLocaleDateString('en-GB')}</span>
+                    <ChevronDown className="h-3 w-3 ml-2" />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="h-10 px-6 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border-none gap-3 shadow-lg"
+                    onClick={() => setLastUpdated(new Date().toLocaleTimeString())}
+                  >
+                    Refresh <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {/* Analytics Matrix */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { label: 'Total Receivables', val: `₹ ${records.filter(r => r.type === 'invoice').reduce((acc, r) => acc + r.amount, 0).toLocaleString('en-IN')}`, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50' },
-                { label: 'Pending Payables', val: '₹ 0.00', icon: ArrowDownLeft, color: 'text-red-500', bg: 'bg-red-50' },
-                { label: 'Bank Liquidity', val: '₹ 8,15,000', icon: Landmark, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-              ].map((stat, i) => (
-                <Card key={i} className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] flex flex-col gap-6 group hover:border-emerald-500/20 transition-all">
-                   <div className="flex justify-between items-center">
-                     <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{stat.label}</p>
-                     <div className={cn("p-2 rounded-lg", stat.bg)}>
-                        <stat.icon className={cn("h-5 w-5", stat.color)} />
+            {dashboardSubView === 'analytics' ? (
+              <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                {/* Analysis Main Metrics */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Sale Analysis */}
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-6">
+                       <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale</span>
+                       <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    </div>
+                    <div className="space-y-2">
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
+                       <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlySales.toLocaleString('en-IN')}</h3>
+                    </div>
+                    <div className="mt-10 flex gap-1">
+                       {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-1 rounded-full bg-emerald-500/20" />)}
+                    </div>
+                  </Card>
+
+                  {/* Purchase Analysis */}
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-6">
+                       <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase</span>
+                       <ShoppingCart className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <div className="space-y-2">
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
+                       <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlyPurchases.toLocaleString('en-IN')}</h3>
+                    </div>
+                    <div className="mt-10 flex gap-1">
+                       {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-1 rounded-full bg-emerald-500/20" />)}
+                    </div>
+                  </Card>
+
+                  {/* Expense/Income Node */}
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col justify-between group">
+                    <div className="flex justify-between items-start">
+                       <div className="space-y-1">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Expense</span>
+                          <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.expense.toLocaleString('en-IN')}</p>
+                       </div>
+                       <div className="text-right space-y-1">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Income</span>
+                          <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.income.toLocaleString('en-IN')}</p>
+                       </div>
+                       <BarChart3 className="absolute right-4 bottom-4 h-6 w-6 text-slate-100" />
+                    </div>
+                    <div className="h-12 w-full flex items-center justify-center opacity-10">
+                       <div className="h-px w-full bg-slate-900" />
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Outstanding Aging Matrix */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Sales Outstanding */}
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
+                     <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Sales Outstanding</h3>
+                           <Filter className="h-3 w-3 text-slate-300" />
+                        </div>
                      </div>
+                     <div className="space-y-4">
+                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                           <span>Total Receivables</span>
+                           <span>₹ {analyticsData.salesOutstanding.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                           <div className="h-full bg-emerald-500" style={{ width: '100%' }} />
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-4 gap-4 pt-4">
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase">Current</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                              <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.current.toFixed(2)}</span>
+                           </div>
+                        </div>
+                        <div className="space-y-1 border-l pl-4">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-amber-500" />
+                              <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue1_15.toFixed(2)}</span>
+                           </div>
+                           <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">1-15 Days</p>
+                        </div>
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-orange-500" />
+                              <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue16_30.toFixed(2)}</span>
+                           </div>
+                           <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">16-30 Days</p>
+                        </div>
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-red-600" />
+                              <span className="text-xs font-bold">₹ {analyticsData.salesOutstanding.overdue30Plus.toFixed(2)}</span>
+                           </div>
+                           <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">30+ Days</p>
+                        </div>
+                     </div>
+                  </Card>
+
+                  {/* Purchase Outstanding */}
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
+                     <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                           <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Purchase Outstanding</h3>
+                           <Filter className="h-3 w-3 text-slate-300" />
+                        </div>
+                     </div>
+                     <div className="space-y-4">
+                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                           <span>Total Payables</span>
+                           <span>₹ {analyticsData.purchaseOutstanding.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                           <div className="h-full bg-emerald-500" style={{ width: '100%' }} />
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-4 gap-4 pt-4">
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase">Current</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                              <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.current.toFixed(2)}</span>
+                           </div>
+                        </div>
+                        <div className="space-y-1 border-l pl-4">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-amber-500" />
+                              <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue1_15.toFixed(2)}</span>
+                           </div>
+                           <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">1-15 Days</p>
+                        </div>
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-orange-500" />
+                              <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue16_30.toFixed(2)}</span>
+                           </div>
+                           <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">16-30 Days</p>
+                        </div>
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-transparent select-none uppercase">...</span>
+                           <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-red-600" />
+                              <span className="text-xs font-bold">₹ {analyticsData.purchaseOutstanding.overdue30Plus.toFixed(2)}</span>
+                           </div>
+                           <p className="text-[8px] text-slate-300 font-bold uppercase mt-1">30+ Days</p>
+                        </div>
+                     </div>
+                  </Card>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
+                {/* Profile Completion Protocol */}
+                <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><Building2 className="h-40 w-40" /></div>
+                   <div className="flex items-center gap-3 mb-8">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <h3 className="text-sm font-bold text-[#001F3D] uppercase tracking-widest">Complete Your Professional Identity</h3>
                    </div>
-                   <h3 className="text-4xl font-display font-bold text-[#001F3D] tracking-tighter">{stat.val}</h3>
-                   <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-                      <span className="text-[9px] font-bold text-emerald-500 uppercase flex items-center gap-1"><TrendingUp className="h-3 w-3" /> +12.5% MTD</span>
-                      <ChevronRight className="h-4 w-4 text-slate-200 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
+                         <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-700">Synchronize Corporate Branding</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Print your business logo on all commercial documents for professional fidelity.</p>
+                         </div>
+                         <Button variant="outline" className="h-9 px-6 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest">Add Logo</Button>
+                      </div>
+                      <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-all">
+                         <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-700">Configure Bank & Settlement Nodes</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Enable UPI QR codes and Bank Details on invoices for rapid reconciliation.</p>
+                         </div>
+                         <Button variant="outline" className="h-9 px-6 rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest">Add Bank</Button>
+                      </div>
                    </div>
                 </Card>
-              ))}
-            </div>
+
+                {/* Quick Links Matrix */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+                  {DOCUMENT_TYPES.map((link) => (
+                    <Card 
+                      key={link.id} 
+                      onClick={() => handleOpenForm(link.id)}
+                      className="bg-white border-slate-200 shadow-sm hover:shadow-2xl hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
+                    >
+                      <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
+                        <link.icon className="h-8 w-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest leading-tight">{link.label}</span>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -699,7 +936,3 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     </div>
   );
 }
-
-const ArchiveX = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="m9.5 17 5-5"/><path d="m9.5 12 5 5"/></svg>
-);

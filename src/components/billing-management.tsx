@@ -385,7 +385,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </div>
                         <div className="space-y-2">
                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
-                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlySales.toLocaleString('en-IN')}</h3>
+                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {(analyticsData.monthlySales || 0).toLocaleString('en-IN')}</h3>
                         </div>
                       </Card>
                       <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl relative group">
@@ -395,18 +395,18 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </div>
                         <div className="space-y-2">
                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
-                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {analyticsData.monthlyPurchases.toLocaleString('en-IN')}</h3>
+                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {(analyticsData.monthlyPurchases || 0).toLocaleString('en-IN')}</h3>
                         </div>
                       </Card>
                       <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col justify-between group">
                         <div className="flex justify-between items-start">
                            <div className="space-y-1">
                               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Expense</span>
-                              <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.expense.toLocaleString('en-IN')}</p>
+                              <p className="text-xl font-display font-bold text-slate-900">₹ {(analyticsData.expense || 0).toLocaleString('en-IN')}</p>
                            </div>
                            <div className="text-right space-y-1">
                               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Income</span>
-                              <p className="text-xl font-display font-bold text-slate-900">₹ {analyticsData.income.toLocaleString('en-IN')}</p>
+                              <p className="text-xl font-display font-bold text-slate-900">₹ {(analyticsData.income || 0).toLocaleString('en-IN')}</p>
                            </div>
                         </div>
                       </Card>
@@ -516,7 +516,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                              </div>
                           </TableCell>
                           <TableCell><span className="text-sm font-bold text-slate-700 uppercase tracking-tight">{record.customerName}</span></TableCell>
-                          <TableCell className="text-center"><span className="text-lg font-display font-bold text-[#001F3D]">₹ {record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></TableCell>
+                          <TableCell className="text-center"><span className="text-lg font-display font-bold text-[#001F3D]">₹ {(record.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></TableCell>
                           <TableCell className="text-center"><Badge className={cn("text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border shadow-sm", record.status === 'Paid' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100")}>{record.status}</Badge></TableCell>
                           <TableCell className="text-right px-10">
                              <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
@@ -849,19 +849,19 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                                </Select>
                             </TableCell>
                             <TableCell className="text-right font-display font-bold text-slate-700 px-4">
-                              ₹ {item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              ₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </TableCell>
                             <TableCell className="px-2"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500" onClick={()=>handleRemoveItem(item.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-yellow-50/50">
                           <TableCell colSpan={2} className="py-4 px-6 text-[10px] font-bold text-slate-500 uppercase text-right">Total Order Val:</TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{formData.items?.reduce((acc, i)=>acc+i.qty,0)}</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{formData.items?.reduce((acc, i)=>acc+i.qty,0) || 0}</TableCell>
                           <TableCell></TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{formData.subTotal?.toLocaleString()}</TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{formData.discountTotal?.toLocaleString()}</TableCell>
-                          <TableCell className="text-center font-bold text-slate-900">{formData.taxTotal?.toLocaleString()}</TableCell>
-                          <TableCell className="text-right font-display font-black text-slate-900 px-4">₹ {formData.amount?.toLocaleString()}</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{(formData.subTotal || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{(formData.discountTotal || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{(formData.taxTotal || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-display font-black text-slate-900 px-4">₹ {(formData.amount || 0).toLocaleString()}</TableCell>
                           <TableCell></TableCell>
                         </TableRow>
                       </TableBody>
@@ -913,7 +913,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                                </div>
                                <div className="flex justify-between items-center text-xs font-black text-slate-800 uppercase">
                                   <span>Total Tax</span>
-                                  <span>₹ {formData.taxTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                  <span>₹ {(formData.taxTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                </div>
                             </div>
 
@@ -926,7 +926,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                                         <span className="text-[10px] font-bold">%</span>
                                      </div>
                                   </div>
-                                  <span className="text-xs font-bold text-slate-800">₹ {formData.tcsAmount?.toFixed(2)}</span>
+                                  <span className="text-xs font-bold text-slate-800">₹ {(formData.tcsAmount || 0).toFixed(2)}</span>
                                </div>
                             </div>
 
@@ -935,12 +935,12 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                                   <span className="text-11px font-bold text-slate-800 uppercase">Round Off</span>
                                   <Switch checked={formData.isRoundOffActive} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
                                </div>
-                               <span className="text-xs font-bold text-slate-800">{formData.roundOff?.toFixed(2)}</span>
+                               <span className="text-xs font-bold text-slate-800">{(formData.roundOff || 0).toFixed(2)}</span>
                             </div>
 
                             <div className="pt-8 mt-4 border-t-4 border-slate-900 flex justify-between items-center bg-yellow-50/30 p-4 -mx-8">
                                <span className="text-lg font-black text-slate-900 uppercase tracking-tighter">Grand Total</span>
-                               <span className="text-3xl font-display font-black text-slate-900">₹ {formData.amount?.toLocaleString('en-IN')}</span>
+                               <span className="text-3xl font-display font-black text-slate-900">₹ {(formData.amount || 0).toLocaleString('en-IN')}</span>
                             </div>
 
                             <div className="pt-6 text-center space-y-1">

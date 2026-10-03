@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import {
   Receipt, 
   Plus,
   ChevronRight,
+  ChevronLeft,
   TrendingUp,
   FileBox,
   LayoutGrid,
@@ -119,7 +120,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Area, 
@@ -139,6 +139,8 @@ import {
   Legend
 } from 'recharts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'Quotation', icon: FileBox, prefix: 'QT' },
@@ -307,6 +309,7 @@ interface BillingManagementProps {
 }
 
 export function BillingManagement({ customers, vendors, records, orders, users, inventory, permissions, onSaveRecord, onDeleteRecord, onTabChange, uiSettings }: BillingManagementProps) {
+  const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardView, setDashboardView] = useState<'quick' | 'analytics'>('analytics');
@@ -607,7 +610,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         </div>
 
         <div className="flex-1 w-full max-w-[1700px] mx-auto p-4 space-y-4">
-          {/* Header Section: Customer & Document Detail */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
              <Card className="bg-white border border-slate-300 rounded-none shadow-none p-4 space-y-4">
                 <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 pb-2">Customer Information</h3>
@@ -668,7 +670,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
              </Card>
           </div>
 
-          {/* Item Entry Matrix - GoGSTBill Style */}
           <Card className="border border-slate-300 rounded-none shadow-none bg-white overflow-hidden">
             <Table>
               <TableHeader className="bg-slate-100">
@@ -744,7 +745,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pb-24">
-             {/* Left Column: Bank, Terms, Remarks */}
              <div className="lg:col-span-8 space-y-4">
                <Card className="bg-white border border-slate-300 p-4 space-y-4 rounded-none shadow-none">
                  <h3 className="text-[10px] font-black uppercase text-[#001F3D] tracking-widest border-b border-slate-100 pb-2 flex justify-between items-center">
@@ -782,7 +782,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                </Card>
              </div>
 
-             {/* Right Column: Calculations */}
              <div className="lg:col-span-4">
                <Card className="bg-white border-2 border-[#001F3D] shadow-none rounded-none overflow-hidden">
                   <div className="bg-[#001F3D] text-white p-4 font-black uppercase text-[10px] tracking-[0.2em] flex justify-between items-center">
@@ -835,7 +834,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
           </div>
         </div>
 
-        {/* Fixed Interaction Footer */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-300 p-3 flex justify-end gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-[100]">
            <Button variant="outline" className="h-11 rounded-none px-8 font-bold uppercase text-[10px] tracking-widest border-slate-300 bg-white text-slate-600" onClick={()=>setIsRecordFormOpen(false)}>Back to Ledger</Button>
            <Button variant="outline" className="h-11 rounded-none px-8 font-bold uppercase text-[10px] tracking-widest border-slate-300 bg-white text-blue-600">Save as Draft</Button>

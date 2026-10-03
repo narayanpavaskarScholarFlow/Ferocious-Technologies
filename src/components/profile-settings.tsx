@@ -210,7 +210,6 @@ export function ProfileSettings({
         name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim()
       };
     } else if (isMasterAdmin) {
-      // Fallback for Master Admin if no doc exists yet in Firestore
       targetId = 'admin-master-node';
       updated = {
         id: targetId,
@@ -227,14 +226,13 @@ export function ProfileSettings({
       return;
     }
 
-    // If master admin saves personal, also include current local UI tweaks
     if (isMasterAdmin) {
       updated.uiSettings = { ...localUI };
       onUpdateUISettings(localUI);
     }
 
     onSaveUser(updated as SystemUser);
-    toast({ title: "DATA SAVED", description: "Identity and configuration committed to master ledger." });
+    toast({ title: "SAVE DATA", description: "Identity and configuration committed to master ledger." });
   };
 
   const updateLocalUIField = (key: keyof UISettings, value: any) => {
@@ -244,7 +242,6 @@ export function ProfileSettings({
   const handleCommitUISettings = () => {
     onUpdateUISettings(localUI);
     
-    // Find the Master Admin record to store global UI settings
     let targetAdmin = masterAdminRecord || users.find(u => u.name?.toLowerCase() === 'master admin') || currentUserData;
     
     if (!targetAdmin && isMasterAdmin) {
@@ -271,7 +268,7 @@ export function ProfileSettings({
         }
       };
       onSaveUser(adminUpdate);
-      toast({ title: "DATA SAVED", description: "Global architecture configuration committed." });
+      toast({ title: "SAVE DATA", description: "Global architecture configuration committed." });
     } else {
       toast({ variant: "destructive", title: "Protocol Error", description: "Administrative node not identified for global commit." });
     }
@@ -288,6 +285,22 @@ export function ProfileSettings({
       reader.onloadend = () => {
         updateLocalUIField('brandLogo', reader.result as string);
         toast({ title: "Logo Metadata Cached", description: "Click SAVE DATA to synchronize branding." });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 800000) {
+        toast({ variant: "destructive", title: "Image Matrix Overflow", description: "Please use a photo under 800KB for institutional synchronization." });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPersonalInfo(prev => ({ ...prev, image: reader.result as string }));
+        toast({ title: "Visual Identity Cached", description: "Identity photo initialized. Click SAVE DATA to commit." });
       };
       reader.readAsDataURL(file);
     }
@@ -326,7 +339,7 @@ export function ProfileSettings({
     const user = users.find(u => u.id === selectedMatrixUserId);
     if (!user) return;
     onSaveUser({ ...user, permissions: matrixPermissions });
-    toast({ title: "DATA SAVED", description: `Permissions for ${user.name} committed to matrix.` });
+    toast({ title: "SAVE DATA", description: `Permissions for ${user.name} committed to matrix.` });
   };
 
   const handleUpdatePageTitle = (nodeId: string, title: string) => {
@@ -553,7 +566,6 @@ export function ProfileSettings({
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Typography Matrix */}
                 <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
                    <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                       <Type className="h-4 w-4 text-primary" />
@@ -577,7 +589,6 @@ export function ProfileSettings({
                    </div>
                 </Card>
 
-                {/* Aesthetic Matrix (Box Engine) */}
                 <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
                    <div className="flex items-center gap-3 border-l-4 border-accent pl-4">
                       <Square className="h-4 w-4 text-accent" />
@@ -610,7 +621,6 @@ export function ProfileSettings({
                    </div>
                 </Card>
 
-                {/* Layout Matrix */}
                 <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
                    <div className="flex items-center gap-3 border-l-4 border-blue-500 pl-4">
                       <PanelLeft className="h-4 w-4 text-blue-500" />
@@ -651,7 +661,6 @@ export function ProfileSettings({
                    </div>
                 </Card>
 
-                {/* Identity Matrix */}
                 <Card className="p-8 border-slate-200 bg-white shadow-xl rounded-[2rem] space-y-8">
                    <div className="flex items-center gap-3 border-l-4 border-emerald-500 pl-4">
                       <QrCode className="h-4 w-4 text-emerald-500" />

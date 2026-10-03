@@ -306,6 +306,7 @@ export interface UISettings {
   brandLogo?: string; // High-fidelity corporate logo data URI
   logoSize: number; // Unified scaling node for branding identities
   numberSeries?: Record<string, NumberSeries>;
+  monthlyBillingTargets?: Record<string, number>; // Key: "YYYY-MM", Val: Target Amount
   billingTableSettings?: {
     colWidths: {
       description: number;

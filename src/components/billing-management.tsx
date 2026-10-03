@@ -361,6 +361,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const today = startOfToday();
     
     const targetKey = format(targetDate, 'yyyy-MM');
+    // Important: Targets should be pulled from uiSettings for shared BI visibility
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
 
     const monthInvoices = records.filter(r => 
@@ -371,6 +372,14 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     const remainingToTarget = Math.max(0, monthlyBillingTarget - actualBillingAchieved);
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
+
+    // Collection calculation
+    const monthCollections = records.filter(r => 
+      r.type === 'inward_payment' && 
+      isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd })
+    );
+    const collectionVal = monthCollections.reduce((s, r) => s + (r.amount || 0), 0);
+    const collectionEfficiency = actualBillingAchieved > 0 ? (collectionVal / actualBillingAchieved) * 100 : 0;
 
     let daysRemaining = 1;
     const daysInM = getDaysInMonth(targetDate);
@@ -386,11 +395,12 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     const requiredDailyBilling = daysRemaining > 0 ? remainingToTarget / daysRemaining : 0;
 
-    const collectionVal = records.filter(r => r.type === 'inward_payment').reduce((s, r) => s + r.amount, 0);
+    // Aggregate Health Score
+    const inventoryVal = inventory.length > 0 ? (inventory.filter(i => i.status === 'In Stock').length / inventory.length) * 100 : 80;
     const healthScore = Math.round(
-      (Math.min(achievementPercent, 100) * 0.4) + 
-      (Math.min((collectionVal / (monthlyBillingTarget || 1)) * 100, 100) * 0.3) +
-      (80 * 0.3)
+      (Math.min(achievementPercent, 110) * 0.4) + 
+      (Math.min(collectionEfficiency, 100) * 0.3) +
+      (inventoryVal * 0.3)
     );
 
     return { 
@@ -400,9 +410,11 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       achievementPercent,
       daysRemaining,
       requiredDailyBilling,
+      collectionVal,
+      collectionEfficiency,
       healthScore
     };
-  }, [records, uiSettings.monthlyBillingTargets, selectedAnalyticsDate]);
+  }, [records, uiSettings.monthlyBillingTargets, selectedAnalyticsDate, inventory]);
 
   const handleOpenForm = (type: string, record?: BillingRecord) => {
     setActiveRecordType(type);
@@ -556,7 +568,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold uppercase px-3 mb-2">Institutional Fidelity</Badge>
             <h4 className="text-3xl font-display font-black text-white uppercase tracking-tight">Business Health Score</h4>
           </div>
-          <p className="text-xs text-white/40 leading-relaxed font-medium">Calculated from actual billing, collection efficiency, and inventory health matrix.</p>
+          <p className="text-xs text-white/40 leading-relaxed font-medium">Calculated from actual billing achievement, collection efficiency, and operational yield matrix.</p>
         </div>
         <div className="relative z-10 flex-1 flex justify-center">
           <CircularGauge achievement={biMetrics.healthScore} size={240} strokeWidth={20}>
@@ -584,7 +596,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     return (
       <div className="flex flex-col bg-[#F1F5F9] min-h-screen font-sans text-slate-900 animate-in fade-in duration-300 pb-40">
-        {/* Top Sticky Header */}
         <div className="sticky top-0 z-50 bg-white border-b border-slate-300 px-4 h-12 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)} className="h-8 px-2 hover:bg-slate-100"><ArrowLeft className="h-4 w-4" /></Button>
@@ -736,7 +747,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               </TableBody>
             </Table>
             <div className="p-3 bg-slate-50 border-t border-slate-300 flex justify-between items-center">
-               <Button onClick={handleAddRow} variant="outline" className="h-9 px-6 rounded-none border-slate-300 bg-white gap-2 font-bold text-[10px] uppercase tracking-widest"><Plus className="h-3.5 w-3.5" /> Add New Row (Alt+A)</Button>
+               <Button onClick={handleAddRow} variant="outline" className="h-9 px-6 rounded-none border-slate-300 bg-white gap-2 font-bold text-[10px] uppercase tracking-widest"><Plus className="h-3.5 w-3.5" /> Add New Row</Button>
                <div className="flex gap-4">
                   <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase">Total Qty</p><p className="text-xs font-bold">{formData.items?.reduce((s,i)=>s+i.qty, 0)}</p></div>
                   <div className="text-right pr-4"><p className="text-[8px] font-bold text-slate-400 uppercase">Sub-Total</p><p className="text-xs font-bold">₹ {formData.subTotal?.toLocaleString(undefined, {minimumFractionDigits: 2})}</p></div>
@@ -748,7 +759,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
              <div className="lg:col-span-8 space-y-4">
                <Card className="bg-white border border-slate-300 p-4 space-y-4 rounded-none shadow-none">
                  <h3 className="text-[10px] font-black uppercase text-[#001F3D] tracking-widest border-b border-slate-100 pb-2 flex justify-between items-center">
-                   <div className="flex items-center gap-2"><Landmark className="h-3 w-3" /> Bank Details (Expand)</div>
+                   <div className="flex items-center gap-2"><Landmark className="h-3 w-3" /> Bank Details</div>
                    <Switch checked={true} onCheckedChange={()=>{}} />
                  </h3>
                  <div className="grid grid-cols-2 gap-4">
@@ -768,15 +779,15 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                    <div className="flex items-center gap-2"><ClipboardList className="h-3 w-3" /> Terms & Conditions</div>
                    <Button variant="ghost" size="sm" className="h-7 text-[8px] uppercase font-bold text-primary">Save as Template</Button>
                  </h3>
-                 <Textarea className="bg-slate-50 border-slate-100 rounded-none text-xs min-h-[100px] shadow-none" placeholder="1. Payment 100% against delivery. 2. GST extra as applicable..." value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} />
+                 <Textarea className="bg-slate-50 border-slate-100 rounded-none text-xs min-h-[100px] shadow-none" placeholder="1. Payment 100% against delivery..." value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} />
                </Card>
 
                <Card className="bg-white border border-slate-300 p-4 space-y-4 rounded-none shadow-none">
                  <h3 className="text-[10px] font-black uppercase text-[#001F3D] tracking-widest border-b border-slate-100 pb-2">Document Remarks (Internal)</h3>
                  <div className="flex gap-4 items-start">
-                    <Textarea className="bg-slate-50 border-slate-100 rounded-none text-xs min-h-[60px] shadow-none flex-1" placeholder="Add private notes or cross-references here..." value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                    <Textarea className="bg-slate-50 border-slate-100 rounded-none text-xs min-h-[60px] shadow-none flex-1" placeholder="Add private notes..." value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
                     <div className="w-48 p-3 bg-blue-50 border border-blue-100 text-blue-700 text-[9px] font-bold leading-relaxed uppercase">
-                       <Info className="h-3 w-3 mb-1" /> Not visible on print nodes or customer exports.
+                       <Info className="h-3 w-3 mb-1" /> Not visible on print nodes.
                     </div>
                  </div>
                </Card>
@@ -836,7 +847,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-300 p-3 flex justify-end gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-[100]">
            <Button variant="outline" className="h-11 rounded-none px-8 font-bold uppercase text-[10px] tracking-widest border-slate-300 bg-white text-slate-600" onClick={()=>setIsRecordFormOpen(false)}>Back to Ledger</Button>
-           <Button variant="outline" className="h-11 rounded-none px-8 font-bold uppercase text-[10px] tracking-widest border-slate-300 bg-white text-blue-600">Save as Draft</Button>
            <Button className="h-11 rounded-none px-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleSave}><Save className="h-4 w-4" /> Save & Commit</Button>
            <Button className="h-11 rounded-none px-12 bg-[#001F3D] hover:bg-black text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleSave}><Printer className="h-4 w-4" /> Save & Print</Button>
         </div>
@@ -970,7 +980,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         const val = Number(e.target.value);
                         const key = format(parseISO(selectedAnalyticsDate), 'yyyy-MM');
                         const updated = { ...(uiSettings.monthlyBillingTargets || {}), [key]: val };
-                        const adminUser = users.find(u => u.name?.toLowerCase() === 'master admin');
+                        // Persist target globally in the admin document
+                        const adminUser = users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin');
                         if (adminUser) {
                           setDocumentNonBlocking(doc(db, 'users', adminUser.id), {
                             uiSettings: { ...uiSettings, monthlyBillingTargets: updated }

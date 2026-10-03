@@ -42,7 +42,10 @@ import {
   Send,
   Eye,
   Settings2,
-  ArrowRight
+  ArrowRight,
+  Hash,
+  Edit3,
+  ShieldCheck
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';

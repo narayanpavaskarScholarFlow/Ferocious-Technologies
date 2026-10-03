@@ -32,7 +32,7 @@ import { DispatchLedger } from '@/components/dispatch-ledger';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert, KeyRound, AlertTriangle, Kanban } from 'lucide-react';
+import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert, KeyRound, AlertTriangle, Kanban, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -53,6 +53,7 @@ import {
   useMemoFirebase,
   setDocumentNonBlocking,
   deleteDocumentNonBlocking,
+  addDocumentNonBlocking,
   FirebaseClientProvider
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
@@ -115,6 +116,7 @@ function IndustrialERPInternal() {
   const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
   const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
   const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
+  const testQuery = useMemoFirebase(() => collection(db, 'test_connection'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
   const { data: customersData } = useCollection<Customer>(customersQuery);
@@ -131,6 +133,7 @@ function IndustrialERPInternal() {
   const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
   const { data: slipsData } = useCollection<SalarySlip>(slipsQuery);
   const { data: annualData } = useCollection<any>(annualQuery);
+  const { data: testData } = useCollection<any>(testQuery);
 
   const orders = ordersData || [];
   const customers = customersData || [];
@@ -296,6 +299,15 @@ function IndustrialERPInternal() {
   const handleSaveAssignment = (asg: TrainingAssignment) => setDocumentNonBlocking(doc(db, 'training_assignments', asg.id), asg, { merge: true });
   const handleDeleteAssignment = (id: string) => deleteDocumentNonBlocking(doc(db, 'training_assignments', id));
 
+  const runConnectionTest = () => {
+    addDocumentNonBlocking(collection(db, 'test_connection'), {
+      timestamp: new Date().toISOString(),
+      status: 'Connected',
+      operator: currentUser || 'Unknown'
+    });
+    toast({ title: "Signal Transmitted", description: "Test document initialized in Firestore matrix." });
+  };
+
   useEffect(() => {
     setMounted(true);
     const params = new URLSearchParams(window.location.search);
@@ -434,7 +446,55 @@ function IndustrialERPInternal() {
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />}
+            {currentView === 'settings' && (
+              <div className="space-y-10">
+                <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />
+                
+                {/* Connection Verification Node */}
+                <Card className="p-8 border-slate-200 bg-white shadow-2xl rounded-[2rem] max-w-4xl">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-emerald-500 rounded-xl text-white shadow-lg shadow-emerald-500/20"><Database className="h-6 w-6" /></div>
+                      <div>
+                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Cloud Sync Verification</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Validate Firestore read/write protocols.</p>
+                      </div>
+                    </div>
+                    <Button onClick={runConnectionTest} className="rounded-xl bg-[#001F3D] hover:bg-black text-white h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl flex gap-2">
+                      <Plus className="h-4 w-4" /> Run Connection Test
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Live Test Ledger: test_connection</h4>
+                    <div className="max-h-60 overflow-y-auto border border-slate-100 rounded-xl">
+                      <Table>
+                        <TableHeader className="bg-slate-50">
+                          <TableRow>
+                            <TableHead className="text-[9px] font-bold uppercase">Timestamp</TableHead>
+                            <TableHead className="text-[9px] font-bold uppercase">Operator</TableHead>
+                            <TableHead className="text-[9px] font-bold uppercase text-right">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {testData?.length ? testData.map(test => (
+                            <TableRow key={test.id} className="h-12 border-b border-slate-50">
+                              <TableCell className="text-[10px] font-code text-slate-500">{test.timestamp}</TableCell>
+                              <TableCell className="text-[10px] font-bold text-slate-700 uppercase">{test.operator}</TableCell>
+                              <TableCell className="text-right">
+                                <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-bold uppercase px-3">{test.status}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          )) : (
+                            <TableRow><TableCell colSpan={3} className="text-center py-10 opacity-20 text-[10px] font-bold uppercase">No Test Nodes Detected</TableCell></TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
             {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
             {currentView === 'customer-orders' && <CustomerOrders customers={customers} onSaveCustomer={handleSaveCustomer} />}

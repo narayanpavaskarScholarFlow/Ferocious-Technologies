@@ -26,7 +26,9 @@ import {
   Activity,
   History,
   TrendingUp,
-  Cpu
+  Cpu,
+  Settings2,
+  Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Order, RoutingOperation, SystemUser, Machine } from '@/lib/types';
@@ -37,9 +39,25 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { differenceInDays, parseISO, isValid, format, isAfter } from 'date-fns';
 
 const INITIAL_STEPS = [
-  "DFM", "Design", "Review", "Final Design", "Raw Material", "Pre-machining", 
-  "CNC Turning", "VMC Milling", "1st Grinding", "Heat Treatment", 
-  "2nd Grinding", "Hard Part Milling", "EDM / WEDM", "QC", "Assembly"
+  "DFM Analysis",
+  "Concept Design",
+  "3D Modelling",
+  "Design Review",
+  "Customer Review",
+  "Design Revision",
+  "Final Design Release",
+  "Raw Material Procurement",
+  "Pre-machining", 
+  "CNC Turning", 
+  "VMC Milling", 
+  "Heat Treatment", 
+  "1st Grinding", 
+  "2nd Grinding", 
+  "Hard Part Milling", 
+  "EDM / WEDM", 
+  "Quality Control (QC)", 
+  "Assembly",
+  "Packaging & Release"
 ];
 
 const STATUS_OPTIONS = [
@@ -51,7 +69,7 @@ const STATUS_OPTIONS = [
   { label: "NA", color: "text-slate-300 bg-slate-50 border-slate-100" },
 ];
 
-const DEPARTMENTS = ["Design", "Engineering", "Tool Room", "Quality", "Production", "Accounts", "R&D"];
+const DEPARTMENTS = ["Design", "Engineering", "Tool Room", "Quality", "Production", "Accounts", "R&D", "Consultancy"];
 
 interface OperationsStatusProps {
   initialOrderId?: string | null;
@@ -143,7 +161,7 @@ export function OperationsStatus({
           </div>
           <div>
             <h2 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Execution Control Matrix</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Master Production Routing & Sequential Yield</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Master Routing & Sequential Yield</p>
           </div>
         </div>
         
@@ -178,7 +196,7 @@ export function OperationsStatus({
                       <div className="flex items-center gap-3"><Building2 className="h-4 w-4 text-white/20" /><span className="text-[11px] font-bold text-white/60 uppercase">{orderData.customer}</span></div>
                       <div className="flex items-center gap-3"><User className="h-4 w-4 text-white/20" /><span className="text-[11px] font-bold text-white/60 uppercase">{orderData.owner}</span></div>
                       <div className="flex items-center gap-3"><CalendarDays className="h-4 w-4 text-white/20" /><span className="text-[10px] font-code font-bold text-white/40">{orderData.startDate} — {orderData.endDate}</span></div>
-                      <div className="flex items-center gap-3"><Activity className="h-4 w-4 text-white/20" /><span className="text-[11px] font-bold text-white/60 uppercase">{orderData.typeOfWork}</span></div>
+                      <div className="flex items-center gap-3"><Rocket className="h-4 w-4 text-white/20" /><span className="text-[11px] font-bold text-white/60 uppercase">{orderData.typeOfWork}</span></div>
                    </div>
                 </div>
                 <div className="text-right">
@@ -219,14 +237,14 @@ export function OperationsStatus({
                <div className="flex items-center gap-4">
                   <div className="p-3 bg-[#001F3D] dark:bg-primary rounded-xl text-white dark:text-card shadow-lg"><ClipboardList className="h-6 w-6" /></div>
                   <div>
-                    <h3 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Routing & Planning Matrix</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Sequential Process Allocation Node</p>
+                    <h3 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Routing & Sequential Planning</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Design & Manufacturing Process Node</p>
                   </div>
                </div>
                <div className="flex items-center gap-4 w-full md:w-auto">
                   <Select value={newOpName} onValueChange={setNewOpName}>
                     <SelectTrigger className="w-full md:w-64 h-12 bg-white dark:bg-slate-900 text-[10px] font-black uppercase rounded-2xl shadow-inner border-none">
-                      <SelectValue placeholder="Append Sequence Node..." />
+                      <SelectValue placeholder="Append sequence node..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {INITIAL_STEPS.map(step => (

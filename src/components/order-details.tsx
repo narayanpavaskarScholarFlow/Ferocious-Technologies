@@ -25,7 +25,9 @@ import {
   FileText,
   Hammer,
   Sparkles,
-  Link2
+  Link2,
+  Cpu,
+  BrainCircuit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Customer, SystemUser as StaffMember, Order, UISettings, BillingRecord, BillingLineItem } from '@/lib/types';
@@ -44,12 +46,16 @@ interface OrderDetailsProps {
 }
 
 const WORK_TYPES = [
-  "Mould",
-  "Press tool",
-  "Fixture",
-  "Gauge",
-  "Rework",
-  "Maintenance"
+  "Mould Manufacturing",
+  "Press Tooling",
+  "Fixture Fabrication",
+  "Precision Component",
+  "Mould Design",
+  "Product Design",
+  "Engineering Consultancy",
+  "DFM Analysis",
+  "Reverse Engineering",
+  "Maintenance & Rework"
 ];
 
 const ORDER_STATUS_WORKFLOW = [
@@ -410,7 +416,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
               
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <p className="text-[9px] font-bold uppercase text-white/30 tracking-widest">Linked Products ({orderItems.length})</p>
+                  <p className="text-[9px] font-bold uppercase text-white/30 tracking-widest">Linked Items ({orderItems.length})</p>
                   <div className="space-y-2">
                     {orderItems.slice(0, 3).map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center py-2 border-b border-white/5">
@@ -419,10 +425,10 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                       </div>
                     ))}
                     {orderItems.length > 3 && (
-                      <p className="text-[9px] text-white/20 font-bold uppercase text-center mt-2">+{orderItems.length - 3} More Components</p>
+                      <p className="text-[9px] text-white/20 font-bold uppercase text-center mt-2">+{orderItems.length - 3} More Items</p>
                     )}
                     {orderItems.length === 0 && (
-                      <p className="text-[9px] text-white/20 font-bold uppercase italic text-center py-4">No Products Attached</p>
+                      <p className="text-[9px] text-white/20 font-bold uppercase italic text-center py-4">No Items Attached</p>
                     )}
                   </div>
                 </div>
@@ -460,3 +466,4 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
     </div>
   );
 }
+

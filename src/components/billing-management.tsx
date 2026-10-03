@@ -48,7 +48,11 @@ import {
   Upload,
   Download,
   Link2,
-  Info
+  Info,
+  Package,
+  Boxes,
+  Zap,
+  RotateCcw
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -69,12 +73,13 @@ import {
   startOfToday, 
   getDaysInMonth,
   getDate,
-  isValid
+  isValid,
+  subMonths
 } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 const DOCUMENT_TYPES = [
@@ -93,10 +98,16 @@ const DOCUMENT_TYPES = [
 
 const MAIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { id: 'customer', label: 'Identity Matrix', icon: Building2 },
   { id: 'product-master', label: 'Product Master', icon: PackageSearch },
   ...DOCUMENT_TYPES.map(t => ({ id: t.id, label: t.label, icon: t.icon })),
   { id: 'report', label: 'BI Analytics', icon: FileBarChart },
+];
+
+const PRODUCT_TYPES = [
+  'Manufacturing Product',
+  'Design Service',
+  'Engineering Service',
+  'Consulting Service'
 ];
 
 function numberToWords(num: number): string {
@@ -140,6 +151,7 @@ export function BillingManagement({
   const [selectedAnalyticsDate, setSelectedAnalyticsDate] = useState(new Date().toISOString().split('T')[0]);
   
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [activeRecordType, setActiveRecordType] = useState('invoice');
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
 
@@ -149,6 +161,11 @@ export function BillingManagement({
     roundOff: 0, notes: '', terms: '', quotationId: '', poId: '', poNumber: '', referenceNumber: '', deliveryMode: ''
   });
 
+  const [productFormData, setProductFormData] = useState<Partial<ProductMaster>>({
+    id: '', code: '', name: '', description: '', hsn: '', gstRate: 18, uom: 'Nos', 
+    saleRate: 0, purchaseRate: 0, category: 'General', type: 'Manufacturing Product', status: 'Active'
+  });
+
   const biMetrics = useMemo(() => {
     const targetDate = parseISO(selectedAnalyticsDate);
     const mStart = startOfMonth(targetDate);
@@ -156,6 +173,7 @@ export function BillingManagement({
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
     
+    // STRICT DATA PROTOCOL: Use ONLY actual Sales Invoices for target achievement
     const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
@@ -164,16 +182,33 @@ export function BillingManagement({
     const totalCollected = monthInward.reduce((acc, r) => acc + (r.amount || 0), 0);
     const collectionAchievement = actualBillingAchieved > 0 ? (totalCollected / actualBillingAchieved) * 100 : 100;
 
+    // Smart Health Score (weighted achievement)
     const healthScore = Math.round((achievementPercent * 0.4) + (collectionAchievement * 0.4) + (90 * 0.2));
+
+    const daysInMonth = getDaysInMonth(targetDate);
+    const today = new Date();
+    const daysRemaining = isWithinInterval(today, { start: mStart, end: mEnd }) 
+      ? daysInMonth - getDate(today) 
+      : (isAfter(today, mEnd) ? 0 : daysInMonth);
+
+    const remainingToTarget = Math.max(0, monthlyBillingTarget - actualBillingAchieved);
+    const dailyVelocity = daysRemaining > 0 ? remainingToTarget / daysRemaining : 0;
+
+    // PO Specific Metrics
+    const poReceived = records.filter(r => r.type === 'purchase_order' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
+    const poValue = poReceived.reduce((acc, r) => acc + r.amount, 0);
 
     return { 
       monthlyBillingTarget, 
       actualBillingAchieved, 
       achievementPercent, 
       healthScore, 
-      remaining: Math.max(0, monthlyBillingTarget - actualBillingAchieved),
+      remaining: remainingToTarget,
       collected: totalCollected,
-      dailyVelocity: (monthlyBillingTarget - actualBillingAchieved) / Math.max(1, (getDaysInMonth(targetDate) - getDate(startOfToday())))
+      dailyVelocity,
+      daysRemaining,
+      poReceived: poReceived.length,
+      poValue
     };
   }, [records, uiSettings.monthlyBillingTargets, selectedAnalyticsDate]);
 
@@ -184,9 +219,10 @@ export function BillingManagement({
       setFormData(record);
     } else {
       setEditingRecordId(null);
+      const prefix = DOCUMENT_TYPES.find(t=>t.id===type)?.prefix || 'DOC';
       setFormData({
         id: `REC-${Date.now()}`, type, customerName: '', customerId: '', date: new Date().toISOString().split('T')[0],
-        number: `${DOCUMENT_TYPES.find(t=>t.id===type)?.prefix || 'DOC'}-${Date.now().toString().slice(-4)}`, status: 'Pending', 
+        number: `${prefix}-${Date.now().toString().slice(-4)}`, status: 'Pending', 
         items: [{ id: '1', description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }],
         subTotal: 0, amount: 0, taxTotal: 0, discountTotal: 0, additionalCharges: 0, roundOff: 0, notes: '', terms: '', quotationId: ''
       });
@@ -194,17 +230,45 @@ export function BillingManagement({
     setIsRecordFormOpen(true);
   };
 
+  const handleOpenProductForm = (product?: ProductMaster) => {
+    if (product) {
+      setProductFormData(product);
+    } else {
+      setProductFormData({
+        id: `PROD-${Date.now()}`, code: `P-${Date.now().toString().slice(-4)}`, name: '', description: '', 
+        hsn: '', gstRate: 18, uom: 'Nos', saleRate: 0, purchaseRate: 0, category: 'General', 
+        type: 'Manufacturing Product', status: 'Active'
+      });
+    }
+    setIsProductFormOpen(true);
+  };
+
+  const handleSaveProduct = () => {
+    if (!productFormData.name || !productFormData.code) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Identity and Product Code are required." });
+      return;
+    }
+    setDocumentNonBlocking(doc(db, 'products', productFormData.id!), { ...productFormData, updatedAt: new Date().toISOString() }, { merge: true });
+    toast({ title: "Catalogue Updated", description: `${productFormData.name} synchronized with Master Registry.` });
+    setIsProductFormOpen(false);
+  };
+
   const handleSave = () => {
     if (!formData.customerId || !formData.number) { 
       toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." }); 
       return; 
     }
+    
+    // Status Propagation for Quotation -> PO flow
+    if (formData.type === 'purchase_order' && formData.quotationId) {
+      updateDocumentNonBlocking(doc(db, 'billing', formData.quotationId), { status: 'Converted To PO' });
+    }
+
     onSaveRecord(formData as BillingRecord);
     toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
     setIsRecordFormOpen(false);
   };
 
-  // Restoration of "Previous ERP Structure" - Card Based Hierarchical Entry
   const FullPageEditor = () => (
     <div className="flex flex-col bg-slate-50 dark:bg-slate-950 min-h-screen animate-in fade-in duration-300 pb-20">
       <div className="sticky top-0 z-50 bg-[#001F3D] text-white px-6 h-14 flex items-center justify-between shadow-lg">
@@ -213,8 +277,8 @@ export function BillingManagement({
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Operational Entry Matrix</span>
-            <h2 className="text-lg font-display font-bold uppercase leading-none">{activeRecordType.replace('_', ' ')} Registry</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Institutional Transaction Entry</span>
+            <h2 className="text-lg font-display font-bold uppercase leading-none">{activeRecordType.replace('_', ' ')} Matrix</h2>
           </div>
         </div>
         <div className="flex gap-3">
@@ -226,8 +290,47 @@ export function BillingManagement({
       </div>
 
       <div className="max-w-[1400px] mx-auto w-full p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Identity & Nodes */}
         <div className="lg:col-span-8 space-y-8">
+          {/* Customer PO Selection Node (Conditional) */}
+          {activeRecordType === 'purchase_order' && (
+            <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl space-y-6">
+              <h4 className="text-[10px] font-black uppercase text-primary border-l-4 border-primary pl-4 tracking-widest">Link Customer Quotation</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[9px] uppercase font-bold text-slate-400">Select Source Quotation</Label>
+                  <Select value={formData.quotationId} onValueChange={(qId) => {
+                    const q = records.find(r => r.id === qId);
+                    if (q) {
+                      setFormData({ 
+                        ...formData, 
+                        quotationId: qId,
+                        customerId: q.customerId,
+                        customerName: q.customerName,
+                        items: q.items,
+                        terms: q.terms,
+                        notes: q.notes,
+                        amount: q.amount
+                      });
+                    }
+                  }}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase">
+                      <SelectValue placeholder="Identify source..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {records.filter(r => r.type === 'quotation' && r.status !== 'Converted To PO').map(q => (
+                        <SelectItem key={q.id} value={q.id} className="text-[10px] font-bold uppercase">{q.number} — {q.customerName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-4 pt-6">
+                   <div className="p-3 bg-primary/5 rounded-xl"><Info className="h-5 w-5 text-primary" /></div>
+                   <p className="text-[9px] text-slate-400 font-medium leading-relaxed italic">Linking a quotation auto-populates all industrial item nodes and technical terms.</p>
+                </div>
+              </div>
+            </Card>
+          )}
+
           <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-3xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-[0.02]"><Building2 className="h-16 w-16" /></div>
             <div className="relative z-10 space-y-8">
@@ -248,8 +351,8 @@ export function BillingManagement({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Shipping Address Node</Label>
-                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-xs font-bold shadow-inner" value={formData.shipTo} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} />
+                  <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Place of Supply</Label>
+                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-xs font-bold shadow-inner uppercase" value={formData.placeOfSupply} onChange={(e)=>setFormData({...formData, placeOfSupply: e.target.value})} />
                 </div>
               </div>
             </div>
@@ -260,14 +363,14 @@ export function BillingManagement({
             <div className="relative z-10 space-y-8">
               <h4 className="text-[10px] font-black uppercase text-primary border-l-4 border-primary pl-4 tracking-widest">Procedural Item Registry</h4>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[800px]">
                   <TableHeader className="bg-slate-50 dark:bg-slate-900">
                     <TableRow className="hover:bg-transparent border-none">
                       <TableHead className="w-12 text-center text-[8px]">SR</TableHead>
-                      <TableHead className="text-[8px]">Product/Service</TableHead>
+                      <TableHead className="text-[8px]">Product/Service Registry</TableHead>
                       <TableHead className="text-[8px] text-center w-20">Qty</TableHead>
                       <TableHead className="text-[8px] text-center w-24">Rate (₹)</TableHead>
-                      <TableHead className="text-[8px] text-center w-24">GST %</TableHead>
+                      <TableHead className="text-[8px] text-center w-20">GST %</TableHead>
                       <TableHead className="text-[8px] text-right px-4">Amount</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
@@ -280,14 +383,27 @@ export function BillingManagement({
                            <Select value={item.productId} onValueChange={(pId) => {
                              const p = products.find(x => x.id === pId);
                              const newItems = [...(formData.items || [])];
-                             newItems[idx] = { ...newItems[idx], productId: pId, description: p?.name || '', hsn: p?.hsn || '', price: p?.saleRate || 0, gstRate: p?.gstRate || 18, total: (newItems[idx].qty || 1) * (p?.saleRate || 0) };
+                             newItems[idx] = { 
+                               ...newItems[idx], 
+                               productId: pId, 
+                               description: p?.name || '', 
+                               hsn: p?.hsn || '', 
+                               price: p?.saleRate || 0, 
+                               gstRate: p?.gstRate || 18, 
+                               unit: p?.uom || 'Nos',
+                               total: (newItems[idx].qty || 1) * (p?.saleRate || 0) 
+                             };
                              setFormData({...formData, items: newItems});
                            }}>
-                             <SelectTrigger className="h-9 border-none bg-slate-50 dark:bg-slate-900 rounded-lg text-[10px] font-bold uppercase">
-                               <SelectValue placeholder="Identify Node..." />
+                             <SelectTrigger className="h-10 border-none bg-slate-50 dark:bg-slate-900 rounded-lg text-[10px] font-bold uppercase">
+                               <SelectValue placeholder="Identify Registry Node..." />
                              </SelectTrigger>
                              <SelectContent className="rounded-xl">
-                               {products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase">{p.name}</SelectItem>)}
+                               {products.map(p => (
+                                 <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase">
+                                   {p.name} <span className="ml-2 text-slate-400 text-[8px]">({p.type})</span>
+                                 </SelectItem>
+                               ))}
                              </SelectContent>
                            </Select>
                         </TableCell>
@@ -320,13 +436,12 @@ export function BillingManagement({
                 <Button variant="ghost" className="w-full mt-4 h-10 rounded-xl border border-dashed border-slate-200 text-slate-400 font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-slate-50" onClick={() => {
                   const newItems = [...(formData.items || []), { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }];
                   setFormData({...formData, items: newItems as BillingLineItem[]});
-                }}><Plus className="h-3.5 w-3.5" /> Append Protocol Node</Button>
+                }}><Plus className="h-3.5 w-3.5" /> Append Sequential Node</Button>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Right Column: Calculations & Summary Nodes */}
         <div className="lg:col-span-4 space-y-8 sticky top-24">
           <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-3xl space-y-8">
              <h4 className="text-[10px] font-black uppercase text-primary border-l-4 border-primary pl-4 tracking-widest">Document Registry Node</h4>
@@ -341,7 +456,7 @@ export function BillingManagement({
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Reference No.</Label>
-                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold shadow-inner" value={formData.referenceNumber} onChange={(e)=>setFormData({...formData, referenceNumber: e.target.value})} />
+                  <Input className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold shadow-inner uppercase" value={formData.referenceNumber} onChange={(e)=>setFormData({...formData, referenceNumber: e.target.value})} />
                 </div>
              </div>
           </Card>
@@ -356,17 +471,17 @@ export function BillingManagement({
                 
                 <div className="space-y-4">
                    <div className="flex justify-between items-center text-[11px] font-bold text-white/40 uppercase">
-                      <span>Gross Taxable</span>
+                      <span>Taxable Yield</span>
                       <span className="text-white">₹ {(formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0).toLocaleString()}</span>
                    </div>
                    <div className="flex justify-between items-center text-[11px] font-bold text-white/40 uppercase">
-                      <span>Matrix Tax (GST)</span>
+                      <span>Total Matrix Tax</span>
                       <span className="text-white">₹ {((formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0)).toLocaleString()}</span>
                    </div>
                    <div className="h-px bg-white/10 my-4" />
                    <div className="flex justify-between items-end">
                       <div className="space-y-1">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-primary">Grand Total Yield</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-primary">Grand Total Amount</p>
                         <p className="text-4xl font-display font-black tracking-tighter">₹ {(
                           (formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0) + 
                           (formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0)
@@ -382,15 +497,115 @@ export function BillingManagement({
                 </div>
              </div>
           </Card>
-
-          <Card className="p-6 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl flex items-start gap-4">
-             <div className="p-2 bg-amber-500 rounded-lg text-white"><Info className="h-4 w-4" /></div>
-             <p className="text-[10px] text-amber-800 dark:text-amber-200 font-medium leading-relaxed uppercase tracking-tight">
-               Changes to document nodes trigger immediate re-calculation of institutional health indices. Ensure total fidelity before final commit.
-             </p>
-          </Card>
         </div>
       </div>
+    </div>
+  );
+
+  const ProductMasterView = () => (
+    <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-8">
+       <Card className="bg-white dark:bg-card border-slate-200 dark:border-border shadow-2xl rounded-3xl overflow-hidden">
+          <div className="p-10 border-b border-slate-100 dark:border-border bg-slate-50/50 dark:bg-slate-900/10 flex flex-col md:flex-row justify-between items-center gap-8">
+             <div className="flex items-center gap-6">
+                <div className="p-4 bg-[#001F3D] rounded-2xl text-white shadow-xl">
+                  <PackageSearch className="h-8 w-8" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Product & Service Master</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Single Source of Truth Catalogue</p>
+                </div>
+             </div>
+             <Button className="h-14 px-12 bg-primary text-white dark:text-card rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl flex gap-3 group" onClick={() => handleOpenProductForm()}>
+                <Plus className="h-5 w-5" /> Register New Item <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+             </Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-white dark:bg-card border-b border-slate-100 dark:border-border">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-black text-[10px] uppercase text-slate-400 py-6 px-10">Item Identification</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase text-slate-400">Classification</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase text-slate-400">Standard Rate (₹)</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase text-slate-400">HSN/SAC</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase text-center w-32">Status</TableHead>
+                  <TableHead className="text-right px-10 w-20"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="bg-white dark:bg-card">
+                {products.map(p => (
+                  <TableRow key={p.id} className="h-24 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 border-b border-slate-50 dark:border-border transition-all cursor-pointer group" onClick={() => handleOpenProductForm(p)}>
+                    <TableCell className="px-10">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-[#001F3D] dark:text-white uppercase tracking-tight">{p.name}</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Code: {p.code} | Drawing: {p.drawingNumber || 'NA'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px] font-black uppercase px-3 py-1 rounded-full border-slate-200 dark:border-border">{p.type}</Badge>
+                    </TableCell>
+                    <TableCell className="font-display font-black text-sm dark:text-white">₹ {p.saleRate?.toLocaleString()}</TableCell>
+                    <TableCell className="font-code text-xs font-bold text-slate-500">{p.hsn}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge className={cn("text-[9px] font-black uppercase px-4 py-1.5 rounded-full", p.status === 'Active' ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400")}>{p.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right px-10">
+                       <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"><Edit3 className="h-5 w-5" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+       </Card>
+
+       <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
+          <DialogContent className="max-w-3xl bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+             <div className="p-8 bg-[#001F3D] text-white flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary rounded-xl text-card shadow-xl"><PackageSearch className="h-6 w-6" /></div>
+                  <div>
+                    <DialogTitle className="text-xl font-display font-bold uppercase tracking-tight">Catalogue Registry Protocol</DialogTitle>
+                    <DialogDescription className="text-[9px] text-white/40 font-bold uppercase tracking-widest">Master Product Identity Matrix</DialogDescription>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setIsProductFormOpen(false)} className="text-white/40 hover:text-white rounded-full"><X className="h-6 w-6" /></Button>
+             </div>
+             <ScrollArea className="max-h-[70vh]">
+               <div className="p-10 space-y-8">
+                  <div className="grid grid-cols-2 gap-8">
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">Item Name</Label><Input className="h-12 bg-slate-50 font-bold" value={productFormData.name} onChange={(e)=>setProductFormData({...productFormData, name: e.target.value})} /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">Product Code</Label><Input className="h-12 bg-slate-50 font-code font-bold uppercase" value={productFormData.code} onChange={(e)=>setProductFormData({...productFormData, code: e.target.value})} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-8">
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400 uppercase">Product Type</Label>
+                        <Select value={productFormData.type} onValueChange={(val: any)=>setProductFormData({...productFormData, type: val})}>
+                           <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
+                           <SelectContent className="rounded-xl">
+                              {PRODUCT_TYPES.map(t => <SelectItem key={t} value={t} className="text-[10px] font-bold uppercase">{t}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                     </div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">HSN / SAC Node</Label><Input className="h-12 bg-slate-50 font-code uppercase" value={productFormData.hsn} onChange={(e)=>setProductFormData({...productFormData, hsn: e.target.value})} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-8">
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">Drawing Number</Label><Input className="h-12 bg-slate-50 font-code uppercase" value={productFormData.drawingNumber} onChange={(e)=>setProductFormData({...productFormData, drawingNumber: e.target.value})} /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">Revision Number</Label><Input className="h-12 bg-slate-50 font-code uppercase" value={productFormData.revisionNumber} onChange={(e)=>setProductFormData({...productFormData, revisionNumber: e.target.value})} /></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-8">
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">Standard Rate (₹)</Label><Input type="number" className="h-12 bg-slate-50 font-bold" value={productFormData.saleRate} onChange={(e)=>setProductFormData({...productFormData, saleRate: Number(e.target.value)})} /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">GST Matrix (%)</Label><Input type="number" className="h-12 bg-slate-50 font-bold" value={productFormData.gstRate} onChange={(e)=>setProductFormData({...productFormData, gstRate: Number(e.target.value)})} /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-bold text-slate-400 uppercase">UOM Unit</Label><Input className="h-12 bg-slate-50 uppercase font-bold" value={productFormData.uom} onChange={(e)=>setProductFormData({...productFormData, uom: e.target.value})} /></div>
+                  </div>
+               </div>
+             </ScrollArea>
+             <div className="p-8 border-t bg-slate-50/50 flex justify-end gap-4">
+                <Button variant="ghost" className="h-12 px-8 rounded-xl font-bold uppercase text-[9px]" onClick={()=>setIsProductFormOpen(false)}>Abort Protocol</Button>
+                <Button className="h-12 px-12 bg-[#001F3D] text-white rounded-xl font-bold uppercase text-[10px] shadow-xl" onClick={handleSaveProduct}>Commit to Catalogue</Button>
+             </div>
+          </DialogContent>
+       </Dialog>
     </div>
   );
 
@@ -441,8 +656,10 @@ export function BillingManagement({
                 { label: 'Actual Billed', val: `₹ ${biMetrics.actualBillingAchieved.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
                 { label: 'Yield Deficiency', val: `₹ ${biMetrics.remaining.toLocaleString()}`, icon: Clock, color: 'text-amber-500' },
                 { label: 'Matrix Health', val: `${biMetrics.healthScore}%`, icon: Zap, color: 'text-primary' },
+                { label: 'POs Received', val: biMetrics.poReceived, icon: FileBadge, color: 'text-purple-500' },
+                { label: 'Daily Velocity', val: `₹ ${Math.round(biMetrics.dailyVelocity).toLocaleString()}`, icon: TrendingUp, color: 'text-indigo-500' },
               ].map(kpi => (
-                <Card key={kpi.label} className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border rounded-3xl shadow-sm space-y-4 hover:border-primary/50 transition-all group">
+                <Card key={kpi.label} className="p-8 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl shadow-sm space-y-4 hover:border-primary/50 transition-all group">
                    <div className="flex justify-between items-start">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{kpi.label}</p>
                       <kpi.icon className={cn("h-4 w-4", kpi.color)} />
@@ -455,7 +672,7 @@ export function BillingManagement({
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {MAIN_TABS.slice(1, -1).map(module => (
-            <Card key={module.id} className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border rounded-3xl shadow-sm hover:border-primary/50 cursor-pointer transition-all flex flex-col items-center gap-6 group" onClick={() => setActiveTab(module.id)}>
+            <Card key={module.id} className="p-8 bg-white dark:bg-card border border-slate-200 dark:border-border rounded-3xl shadow-sm hover:border-primary/50 cursor-pointer transition-all flex flex-col items-center gap-6 group" onClick={() => setActiveTab(module.id)}>
               <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all text-slate-400">
                  <module.icon className="h-8 w-8" />
               </div>
@@ -492,9 +709,10 @@ export function BillingManagement({
           </div>
 
           <div className="flex-1 overflow-y-auto w-full">
-            {activeTab === 'dashboard' ? <DashboardView /> : (
+            {activeTab === 'dashboard' ? <DashboardView /> : 
+             activeTab === 'product-master' ? <ProductMasterView /> : (
               <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                 <Card className="bg-white dark:bg-card border-slate-200 dark:border-border shadow-2xl rounded-3xl overflow-hidden">
+                 <Card className="bg-white dark:bg-card border border-slate-200 dark:border-border shadow-2xl rounded-3xl overflow-hidden">
                     <div className="p-10 border-b border-slate-100 dark:border-border bg-slate-50/50 dark:bg-slate-900/10 flex flex-col md:flex-row justify-between items-center gap-8">
                        <div className="flex items-center gap-6">
                           <div className="p-4 bg-[#001F3D] rounded-2xl text-white shadow-xl shadow-blue-900/20">
@@ -561,3 +779,4 @@ export function BillingManagement({
     </div>
   );
 }
+

@@ -152,7 +152,7 @@ export interface ProductMaster {
   drawingNumber?: string;
   revisionNumber?: string;
   category: string;
-  type: 'Product' | 'Service';
+  type: 'Manufacturing Product' | 'Design Service' | 'Engineering Service' | 'Consulting Service';
   status: 'Active' | 'Inactive';
   updatedAt: string;
 }
@@ -396,7 +396,7 @@ export interface QualityReport {
 export interface DimensionRecord {
   id: string;
   balloonNo: string;
-  typeOfDim: string;
+  type of dim: string;
   instrument: string;
   target: string;
   tolerance: string;

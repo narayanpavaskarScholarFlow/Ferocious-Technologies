@@ -199,26 +199,42 @@ export function ProfileSettings({
   }, [selectedMatrixUserId, users]);
 
   const handleUpdatePersonal = () => {
-    if (!currentUserData) return;
-    const updated: SystemUser = {
-      ...currentUserData,
-      ...personalInfo,
-      name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim()
-    };
-    onSaveUser(updated);
-    toast({ title: "Profile Synchronized", description: "Identity metadata updated in master ledger." });
-  };
+    let updated: Partial<SystemUser>;
+    let targetId: string;
 
-  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPersonalInfo(prev => ({ ...prev, image: reader.result as string }));
-        toast({ title: "Identity Matrix Updated", description: "Profile photo cached. Click Save to commit." });
+    if (currentUserData) {
+      targetId = currentUserData.id;
+      updated = {
+        ...currentUserData,
+        ...personalInfo,
+        name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim()
       };
-      reader.readAsDataURL(file);
+    } else if (isMasterAdmin) {
+      // Fallback for Master Admin if no doc exists yet in Firestore
+      targetId = 'admin-master-node';
+      updated = {
+        id: targetId,
+        username: 'admin',
+        ...personalInfo,
+        name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim(),
+        role: 'Master Admin',
+        dept: 'Admin',
+        permissions: {},
+        lastLogin: new Date().toISOString(),
+        status: 'active'
+      };
+    } else {
+      return;
     }
+
+    // If master admin saves personal, also include current local UI tweaks
+    if (isMasterAdmin) {
+      updated.uiSettings = { ...localUI };
+      onUpdateUISettings(localUI);
+    }
+
+    onSaveUser(updated as SystemUser);
+    toast({ title: "DATA SAVED", description: "Identity and configuration committed to master ledger." });
   };
 
   const updateLocalUIField = (key: keyof UISettings, value: any) => {
@@ -228,9 +244,10 @@ export function ProfileSettings({
   const handleCommitUISettings = () => {
     onUpdateUISettings(localUI);
     
-    let targetAdmin = masterAdminRecord || users.find(u => u.name === currentUser) || currentUserData;
+    // Find the Master Admin record to store global UI settings
+    let targetAdmin = masterAdminRecord || users.find(u => u.name?.toLowerCase() === 'master admin') || currentUserData;
     
-    if (!targetAdmin && currentUser?.toLowerCase() === 'master admin') {
+    if (!targetAdmin && isMasterAdmin) {
       targetAdmin = {
         id: 'admin-master-node',
         username: 'admin',
@@ -250,12 +267,11 @@ export function ProfileSettings({
       const adminUpdate: SystemUser = {
         ...targetAdmin,
         uiSettings: {
-          ...uiSettings,
           ...localUI
         }
       };
       onSaveUser(adminUpdate);
-      toast({ title: "Architecture Synchronized", description: "Global configuration committed to master ledger." });
+      toast({ title: "DATA SAVED", description: "Global architecture configuration committed." });
     } else {
       toast({ variant: "destructive", title: "Protocol Error", description: "Administrative node not identified for global commit." });
     }
@@ -271,7 +287,7 @@ export function ProfileSettings({
       const reader = new FileReader();
       reader.onloadend = () => {
         updateLocalUIField('brandLogo', reader.result as string);
-        toast({ title: "Logo Metadata Cached", description: "Click Save Global Protocol to synchronize branding." });
+        toast({ title: "Logo Metadata Cached", description: "Click SAVE DATA to synchronize branding." });
       };
       reader.readAsDataURL(file);
     }
@@ -279,7 +295,7 @@ export function ProfileSettings({
 
   const handleDeleteLogo = () => {
     updateLocalUIField('brandLogo', undefined);
-    toast({ title: "Logo Reference Purged", description: "Click Save to reset to system default." });
+    toast({ title: "Logo Reference Purged", description: "Click SAVE DATA to reset to system default." });
   };
 
   const handleUpdateBillingTableLocal = (field: string, value: number) => {
@@ -310,7 +326,7 @@ export function ProfileSettings({
     const user = users.find(u => u.id === selectedMatrixUserId);
     if (!user) return;
     onSaveUser({ ...user, permissions: matrixPermissions });
-    toast({ title: "Access Synchronized", description: `Permissions for ${user.name} committed to matrix.` });
+    toast({ title: "DATA SAVED", description: `Permissions for ${user.name} committed to matrix.` });
   };
 
   const handleUpdatePageTitle = (nodeId: string, title: string) => {
@@ -375,8 +391,8 @@ export function ProfileSettings({
                    </label>
                  </div>
                  <div>
-                   <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase">{currentUserData?.name}</h3>
-                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role} • {currentUserData?.dept}</p>
+                   <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase">{currentUserData?.name || 'Master Admin'}</h3>
+                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role || 'Master Admin'} • {currentUserData?.dept || 'Admin'} • ID: {currentUserData?.id || 'admin-master-node'}</p>
                  </div>
                </div>
 
@@ -409,7 +425,7 @@ export function ProfileSettings({
                </div>
 
                <Button className="h-14 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleUpdatePersonal}>
-                 <Save className="h-4 w-4" /> Synchronize Identity Matrix
+                 <Save className="h-4 w-4" /> SAVE DATA
                </Button>
             </div>
           </Card>
@@ -445,7 +461,7 @@ export function ProfileSettings({
                     </Select>
                     {selectedMatrixUserId && (
                       <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleSaveMatrix}>
-                        <Save className="h-4 w-4" /> Commit Matrix
+                        <Save className="h-4 w-4" /> SAVE DATA
                       </Button>
                     )}
                  </div>
@@ -532,7 +548,7 @@ export function ProfileSettings({
                     </div>
                  </div>
                  <Button className="h-12 bg-[#001F3D] hover:bg-black text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                   <Save className="h-4 w-4" /> Commit UI Protocol
+                   <Save className="h-4 w-4" /> SAVE DATA
                  </Button>
               </div>
 
@@ -681,7 +697,7 @@ export function ProfileSettings({
                     </div>
                  </div>
                  <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                   <Save className="h-4 w-4" /> Save Architecture
+                   <Save className="h-4 w-4" /> SAVE DATA
                  </Button>
               </div>
 
@@ -766,15 +782,20 @@ export function ProfileSettings({
             </TabsContent>
 
             <TabsContent value="financial-matrix" className="m-0 space-y-8 max-w-4xl">
-               <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-12">
-                  <div className="flex items-center gap-4 border-l-4 border-emerald-500 pl-6">
-                    <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><TableProperties className="h-7 w-7" /></div>
+               <div className="flex justify-between items-center px-2">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-xl"><TableProperties className="h-8 w-8" /></div>
                     <div>
                       <h3 className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Financial Matrix Architect</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Spatial dimension protocols for commercial registry.</p>
                     </div>
-                  </div>
+                 </div>
+                 <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white px-10 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleCommitUISettings}>
+                   <Save className="h-4 w-4" /> SAVE DATA
+                 </Button>
+              </div>
 
+               <Card className="p-10 border-slate-200 bg-white shadow-2xl rounded-[2.5rem] space-y-12">
                   <div className="space-y-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
                        {[
@@ -810,12 +831,6 @@ export function ProfileSettings({
                         onValueChange={([v]) => handleUpdateBillingTableLocal('rowHeight', v)} 
                        />
                     </div>
-                  </div>
-
-                  <div className="pt-10 border-t flex justify-end">
-                     <Button className="h-14 bg-emerald-600 hover:bg-emerald-700 text-white px-12 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleCommitUISettings}>
-                       <Save className="h-4 w-4" /> Save Financial Matrix Scaling
-                     </Button>
                   </div>
                </Card>
             </TabsContent>

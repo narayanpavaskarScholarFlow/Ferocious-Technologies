@@ -47,7 +47,8 @@ import {
   Settings2,
   DollarSign,
   Sparkles,
-  History
+  History,
+  Coins
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -85,6 +86,8 @@ const DOCUMENT_TYPES = [
   { id: 'sale_order', label: 'Sale Order', icon: FileText, prefix: 'SO' },
   { id: 'credit_note', label: 'Credit Note', icon: ArrowDownLeft, prefix: 'CN' },
   { id: 'debit_note', label: 'Debit Note', icon: ArrowUpRight, prefix: 'DN' },
+  { id: 'inward_payment', label: 'Inward Payment', icon: ArrowDownLeft, prefix: 'PAY-IN' },
+  { id: 'outward_payment', label: 'Outward Payment', icon: ArrowUpRight, prefix: 'PAY-OUT' },
 ];
 
 const MAIN_TABS = [
@@ -100,6 +103,8 @@ const MAIN_TABS = [
   { id: 'sale_order', label: 'Sale Order', icon: FileText },
   { id: 'credit_note', label: 'Cr Note', icon: ArrowDownLeft },
   { id: 'debit_note', label: 'Db Note', icon: ArrowUpRight },
+  { id: 'inward_payment', label: 'Inward Pay', icon: ArrowDownLeft },
+  { id: 'outward_payment', label: 'Outward Pay', icon: ArrowUpRight },
   { id: 'payment', label: 'Payment', icon: Banknote },
   { id: 'expense', label: 'Expense', icon: Receipt },
   { id: 'report', label: 'Report', icon: FileBarChart },
@@ -291,6 +296,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
       
       if (activeTab === 'payment') return matchesSearch && r.type === 'payment';
       if (activeTab === 'expense') return matchesSearch && (r.type === 'inward' || r.type === 'expense');
+      if (activeTab === 'inward_payment') return matchesSearch && r.type === 'inward_payment';
+      if (activeTab === 'outward_payment') return matchesSearch && r.type === 'outward_payment';
       
       return matchesSearch;
     });
@@ -357,21 +364,21 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   return (
     <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] flex flex-col overflow-hidden animate-in fade-in duration-700 font-body">
-      <div className="bg-white border-b border-slate-200 shrink-0 px-2 z-50 shadow-sm">
+      <div className="bg-white border-b border-slate-200 shrink-0 px-1 z-50 shadow-sm overflow-x-hidden">
         <div className="max-w-[1700px] mx-auto">
-          <div className="flex h-14 items-center justify-between gap-1">
+          <div className="flex h-12 items-center justify-between gap-0.5">
             {MAIN_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "px-2 h-full text-[9px] font-bold uppercase tracking-tighter border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5",
+                  "px-1.5 h-full text-[8.5px] font-bold uppercase tracking-tight border-b-2 transition-all whitespace-nowrap flex items-center gap-1",
                   activeTab === tab.id 
                     ? "border-emerald-500 text-emerald-600 bg-emerald-50/10" 
                     : "border-transparent text-slate-500 hover:text-slate-900"
                 )}
               >
-                <tab.icon className={cn("h-3 w-3", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
+                <tab.icon className={cn("h-2.5 w-2.5", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
                 {tab.label}
               </button>
             ))}
@@ -431,7 +438,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 {dashboardSubView === 'analytics' ? (
                   <div className="space-y-8 animate-in zoom-in-95 duration-500">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden group">
                         <div className="flex justify-between items-start mb-6">
                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale</span>
                            <TrendingUp className="h-4 w-4 text-emerald-500" />
@@ -442,7 +449,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </div>
                       </Card>
 
-                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl relative overflow-hidden group">
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden group">
                         <div className="flex justify-between items-start mb-6">
                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase</span>
                            <ShoppingCart className="h-4 w-4 text-slate-400" />
@@ -453,7 +460,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </div>
                       </Card>
 
-                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl flex flex-col justify-between group">
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl flex flex-col justify-between group">
                         <div className="flex justify-between items-start">
                            <div className="space-y-1">
                               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Expense</span>
@@ -468,7 +475,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-8">
                          <div className="flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Sales Outstanding</h3>
@@ -485,7 +492,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                          </div>
                       </Card>
 
-                      <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-2xl space-y-8">
+                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-8">
                          <div className="flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Purchase Outstanding</h3>
@@ -510,7 +517,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         <Card 
                           key={link.id} 
                           onClick={() => handleOpenForm(link.id)}
-                          className="bg-white border-slate-200 shadow-sm hover:shadow-2xl hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
+                          className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:translate-y-[-4px] transition-all rounded-[1.5rem] overflow-hidden group cursor-pointer h-40 flex flex-col items-center justify-center gap-4 text-center p-4"
                         >
                           <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
                             <link.icon className="h-8 w-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
@@ -528,7 +535,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <div className="space-y-4 animate-in fade-in duration-700">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                   <div className="flex items-center gap-4">
-                     <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-xl">
+                     <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg">
                         <Building2 className="h-6 w-6" />
                      </div>
                      <div>
@@ -584,7 +591,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <div className="space-y-4 animate-in fade-in duration-700">
                  <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
                     <div className="flex items-center gap-4">
-                       <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-xl">
+                       <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg">
                           {(() => {
                             const Icon = MAIN_TABS.find(t => t.id === activeTab)?.icon || FileBox;
                             return <Icon className="h-6 w-6" />;
@@ -606,7 +613,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                          />
                       </div>
                       <Button 
-                        className="h-10 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
+                        className="h-10 px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold uppercase text-[10px] tracking-widest shadow-lg flex gap-3"
                         onClick={() => handleOpenForm(activeTab)}
                       >
                         <Plus className="h-4 w-4" /> Create New Entry
@@ -958,7 +965,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
                           <div className="pt-6 border-t flex justify-between items-center">
                              <div className="flex items-center gap-3">
-                                <span className="text-[11px] font-bold text-slate-800 uppercase">Round Off</span>
+                                <span className="text-11px font-bold text-slate-800 uppercase">Round Off</span>
                                 <Switch checked={formData.isRoundOffActive} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
                              </div>
                              <span className="text-xs font-bold text-slate-800">{formData.roundOff?.toFixed(2)}</span>
@@ -996,10 +1003,10 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <Button variant="outline" className="h-12 px-8 border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest gap-3 shadow-sm hover:bg-slate-50"><Save className="h-4 w-4" /> Save Draft</Button>
              </div>
              <div className="flex gap-4">
-                <Button className="h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"><Printer className="h-4 w-4" /> Save & Print</Button>
+                <Button className="h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex gap-3"><Printer className="h-4 w-4" /> Save & Print</Button>
                 <Button 
                   onClick={handleSave}
-                  className="h-12 px-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3"
+                  className="h-12 px-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg flex gap-3"
                 >
                   <Save className="h-4 w-4" /> Commit Record
                 </Button>

@@ -76,9 +76,11 @@ import {
   ClipboardCopy,
   Zap,
   Percent,
-  Calculator
+  Calculator,
+  LayoutDashboard,
+  Wallet
 } from 'lucide-react';
-import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
+import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -101,9 +103,11 @@ interface BillingManagementProps {
   records: BillingRecord[];
   orders: Order[];
   users: SystemUser[];
+  inventory: InventoryItem[];
   permissions: Record<string, PermissionLevel>;
   onSaveRecord: (record: BillingRecord) => void;
   onDeleteRecord: (id: string) => void;
+  onTabChange?: (tab: ViewType) => void;
   uiSettings: UISettings;
 }
 
@@ -190,15 +194,16 @@ function numberToWords(num: number): string {
     if (n < 1000) return single[Math.floor(n / 100)] + " HUNDRED" + (n % 100 !== 0 ? " AND " + convert(n % 100) : "");
     if (n < 100000) return convert(Math.floor(n / 1000)) + " THOUSAND" + (n % 1000 !== 0 ? " " + convert(n % 1000) : "");
     if (n < 10000000) return convert(Math.floor(n / 100000)) + " LAKH" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
-    return convert(Math.floor(n / 10000000)) + " CRORE" + (n % 10000000 !== 0 ? " " + convert(n % 10000000) : "");
+    return convert(Math.floor(num)) + " RUPEES ONLY";
   }
 
   return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
 }
 
-export function BillingManagement({ customers, vendors, records, orders, users, permissions, onSaveRecord, onDeleteRecord, uiSettings }: BillingManagementProps) {
+export function BillingManagement({ customers, vendors, records, orders, users, inventory, permissions, onSaveRecord, onDeleteRecord, onTabChange, uiSettings }: BillingManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardView, setDashboardView] = useState<'quick' | 'analytics'>('quick');
   
   // Ledger Advanced States
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
@@ -406,7 +411,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     }
     
     const invalidItems = formData.items?.some(i => !i.description || (i.qty || 0) <= 0 || (i.price || 0) <= 0);
-    if (invalidItems) {
+    if (invalidItems && !activeRecordType.includes('payment')) {
       toast({ variant: "destructive", title: "Data Error", description: "All line items must have a description, positive quantity, and price." });
       return;
     }
@@ -449,6 +454,29 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     };
   }, [filteredRecords]);
 
+  const dashboardMetrics = useMemo(() => {
+    const today = startOfToday();
+    const monthStart = startOfMonth(new Date());
+    
+    const todaySales = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), {start: today, end: new Date()}))
+      .reduce((sum, r) => sum + r.amount, 0);
+    
+    const monthlySales = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), {start: monthStart, end: new Date()}))
+      .reduce((sum, r) => sum + r.amount, 0);
+    
+    const completedOrders = orders.filter(o => o.status === 'Completed').length;
+    const totalOrders = orders.length || 1;
+    const conversion = Math.round((completedOrders / totalOrders) * 100);
+
+    const pendingCollections = records.filter(r => r.type === 'invoice' && r.status !== 'Paid')
+      .reduce((sum, r) => sum + r.amount, 0);
+    
+    const pendingPayments = records.filter(r => r.type === 'purchase_invoice' && r.status !== 'Paid')
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    return { todaySales, monthlySales, conversion, pendingCollections, pendingPayments };
+  }, [records, orders]);
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedRecords(filteredRecords.map(r => r.id));
@@ -489,14 +517,6 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
     const toggleCol = (col: 'hsn' | 'discount' | 'gst') => {
       setVisibleCols(prev => ({ ...prev, [col]: !prev[col] }));
-    };
-
-    const getColSpanCount = () => {
-      let count = 6; // Fixed: SR, Product, Qty, UOM, Price, Total
-      if (visibleCols.hsn) count++;
-      if (visibleCols.discount) count++;
-      if (visibleCols.gst) count++;
-      return count;
     };
     
     if (isPaymentType) {
@@ -782,7 +802,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         </DropdownMenuGroup>
 
                         <DropdownMenuGroup>
-                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><Calculator className="h-3 w-3" /> Calculation Protocols</DropdownMenuLabel>
+                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><Calculator className="h-3.5 w-3.5" /> Calculation Protocols</DropdownMenuLabel>
                           <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Percent className="h-3.5 w-3.5" /> Apply Global Disc.</DropdownMenuItem>
                           <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Banknote className="h-3.5 w-3.5" /> Force Round Off</DropdownMenuItem>
                           <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2" onClick={() => setFormData(prev => calculateTotals(prev))}><Calculator className="h-3.5 w-3.5" /> Recalculate Entire Matrix</DropdownMenuItem>
@@ -1039,6 +1059,152 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     );
   };
 
+  const DashboardView = () => {
+    const modules = [
+      { id: 'quotation', label: 'Quotation', icon: FileBox, color: 'text-blue-500', bg: 'bg-blue-50', counts: { total: records.filter(r => r.type === 'quotation').length, pending: records.filter(r => r.type === 'quotation' && r.status === 'Pending').length } },
+      { id: 'sale_order', label: 'Sales Order', icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-50', counts: { total: records.filter(r => r.type === 'sale_order').length, pending: records.filter(r => r.type === 'sale_order' && r.status === 'Pending').length } },
+      { id: 'purchase_order', label: 'Purchase Order', icon: ShoppingCart, color: 'text-amber-500', bg: 'bg-amber-50', counts: { total: records.filter(r => r.type === 'purchase_order').length, pending: records.filter(r => r.type === 'purchase_order' && r.status === 'Pending').length } },
+      { id: 'invoice', label: 'Sales Invoice', icon: Receipt, color: 'text-emerald-500', bg: 'bg-emerald-50', counts: { total: records.filter(r => r.type === 'invoice').length, unpaid: records.filter(r => r.type === 'invoice' && r.status !== 'Paid').length } },
+      { id: 'purchase_invoice', label: 'Purchase Invoice', icon: ShoppingCart, color: 'text-rose-500', bg: 'bg-rose-50', counts: { total: records.filter(r => r.type === 'purchase_invoice').length, unpaid: records.filter(r => r.type === 'purchase_invoice' && r.status !== 'Paid').length } },
+      { id: 'delivery_challan', label: 'Delivery Challan', icon: Truck, color: 'text-cyan-500', bg: 'bg-cyan-50', counts: { total: records.filter(r => r.type === 'delivery_challan').length, pending: records.filter(r => r.type === 'delivery_challan' && r.status === 'Pending').length } },
+      { id: 'proforma', label: 'Proforma', icon: FileCheck, color: 'text-purple-500', bg: 'bg-purple-50', counts: { total: records.filter(r => r.type === 'proforma').length, pending: records.filter(r => r.type === 'proforma' && r.status === 'Pending').length } },
+      { id: 'credit_note', label: 'Credit Note', icon: ArrowDownLeft, color: 'text-slate-500', bg: 'bg-slate-50', counts: { total: records.filter(r => r.type === 'credit_note').length, value: records.filter(r => r.type === 'credit_note').reduce((s, x) => s + x.amount, 0) } },
+      { id: 'debit_note', label: 'Debit Note', icon: ArrowUpRight, color: 'text-slate-500', bg: 'bg-slate-50', counts: { total: records.filter(r => r.type === 'debit_note').length, value: records.filter(r => r.type === 'debit_note').reduce((s, x) => s + x.amount, 0) } },
+      { id: 'inward_payment', label: 'Inward Payment', icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-100', counts: { total: records.filter(r => r.type === 'inward_payment').length, value: records.filter(r => r.type === 'inward_payment').reduce((s, x) => s + x.amount, 0) } },
+      { id: 'outward_payment', label: 'Outward Payment', icon: ArrowUpRight, color: 'text-rose-600', bg: 'bg-rose-100', counts: { total: records.filter(r => r.type === 'outward_payment').length, value: records.filter(r => r.type === 'outward_payment').reduce((s, x) => s + x.amount, 0) } },
+      { id: 'customer', label: 'Customer Master', icon: Building2, color: 'text-blue-700', bg: 'bg-blue-100', counts: { total: customers.length, active: customers.filter(c => c.status !== 'Closed').length } },
+      { id: 'vendor', label: 'Vendor Master', icon: Truck, color: 'text-orange-700', bg: 'bg-orange-100', counts: { total: vendors.length, active: vendors.filter(v => v.status === 'Active').length } },
+      { id: 'inventory', label: 'Product Master', icon: Package, color: 'text-indigo-700', bg: 'bg-indigo-100', counts: { total: inventory.length, low: inventory.filter(i => i.status === 'Low Stock').length } },
+      { id: 'job_work', label: 'Job Work', icon: Briefcase, color: 'text-slate-700', bg: 'bg-slate-100', counts: { total: orders.length, active: orders.filter(o => o.status === 'Active').length } },
+      { id: 'service_request', label: 'Service Request', icon: Settings2, color: 'text-teal-700', bg: 'bg-teal-100', counts: { total: 0, pending: 0 } },
+    ];
+
+    return (
+      <div className="p-8 space-y-10 animate-in fade-in duration-700 font-body">
+        {/* Toggle Protocol */}
+        <div className="flex justify-center">
+          <div className="bg-slate-100 p-1 rounded-full flex gap-1 border border-slate-200 shadow-inner">
+            <button 
+              onClick={() => setDashboardView('analytics')}
+              className={cn("px-8 py-2 rounded-full text-[10px] font-bold uppercase transition-all", dashboardView === 'analytics' ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+            >Analytics</button>
+            <button 
+              onClick={() => setDashboardView('quick')}
+              className={cn("px-8 py-2 rounded-full text-[10px] font-bold uppercase transition-all", dashboardView === 'quick' ? "bg-primary text-white shadow-sm shadow-primary/20" : "text-slate-400")}
+            >Quick Links</button>
+          </div>
+        </div>
+
+        {dashboardView === 'quick' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {modules.map((mod) => {
+              const Icon = mod.icon;
+              return (
+                <Card key={mod.id} className="p-6 bg-white border border-slate-100 shadow-sm rounded-2xl group hover:border-primary/30 hover:shadow-xl transition-all flex flex-col justify-between min-h-[180px]">
+                  <div className="flex justify-between items-start">
+                    <div className={cn("p-3 rounded-xl shadow-sm transition-all group-hover:scale-110", mod.bg)}>
+                      <Icon className={cn("h-5 w-5", mod.color)} />
+                    </div>
+                    <button onClick={() => { if(mod.id === 'customer' || mod.id === 'vendor' || mod.id === 'inventory') { onTabChange?.(mod.id as any); } else { setActiveTab(mod.id); } }} className="text-slate-300 hover:text-primary transition-colors"><ChevronRight className="h-5 w-5" /></button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{mod.label}</p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <span className="text-2xl font-display font-bold text-[#001F3D]">{mod.counts.total || mod.counts.value?.toLocaleString() || 0}</span>
+                        {mod.counts.pending !== undefined && mod.counts.pending > 0 && (
+                          <Badge className="bg-orange-50 text-orange-600 border-orange-100 text-[8px] font-bold uppercase">{mod.counts.pending} PENDING</Badge>
+                        )}
+                        {mod.counts.unpaid !== undefined && mod.counts.unpaid > 0 && (
+                          <Badge className="bg-red-50 text-red-600 border-red-100 text-[8px] font-bold uppercase">{mod.counts.unpaid} UNPAID</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                       <Button onClick={() => handleOpenForm(mod.id)} className="h-8 rounded-lg bg-[#001F3D] hover:bg-black text-white text-[9px] font-bold uppercase tracking-widest px-4 shadow-sm">+ New</Button>
+                       <Button variant="ghost" onClick={() => setActiveTab(mod.id)} className="h-8 rounded-lg text-[9px] font-bold uppercase tracking-widest px-4 text-slate-400 hover:text-primary hover:bg-primary/5">View All</Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+             <Card className="p-8 border-slate-100 shadow-xl rounded-[2.5rem] space-y-6">
+                <div className="flex items-center gap-4 border-l-4 border-primary pl-4">
+                   <TrendingUp className="h-5 w-5 text-primary" />
+                   <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Revenue Analytics</h4>
+                </div>
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-600 uppercase">Today's Sales</span><span className="text-xl font-display font-bold text-[#001F3D]">₹ {dashboardMetrics.todaySales.toLocaleString()}</span></div>
+                   <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-600 uppercase">Monthly Yield</span><span className="text-xl font-display font-bold text-[#001F3D]">₹ {dashboardMetrics.monthlySales.toLocaleString()}</span></div>
+                </div>
+             </Card>
+
+             <Card className="p-8 border-slate-100 shadow-xl rounded-[2.5rem] space-y-6">
+                <div className="flex items-center gap-4 border-l-4 border-emerald-500 pl-4">
+                   <FileCheck className="h-5 w-5 text-emerald-500" />
+                   <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Efficiency Index</h4>
+                </div>
+                <div className="flex flex-col items-center justify-center py-4">
+                   <div className="text-4xl font-display font-bold text-[#001F3D]">{dashboardMetrics.conversion}%</div>
+                   <span className="text-[9px] font-bold text-slate-400 uppercase mt-2">Order Conversion Rate</span>
+                </div>
+             </Card>
+
+             <Card className="p-8 border-slate-100 shadow-xl rounded-[2.5rem] space-y-6">
+                <div className="flex items-center gap-4 border-l-4 border-orange-500 pl-4">
+                   <Wallet className="h-5 w-5 text-orange-500" />
+                   <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Financial Health</h4>
+                </div>
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-600 uppercase">Pending Col.</span><span className="text-lg font-display font-bold text-orange-600">₹ {dashboardMetrics.pendingCollections.toLocaleString()}</span></div>
+                   <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-600 uppercase">Pending Pay.</span><span className="text-lg font-display font-bold text-red-600">₹ {dashboardMetrics.pendingPayments.toLocaleString()}</span></div>
+                </div>
+             </Card>
+
+             <Card className="p-8 border-slate-100 shadow-xl rounded-[2.5rem] space-y-6">
+                <div className="flex items-center gap-4 border-l-4 border-indigo-500 pl-4">
+                   <Package className="h-5 w-5 text-indigo-500" />
+                   <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Inventory Status</h4>
+                </div>
+                <div className="flex items-center justify-between">
+                   <div className="text-center flex-1">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Total Items</p>
+                      <p className="text-2xl font-display font-bold text-[#001F3D]">{inventory.length}</p>
+                   </div>
+                   <div className="h-10 w-px bg-slate-100" />
+                   <div className="text-center flex-1">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Low Stock</p>
+                      <p className="text-2xl font-display font-bold text-rose-600">{inventory.filter(i => i.status === 'Low Stock').length}</p>
+                   </div>
+                </div>
+             </Card>
+          </div>
+        )}
+
+        {/* Global Action Nodes */}
+        <div className="p-6 bg-slate-50 border border-slate-200 rounded-3xl flex items-center gap-8 shadow-inner no-print">
+           <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><Info className="h-4 w-4" /></div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                Management Command Protocol Active. <br />All counts synchronized with Firestore Registry v2.4.
+              </p>
+           </div>
+           <div className="h-10 w-px bg-slate-200" />
+           <div className="flex gap-4">
+              <Button variant="outline" className="h-10 rounded-xl font-bold uppercase text-[9px] tracking-widest border-slate-200 bg-white gap-2 shadow-sm"><FileDown className="h-3.5 w-3.5" /> Summary PDF</Button>
+              <Button variant="outline" className="h-10 rounded-xl font-bold uppercase text-[9px] tracking-widest border-slate-200 bg-white gap-2 shadow-sm"><Download className="h-3.5 w-3.5" /> Ledger Export</Button>
+              <Button className="h-10 rounded-xl bg-primary hover:bg-primary/90 text-white px-8 font-bold uppercase text-[9px] tracking-widest shadow-xl flex gap-2"><RefreshCw className="h-3.5 w-3.5" /> Forced Sync</Button>
+           </div>
+        </div>
+      </div>
+    );
+  };
+
   const LedgerView = () => {
     return (
       <div className="flex flex-col bg-white min-h-screen font-body">
@@ -1230,7 +1396,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                                       <span className="text-[11px] font-bold text-slate-700 uppercase">{item.description}</span>
                                       <span className="text-[9px] text-slate-400 font-bold uppercase">{item.qty} {item.unit} • ₹{item.price}/ea</span>
                                    </div>
-                                   <span className="text-[11px] font-display font-black text-[#001F3D]">₹ {item.total.toLocaleString()}</span>
+                                   <span className="text-[11px] font-display font-black text-[#001F3D]">₹ {(item.total ?? 0).toLocaleString()}</span>
                                 </div>
                               ))}
                            </div>
@@ -1305,32 +1471,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <ScrollArea className="flex-1">
               <div className="p-0 space-y-0 h-full">
                 
-                {activeTab === 'dashboard' && (
-                  <div className="p-6 md:p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-700">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group">
-                        <div className="flex justify-between items-start mb-6">
-                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sale Velocity</span>
-                           <TrendingUp className="h-4 w-4 text-emerald-500" />
-                        </div>
-                        <div className="space-y-2">
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MTD Aggregation</p>
-                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {records.filter(r => r.type === 'invoice').reduce((sum, r) => sum + r.amount, 0).toLocaleString('en-IN')}</h3>
-                        </div>
-                      </Card>
-                      <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group">
-                        <div className="flex justify-between items-start mb-6">
-                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Purchase Flow</span>
-                           <ShoppingCart className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <div className="space-y-2">
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MTD Aggregation</p>
-                           <h3 className="text-3xl font-display font-bold text-slate-900">₹ {records.filter(r => r.type === 'purchase_invoice').reduce((sum, r) => sum + r.amount, 0).toLocaleString('en-IN')}</h3>
-                        </div>
-                      </Card>
-                    </div>
-                  </div>
-                )}
+                {activeTab === 'dashboard' && <DashboardView />}
 
                 {activeTab === 'customer' && (
                   <div className="p-8 space-y-4 animate-in fade-in duration-700">

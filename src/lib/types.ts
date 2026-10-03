@@ -98,21 +98,22 @@ export interface RoutingOperation {
 export interface Order {
   id: string;
   customer: string;
+  customerId?: string;
   poNumber?: string;
+  poId?: string;
+  quotationNumber?: string;
+  quotationId?: string;
   typeOfWork?: string;
   startDate: string;
   endDate: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'Active' | 'Pending' | 'Completed' | 'Delayed' | 'Yet to start' | 'Ready for Delivery' | 'Delivered';
+  status: 'Draft' | 'Planning' | 'Production' | 'Inspection' | 'Dispatch' | 'Completed' | 'Delivered';
   owner?: string;
   progress?: number;
   amountSpent?: string;
-  materialCost?: string;
-  laborCost?: string;
-  taxAmount?: string;
-  totalQuoted?: string;
   targetBudget?: string;
   routing?: RoutingOperation[];
+  items?: BillingLineItem[];
   deliveredAt?: string;
 }
 
@@ -170,6 +171,7 @@ export interface BillingRecord {
   contactNumber?: string;
   gstNumber?: string;
   panNumber?: string;
+  quotationId?: string;
 }
 
 export interface SQCDPData {

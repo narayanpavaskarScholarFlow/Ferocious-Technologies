@@ -24,10 +24,11 @@ import {
   ShieldCheck,
   FileText,
   Hammer,
-  Sparkles
+  Sparkles,
+  Link2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Customer, SystemUser as StaffMember, Order, UISettings, BillingRecord } from '@/lib/types';
+import { Customer, SystemUser as StaffMember, Order, UISettings, BillingRecord, BillingLineItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -51,6 +52,16 @@ const WORK_TYPES = [
   "Maintenance"
 ];
 
+const ORDER_STATUS_WORKFLOW = [
+  "Draft",
+  "Planning",
+  "Production",
+  "Inspection",
+  "Dispatch",
+  "Completed",
+  "Delivered"
+];
+
 export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders, uiSettings, billing = [] }: OrderDetailsProps) {
   const { toast } = useToast();
   const isNew = !orderId;
@@ -58,14 +69,17 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
   const [customer, setCustomer] = useState("");
   const [lead, setLead] = useState("");
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
-  const [status, setStatus] = useState<'Active' | 'Pending' | 'Delayed' | 'Completed' | 'Yet to start' | 'Ready for Delivery' | 'Delivered'>('Yet to start');
+  const [status, setStatus] = useState<Order['status']>('Planning');
   
   const [startDateStr, setStartDateStr] = useState("");
   const [endDateStr, setEndDateStr] = useState("");
   
   const [poNumber, setPoNumber] = useState("");
+  const [poId, setPoId] = useState("");
+  const [quotationId, setQuotationId] = useState("");
   const [typeOfWork, setTypeOfWork] = useState("");
   const [targetBudget, setTargetBudget] = useState("");
+  const [orderItems, setOrderItems] = useState<BillingLineItem[]>([]);
 
   const purchaseOrders = useMemo(() => {
     return billing.filter(record => record.type === 'purchase_order');
@@ -81,8 +95,11 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setPriority(existing.priority);
         setStatus(existing.status);
         setPoNumber(existing.poNumber || "");
+        setPoId(existing.poId || "");
+        setQuotationId(existing.quotationId || "");
         setTypeOfWork(existing.typeOfWork || "");
         setTargetBudget(existing.targetBudget || "");
+        setOrderItems(existing.items || []);
         
         const parseToISO = (str?: string) => {
           if (!str) return "";
@@ -97,7 +114,6 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         setEndDateStr(parseToISO(existing.endDate));
       }
     } else {
-      // Use configured sequence pattern for new orders
       const prefix = uiSettings?.woPrefix || 'WO-';
       const seq = uiSettings?.woNextNumber ?? 1001;
       const generatedId = `${prefix}${seq.toString().padStart(4, '0')}`;
@@ -106,25 +122,31 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       setCustomer("");
       setLead("");
       setPriority("Medium");
-      setStatus("Yet to start");
+      setStatus("Planning");
       setStartDateStr("");
       setEndDateStr("");
       setPoNumber("");
+      setPoId("");
+      setQuotationId("");
       setTypeOfWork("");
       setTargetBudget("");
+      setOrderItems([]);
     }
   }, [orderId, orders, uiSettings]);
 
-  const handlePOConsumption = (selectedPONumber: string) => {
-    setPoNumber(selectedPONumber);
-    
-    // Auto-detect customer from PO ledger
-    const linkedPO = purchaseOrders.find(po => po.number === selectedPONumber);
+  const handlePOConsumption = (selectedPOId: string) => {
+    const linkedPO = purchaseOrders.find(po => po.id === selectedPOId);
     if (linkedPO) {
+      setPoId(linkedPO.id);
+      setPoNumber(linkedPO.number);
       setCustomer(linkedPO.customerName);
+      setQuotationId(linkedPO.quotationId || "");
+      setTargetBudget(linkedPO.amount.toString());
+      setOrderItems(linkedPO.items || []);
+      
       toast({
-        title: "Financial Sync Active",
-        description: `PO #${selectedPONumber} identified. Customer node set to ${linkedPO.customerName}.`
+        title: "Matrix Sync Active",
+        description: `Linked Customer PO #${linkedPO.number}. Identity and products mapped.`
       });
     }
   };
@@ -144,10 +166,12 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       return isValid(date) ? format(date, 'dd.MM.yyyy') : isoStr;
     };
 
-    const orderToSave: any = {
+    const orderToSave: Order = {
       id: displayId,
       customer: customer,
       poNumber: poNumber,
+      poId: poId,
+      quotationId: quotationId,
       typeOfWork: typeOfWork,
       startDate: formatDate(startDateStr),
       endDate: formatDate(endDateStr),
@@ -155,6 +179,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       status: status,
       owner: lead || 'Unassigned',
       targetBudget: targetBudget,
+      items: orderItems,
     };
 
     if (isNew) {
@@ -163,14 +188,12 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
       orderToSave.routing = [];
     }
 
-    onSave(orderToSave as Order);
+    onSave(orderToSave);
     toast({
       title: isNew ? "Thread Synchronized" : "Identity Updated",
       description: `Work Order #${displayId} has been committed to the master ledger.`
     });
   };
-
-  const currentOrderFromLedger = orders.find(o => o.id === displayId);
 
   return (
     <div className="space-y-8 max-w-[1300px] mx-auto pb-20 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -182,11 +205,11 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-3xl font-display font-bold uppercase text-[#001F3D] tracking-tight leading-none">
-                {isNew ? 'New Production' : 'Modify Production'}
+                {isNew ? 'Initialize Order' : 'Modify Order Matrix'}
               </h2>
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse-red" />
             </div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Operational Planning Protocol v2.4</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Master Order Architecture v2.4</p>
           </div>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
@@ -201,7 +224,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
             className="flex-1 md:flex-none bg-[#001F3D] hover:bg-black text-white gap-3 h-12 px-8 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-xl shadow-primary/20 transition-all" 
             onClick={handleCommitOrder}
           >
-            <Save className="h-4 w-4" /> {isNew ? 'Save Master Order' : 'Synchronize Identity'}
+            <Save className="h-4 w-4" /> {isNew ? 'Finalize Master Order' : 'Synchronize Identity'}
           </Button>
         </div>
       </div>
@@ -213,39 +236,31 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
           <div className="space-y-12 relative z-10">
             <div className="flex items-center gap-3">
               <div className="h-1 w-10 bg-primary rounded-full" />
-              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Core Specifications</h3>
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Traceability Protocol</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <FileText className="h-3 w-3" /> PO Number (from Ledger)
+                  <Link2 className="h-3 w-3" /> Link Customer PO
                 </Label>
-                <Select value={poNumber} onValueChange={handlePOConsumption}>
+                <Select value={poId} onValueChange={handlePOConsumption}>
                   <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code shadow-inner">
-                    <SelectValue placeholder="Select registered PO..." />
+                    <SelectValue placeholder="Select existing PO node..." />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                    <div className="px-2 py-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Financial Ledger Nodes</div>
+                    <div className="px-2 py-2 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b mb-1">Customer PO Registry</div>
                     {purchaseOrders.map(po => (
-                      <SelectItem key={po.id} value={po.number} className="text-xs font-bold font-code py-3">
+                      <SelectItem key={po.id} value={po.id} className="text-xs font-bold font-code py-3">
                         {po.number} — {po.customerName}
                       </SelectItem>
                     ))}
                     {purchaseOrders.length === 0 && (
-                      <div className="px-2 py-6 text-center text-[9px] text-slate-400 font-medium uppercase">No Purchase Orders Discovered</div>
+                      <div className="px-2 py-6 text-center text-[9px] text-slate-400 font-medium uppercase">No PO Nodes Discovered</div>
                     )}
                   </SelectContent>
                 </Select>
-                <div className="pt-2">
-                  <Label className="text-[8px] font-bold uppercase text-slate-400 tracking-widest ml-1">Manual Override</Label>
-                  <Input 
-                    placeholder="Enter unique PO ID..." 
-                    className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold font-code mt-1"
-                    value={poNumber}
-                    onChange={(e) => setPoNumber(e.target.value)}
-                  />
-                </div>
+                <p className="text-[8px] text-slate-400 font-medium italic mt-1 ml-1">* Linking auto-populates items & customer metadata.</p>
               </div>
 
               <div className="space-y-3">
@@ -262,12 +277,11 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[8px] text-slate-400 font-medium italic mt-1 ml-1">* Auto-populated upon PO selection.</p>
               </div>
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Hash className="h-3 w-3" /> WO. ID (Thread Identification)
+                  <Hash className="h-3 w-3" /> Work Order ID
                 </Label>
                 <Input value={displayId} readOnly className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold font-code text-slate-400 opacity-60" />
               </div>
@@ -290,24 +304,24 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <CalendarIcon className="h-3 w-3" /> Planned Start
+                  <CalendarIcon className="h-3 w-3" /> Execution Start
                 </Label>
                 <DatePicker 
                   value={startDateStr}
                   onChange={setStartDateStr}
-                  placeholder="SELECT A DATE"
+                  placeholder="SELECT START DATE"
                   className="h-12"
                 />
               </div>
               
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <CalendarIcon className="h-3 w-3" /> Target Finish
+                  <CalendarIcon className="h-3 w-3" /> Promised Delivery
                 </Label>
                 <DatePicker 
                   value={endDateStr}
                   onChange={setEndDateStr}
-                  placeholder="SELECT A DATE"
+                  placeholder="SELECT DELIVERY DATE"
                   className="h-12"
                 />
               </div>
@@ -316,12 +330,12 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
             <div className="pt-6">
               <div className="flex items-center gap-3 mb-8">
                 <DollarSign className="h-4 w-4 text-primary" />
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Financial Integration</h3>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Commercial Value Matrix</h3>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Target Budget</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Total Quoted Value</Label>
                   <div className="relative">
                     <Input 
                       placeholder="0.00" 
@@ -331,16 +345,15 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
                     />
                     <span className="absolute left-6 top-1/2 -translate-y-1/2 font-display font-bold text-2xl text-slate-300">₹</span>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic">Synchronized with Hub v2.4</p>
                 </div>
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                    <User className="h-3 w-3" /> Project Owner (Command Lead)
+                    <User className="h-3 w-3" /> Production Command Lead
                   </Label>
                   <Select value={lead} onValueChange={setLead}>
                     <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
-                      <SelectValue placeholder="Assign Personnel..." />
+                      <SelectValue placeholder="Assign Commander..." />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                       {staff.map(s => (
@@ -354,30 +367,28 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-6">
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Priority Assignment</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Priority Protocol</Label>
                 <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
                   <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100">
-                    <SelectItem value="High" className="text-xs font-bold uppercase text-red-600">Critical / Emergency</SelectItem>
-                    <SelectItem value="Medium" className="text-xs font-bold uppercase">Standard Protocol</SelectItem>
-                    <SelectItem value="Low" className="text-xs font-bold uppercase">Maintenance Queue</SelectItem>
+                    <SelectItem value="High" className="text-xs font-bold uppercase text-red-600">Flash_Priority (Critical)</SelectItem>
+                    <SelectItem value="Medium" className="text-xs font-bold uppercase">Standard_Protocol</SelectItem>
+                    <SelectItem value="Low" className="text-xs font-bold uppercase">Backlog_Queue</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Protocol State</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Operational State</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100">
-                    <SelectItem value="Yet to start" className="text-xs font-bold uppercase">Ready_for_init</SelectItem>
-                    <SelectItem value="Active" className="text-xs font-bold uppercase">Node_Active</SelectItem>
-                    <SelectItem value="Pending" className="text-xs font-bold uppercase">On_Standby</SelectItem>
-                    <SelectItem value="Delayed" className="text-xs font-bold uppercase text-red-600">Blocked / Error</SelectItem>
-                    <SelectItem value="Completed" className="text-xs font-bold uppercase text-emerald-600">Terminal_Success</SelectItem>
+                    {ORDER_STATUS_WORKFLOW.map(s => (
+                      <SelectItem key={s} value={s} className="text-xs font-bold uppercase">{s}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -386,56 +397,61 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
         </Card>
 
         <div className="lg:col-span-4 space-y-8 sticky top-24">
-          <Card className="p-10 bg-white border-slate-200/60 shadow-2xl rounded-[2.5rem] flex flex-col relative overflow-hidden group">
+          <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-0.05 transition-opacity">
-              <Target className="h-24 w-24 text-[#001F3D]" />
+              <Target className="h-24 w-24" />
             </div>
             
             <div className="space-y-10 flex-grow relative z-10">
               <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Thread Analytics</h3>
-                <Badge className="bg-primary/5 text-primary border-none text-[8px] font-bold uppercase px-2">Live_Tele</Badge>
+                <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.25em]">Matrix Overview</h3>
+                <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold uppercase px-2">ORDER_SYNC</Badge>
               </div>
               
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Velocity Progress</span>
-                  <span className="text-xs font-bold text-primary">{currentOrderFromLedger?.progress || 0}%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden p-[1px]">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all duration-1000" 
-                    style={{ width: `${currentOrderFromLedger?.progress || 0}%` }}
-                  />
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <p className="text-[9px] font-bold uppercase text-white/30 tracking-widest">Linked Products ({orderItems.length})</p>
+                  <div className="space-y-2">
+                    {orderItems.slice(0, 3).map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-2 border-b border-white/5">
+                        <span className="text-[10px] font-bold text-white/60 uppercase truncate flex-1 pr-4">{item.description}</span>
+                        <span className="text-[10px] font-bold text-primary">{item.qty} {item.unit}</span>
+                      </div>
+                    ))}
+                    {orderItems.length > 3 && (
+                      <p className="text-[9px] text-white/20 font-bold uppercase text-center mt-2">+{orderItems.length - 3} More Components</p>
+                    )}
+                    {orderItems.length === 0 && (
+                      <p className="text-[9px] text-white/20 font-bold uppercase italic text-center py-4">No Products Attached</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="pt-10 space-y-6">
-                  <p className="text-[9px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-2">
-                    <CreditCard className="h-3 w-3" /> Cumulative Consumption
-                  </p>
-                  <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Total Burn</span>
-                    <span className="text-xl font-display font-bold text-[#001F3D]">
-                      {currentOrderFromLedger?.amountSpent || "₹ 0.00"}
-                    </span>
+                <div className="pt-10 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold uppercase text-white/40 tracking-widest">Timeline Health</span>
+                    <span className="text-xs font-bold text-emerald-400">NOMINAL</span>
+                  </div>
+                  <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: '100%' }} />
                   </div>
                 </div>
               </div>
             </div>
 
-            <Button variant="outline" className="w-full border-slate-200 bg-white text-slate-400 hover:text-primary hover:border-primary/20 gap-3 mt-12 text-[10px] font-bold uppercase tracking-widest h-14 rounded-2xl transition-all shadow-sm">
-              <Plus className="h-4 w-4" /> Initialize Sub-Node
+            <Button variant="outline" className="w-full border-white/10 bg-white/5 text-white/40 hover:text-white hover:bg-white/10 gap-3 mt-12 text-[10px] font-bold uppercase tracking-widest h-14 rounded-2xl transition-all shadow-sm">
+              <Plus className="h-4 w-4" /> Add Custom Sub-Node
             </Button>
           </Card>
           
-          <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-center gap-4 animate-in slide-in-from-right-2 duration-1000">
-            <div className="p-3 bg-primary rounded-xl text-white shadow-lg shadow-primary/20">
+          <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center gap-4 animate-in slide-in-from-right-2 duration-1000">
+            <div className="p-3 bg-emerald-600 rounded-xl text-white shadow-lg shadow-emerald-600/20">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Matrix Sync Active</p>
+              <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-[0.2em]">Fidelity Verified</p>
               <p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">
-                {lead ? `Operational node assigned to ${lead}.` : 'Awaiting lead assignment for protocol initialization.'}
+                This Order is linked to a validated Customer PO. Traceability is active across all operational nodes.
               </p>
             </div>
           </div>

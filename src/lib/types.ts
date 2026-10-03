@@ -121,11 +121,12 @@ export interface BillingLineItem {
   price: number;
   discount: number;
   gstRate: number;
+  total: number;
 }
 
 export interface BillingRecord {
   id: string;
-  type: string;
+  type: string; // 'invoice' | 'purchase_invoice' | 'quotation' | 'delivery_challan' | 'proforma' | 'purchase_order' | 'sale_order' | 'credit_note' | 'debit_note' | 'inward' | 'outward'
   customerName: string;
   customerId: string;
   date: string;
@@ -144,6 +145,11 @@ export interface BillingRecord {
   discountTotal?: number;
   transportationCharges?: number;
   packingCharges?: number;
+  paymentTerms?: string;
+  dueDate?: string;
+  placeOfSupply?: string;
+  vehicleNo?: string;
+  terms?: string;
 }
 
 export interface SQCDPData {

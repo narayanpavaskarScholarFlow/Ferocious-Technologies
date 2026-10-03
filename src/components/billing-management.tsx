@@ -421,18 +421,27 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="grid grid-cols-12 items-center gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Receipt No <span className="text-red-500">*</span></Label>
               <div className="col-span-9 flex gap-2">
-                <Input className="h-9 bg-slate-50 border-slate-300 text-[10px] font-bold w-28 uppercase px-3 rounded-none" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
-                <Input className="h-9 border-slate-300 text-xs font-bold flex-1 px-3 rounded-none" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
-                <Input className="h-9 bg-slate-50 border-slate-300 text-[10px] font-bold w-28 uppercase px-3 rounded-none" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
+                <Input className="h-9 bg-slate-50 border-slate-300 text-[10px] font-bold w-28 uppercase px-3 rounded-none" value={formData.numberPrefix || ''} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
+                <Input className="h-9 border-slate-300 text-xs font-bold flex-1 px-3 rounded-none" value={formData.number || ''} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                <Input className="h-9 bg-slate-50 border-slate-300 text-[10px] font-bold w-28 uppercase px-3 rounded-none" value={formData.numberPostfix || ''} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
               </div>
             </div>
 
             <div className="grid grid-cols-12 items-center gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Company Name <span className="text-red-500">*</span></Label>
               <div className="col-span-9">
-                <Select value={formData.customerId} onValueChange={(id) => {
+                <Select value={formData.customerId || ''} onValueChange={(id) => {
                   const identity = customers.find(c => c.id === id) || vendors.find(v => v.id === id);
-                  setFormData({...formData, customerId: id, customerName: identity?.name || '', shipTo: identity?.address || ''});
+                  setFormData({
+                    ...formData, 
+                    customerId: id, 
+                    customerName: identity?.name || '', 
+                    shipTo: identity?.address || '',
+                    contactPerson: (identity as any)?.contactPerson || (identity as any)?.contact || '',
+                    contactNumber: (identity as any)?.contactNumber || (identity as any)?.contact || '',
+                    gstNumber: identity?.gstNumber || '',
+                    panNumber: (identity as any)?.pan || ''
+                  });
                 }}>
                   <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Identify Partner..." /></SelectTrigger>
                   <SelectContent>{[...customers, ...vendors].map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)}</SelectContent>
@@ -443,7 +452,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="grid grid-cols-12 items-start gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase mt-2">Address</Label>
               <div className="col-span-9">
-                <Textarea className="min-h-[60px] border-slate-300 rounded-none p-3 text-xs font-medium resize-none bg-slate-50" readOnly value={formData.shipTo} />
+                <Textarea className="min-h-[60px] border-slate-300 rounded-none p-3 text-xs font-medium resize-none bg-slate-50" readOnly value={formData.shipTo || ''} />
               </div>
             </div>
 
@@ -457,14 +466,14 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="grid grid-cols-12 items-center gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Amount <span className="text-red-500">*</span></Label>
               <div className="col-span-9">
-                <Input type="number" className="h-9 border-slate-300 rounded-none text-sm font-bold" value={formData.amount} onChange={(e)=>setFormData({...formData, amount: Number(e.target.value)})} />
+                <Input type="number" className="h-9 border-slate-300 rounded-none text-sm font-bold" value={formData.amount || 0} onChange={(e)=>setFormData({...formData, amount: Number(e.target.value)})} />
               </div>
             </div>
 
             <div className="grid grid-cols-12 items-center gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Payment Type <span className="text-red-500">*</span></Label>
               <div className="col-span-9">
-                <Select value={formData.paymentMethod} onValueChange={(val: any) => setFormData({...formData, paymentMethod: val})}>
+                <Select value={formData.paymentMethod || ''} onValueChange={(val: any) => setFormData({...formData, paymentMethod: val})}>
                   <SelectTrigger className="h-9 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Select Payment Type" /></SelectTrigger>
                   <SelectContent><SelectItem value="Cash">Cash</SelectItem><SelectItem value="Bank Transfer">Bank Transfer</SelectItem></SelectContent>
                 </Select>
@@ -474,7 +483,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             <div className="grid grid-cols-12 items-center gap-6">
               <Label className="col-span-3 text-xs font-bold text-slate-600 uppercase">Remarks</Label>
               <div className="col-span-9">
-                <Input className="h-9 border-slate-300 rounded-none text-xs font-medium" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                <Input className="h-9 border-slate-300 rounded-none text-xs font-medium" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
               </div>
             </div>
 
@@ -527,9 +536,18 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">M/S <span className="text-red-500">*</span></Label>
                   <div className="col-span-8">
-                    <Select value={formData.customerId} onValueChange={(id) => {
+                    <Select value={formData.customerId || ''} onValueChange={(id) => {
                       const identity = customers.find(c => c.id === id) || vendors.find(v => v.id === id);
-                      setFormData({...formData, customerId: id, customerName: identity?.name || '', shipTo: identity?.address || ''});
+                      setFormData({
+                        ...formData, 
+                        customerId: id, 
+                        customerName: identity?.name || '', 
+                        shipTo: identity?.address || '',
+                        contactPerson: (identity as any)?.contactPerson || (identity as any)?.contact || '',
+                        contactNumber: (identity as any)?.contactNumber || (identity as any)?.contact || '',
+                        gstNumber: identity?.gstNumber || '',
+                        panNumber: (identity as any)?.pan || ''
+                      });
                     }}>
                       <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue placeholder="Identify Partner..." /></SelectTrigger>
                       <SelectContent>{[...customers, ...vendors].map(c => <SelectItem key={c.id} value={c.id} className="text-xs font-bold uppercase">{c.name}</SelectItem>)}</SelectContent>
@@ -538,24 +556,27 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 </div>
                 <div className="grid grid-cols-12 items-start gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase mt-2">Address</Label>
-                  <div className="col-span-8"><Textarea className="min-h-[60px] border-slate-300 rounded-none text-xs p-2 bg-slate-50" readOnly value={formData.shipTo} /></div>
+                  <div className="col-span-8"><Textarea className="min-h-[60px] border-slate-300 rounded-none text-xs p-2 bg-slate-50" readOnly value={formData.shipTo || ''} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Contact Person</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.contactPerson || ''} onChange={(e)=>setFormData({...formData, contactPerson: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Phone No</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.contactNumber || ''} onChange={(e)=>setFormData({...formData, contactNumber: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs font-code uppercase" /></div>
+                  <div className="col-span-8 flex gap-2">
+                    <Input className="h-8 border-slate-300 rounded-none text-xs font-code uppercase" value={formData.gstNumber || ''} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} />
+                    <Input className="h-8 border-slate-300 rounded-none text-xs font-code uppercase" placeholder="PAN" value={formData.panNumber || ''} onChange={(e)=>setFormData({...formData, panNumber: e.target.value})} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
                   <div className="col-span-8">
-                    <Select value={formData.revCharge} onValueChange={(val: any) => setFormData({...formData, revCharge: val})}>
+                    <Select value={formData.revCharge || 'No'} onValueChange={(val: any) => setFormData({...formData, revCharge: val})}>
                       <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent><SelectItem value="No">No</SelectItem><SelectItem value="Yes">Yes</SelectItem></SelectContent>
                     </Select>
@@ -563,15 +584,15 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Ship To</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.shipTo} /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.shipTo || ''} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Distance (km)</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.distanceEWay} onChange={(e)=>setFormData({...formData, distanceEWay: e.target.value})} /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.distanceEWay || ''} onChange={(e) => setFormData({...formData, distanceEWay: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Place of Supply</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.placeOfSupply} onChange={(e)=>setFormData({...formData, placeOfSupply: e.target.value})} /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.placeOfSupply || ''} onChange={(e) => setFormData({...formData, placeOfSupply: e.target.value})} /></div>
                 </div>
               </div>
             </div>
@@ -585,40 +606,40 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Type</Label>
                   <div className="col-span-8">
-                    <Select value={formData.type} onValueChange={(val) => setFormData({...formData, type: val})}>
+                    <Select value={formData.type || ''} onValueChange={(val) => setFormData({...formData, type: val})}>
                       <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
                       <SelectContent>{DOCUMENT_TYPES.map(t => <SelectItem key={t.id} value={t.id} className="text-xs font-bold uppercase">{t.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Quotation No <span className="text-red-500">*</span></Label>
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Document No <span className="text-red-500">*</span></Label>
                   <div className="col-span-8 flex gap-1">
-                    <Input className="h-8 border-slate-300 rounded-none text-[10px] font-bold w-20 text-center uppercase" value={formData.numberPrefix} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
-                    <Input className="h-8 border-slate-300 rounded-none text-xs font-bold flex-1 text-center" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
-                    <Input className="h-8 border-slate-300 rounded-none text-[10px] font-bold w-20 text-center uppercase" value={formData.numberPostfix} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
+                    <Input className="h-8 border-slate-300 rounded-none text-[10px] font-bold w-20 text-center uppercase" value={formData.numberPrefix || ''} onChange={(e)=>setFormData({...formData, numberPrefix: e.target.value})} />
+                    <Input className="h-8 border-slate-300 rounded-none text-xs font-bold flex-1 text-center" value={formData.number || ''} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
+                    <Input className="h-8 border-slate-300 rounded-none text-[10px] font-bold w-20 text-center uppercase" value={formData.numberPostfix || ''} onChange={(e)=>setFormData({...formData, numberPostfix: e.target.value})} />
                   </div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
-                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Quotation Date <span className="text-red-500">*</span></Label>
+                  <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Document Date <span className="text-red-500">*</span></Label>
                   <div className="col-span-8"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-8 rounded-none" /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan No.</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.challanNo} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.challanNo || ''} onChange={(e)=>setFormData({...formData, challanNo: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Challan Date</Label>
-                  <div className="col-span-8"><DatePicker value={formData.challanDate} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-8 rounded-none" /></div>
+                  <div className="col-span-8"><DatePicker value={formData.challanDate || ''} onChange={(val)=>setFormData({...formData, challanDate: val})} className="h-8 rounded-none" /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">L.R. No.</Label>
-                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.lrNo} onChange={(e)=>setFormData({...formData, lrNo: e.target.value})} /></div>
+                  <div className="col-span-8"><Input className="h-8 border-slate-300 rounded-none text-xs" value={formData.lrNo || ''} onChange={(e)=>setFormData({...formData, lrNo: e.target.value})} /></div>
                 </div>
                 <div className="grid grid-cols-12 items-center gap-4">
                   <Label className="col-span-4 text-[11px] font-bold text-slate-500 uppercase">Delivery</Label>
                   <div className="col-span-8">
-                    <Select value={formData.deliveryMode} onValueChange={(val) => setFormData({...formData, deliveryMode: val})}>
+                    <Select value={formData.deliveryMode || ''} onValueChange={(val) => setFormData({...formData, deliveryMode: val})}>
                       <SelectTrigger className="h-8 border-slate-300 rounded-none text-xs uppercase"><SelectValue placeholder="Select Delivery Mode" /></SelectTrigger>
                       <SelectContent><SelectItem value="Truck">Road (Truck)</SelectItem><SelectItem value="Courier">Courier</SelectItem><SelectItem value="Hand">Hand Delivery</SelectItem></SelectContent>
                     </Select>
@@ -651,25 +672,25 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     <TableRow key={item.id} className="border-b border-slate-300 hover:bg-slate-50 transition-all h-12">
                       <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300">{idx + 1}</TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                        <Input className="h-8 border-none bg-transparent text-xs font-bold" placeholder="Enter product..." value={item.description} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
+                        <Input className="h-8 border-none bg-transparent text-xs font-bold" placeholder="Enter product..." value={item.description || ''} onChange={(e)=>updateItem(item.id, 'description', e.target.value)} />
                       </TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                        <Input className="h-8 border-none bg-transparent text-xs font-bold text-center" placeholder="HSN" value={item.hsn} onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} />
+                        <Input className="h-8 border-none bg-transparent text-xs font-bold text-center" placeholder="HSN" value={item.hsn || ''} onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} />
                       </TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.qty} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} />
+                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.qty || 0} onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} />
                       </TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                        <Input className="h-8 text-center text-xs font-bold uppercase border-none bg-transparent" value={item.unit} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} />
+                        <Input className="h-8 text-center text-xs font-bold uppercase border-none bg-transparent" value={item.unit || ''} onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} />
                       </TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.price} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} />
+                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.price || 0} onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} />
                       </TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.discount} onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} />
+                        <Input type="number" className="h-8 text-center text-xs font-bold border-none bg-transparent" value={item.discount || 0} onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} />
                       </TableCell>
                       <TableCell className="p-1 border-r border-slate-300">
-                         <Select value={item.gstRate.toString()} onValueChange={(val)=>updateItem(item.id, 'gstRate', Number(val))}>
+                         <Select value={item.gstRate?.toString() || '18'} onValueChange={(val)=>updateItem(item.id, 'gstRate', Number(val))}>
                             <SelectTrigger className="h-8 border-none bg-transparent text-xs font-bold"><SelectValue /></SelectTrigger>
                             <SelectContent>{[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="text-xs">{r}%</SelectItem>)}</SelectContent>
                          </Select>
@@ -681,7 +702,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                     </TableRow>
                   ))}
                   <TableRow className="bg-slate-100 font-bold border-t border-slate-400 h-10">
-                    <TableCell colSpan={3} className="text-right py-2 px-4 text-[10px] uppercase text-slate-700 border-r border-slate-300">Total Quotation Value:</TableCell>
+                    <TableCell colSpan={3} className="text-right py-2 px-4 text-[10px] uppercase text-slate-700 border-r border-slate-300">Total Value:</TableCell>
                     <TableCell className="text-center text-xs border-r border-slate-300">{formData.items?.reduce((acc, i)=>acc+i.qty,0) || 0}</TableCell>
                     <TableCell className="border-r border-slate-300"></TableCell>
                     <TableCell className="border-r border-slate-300"></TableCell>
@@ -716,8 +737,8 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="space-y-4 pt-4">
                     <h4 className="text-[10px] font-bold uppercase text-[#001F3D] tracking-widest border-b pb-2">Terms & Condition / Additional Note</h4>
                     <div className="space-y-3">
-                      <Input placeholder="Enter Title..." className="h-9 border-slate-300 rounded-none text-xs font-bold" value={formData.paymentTerms} onChange={(e)=>setFormData({...formData, paymentTerms: e.target.value})} />
-                      <Textarea placeholder="Enter Detail..." className="min-h-[80px] border-slate-300 rounded-none text-xs bg-slate-50" value={formData.note} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
+                      <Input placeholder="Enter Title..." className="h-9 border-slate-300 rounded-none text-xs font-bold" value={formData.paymentTerms || ''} onChange={(e)=>setFormData({...formData, paymentTerms: e.target.value})} />
+                      <Textarea placeholder="Enter Detail..." className="min-h-[80px] border-slate-300 rounded-none text-xs bg-slate-50" value={formData.note || ''} onChange={(e)=>setFormData({...formData, note: e.target.value})} />
                       <Button variant="outline" className="h-8 px-4 text-[9px] font-bold uppercase tracking-widest rounded-none border-slate-300">Add Notes</Button>
                     </div>
                   </div>
@@ -739,7 +760,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   
                   <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600 pt-2 border-t">
                     <span>Add Additional Charge</span>
-                    <Input type="number" className="h-8 w-24 text-right border-slate-300 rounded-none text-xs" value={formData.transportationCharges} onChange={(e)=>setFormData(calculateTotals({...formData, transportationCharges: Number(e.target.value)}))} />
+                    <Input type="number" className="h-8 w-24 text-right border-slate-300 rounded-none text-xs" value={formData.transportationCharges || 0} onChange={(e)=>setFormData(calculateTotals({...formData, transportationCharges: Number(e.target.value)}))} />
                   </div>
 
                   <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-900 pt-4 border-t">
@@ -755,7 +776,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-600">
                     <div className="flex items-center gap-2">
                        <span>TCS</span>
-                       <Input type="number" className="h-7 w-12 text-center border-slate-300 rounded-none text-[10px]" value={formData.tcsRate} onChange={(e)=>setFormData(calculateTotals({...formData, tcsRate: Number(e.target.value)}))} />
+                       <Input type="number" className="h-7 w-12 text-center border-slate-300 rounded-none text-[10px]" value={formData.tcsRate || 0} onChange={(e)=>setFormData(calculateTotals({...formData, tcsRate: Number(e.target.value)}))} />
                        <span>%</span>
                     </div>
                     <span>₹ {(formData.tcsAmount || 0).toLocaleString()}</span>
@@ -769,7 +790,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                   <div className="flex justify-between items-center pt-2 border-t">
                      <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-600">
                         <span>Round Off</span>
-                        <Switch checked={formData.isRoundOffActive} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
+                        <Switch checked={formData.isRoundOffActive || false} onCheckedChange={(val)=>setFormData(calculateTotals({...formData, isRoundOffActive: val}))} />
                      </div>
                      <span className="text-xs font-bold font-code">{(formData.roundOff || 0).toFixed(2)}</span>
                   </div>
@@ -842,7 +863,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
                         : "border-transparent text-slate-500 hover:text-slate-900"
                     )}
                   >
-                    <tab.icon className={cn("h-2.5 w-2.5", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />
+                    {tab.icon && <tab.icon className={cn("h-2.5 w-2.5", activeTab === tab.id ? "text-emerald-500" : "text-slate-400")} />}
                     {tab.label}
                   </button>
                 ))}
@@ -1141,4 +1162,3 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     </div>
   );
 }
-

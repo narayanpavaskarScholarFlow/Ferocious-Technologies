@@ -168,6 +168,10 @@ export interface BillingRecord {
   tcsAmount?: number;
   roundOff?: number;
   isRoundOffActive?: boolean;
+  contactPerson?: string;
+  contactNumber?: string;
+  gstNumber?: string;
+  panNumber?: string;
 }
 
 export interface SQCDPData {

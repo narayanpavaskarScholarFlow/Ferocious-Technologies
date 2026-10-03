@@ -66,7 +66,17 @@ import {
   AlertCircle,
   XCircle,
   Clock,
-  Briefcase
+  Briefcase,
+  PlusCircle,
+  MinusCircle,
+  FileSpreadsheet,
+  Database,
+  FileUp,
+  Columns,
+  ClipboardCopy,
+  Zap,
+  Percent,
+  Calculator
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -81,8 +91,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, format, startOfToday, startOfWeek, startOfYear } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BillingManagementProps {
   customers: Customer[];
@@ -318,6 +329,17 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
     });
   };
 
+  const handleDuplicateRow = (id: string) => {
+    const item = formData.items?.find(i => i.id === id);
+    if (!item) return;
+    const newItem = { ...item, id: Math.random().toString(36).substr(2, 9) };
+    setFormData(prev => {
+      const updated = { ...prev, items: [...(prev.items || []), newItem] };
+      return calculateTotals(updated);
+    });
+    toast({ title: "Node Duplicated", description: "Line item cloned in current matrix." });
+  };
+
   const updateItem = (id: string, field: keyof BillingLineItem, value: any) => {
     setFormData(prev => {
       const items = (prev.items || []).map(item => {
@@ -459,6 +481,23 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
 
   const FullPageEditor = () => {
     const isPaymentType = activeRecordType === 'inward_payment' || activeRecordType === 'outward_payment';
+    const [visibleCols, setVisibleCols] = useState({
+      hsn: true,
+      discount: true,
+      gst: true
+    });
+
+    const toggleCol = (col: 'hsn' | 'discount' | 'gst') => {
+      setVisibleCols(prev => ({ ...prev, [col]: !prev[col] }));
+    };
+
+    const getColSpanCount = () => {
+      let count = 6; // Fixed: SR, Product, Qty, UOM, Price, Total
+      if (visibleCols.hsn) count++;
+      if (visibleCols.discount) count++;
+      if (visibleCols.gst) count++;
+      return count;
+    };
     
     if (isPaymentType) {
       return (
@@ -670,130 +709,231 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
             </div>
           </div>
 
-          <div className="bg-white border border-slate-300 overflow-hidden shadow-sm">
-            <Table className="border-collapse">
-              <TableHeader className="bg-slate-50">
-                <TableRow className="hover:bg-transparent border-b border-slate-300">
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-12 text-center border-r border-slate-300">SR.</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300 min-w-[300px]">Product / Other Charges</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-32 border-r border-slate-300">HSN/SAC</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Qty.</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">UOM</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-32 text-center border-r border-slate-300">Price</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-28 text-center border-r border-slate-300">Discount</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-28 text-center border-r border-slate-300">IGST (%)</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-40 text-right">Total</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {formData.items?.map((item, idx) => (
-                  <TableRow key={item.id} className="border-b border-slate-300 align-top group">
-                    <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300 py-4">{idx + 1}</TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <div className="flex flex-col">
-                        <Input 
-                          placeholder="Enter Product name"
-                          className="h-10 border-none bg-white text-xs font-bold px-4 rounded-none focus-visible:ring-1 focus-visible:ring-primary/20" 
-                          value={item.description || ''} 
-                          onChange={(e)=>updateItem(item.id, 'description', e.target.value)} 
-                        />
-                        <Textarea 
-                          placeholder="Item Note..."
-                          className="min-h-[60px] border-none bg-slate-50/50 text-[10px] px-4 py-2 rounded-none resize-none focus-visible:ring-0" 
-                          value={item.note || ''} 
-                          onChange={(e)=>updateItem(item.id, 'note', e.target.value)}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <Input 
-                        className="h-10 border-none bg-transparent text-xs text-center font-code rounded-none" 
-                        value={item.hsn || ''} 
-                        onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} 
-                      />
-                    </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <Input 
-                        type="number" 
-                        className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold" 
-                        value={item.qty || 0} 
-                        onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} 
-                      />
-                    </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <Input 
-                        className="h-10 text-center text-xs border-none bg-transparent rounded-none" 
-                        value={item.unit || ''} 
-                        onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} 
-                      />
-                    </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <Input 
-                        type="number" 
-                        className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold text-primary" 
-                        value={item.price || 0} 
-                        onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} 
-                      />
-                    </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <div className="flex items-center">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-sm font-bold uppercase text-[#001F3D] tracking-widest flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" /> Product Items
+              </h3>
+              <div className="flex items-center gap-3">
+                {/* Discount Protocol Toggle */}
+                <div className="flex items-center gap-1 bg-white border border-slate-300 p-1 rounded-lg shadow-sm">
+                  <span className="text-[10px] font-bold text-slate-400 px-2">Discount :</span>
+                  <div className="flex bg-slate-100 rounded-md p-0.5">
+                    <button 
+                      className={cn("px-3 py-1 text-[9px] font-bold rounded transition-all", "bg-white text-primary shadow-sm")}
+                    >Rs</button>
+                    <button 
+                      className={cn("px-3 py-1 text-[9px] font-bold rounded transition-all", "text-slate-400")}
+                    >%</button>
+                  </div>
+                </div>
+                
+                {/* Industrial Kebab Menu */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <DropdownMenu>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-300 hover:bg-slate-50 shadow-sm">
+                            <MoreVertical className="h-4 w-4 text-slate-600" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <DropdownMenuContent align="end" className="w-64 p-1 rounded-xl shadow-2xl border-slate-100">
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><Package className="h-3 w-3" /> Product Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={handleAddItem} className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><PlusCircle className="h-3.5 w-3.5 text-emerald-500" /> Add Product</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Briefcase className="h-3.5 w-3.5 text-blue-500" /> Add Service</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><PlusCircle className="h-3.5 w-3.5 text-orange-500" /> Add Additional Charge</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><MinusCircle className="h-3.5 w-3.5 text-red-500" /> Add Discount Item</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </DropdownMenuGroup>
+                        
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><FileSpreadsheet className="h-3 w-3" /> Import & Export</DropdownMenuLabel>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><FileSpreadsheet className="h-3.5 w-3.5" /> Import from Excel</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Database className="h-3.5 w-3.5" /> Import Product Master</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><FileUp className="h-3.5 w-3.5" /> Export Product List</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Download className="h-3.5 w-3.5" /> Download Template</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </DropdownMenuGroup>
+
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><Columns className="h-3 w-3" /> Table Configuration</DropdownMenuLabel>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2" onClick={() => toggleCol('hsn')}>
+                            <Eye className={cn("h-3.5 w-3.5", visibleCols.hsn ? "text-primary" : "text-slate-300")} /> {visibleCols.hsn ? 'Hide' : 'Show'} HSN Column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2" onClick={() => toggleCol('discount')}>
+                            <Eye className={cn("h-3.5 w-3.5", visibleCols.discount ? "text-primary" : "text-slate-300")} /> {visibleCols.discount ? 'Hide' : 'Show'} Discount Column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2" onClick={() => toggleCol('gst')}>
+                            <Eye className={cn("h-3.5 w-3.5", visibleCols.gst ? "text-primary" : "text-slate-300")} /> {visibleCols.gst ? 'Hide' : 'Show'} GST Column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2" onClick={() => setVisibleCols({hsn:true, discount:true, gst:true})}><RefreshCw className="h-3.5 w-3.5" /> Reset Matrix Layout</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </DropdownMenuGroup>
+
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><ClipboardCopy className="h-3.5 w-3.5" /> Strategic Tools</DropdownMenuLabel>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><ClipboardCopy className="h-3.5 w-3.5" /> Copy Prev Quotation</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Zap className="h-3.5 w-3.5 text-amber-500" /> Auto Fill Frequent</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Save className="h-3.5 w-3.5" /> Save as Template</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </DropdownMenuGroup>
+
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[9px] uppercase font-bold text-slate-400 px-2 py-1.5 flex items-center gap-2"><Calculator className="h-3 w-3" /> Calculation Protocols</DropdownMenuLabel>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Percent className="h-3.5 w-3.5" /> Apply Global Disc.</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Banknote className="h-3.5 w-3.5" /> Force Round Off</DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2" onClick={() => setFormData(prev => calculateTotals(prev))}><Calculator className="h-3.5 w-3.5" /> Recalculate Entire Matrix</DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <TooltipContent side="top" className="bg-[#001F3D] text-white text-[9px] font-bold uppercase">More Transaction Options</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-300 overflow-hidden shadow-sm">
+              <Table className="border-collapse">
+                <TableHeader className="bg-slate-50">
+                  <TableRow className="hover:bg-transparent border-b border-slate-300">
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-12 text-center border-r border-slate-300">SR.</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 border-r border-slate-300 min-w-[300px]">Product / Other Charges</TableHead>
+                    {visibleCols.hsn && <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-32 border-r border-slate-300">HSN/SAC</TableHead>}
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">Qty.</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-24 text-center border-r border-slate-300">UOM</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-32 text-center border-r border-slate-300">Price</TableHead>
+                    {visibleCols.discount && <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-28 text-center border-r border-slate-300">Discount</TableHead>}
+                    {visibleCols.gst && <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-2 w-28 text-center border-r border-slate-300">IGST (%)</TableHead>}
+                    <TableHead className="text-[10px] font-bold uppercase text-slate-700 py-3 px-4 w-40 text-right">Total</TableHead>
+                    <TableHead className="w-10"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {formData.items?.map((item, idx) => (
+                    <TableRow key={item.id} className="border-b border-slate-300 align-top group">
+                      <TableCell className="text-center text-xs font-bold text-slate-400 border-r border-slate-300 py-4">{idx + 1}</TableCell>
+                      <TableCell className="p-0 border-r border-slate-300">
+                        <div className="flex flex-col">
+                          <Input 
+                            placeholder="Enter Product name"
+                            className="h-10 border-none bg-white text-xs font-bold px-4 rounded-none focus-visible:ring-1 focus-visible:ring-primary/20" 
+                            value={item.description || ''} 
+                            onChange={(e)=>updateItem(item.id, 'description', e.target.value)} 
+                          />
+                          <Textarea 
+                            placeholder="Item Note..."
+                            className="min-h-[60px] border-none bg-slate-50/50 text-[10px] px-4 py-2 rounded-none resize-none focus-visible:ring-0" 
+                            value={item.note || ''} 
+                            onChange={(e)=>updateItem(item.id, 'note', e.target.value)}
+                          />
+                        </div>
+                      </TableCell>
+                      {visibleCols.hsn && (
+                        <TableCell className="p-0 border-r border-slate-300">
+                          <Input 
+                            className="h-10 border-none bg-transparent text-xs text-center font-code rounded-none" 
+                            value={item.hsn || ''} 
+                            onChange={(e)=>updateItem(item.id, 'hsn', e.target.value)} 
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className="p-0 border-r border-slate-300">
                         <Input 
                           type="number" 
-                          className="h-10 text-center text-xs border-none bg-transparent rounded-none w-full" 
-                          value={item.discount || 0} 
-                          onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} 
+                          className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold" 
+                          value={item.qty || 0} 
+                          onChange={(e)=>updateItem(item.id, 'qty', Number(e.target.value))} 
                         />
-                        <button 
-                          className="px-2 text-[8px] font-bold text-slate-400 hover:text-primary"
-                          onClick={() => updateItem(item.id, 'discountType', item.discountType === 'percentage' ? 'amount' : 'percentage')}
-                        >
-                          {item.discountType === 'percentage' ? '%' : '₹'}
-                        </button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-0 border-r border-slate-300">
-                      <Input 
-                        type="number" 
-                        className="h-10 text-center text-xs border-none bg-transparent rounded-none" 
-                        value={item.gstRate || 0} 
-                        onChange={(e)=>updateItem(item.id, 'gstRate', Number(e.target.value))} 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && idx === (formData.items?.length || 0) - 1) {
-                            handleAddItem();
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right px-4 text-xs font-bold py-4">
-                      ₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="p-1 text-center">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" onClick={()=>handleRemoveItem(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+                      </TableCell>
+                      <TableCell className="p-0 border-r border-slate-300">
+                        <Input 
+                          className="h-10 text-center text-xs border-none bg-transparent rounded-none" 
+                          value={item.unit || ''} 
+                          onChange={(e)=>updateItem(item.id, 'unit', e.target.value)} 
+                        />
+                      </TableCell>
+                      <TableCell className="p-0 border-r border-slate-300">
+                        <Input 
+                          type="number" 
+                          className="h-10 text-center text-xs border-none bg-transparent rounded-none font-bold text-primary" 
+                          value={item.price || 0} 
+                          onChange={(e)=>updateItem(item.id, 'price', Number(e.target.value))} 
+                        />
+                      </TableCell>
+                      {visibleCols.discount && (
+                        <TableCell className="p-0 border-r border-slate-300">
+                          <div className="flex items-center">
+                            <Input 
+                              type="number" 
+                              className="h-10 text-center text-xs border-none bg-transparent rounded-none w-full" 
+                              value={item.discount || 0} 
+                              onChange={(e)=>updateItem(item.id, 'discount', Number(e.target.value))} 
+                            />
+                            <button 
+                              className="px-2 text-[8px] font-bold text-slate-400 hover:text-primary"
+                              onClick={() => updateItem(item.id, 'discountType', item.discountType === 'percentage' ? 'amount' : 'percentage')}
+                            >
+                              {item.discountType === 'percentage' ? '%' : '₹'}
+                            </button>
+                          </div>
+                        </TableCell>
+                      )}
+                      {visibleCols.gst && (
+                        <TableCell className="p-0 border-r border-slate-300">
+                          <Input 
+                            type="number" 
+                            className="h-10 text-center text-xs border-none bg-transparent rounded-none" 
+                            value={item.gstRate || 0} 
+                            onChange={(e)=>updateItem(item.id, 'gstRate', Number(e.target.value))} 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && idx === (formData.items?.length || 0) - 1) {
+                                handleAddItem();
+                              }
+                            }}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className="text-right px-4 text-xs font-bold py-4">
+                        ₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="p-1 text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-[#001F3D] opacity-0 group-hover:opacity-100 transition-all">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 p-1 rounded-xl shadow-xl border-slate-100">
+                            <DropdownMenuItem onClick={() => handleDuplicateRow(item.id)} className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2"><Copy className="h-3.5 w-3.5 text-blue-500" /> Duplicate Row</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRemoveItem(item.id)} className="rounded-lg gap-2 text-[10px] font-bold uppercase py-2 text-red-600"><Trash2 className="h-3.5 w-3.5" /> Delete Row</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  
+                  {/* Total Row */}
+                  <TableRow className="bg-yellow-100/50 hover:bg-yellow-100/50 border-t-2 border-slate-300">
+                    <TableCell colSpan={2} className="text-right font-black text-[10px] uppercase text-[#001F3D] py-4 px-6 border-r border-slate-300">Total Quotation Val.</TableCell>
+                    {visibleCols.hsn && <TableCell className="border-r border-slate-300"></TableCell>}
+                    <TableCell className="text-center font-bold text-xs border-r border-slate-300">{formData.items?.reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
+                    <TableCell className="border-r border-slate-300"></TableCell>
+                    <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.items?.reduce((acc, i) => acc + (i.price || 0), 0).toLocaleString()}</TableCell>
+                    {visibleCols.discount && <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.discountTotal?.toLocaleString()}</TableCell>}
+                    {visibleCols.gst && <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.taxTotal?.toLocaleString()}</TableCell>}
+                    <TableCell className="text-right font-black text-sm text-[#001F3D] px-4">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
-                ))}
-                
-                {/* Total Row matching reference image */}
-                <TableRow className="bg-yellow-100/50 hover:bg-yellow-100/50 border-t-2 border-slate-300">
-                  <TableCell colSpan={2} className="text-right font-black text-[10px] uppercase text-[#001F3D] py-4 px-6 border-r border-slate-300">Total Quotation Val.</TableCell>
-                  <TableCell className="border-r border-slate-300"></TableCell>
-                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">{formData.items?.reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
-                  <TableCell className="border-r border-slate-300"></TableCell>
-                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.items?.reduce((acc, i) => acc + (i.price || 0), 0).toLocaleString()}</TableCell>
-                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.discountTotal?.toLocaleString()}</TableCell>
-                  <TableCell className="text-center font-bold text-xs border-r border-slate-300">₹ {formData.taxTotal?.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-black text-sm text-[#001F3D] px-4">₹ {(formData.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-            <div className="p-4 border-t bg-white flex justify-start">
-               <Button variant="ghost" onClick={handleAddItem} className="h-9 px-6 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5">
-                 <Plus className="h-4 w-4" /> Add Next Operational Node
-               </Button>
+                </TableBody>
+              </Table>
+              <div className="p-4 border-t bg-white flex justify-start">
+                 <Button variant="ghost" onClick={handleAddItem} className="h-9 px-6 rounded-xl text-primary font-bold uppercase text-[9px] tracking-widest gap-2 hover:bg-primary/5">
+                   <Plus className="h-4 w-4" /> Add Next Operational Node
+                 </Button>
+              </div>
             </div>
           </div>
 
@@ -869,7 +1009,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
               <div className="space-y-4 pt-4">
                  <div className="space-y-2">
                     <span className="text-[10px] font-bold uppercase text-slate-400">Total in Words</span>
-                    <p className="text-[11px] font-bold text-slate-700 bg-slate-50 p-4 border border-slate-100 rounded-lg leading-relaxed shadow-inner">
+                    <p className="text-11px font-bold text-slate-700 bg-slate-50 p-4 border border-slate-100 rounded-lg leading-relaxed shadow-inner">
                       {numberToWords(formData.amount || 0)}
                     </p>
                  </div>
@@ -888,7 +1028,7 @@ export function BillingManagement({ customers, vendors, records, orders, users, 
         <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white flex justify-between items-center z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
            <div className="flex items-center gap-4">
              <Button variant="ghost" onClick={() => setIsRecordFormOpen(false)} className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-all"><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
-             <Button variant="outline" className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-all"><History className="h-4 w-4 mr-2" /> Save Draft</Button>
+             <Button variant="outline" className="h-12 px-10 font-bold uppercase text-[10px] tracking-widest border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-all"><History className="h-4 w-4 mr-2" /> Save Draft</Button>
            </div>
            <div className="flex items-center gap-4">
              <Button className="h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-emerald-600/20 flex gap-3"><Printer className="h-4 w-4" /> Save & Print Matrix</Button>

@@ -12,23 +12,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   Search, 
   UserPlus, 
-  MapPin, 
-  Building2, 
-  ClipboardList,
   Plus, 
-  Contact, 
-  ArrowRight,
-  CreditCard,
-  User,
-  Phone,
-  Edit2,
-  Check,
-  Printer,
-  XCircle,
-  Truck,
-  Info,
-  ChevronRight,
-  Receipt
+  Edit2, 
+  Check, 
+  Printer, 
+  XCircle, 
+  Info, 
+  ClipboardList, 
+  Receipt,
+  X
 } from 'lucide-react';
 import { Customer } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -56,10 +48,9 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   
-  // New Customer Form State - Aligned with the required UI
   const [newCustomer, setNewCustomer] = useState({
     name: '',
-    companyType: 'Customer' as 'Customer' | 'Both',
+    companyType: 'Customer' as 'Customer' | 'Vendor' | 'Both',
     gstNumber: '',
     contactPerson: '',
     contactNumber: '',
@@ -162,11 +153,11 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
   };
 
   const FormFieldRow = ({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 py-2">
-      <Label className="text-sm text-slate-600 font-medium md:col-span-1">
+    <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2 border-b border-slate-50 last:border-0 min-h-[64px]">
+      <Label className="text-[13px] text-slate-500 font-bold uppercase tracking-widest md:col-span-4">
         {label}{required && <span className="text-red-500 ml-1">*</span>}
       </Label>
-      <div className="md:col-span-2">
+      <div className="md:col-span-8">
         {children}
       </div>
     </div>
@@ -290,31 +281,39 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
       </Card>
 
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-        <DialogContent className="max-w-4xl bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[1.5rem]">
-          <DialogHeader className="p-6 bg-slate-50 border-b border-slate-100 shrink-0">
-            <div className="flex items-center gap-3">
-              <ClipboardList className="h-5 w-5 text-slate-600" />
-              <DialogTitle className="text-lg font-bold text-slate-800">Customer / Vendor Detail</DialogTitle>
+        <DialogContent className="max-w-6xl h-[92vh] bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem] flex flex-col">
+          <DialogHeader className="p-8 bg-slate-50 border-b border-slate-100 shrink-0 flex flex-row justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <ClipboardList className="h-6 w-6 text-slate-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Customer / Vendor Detail</DialogTitle>
+                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Identity Profile Matrix</DialogDescription>
+              </div>
             </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsAddCustomerOpen(false)} className="rounded-full h-12 w-12 text-slate-300 hover:text-red-500 transition-colors">
+              <X className="h-7 w-7" />
+            </Button>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[80vh]">
-            <div className="p-8 space-y-10">
+          <ScrollArea className="flex-1">
+            <div className="p-12 space-y-12">
               {/* General Detail Section */}
-              <div className="space-y-6">
+              <div className="space-y-4 max-w-4xl mx-auto">
                 <FormFieldRow label="Company Type">
                   <RadioGroup 
                     value={newCustomer.companyType} 
                     onValueChange={(val: any) => handleInputChange('companyType', val)}
-                    className="flex gap-8"
+                    className="flex gap-10"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Customer" id="ct-customer" className="border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-customer" className="text-sm font-medium text-slate-600 cursor-pointer">Customer</Label>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="Customer" id="ct-customer" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
+                      <Label htmlFor="ct-customer" className="text-sm font-bold text-slate-600 cursor-pointer">Customer</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Both" id="ct-both" className="border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-both" className="text-sm font-medium text-slate-600 cursor-pointer">Customer / Vendor</Label>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="Both" id="ct-both" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
+                      <Label htmlFor="ct-both" className="text-sm font-bold text-slate-600 cursor-pointer">Customer / Vendor</Label>
                     </div>
                   </RadioGroup>
                 </FormFieldRow>
@@ -322,14 +321,14 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 <FormFieldRow label="GSTIN">
                   <div className="relative group">
                     <Input 
-                      placeholder="Enter GSTIN Number" 
-                      className="h-10 pr-24 border-slate-200 focus-visible:ring-emerald-500/20 uppercase"
+                      placeholder="ENTER GSTIN NUMBER" 
+                      className="h-12 pr-32 bg-slate-50/50 border-slate-200 rounded-xl font-bold uppercase text-xs focus-visible:ring-emerald-500/20"
                       value={newCustomer.gstNumber}
                       onChange={(e) => handleInputChange('gstNumber', e.target.value)}
                     />
                     <Button 
                       variant="secondary" 
-                      className="absolute right-1 top-1 h-8 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-md px-3"
+                      className="absolute right-1 top-1 h-10 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black uppercase rounded-lg px-4"
                       onClick={() => toast({title: "GST Lookup", description: "Verifying GSTIN with national database..."})}
                     >
                       Auto Fill
@@ -340,7 +339,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 <FormFieldRow label="Company Name" required>
                   <Input 
                     placeholder="Enter Company Name" 
-                    className="h-10 border-slate-200 focus-visible:ring-emerald-500/20"
+                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
                     value={newCustomer.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                   />
@@ -349,7 +348,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 <FormFieldRow label="Contact Person">
                   <Input 
                     placeholder="Enter Contact Person" 
-                    className="h-10 border-slate-200 focus-visible:ring-emerald-500/20"
+                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
                     value={newCustomer.contactPerson}
                     onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                   />
@@ -359,11 +358,11 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   <div className="relative">
                     <Input 
                       placeholder="Enter Mobile Number" 
-                      className="h-10 border-slate-200 focus-visible:ring-emerald-500/20 pr-10"
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
                       value={newCustomer.contactNumber}
                       onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                     />
-                    <Info className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
                   </div>
                 </FormFieldRow>
 
@@ -371,11 +370,11 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   <div className="relative">
                     <Input 
                       placeholder="Enter Email ID" 
-                      className="h-10 border-slate-200 focus-visible:ring-emerald-500/20 pr-10"
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
                       value={newCustomer.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                     />
-                    <Info className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
                   </div>
                 </FormFieldRow>
 
@@ -384,13 +383,13 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                     value={newCustomer.registrationType} 
                     onValueChange={(val) => handleInputChange('registrationType', val)}
                   >
-                    <SelectTrigger className="h-10 border-slate-200 focus:ring-emerald-500/20">
+                    <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs">
                       <SelectValue placeholder="Select Registration Type" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Unregistered">Unregistered</SelectItem>
-                      <SelectItem value="Regular">Regular</SelectItem>
-                      <SelectItem value="Composition">Composition</SelectItem>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Unregistered" className="text-xs font-bold uppercase">Unregistered</SelectItem>
+                      <SelectItem value="Regular" className="text-xs font-bold uppercase">Regular</SelectItem>
+                      <SelectItem value="Composition" className="text-xs font-bold uppercase">Composition</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormFieldRow>
@@ -398,7 +397,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                 <FormFieldRow label="PAN">
                   <Input 
                     placeholder="Enter PAN Number" 
-                    className="h-10 border-slate-200 focus-visible:ring-emerald-500/20 uppercase"
+                    className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"
                     value={newCustomer.pan}
                     onChange={(e) => handleInputChange('pan', e.target.value)}
                   />
@@ -406,12 +405,12 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
               </div>
 
               {/* Billing Address Section */}
-              <div className="space-y-6 pt-10 border-t border-slate-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-1.5 bg-slate-50 border border-slate-100 rounded-lg">
-                    <Receipt className="h-4 w-4 text-slate-600" />
+              <div className="space-y-6 pt-12 border-t border-slate-100 max-w-4xl mx-auto">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg">
+                    <Receipt className="h-5 w-5 text-slate-600" />
                   </div>
-                  <h3 className="text-md font-bold text-slate-800">Billing Address</h3>
+                  <h3 className="text-lg font-bold text-slate-800 uppercase tracking-tight">Billing Address Matrix</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -419,13 +418,13 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                     <div className="space-y-3">
                       <Input 
                         placeholder="House No, Building, Street" 
-                        className="h-10 border-slate-200 focus-visible:ring-emerald-500/20"
+                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
                         value={newCustomer.address}
                         onChange={(e) => handleInputChange('address', e.target.value)}
                       />
                       <Input 
                         placeholder="Area, Locality, Sector" 
-                        className="h-10 border-slate-200 focus-visible:ring-emerald-500/20"
+                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
                         value={newCustomer.addressLine2}
                         onChange={(e) => handleInputChange('addressLine2', e.target.value)}
                       />
@@ -435,7 +434,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   <FormFieldRow label="Landmark">
                     <Input 
                       placeholder="E.g. Near Industrial Estate" 
-                      className="h-10 border-slate-200 focus-visible:ring-emerald-500/20"
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
                       value={newCustomer.landmark}
                       onChange={(e) => handleInputChange('landmark', e.target.value)}
                     />
@@ -444,7 +443,7 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
                   <FormFieldRow label="City" required>
                     <Input 
                       placeholder="Enter City Name" 
-                      className="h-10 border-slate-200 focus-visible:ring-emerald-500/20"
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs uppercase"
                       value={newCustomer.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
                     />
@@ -454,19 +453,19 @@ export function CustomerOrders({ customers, onSaveCustomer }: CustomerOrdersProp
             </div>
           </ScrollArea>
 
-          <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+          <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
             <Button 
-              variant="outline" 
-              className="h-10 px-6 rounded-lg font-bold text-slate-500"
+              variant="ghost" 
+              className="h-14 px-10 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
               onClick={() => setIsAddCustomerOpen(false)}
             >
-              Cancel
+              Cancel Protocol
             </Button>
             <Button 
-              className="h-10 px-10 bg-[#001F3D] hover:bg-black text-white rounded-lg font-bold flex gap-2"
+              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20 flex gap-3"
               onClick={handleAddCustomer}
             >
-              <Check className="h-4 w-4" /> Commit Detail
+              <Check className="h-5 w-5" /> Commit Identity Detail
             </Button>
           </div>
         </DialogContent>

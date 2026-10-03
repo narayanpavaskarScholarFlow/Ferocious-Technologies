@@ -171,7 +171,7 @@ export interface Customer {
   gstNumber: string;
   contactPerson: string;
   type: 'Corporate' | 'Individual';
-  companyType?: 'Customer' | 'Both';
+  companyType?: 'Customer' | 'Vendor' | 'Both';
   registrationType?: string;
   pan?: string;
   email: string;
@@ -189,9 +189,15 @@ export interface Vendor {
   activeOrders: number;
   rating: number;
   contact: string;
-  address: string;
+  address?: string;
+  addressLine2?: string;
+  landmark?: string;
+  city?: string;
+  shippingAddress?: string;
   email: string;
   gstNumber: string;
+  pan?: string;
+  registrationType?: string;
   status: 'Active' | 'Under Review' | 'Inactive';
 }
 
@@ -307,20 +313,6 @@ export interface SystemUser {
   uiSettings?: UISettings;
 }
 
-export interface DimensionRecord {
-  id: string;
-  balloonNo: string;
-  typeOfDim: string;
-  instrument: string;
-  target: string;
-  tolerance: string;
-  upperLimit: string;
-  lowerLimit: string;
-  actual: string;
-  status: 'OK' | 'NOT OK' | 'NA' | 'Pending';
-  remark: string;
-}
-
 export interface QualityReport {
   id: string;
   workOrderId: string;
@@ -335,6 +327,20 @@ export interface QualityReport {
   releasedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DimensionRecord {
+  id: string;
+  balloonNo: string;
+  typeOfDim: string;
+  instrument: string;
+  target: string;
+  tolerance: string;
+  upperLimit: string;
+  lowerLimit: string;
+  actual: string;
+  status: 'OK' | 'NOT OK' | 'NA' | 'Pending';
+  remark: string;
 }
 
 export interface ProductionBatch {

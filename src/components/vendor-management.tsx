@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -9,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Truck, ExternalLink, Star, Phone, ShieldCheck, FileCheck, Activity, PackageX, Plus, Edit2, Trash2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Truck, Plus, Edit2, Trash2, Check, X, ClipboardList, Info, Receipt } from 'lucide-react';
 import { Vendor } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
@@ -20,6 +21,7 @@ import {
   DialogDescription 
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface VendorManagementProps {
   vendors: Vendor[];
@@ -32,29 +34,43 @@ export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProp
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    type: 'Sub-Contractor',
+    companyType: 'Vendor' as 'Customer' | 'Vendor' | 'Both',
     contact: '',
-    address: '',
     email: '',
-    gstNumber: ''
+    gstNumber: '',
+    registrationType: 'Unregistered',
+    pan: '',
+    address: '',
+    addressLine2: '',
+    landmark: '',
+    city: '',
+    shippingAddress: '',
+    type: 'Corporate'
   });
 
   const handleEdit = (vendor: Vendor) => {
     setEditingVendor(vendor);
     setFormData({
       name: vendor.name,
-      type: vendor.type,
+      companyType: 'Vendor',
       contact: vendor.contact,
-      address: vendor.address || '',
       email: vendor.email || '',
-      gstNumber: vendor.gstNumber || ''
+      gstNumber: vendor.gstNumber || '',
+      registrationType: vendor.registrationType || 'Unregistered',
+      pan: vendor.pan || '',
+      address: vendor.address || '',
+      addressLine2: vendor.addressLine2 || '',
+      landmark: vendor.landmark || '',
+      city: vendor.city || '',
+      shippingAddress: vendor.shippingAddress || '',
+      type: vendor.type || 'Corporate'
     });
     setIsAddOpen(true);
   };
 
   const handleSave = () => {
-    if (!formData.name || !formData.contact) {
-      toast({ variant: "destructive", title: "Protocol Interrupted", description: "Identity name and contact are required." });
+    if (!formData.name || !formData.contact || !formData.city) {
+      toast({ variant: "destructive", title: "Protocol Interrupted", description: "Identity name, contact, and city are required." });
       return;
     }
 
@@ -63,9 +79,15 @@ export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProp
       name: formData.name,
       type: formData.type,
       contact: formData.contact,
-      address: formData.address,
       email: formData.email,
-      gstNumber: formData.gstNumber,
+      gstNumber: formData.gstNumber.toUpperCase(),
+      pan: formData.pan.toUpperCase(),
+      registrationType: formData.registrationType,
+      address: formData.address,
+      addressLine2: formData.addressLine2,
+      landmark: formData.landmark,
+      city: formData.city,
+      shippingAddress: formData.shippingAddress || formData.address,
       activeOrders: editingVendor?.activeOrders || 0,
       rating: editingVendor?.rating || 5.0,
       status: editingVendor?.status || 'Active'
@@ -79,8 +101,22 @@ export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProp
 
   const resetForm = () => {
     setEditingVendor(null);
-    setFormData({ name: '', type: 'Sub-Contractor', contact: '', address: '', email: '', gstNumber: '' });
+    setFormData({ 
+      name: '', companyType: 'Vendor', contact: '', email: '', gstNumber: '', registrationType: 'Unregistered', 
+      pan: '', address: '', addressLine2: '', landmark: '', city: '', shippingAddress: '', type: 'Corporate' 
+    });
   };
+
+  const FormFieldRow = ({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) => (
+    <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2 border-b border-slate-50 last:border-0 min-h-[64px]">
+      <Label className="text-[13px] text-slate-500 font-bold uppercase tracking-widest md:col-span-4">
+        {label}{required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
+      <div className="md:col-span-8">
+        {children}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
@@ -145,7 +181,7 @@ export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProp
               </TableHeader>
               <TableBody>
                 {vendors.map((vendor) => (
-                  <TableRow key={vendor.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group">
+                  <TableRow key={vendor.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group transition-colors">
                     <TableCell className="px-8">
                       <div className="flex flex-col">
                         <span className="font-bold text-sm text-[#001F3D]">{vendor.name}</span>
@@ -177,16 +213,6 @@ export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProp
                     </TableCell>
                   </TableRow>
                 ))}
-                {vendors.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-64 text-center">
-                      <div className="flex flex-col items-center justify-center opacity-20 py-10">
-                        <PackageX className="h-12 w-12 text-slate-400 mb-4" />
-                        <p className="text-slate-500 font-code text-xs italic uppercase tracking-widest">No vendor partners found in database</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           </Card>
@@ -194,65 +220,190 @@ export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProp
       </Tabs>
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
-          <DialogHeader className="mb-8">
-            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Partner Onboarding</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Register external technical nodes for the ERP ecosystem.</DialogDescription>
+        <DialogContent className="max-w-6xl h-[92vh] bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem] flex flex-col">
+          <DialogHeader className="p-8 bg-slate-50 border-b border-slate-100 shrink-0 flex flex-row justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <ClipboardList className="h-6 w-6 text-slate-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Customer / Vendor Detail</DialogTitle>
+                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Identity Profile Matrix</DialogDescription>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setIsAddOpen(false)} className="rounded-full h-12 w-12 text-slate-300 hover:text-red-500 transition-colors">
+              <X className="h-7 w-7" />
+            </Button>
           </DialogHeader>
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name</Label>
-              <Input 
-                placeholder="e.g. Precision Finishing Ltd" 
-                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Contact No.</Label>
-                <Input 
-                  placeholder="+91 00000 00000" 
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
-                  value={formData.contact}
-                  onChange={(e) => setFormData({...formData, contact: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GST Number</Label>
-                <Input 
-                  placeholder="TAX_ID_XXXX" 
-                  className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"
-                  value={formData.gstNumber}
-                  onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Node Email</Label>
-              <Input 
-                placeholder="accounts@vendor.com" 
-                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Physical Location</Label>
-              <Input 
-                placeholder="Street, City, State..." 
-                className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-              />
-            </div>
+          <ScrollArea className="flex-1">
+            <div className="p-12 space-y-12">
+              <div className="space-y-4 max-w-4xl mx-auto">
+                <FormFieldRow label="Company Type">
+                  <RadioGroup 
+                    value={formData.companyType} 
+                    onValueChange={(val: any) => setFormData(prev => ({...prev, companyType: val}))}
+                    className="flex gap-10"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="Vendor" id="ct-vendor" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
+                      <Label htmlFor="ct-vendor" className="text-sm font-bold text-slate-600 cursor-pointer">Vendor</Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="Both" id="ct-both" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
+                      <Label htmlFor="ct-both" className="text-sm font-bold text-slate-600 cursor-pointer">Customer / Vendor</Label>
+                    </div>
+                  </RadioGroup>
+                </FormFieldRow>
 
-            <div className="flex gap-4 pt-6">
-              <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400" onClick={() => setIsAddOpen(false)}>Abort</Button>
-              <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-[#002d4f] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20" onClick={handleSave}>Execute Synchronization</Button>
+                <FormFieldRow label="GSTIN">
+                  <div className="relative group">
+                    <Input 
+                      placeholder="ENTER GSTIN NUMBER" 
+                      className="h-12 pr-32 bg-slate-50/50 border-slate-200 rounded-xl font-bold uppercase text-xs focus-visible:ring-emerald-500/20"
+                      value={formData.gstNumber}
+                      onChange={(e) => setFormData(prev => ({...prev, gstNumber: e.target.value}))}
+                    />
+                    <Button 
+                      variant="secondary" 
+                      className="absolute right-1 top-1 h-10 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black uppercase rounded-lg px-4"
+                      onClick={() => toast({title: "GST Lookup", description: "Verifying GSTIN with national database..."})}
+                    >
+                      Auto Fill
+                    </Button>
+                  </div>
+                </FormFieldRow>
+
+                <FormFieldRow label="Company Name" required>
+                  <Input 
+                    placeholder="Enter Company Name" 
+                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
+                  />
+                </FormFieldRow>
+
+                <FormFieldRow label="Contact Person">
+                  <Input 
+                    placeholder="Enter Contact Person" 
+                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
+                    value={formData.contact}
+                    onChange={(e) => setFormData(prev => ({...prev, contact: e.target.value}))}
+                  />
+                </FormFieldRow>
+
+                <FormFieldRow label="Contact No">
+                  <div className="relative">
+                    <Input 
+                      placeholder="Enter Mobile Number" 
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
+                      value={formData.contact} // Reusing contact for simplicity
+                      onChange={(e) => setFormData(prev => ({...prev, contact: e.target.value}))}
+                    />
+                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
+                  </div>
+                </FormFieldRow>
+
+                <FormFieldRow label="Email">
+                  <div className="relative">
+                    <Input 
+                      placeholder="Enter Email ID" 
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+                    />
+                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
+                  </div>
+                </FormFieldRow>
+
+                <FormFieldRow label="Registration Type">
+                  <Select 
+                    value={formData.registrationType} 
+                    onValueChange={(val) => setFormData(prev => ({...prev, registrationType: val}))}
+                  >
+                    <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs">
+                      <SelectValue placeholder="Select Registration Type" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Unregistered" className="text-xs font-bold uppercase">Unregistered</SelectItem>
+                      <SelectItem value="Regular" className="text-xs font-bold uppercase">Regular</SelectItem>
+                      <SelectItem value="Composition" className="text-xs font-bold uppercase">Composition</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormFieldRow>
+
+                <FormFieldRow label="PAN">
+                  <Input 
+                    placeholder="Enter PAN Number" 
+                    className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"
+                    value={formData.pan}
+                    onChange={(e) => setFormData(prev => ({...prev, pan: e.target.value}))}
+                  />
+                </FormFieldRow>
+              </div>
+
+              <div className="space-y-6 pt-12 border-t border-slate-100 max-w-4xl mx-auto">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg">
+                    <Receipt className="h-5 w-5 text-slate-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 uppercase tracking-tight">Billing Address Matrix</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <FormFieldRow label="Address">
+                    <div className="space-y-3">
+                      <Input 
+                        placeholder="House No, Building, Street" 
+                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
+                        value={formData.address}
+                        onChange={(e) => setFormData(prev => ({...prev, address: e.target.value}))}
+                      />
+                      <Input 
+                        placeholder="Area, Locality, Sector" 
+                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
+                        value={formData.addressLine2}
+                        onChange={(e) => setFormData(prev => ({...prev, addressLine2: e.target.value}))}
+                      />
+                    </div>
+                  </FormFieldRow>
+
+                  <FormFieldRow label="Landmark">
+                    <Input 
+                      placeholder="E.g. Near Industrial Estate" 
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
+                      value={formData.landmark}
+                      onChange={(e) => setFormData(prev => ({...prev, landmark: e.target.value}))}
+                    />
+                  </FormFieldRow>
+
+                  <FormFieldRow label="City" required>
+                    <Input 
+                      placeholder="Enter City Name" 
+                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs uppercase"
+                      value={formData.city}
+                      onChange={(e) => setFormData(prev => ({...prev, city: e.target.value}))}
+                    />
+                  </FormFieldRow>
+                </div>
+              </div>
             </div>
+          </ScrollArea>
+
+          <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
+            <Button 
+              variant="ghost" 
+              className="h-14 px-10 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
+              onClick={() => setIsAddOpen(false)}
+            >
+              Cancel Protocol
+            </Button>
+            <Button 
+              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20 flex gap-3"
+              onClick={handleSave}
+            >
+              <Check className="h-5 w-5" /> Commit Partner Detail
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

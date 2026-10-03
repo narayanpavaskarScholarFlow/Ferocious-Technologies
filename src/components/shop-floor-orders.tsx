@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -81,30 +80,23 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
   return (
     <div className="flex flex-col gap-10 animate-in fade-in duration-1000">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-2">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-display font-bold text-3xl text-[#001F3D] uppercase tracking-tight">Active Production Threads</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Master Ledger v2.4.0</p>
+        <div className="relative flex-1 sm:w-80 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="Search active master ledger..." 
+            className="pl-12 h-12 rounded-2xl bg-white border-none shadow-xl shadow-blue-900/5 text-xs font-bold uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-            <Input 
-              placeholder="Search active master ledger..." 
-              className="pl-12 h-12 rounded-2xl bg-white border-none shadow-xl shadow-blue-900/5 text-xs font-bold uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-primary/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <Button 
-            className="h-12 px-8 gap-3 bg-[#001F3D] hover:bg-black text-white font-bold uppercase text-[10px] tracking-widest shadow-2xl shadow-primary/20 rounded-2xl transition-all"
-            onClick={() => onNavigateToOrderDetails?.(null)}
-          >
-            <Plus className="h-4 w-4" />
-            Initialize New Order
-          </Button>
-        </div>
+        <Button 
+          className="h-12 px-8 gap-3 bg-[#001F3D] hover:bg-black text-white font-bold uppercase text-[10px] tracking-widest shadow-2xl shadow-primary/20 rounded-2xl transition-all"
+          onClick={() => onNavigateToOrderDetails?.(null)}
+        >
+          <Plus className="h-4 w-4" />
+          Initialize New Order
+        </Button>
       </div>
 
       <Card className="premium-card shadow-2xl border-none">
@@ -272,7 +264,6 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
 
           <ScrollArea className="max-h-[500px]">
             <div className="p-10 space-y-10">
-              {/* External Procurement Section */}
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-l-4 border-primary pl-4">
                   <div className="flex items-center gap-3">
@@ -298,7 +289,6 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                 </div>
               </div>
 
-              {/* Internal Resource Section */}
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-l-4 border-accent pl-4">
                   <div className="flex items-center gap-3">

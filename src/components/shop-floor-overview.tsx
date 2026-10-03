@@ -3,24 +3,18 @@
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { 
   ShoppingCart, 
   ArrowUpRight, 
   ShieldCheck, 
-  Package, 
-  DollarSign, 
   ChevronRight,
   Zap,
   Cpu,
   TrendingUp,
   Clock,
   Activity,
-  Factory,
   ShieldAlert,
   AlertTriangle,
-  Receipt,
-  FileBadge
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -81,7 +75,6 @@ export function ShopFloorOverview({
   const { data: reports } = useCollection<QualityReport>(reportsQuery);
   const { data: billing } = useCollection<BillingRecord>(billingQuery);
 
-  // Logic: Identify orders that are Completed but missing DC/Invoice/Verification
   const awaitingVerification = useMemo(() => {
     return orders.filter(order => {
       if (order.status !== 'Completed') return false;
@@ -108,21 +101,6 @@ export function ShopFloorOverview({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
-        <div className="flex flex-col">
-          <h2 className="text-2xl md:text-3xl font-headline font-bold tracking-tight text-[#001F3D]">
-            {title.split(' ').slice(0, -1).join(' ')} <span className="text-slate-400">{title.split(' ').slice(-1)}</span>
-          </h2>
-          <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest mt-1">MASTER_CTRL_ALPHA_READY</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Sync Active</span>
-          </div>
-        </div>
-      </header>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {kpiData.map((kpi) => {
           const Icon = kpi.icon;

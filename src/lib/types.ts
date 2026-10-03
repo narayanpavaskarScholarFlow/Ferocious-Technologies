@@ -70,6 +70,11 @@ export type ViewType =
   | 'team-matrix'
   | 'delivery';
 
+export interface ViewMetadata {
+  title: string;
+  category: string;
+}
+
 export interface SubTask {
   id: string;
   name: string;

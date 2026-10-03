@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata } from '@/lib/types';
 import { ShopFloorOverview } from '@/components/shop-floor-overview';
 import { ShopFloorOrders } from '@/components/shop-floor-orders';
 import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
@@ -13,7 +13,6 @@ import { PersonnelPortal } from '@/components/personnel-portal';
 import { CustomerOrders } from '@/components/customer-orders';
 import { WeeklyPlan } from '@/components/weekly-plan';
 import { OperationsStatus } from '@/components/operations-status';
-import { VendorManagement } from '@/components/vendor-management';
 import { OrderDetails } from '@/components/order-details';
 import { BillingManagement } from '@/components/billing-management';
 import { WorkLogEntry } from '@/components/work-log-entry';
@@ -25,19 +24,16 @@ import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
 import { ProductionPlanner } from '@/components/production-planner';
 import { AgileBoard } from '@/components/agile-board';
 import { LoginScreen } from '@/components/login-screen';
-import { UserManagement } from '@/components/user-management';
 import { UserDetailView } from '@/components/user-detail-view';
 import { DispatchLedger } from '@/components/dispatch-ledger'; 
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Search, Command, Menu, LogOut, User, Settings, Sparkles, ShieldAlert, KeyRound, AlertTriangle, Kanban, Database, Plus } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Menu, LogOut, User, ChevronRight, Home } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -45,7 +41,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 
@@ -88,6 +83,44 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   }
 };
 
+const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
+  overview: { title: 'Command Matrix', category: 'Strategic Hub' },
+  agile: { title: 'Agile Kanban', category: 'Strategic Hub' },
+  sqcdp: { title: 'Performance Analytics', category: 'Strategic Hub' },
+  'smart-quote': { title: 'AI Quoting Assistant', category: 'Strategic Hub' },
+  'team-matrix': { title: 'My Team Matrix', category: 'Strategic Hub' },
+  orders: { title: 'Master Orders', category: 'Production Management' },
+  'order-details': { title: 'Order Architecture', category: 'Production Management' },
+  'production-planner': { title: 'Mass Production', category: 'Production Management' },
+  gantt: { title: 'Visual Timeline', category: 'Production Management' },
+  operations: { title: 'Operational Spreadsheet', category: 'Production Management' },
+  'weekly-plan': { title: 'Master Schedule', category: 'Production Management' },
+  'work-log': { title: 'Daily Work Logs', category: 'Production Management' },
+  quality: { title: 'Quality Hub', category: 'Quality Assurance' },
+  delivery: { title: 'Dispatch Ledger', category: 'Commercial Operations' },
+  'customer-orders': { title: 'Identity Registry', category: 'Commercial Operations' },
+  inventory: { title: 'Stock Ledger', category: 'Commercial Operations' },
+  billing: { title: 'Financial Hub', category: 'Commercial Operations' },
+  'machine-utilization': { title: 'Asset Fleet', category: 'Resources & Assets' },
+  hr: { title: 'HR Command Hub', category: 'Resources & Assets' },
+  'my-portal': { title: 'Personal Portal', category: 'Personnel Gateway' },
+  'user-detail': { title: 'Identity Profile', category: 'System Governance' },
+  settings: { title: 'Control Center', category: 'System Governance' },
+  // Billing sub-types share the main billing metadata
+  'billing-quotation': { title: 'Quotation Ledger', category: 'Commercial Operations' },
+  'billing-invoice': { title: 'Invoice Ledger', category: 'Commercial Operations' },
+  'billing-po': { title: 'Purchase Order Ledger', category: 'Commercial Operations' },
+  'billing-proforma': { title: 'Proforma Ledger', category: 'Commercial Operations' },
+  'billing-inward': { title: 'Inward Payment Ledger', category: 'Commercial Operations' },
+  'billing-outward': { title: 'Outward Payment Ledger', category: 'Commercial Operations' },
+  'billing-bank': { title: 'Bank Ledger', category: 'Commercial Operations' },
+  'billing-dc': { title: 'Delivery Challan Ledger', category: 'Commercial Operations' },
+  training: { title: 'Training Matrix', category: 'Personnel Gateway' },
+  manpower: { title: 'Manpower Matrix', category: 'Resources & Assets' },
+  salary: { title: 'Salary Structure', category: 'Resources & Assets' },
+  users: { title: 'User Management', category: 'System Governance' },
+};
+
 function IndustrialERPInternal() {
   const db = useFirestore();
   const { toast } = useToast();
@@ -117,7 +150,6 @@ function IndustrialERPInternal() {
   const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
   const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
-  const annualQuery = useMemoFirebase(() => collection(db, 'annual_leaves'), [db]);
   const testQuery = useMemoFirebase(() => collection(db, 'test_connection'), [db]);
 
   const { data: ordersData } = useCollection<Order>(ordersQuery);
@@ -134,7 +166,6 @@ function IndustrialERPInternal() {
   const { data: reportsData } = useCollection<QualityReport>(reportsQuery);
   const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
   const { data: slipsData } = useCollection<SalarySlip>(slipsQuery);
-  const { data: annualData } = useCollection<any>(annualQuery);
   const { data: testData } = useCollection<any>(testQuery);
 
   const orders = ordersData || [];
@@ -151,7 +182,6 @@ function IndustrialERPInternal() {
   const reports = reportsData || [];
   const leaves = leavesData || [];
   const slips = slipsData || [];
-  const annualLeaves = annualData || [];
 
   // Derive Current User Data and Permissions
   const currentUserData = useMemo(() => {
@@ -184,6 +214,15 @@ function IndustrialERPInternal() {
       logoSize: settings.logoSize ?? DEFAULT_UI_SETTINGS.logoSize
     };
   }, [masterAdmin]);
+
+  // Sync Browser Tab Title and Metadata
+  useEffect(() => {
+    if (mounted) {
+      const config = VIEW_CONFIG[currentView] || { title: 'Matrix Dashboard', category: 'Hub' };
+      const displayTitle = uiSettings.customTitles[currentView] || config.title;
+      document.title = `${displayTitle} | Ferocious Tech`;
+    }
+  }, [currentView, uiSettings.customTitles, mounted]);
 
   useEffect(() => {
     const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
@@ -300,42 +339,8 @@ function IndustrialERPInternal() {
     setCurrentView('orders');
   };
 
-  const handleSaveTraining = (training: Training) => setDocumentNonBlocking(doc(db, 'trainings', training.id), training, { merge: true });
-  const handleDeleteTraining = (id: string) => deleteDocumentNonBlocking(doc(db, 'trainings', id));
-  const handleSaveAssignment = (asg: TrainingAssignment) => setDocumentNonBlocking(doc(db, 'training_assignments', asg.id), asg, { merge: true });
-  const handleDeleteAssignment = (id: string) => deleteDocumentNonBlocking(doc(db, 'training_assignments', id));
-
-  const runConnectionTest = () => {
-    addDocumentNonBlocking(collection(db, 'test_connection'), {
-      timestamp: new Date().toISOString(),
-      status: 'Connected',
-      operator: currentUser || 'Unknown'
-    });
-    toast({ title: "Signal Transmitted", description: "Test document initialized in Firestore matrix." });
-  };
-
   useEffect(() => {
     setMounted(true);
-    const params = new URLSearchParams(window.location.search);
-    const verifyUser = params.get('verifyUser');
-    
-    if (verifyUser) {
-      sessionStorage.setItem('jayasimha_verify', verifyUser);
-      setCurrentUser(verifyUser);
-      setIsLoggedIn(true);
-      setCurrentView('my-portal');
-      window.history.replaceState({}, '', '/');
-      return;
-    }
-
-    const verifiedUser = sessionStorage.getItem('jayasimha_verify');
-    if (verifiedUser) {
-      setCurrentUser(verifiedUser);
-      setIsLoggedIn(true);
-      setCurrentView('my-portal');
-      return;
-    }
-
     const savedUser = localStorage.getItem('jayasimha_user');
     if (savedUser) {
       setCurrentUser(savedUser);
@@ -350,6 +355,8 @@ function IndustrialERPInternal() {
   }
 
   const isSlimSidebar = uiSettings.sidebarMode === 'slim';
+  const currentViewMetadata = VIEW_CONFIG[currentView] || { title: 'Command Matrix', category: 'Strategic Hub' };
+  const pageDisplayTitle = uiSettings.customTitles[currentView] || currentViewMetadata.title;
 
   return (
     <div className={cn(
@@ -372,7 +379,7 @@ function IndustrialERPInternal() {
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:block">
         <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-4 md:px-6 flex items-center justify-between shadow-sm z-50 print:hidden">
-          <div className="flex items-center gap-2 md:gap-6">
+          <div className="flex items-center gap-4">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10">
@@ -396,23 +403,15 @@ function IndustrialERPInternal() {
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center gap-2 md:gap-3">
-              {brandLogo && (
-                <div 
-                  className="relative shrink-0" 
-                  style={{ width: uiSettings.logoSize || 32, height: uiSettings.logoSize || 32 }}
-                >
-                  <Image 
-                    src={brandLogo} 
-                    alt="Ferocious Tech" 
-                    fill
-                    className="rounded-lg object-contain"
-                    data-ai-hint="lion technology logo"
-                  />
-                </div>
-              )}
-              <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-[#001F3D]">
-                FEROCIOUS<span className="text-primary">TECH</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <Home className="h-2.5 w-2.5" />
+                <span>{currentViewMetadata.category}</span>
+                <ChevronRight className="h-2.5 w-2.5 text-slate-300" />
+                <span className="text-primary">{pageDisplayTitle}</span>
+              </div>
+              <h1 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight leading-none mt-0.5">
+                {pageDisplayTitle}
               </h1>
             </div>
           </div>
@@ -424,15 +423,15 @@ function IndustrialERPInternal() {
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Avatar className="h-8 w-8 border cursor-pointer hover:ring-2 ring-primary/20">
+                   <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 ring-primary/20 transition-all">
                       <AvatarImage src={currentUserData?.image} />
                       <AvatarFallback className="bg-slate-100 text-[#001F3D] text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl">
-                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-lg h-9 text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile</DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl border-slate-100">
+                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="rounded-lg h-9 text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile Settings</DropdownMenuItem>
                    <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={handleLogout} className="rounded-lg h-9 text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Log Out</DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleLogout} className="rounded-lg h-9 text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Security Termination</DropdownMenuItem>
                 </DropdownMenuContent>
              </DropdownMenu>
           </div>
@@ -441,8 +440,8 @@ function IndustrialERPInternal() {
         <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 print:p-0">
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             {currentView === 'overview' && <ShopFloorOverview orders={orders} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
-            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={annualLeaves} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
-            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={handleSaveTraining} onDeleteTraining={handleDeleteTraining} onSaveAssignment={handleSaveAssignment} onDeleteAssignment={handleDeleteAssignment} currentUser={currentUser} isReportingManager={isReportingManager} />}
+            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
+            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={handleSaveUser} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => setCurrentView('settings')} onSaveUser={handleSaveUser} onVerifyPortal={handleVerifyPortal} />}
             {currentView === 'agile' && <AgileBoard orders={orders} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
@@ -452,55 +451,7 @@ function IndustrialERPInternal() {
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && (
-              <div className="space-y-10">
-                <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />
-                
-                {/* Connection Verification Node */}
-                <Card className="p-8 border-slate-200 bg-white shadow-2xl rounded-[2rem] max-w-4xl">
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-emerald-500 rounded-xl text-white shadow-lg shadow-emerald-500/20"><Database className="h-6 w-6" /></div>
-                      <div>
-                        <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Cloud Sync Verification</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Validate Firestore read/write protocols.</p>
-                      </div>
-                    </div>
-                    <Button onClick={runConnectionTest} className="rounded-xl bg-[#001F3D] hover:bg-black text-white h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl flex gap-2">
-                      <Plus className="h-4 w-4" /> Run Connection Test
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Live Test Ledger: test_connection</h4>
-                    <div className="max-h-60 overflow-y-auto border border-slate-100 rounded-xl">
-                      <Table>
-                        <TableHeader className="bg-slate-50">
-                          <TableRow>
-                            <TableHead className="text-[9px] font-bold uppercase">Timestamp</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase">Operator</TableHead>
-                            <TableHead className="text-[9px] font-bold uppercase text-right">Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {testData?.length ? testData.map(test => (
-                            <TableRow key={test.id} className="h-12 border-b border-slate-50">
-                              <TableCell className="text-[10px] font-code text-slate-500">{test.timestamp}</TableCell>
-                              <TableCell className="text-[10px] font-bold text-slate-700 uppercase">{test.operator}</TableCell>
-                              <TableCell className="text-right">
-                                <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-bold uppercase px-3">{test.status}</Badge>
-                              </TableCell>
-                            </TableRow>
-                          )) : (
-                            <TableRow><TableCell colSpan={3} className="text-center py-10 opacity-20 text-[10px] font-bold uppercase">No Test Nodes Detected</TableCell></TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            )}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={handleSaveUser} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db, 'users', id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={handleNavigateToUserDetail} />}
             {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
             {currentView === 'customer-orders' && <CustomerOrders customers={customers} vendors={vendors} onSaveCustomer={handleSaveCustomer} onSaveVendor={handleSaveVendor} />}

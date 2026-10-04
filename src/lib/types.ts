@@ -174,51 +174,79 @@ export interface ProductMaster {
   purchaseRate: number;
   drawingNumber?: string;
   revisionNumber?: string;
-  category: string; // Using this as Business Unit now: Manufacturing | Electricals
-  type: string; // Raw Material, Finished Product, etc.
+  category: string; // Business Unit: Manufacturing | Electricals
+  subCategory?: string;
+  type: string; // Raw Material, Finished Product, Assembly, etc.
   status: 'Active' | 'Inactive';
   updatedAt: string;
   
-  // Intelligence Fields
+  // Business Info
+  businessUnit: 'Manufacturing' | 'Electricals';
+  brand?: string;
+  launchDate?: string;
+  
+  // Engineering Information
+  internalPartNumber?: string;
   material?: string;
   materialGrade?: string;
+  weight?: string;
+  surfaceFinish?: string;
+  tolerance?: string;
   application?: string;
   industry?: string;
-  process?: string;
-  tolerance?: string;
+  processRoute?: string;
   customerPartNumber?: string;
-  marketPrice?: number;
-  annualRequirement?: number;
   
-  // Outsourcing Intelligence
+  // Manufacturing Information
+  machinesRequired?: string[]; // VMC, CNC, etc.
+  cycleTimeSec?: number;
+  setupTimeMin?: number;
+  inspectionTimeMin?: number;
+  
+  // Commercial Information
+  standardCost?: number;
+  currentCost?: number;
+  sellingPrice?: number;
+  marketPrice?: number;
+  marginPercent?: number;
+  profitPercent?: number;
+  
+  // Market Intelligence
+  annualRequirement?: number;
+  potentialAnnualRequirement?: number;
+  projectedDemand?: number;
+  competitorProducts?: string;
+  targetIndustry?: string;
+  targetCustomerType?: string;
+  
+  // Outsourcing Analysis
   inHousePercent?: number;
   outsourcedPercent?: number;
-  machineUsed?: string;
-  vendorUsed?: string;
-  reasonForOutsourcing?: string;
-  
-  // Engineering Hours
-  vmcHours?: number;
-  cncHours?: number;
-  grindingHours?: number;
-  assemblyHours?: number;
-  inspectionHours?: number;
+  annualOutsourcingValue?: number;
+  currentFYOutsourcing?: number;
+  currentMonthOutsourcing?: number;
+  outsourcingReason?: string[];
+  mostOutsourcedProcess?: string;
   
   // Electrical Metadata
   voltage?: string;
   current?: string;
   power?: string;
+  phase?: string;
+  frequency?: string;
   certification?: string;
   warranty?: string;
   bis?: boolean;
   ce?: boolean;
   rohs?: boolean;
+  electricalApplication?: string;
   
   // Media Matrix
   imageUrls?: string[];
   drawingUrls?: string[];
   modelUrls?: string[];
   datasheetUrls?: string[];
+  catalogUrls?: string[];
   
   // BOM Structure
   bom?: {
@@ -229,7 +257,13 @@ export interface ProductMaster {
     cost: number;
     supplier?: string;
     revision?: string;
+    type: 'Purchased' | 'Manufactured' | 'Outsourced';
   }[];
+  
+  // Performance & Scoring
+  rejectedQty?: number;
+  lifetimeRev?: number;
+  finalProductScore?: number;
 }
 
 export interface BillingRecord {

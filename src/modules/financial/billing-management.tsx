@@ -63,7 +63,12 @@ import {
   Contact,
   CreditCard,
   FileSpreadsheet,
-  Users
+  Users,
+  ShieldCheck,
+  Activity,
+  Cpu,
+  Gauge,
+  Wallet
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -86,7 +91,9 @@ import {
   getDate,
   isValid,
   subMonths,
-  isAfter
+  isAfter,
+  eachMonthOfInterval,
+  subYears
 } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -94,7 +101,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'QUOTATION', icon: FileBox, prefix: 'QT' },
@@ -118,7 +125,7 @@ function numberToWords(num: number): string {
     if (n < 20) return single[n];
     if (n < 100) return double[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + single[n % 10] : "");
     if (n < 1000) return single[Math.floor(n / 100)] + " HUNDRED" + (n % 100 !== 0 ? " AND " + convert(n % 100) : "");
-    if (n < 100000) convert(Math.floor(n / 1000)) + " THOUSAND" + (n % 1000 !== 0 ? " " + convert(n % 100) : "");
+    if (n < 100000) convert(Math.floor(n / 1000)) + " THOUSAND" + (n % 1000 !== 0 ? " " + convert(n % 1000) : "");
     if (n < 10000000) convert(Math.floor(n / 100000)) + " LAKH" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
     return convert(Math.floor(num)) + " RUPEES ONLY";
   }
@@ -168,25 +175,63 @@ export function BillingManagement({
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
     
+    // Top Row Metrics
     const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
-    const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
     
+    const customerPOValue = records.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const totalInvoiced = records.filter(r => r.type === 'invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const totalInward = records.filter(r => r.type === 'inward_payment').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const outstanding = totalInvoiced - totalInward;
+    
+    const openQuotes = records.filter(r => r.type === 'quotation' && r.status === 'Pending').length;
+    const activeOrders = orders.filter(o => o.status === 'Active' || o.status === 'Production').length;
+    const pendingDispatch = orders.filter(o => o.status === 'Ready for Delivery' || o.status === 'Inspection').length;
+    const prodAchievement = orders.length > 0 ? Math.round(orders.reduce((acc, o) => acc + (o.progress || 0), 0) / orders.length) : 0;
+    const machineUtil = machines.length > 0 ? Math.round(machines.reduce((acc, m) => acc + (m.load || 0), 0) / machines.length) : 0;
+
+    // Health Score
+    const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
     const monthInward = records.filter(r => r.type === 'inward_payment' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const totalCollected = monthInward.reduce((acc, r) => acc + (r.amount || 0), 0);
     const collectionAchievement = actualBillingAchieved > 0 ? (totalCollected / actualBillingAchieved) * 100 : 100;
+    const healthScore = Math.min(100, Math.round((achievementPercent * 0.3) + (collectionAchievement * 0.3) + (prodAchievement * 0.2) + (machineUtil * 0.2)));
 
-    const healthScore = Math.min(100, Math.round((achievementPercent * 0.4) + (collectionAchievement * 0.4) + (90 * 0.2)));
+    // Trends Data (Last 6 Months)
+    const months = eachMonthOfInterval({ start: subMonths(targetDate, 5), end: targetDate });
+    const financialTrends = months.map(m => {
+      const start = startOfMonth(m);
+      const end = endOfMonth(m);
+      const mLabel = format(m, 'MMM');
+      const mInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start, end }));
+      const mInward = records.filter(r => r.type === 'inward_payment' && isWithinInterval(parseISO(r.date), { start, end }));
+      const mPOs = records.filter(r => r.type === 'purchase_order' && isWithinInterval(parseISO(r.date), { start, end }));
+      
+      return {
+        month: mLabel,
+        billing: mInvoices.reduce((acc, r) => acc + (r.amount || 0), 0),
+        collection: mInward.reduce((acc, r) => acc + (r.amount || 0), 0),
+        po: mPOs.reduce((acc, r) => acc + (r.amount || 0), 0)
+      };
+    });
 
     return { 
       monthlyBillingTarget, 
       actualBillingAchieved, 
+      customerPOValue,
+      outstanding,
+      openQuotes,
+      activeOrders,
+      pendingDispatch,
+      prodAchievement,
+      machineUtil,
       achievementPercent, 
       healthScore, 
       collected: totalCollected,
-      collectionAchievement
+      collectionAchievement,
+      financialTrends
     };
-  }, [records, uiSettings.monthlyBillingTargets]);
+  }, [records, orders, machines, uiSettings.monthlyBillingTargets]);
 
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
@@ -231,20 +276,302 @@ export function BillingManagement({
     setIsRecordFormOpen(false);
   };
 
-  const handleSyncTargets = () => {
-    const val = parseFloat(targetValueInput) || 0;
-    const targetKey = format(new Date(), 'yyyy-MM');
-    const updatedTargets = { ...(uiSettings.monthlyBillingTargets || {}), [targetKey]: val };
-    
-    const masterAdmin = users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin');
-    if (masterAdmin) {
-      setDocumentNonBlocking(doc(db, 'users', masterAdmin.id), {
-        uiSettings: { ...uiSettings, monthlyBillingTargets: updatedTargets }
-      }, { merge: true });
-      toast({ title: "Calibration Synchronized", description: "Monthly targets updated." });
-      setIsCalibrationOpen(false);
-    }
-  };
+  const AnalyticsView = () => (
+    <div className="space-y-10 animate-in fade-in duration-500 font-body">
+      {/* Top Level Strategic Matrix */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <Card className="p-8 bg-[#1E293B] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '40px 40px' }} />
+          <div>
+            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] mb-3">Enterprise Stability</p>
+            <h3 className="text-3xl font-display font-black uppercase tracking-tight">Business Health Score</h3>
+          </div>
+          <div className="flex items-center gap-6 mt-10">
+            <div className="relative h-28 w-28 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,0.05)" strokeWidth="10" fill="transparent" />
+                <circle cx="56" cy="56" r="48" stroke="#10b981" strokeWidth="10" fill="transparent" strokeDasharray="301.59" strokeDashoffset={301.59 - (301.59 * biMetrics.healthScore / 100)} strokeLinecap="round" />
+              </svg>
+              <span className="absolute text-3xl font-display font-black">{biMetrics.healthScore}%</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-[10px] font-bold text-white/60">Operational Yield</span></div>
+              <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-[10px] font-bold text-white/60">Financial Reliability</span></div>
+            </div>
+          </div>
+        </Card>
+        
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+           {[
+             { label: 'Billing Achievement', val: `₹ ${(biMetrics.actualBillingAchieved / 100000).toFixed(1)}L`, icon: Receipt, percent: biMetrics.achievementPercent, color: 'text-blue-600', bg: 'bg-blue-50' },
+             { label: 'Collection Rate', val: `₹ ${(biMetrics.collected / 100000).toFixed(1)}L`, icon: Landmark, percent: biMetrics.collectionAchievement, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+             { label: 'Production Velocity', val: `${biMetrics.prodAchievement}%`, icon: Factory, percent: biMetrics.prodAchievement, color: 'text-orange-600', bg: 'bg-orange-50' },
+           ].map(item => (
+             <Card key={item.label} className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] flex flex-col justify-between group hover:border-primary/20 transition-all">
+                <div className="flex justify-between items-start">
+                   <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                      <p className={cn("text-3xl font-display font-black mt-2", item.color)}>{item.val}</p>
+                   </div>
+                   <div className={cn("p-3 rounded-xl", item.bg, item.color)}><item.icon className="h-6 w-6" /></div>
+                </div>
+                <div className="mt-8 space-y-2">
+                   <div className="flex justify-between items-center text-[8px] font-black uppercase"><span className="text-slate-400">Execution Index</span><span className="text-slate-600">{Math.round(item.percent)}%</span></div>
+                   <div className="h-2 bg-slate-50 rounded-full overflow-hidden shadow-inner"><div className={cn("h-full transition-all duration-1000", item.color.replace('text-', 'bg-'))} style={{ width: `${Math.min(item.percent, 100)}%` }} /></div>
+                </div>
+             </Card>
+           ))}
+        </div>
+      </div>
+
+      {/* High-Density Top KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        {[
+          { label: 'Monthly Billing', val: `₹${(biMetrics.actualBillingAchieved / 1000).toFixed(0)}K`, icon: Receipt, color: 'text-blue-600' },
+          { label: 'Customer PO', val: `₹${(biMetrics.customerPOValue / 1000).toFixed(0)}K`, icon: ShoppingCart, color: 'text-emerald-600' },
+          { label: 'Outstanding', val: `₹${(biMetrics.outstanding / 1000).toFixed(0)}K`, icon: Landmark, color: 'text-rose-600' },
+          { label: 'Open Quotes', val: biMetrics.openQuotes, icon: FileText, color: 'text-amber-600' },
+          { label: 'Active WO', val: biMetrics.activeOrders, icon: Briefcase, color: 'text-primary' },
+          { label: 'Pending Dispatch', val: biMetrics.pendingDispatch, icon: Truck, color: 'text-purple-600' },
+          { label: 'Prod. Achievement', val: `${biMetrics.prodAchievement}%`, icon: Factory, color: 'text-emerald-600' },
+          { label: 'Machine OEE', val: `${biMetrics.machineUtil}%`, icon: Cpu, color: 'text-primary' },
+        ].map(kpi => (
+          <Card key={kpi.label} className="p-4 bg-white border-slate-200 shadow-sm flex flex-col items-center text-center gap-2 hover:shadow-md transition-all">
+            <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+            <p className="text-[11px] font-display font-black text-slate-900">{kpi.val}</p>
+            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter leading-none px-1">{kpi.label}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* FINANCIAL ANALYTICS SECTION */}
+        <div className="lg:col-span-8 space-y-8">
+          <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem]">
+            <div className="flex justify-between items-center mb-10">
+               <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-50 rounded-xl text-blue-600"><TrendingUp className="h-6 w-6" /></div>
+                  <div>
+                    <h3 className="text-xl font-display font-bold text-slate-900 uppercase tracking-tight">Institutional Yield Trends</h3>
+                    <p className="text-xs text-slate-400 font-medium">Billing, Collection & PO Velocity Matrix (6 Months)</p>
+                  </div>
+               </div>
+               <div className="flex gap-4">
+                  <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-[9px] font-bold text-slate-500 uppercase">Billing</span></div>
+                  <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-[9px] font-bold text-slate-500 uppercase">Collection</span></div>
+                  <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-amber-500" /><span className="text-[9px] font-bold text-slate-500 uppercase">PO Intake</span></div>
+               </div>
+            </div>
+            <div className="h-[320px] w-full">
+               <ResponsiveContainer width="100%" height="100%">
+                 <AreaChart data={biMetrics.financialTrends}>
+                   <defs>
+                     <linearGradient id="colorBilling" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
+                     <linearGradient id="colorColl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
+                   </defs>
+                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} dy={10} />
+                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} tickFormatter={(v) => `₹${v/1000}K`} />
+                   <ChartTooltip 
+                    content={({active, payload}) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border-none">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-3">{payload[0].payload.month} Summary</p>
+                            {payload.map((entry: any) => (
+                              <div key={entry.name} className="flex justify-between gap-8 items-center mb-1">
+                                <span className="text-[10px] font-bold uppercase">{entry.name}</span>
+                                <span className="text-xs font-code font-bold">₹{entry.value.toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                   />
+                   <Area name="Billing" type="monotone" dataKey="billing" stroke="#3b82f6" strokeWidth={4} fill="url(#colorBilling)" />
+                   <Area name="Collection" type="monotone" dataKey="collection" stroke="#10b981" strokeWidth={4} fill="url(#colorColl)" />
+                   <Area name="PO Value" type="monotone" dataKey="po" stroke="#f59e0b" strokeWidth={4} fill="transparent" strokeDasharray="5 5" />
+                 </AreaChart>
+               </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* WORK ORDER ANALYTICS */}
+            <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
+              <div className="flex items-center gap-3 mb-8">
+                <Briefcase className="h-5 w-5 text-primary" />
+                <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Work Order Matrix</h4>
+              </div>
+              <div className="space-y-6">
+                 {[
+                   { label: 'Total Thread Nodes', val: orders.length, color: 'text-slate-900' },
+                   { label: 'Operational (Active)', val: biMetrics.activeOrders, color: 'text-blue-600' },
+                   { label: 'Certified Complete', val: orders.filter(o=>o.status==='Completed' || o.status==='Delivered').length, color: 'text-emerald-600' },
+                   { label: 'Delayed Protocol', val: orders.filter(o=>o.status==='Delayed').length, color: 'text-rose-600' },
+                 ].map(item => (
+                   <div key={item.label} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{item.label}</span>
+                      <span className={cn("text-lg font-display font-black", item.color)}>{item.val}</span>
+                   </div>
+                 ))}
+                 <div className="pt-4 space-y-2">
+                    <div className="flex justify-between text-[8px] font-black uppercase text-slate-400"><span>Weighted Progress</span><span>{biMetrics.prodAchievement}%</span></div>
+                    <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100"><div className="h-full bg-primary transition-all duration-1000" style={{ width: `${biMetrics.prodAchievement}%` }} /></div>
+                 </div>
+              </div>
+            </Card>
+
+            {/* PRODUCTION ANALYTICS */}
+            <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
+              <div className="flex items-center gap-3 mb-8">
+                <Factory className="h-5 w-5 text-emerald-600" />
+                <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Production Yield</h4>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="p-4 bg-slate-50 rounded-2xl space-y-1">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase">Target Qty</p>
+                    <p className="text-xl font-display font-bold text-slate-900">8.4K</p>
+                 </div>
+                 <div className="p-4 bg-emerald-50 rounded-2xl space-y-1">
+                    <p className="text-[8px] font-bold text-emerald-600 uppercase">Produced</p>
+                    <p className="text-xl font-display font-bold text-emerald-700">7.1K</p>
+                 </div>
+                 <div className="p-4 bg-rose-50 rounded-2xl space-y-1">
+                    <p className="text-[8px] font-bold text-rose-600 uppercase">Rejected</p>
+                    <p className="text-xl font-display font-bold text-rose-700">142</p>
+                 </div>
+                 <div className="p-4 bg-blue-50 rounded-2xl space-y-1">
+                    <p className="text-[8px] font-bold text-blue-600 uppercase">Achievement</p>
+                    <p className="text-xl font-display font-bold text-blue-700">84.5%</p>
+                 </div>
+              </div>
+              <div className="mt-8">
+                 <ResponsiveContainer width="100%" height={100}>
+                    <BarChart data={[{n: 'Yield', p: 85, r: 5}]}>
+                       <Bar dataKey="p" stackId="a" fill="#10b981" radius={[10, 10, 0, 0]} />
+                       <Bar dataKey="r" stackId="a" fill="#f43f5e" radius={[10, 10, 0, 0]} />
+                       <XAxis hide />
+                       <YAxis hide />
+                    </BarChart>
+                 </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* SIDE KPI SECTION */}
+        <div className="lg:col-span-4 space-y-8">
+          {/* QUALITY ANALYTICS */}
+          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="h-5 w-5 text-blue-600" />
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Quality Compliance</h4>
+            </div>
+            <div className="space-y-4">
+               {[
+                 { label: 'Inspections Performed', val: 124, icon: FileCheck, color: 'text-blue-600' },
+                 { label: 'Passed Matrix', val: 118, icon: CheckCircle2, color: 'text-emerald-600' },
+                 { label: 'Rejected Nodes', val: 6, icon: AlertCircle, color: 'text-rose-600' },
+                 { label: 'Rework Required', val: 4, icon: RefreshCw, color: 'text-amber-600' },
+               ].map(item => (
+                 <div key={item.label} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition-all">
+                    <div className="flex items-center gap-3">
+                       <item.icon className={cn("h-4 w-4", item.color)} />
+                       <span className="text-[10px] font-bold text-slate-500 uppercase">{item.label}</span>
+                    </div>
+                    <span className="text-lg font-display font-black text-slate-900">{item.val}</span>
+                 </div>
+               ))}
+            </div>
+          </Card>
+
+          {/* MACHINE ANALYTICS */}
+          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+            <div className="flex items-center gap-3">
+              <Cpu className="h-5 w-5 text-primary" />
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Asset Intelligence</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase">Avg Utilization</p>
+                  <p className="text-2xl font-display font-black text-primary">{biMetrics.machineUtil}%</p>
+               </div>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase">Availability</p>
+                  <p className="text-2xl font-display font-black text-emerald-600">92.4%</p>
+               </div>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase">Total Op Hours</p>
+                  <p className="text-2xl font-display font-black text-slate-700">1,240h</p>
+               </div>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase">Downtime</p>
+                  <p className="text-2xl font-display font-black text-rose-500">14h</p>
+               </div>
+            </div>
+            <div className="h-16 w-full opacity-30">
+               <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={DAILY_UTILIZATION_DATA}>
+                     <Bar dataKey="value" fill="#6366f1" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+               </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* MANAGEMENT KPI MATRIX */}
+          <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] space-y-10 relative overflow-hidden">
+             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+             <div className="relative z-10 space-y-10">
+                <div className="flex items-center gap-3">
+                   <Gauge className="h-6 w-6 text-primary" />
+                   <h3 className="text-lg font-display font-bold uppercase tracking-tight">Executive Summary</h3>
+                </div>
+                <div className="space-y-6">
+                   <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold uppercase text-white/40"><span>Target Billing Achieved</span><span>{Math.round(biMetrics.achievementPercent)}%</span></div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${Math.min(biMetrics.achievementPercent, 100)}%` }} /></div>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold uppercase text-white/40"><span>Collection Pipeline Efficiency</span><span>{Math.round(biMetrics.collectionAchievement)}%</span></div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${Math.min(biMetrics.collectionAchievement, 100)}%` }} /></div>
+                   </div>
+                </div>
+                <div className="pt-6 border-t border-white/10 flex justify-between items-end">
+                   <div>
+                      <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Matrix Health Score</p>
+                      <p className="text-4xl font-display font-black">{biMetrics.healthScore}%</p>
+                   </div>
+                   <Button className="bg-white text-[#001F3D] hover:bg-white/90 rounded-xl font-bold uppercase text-[9px] px-8 h-12">Institutional Report</Button>
+                </div>
+             </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+
+  const DAILY_UTILIZATION_DATA = [
+    { day: 'Mon', value: 72 },
+    { day: 'Tue', value: 85 },
+    { day: 'Wed', value: 78 },
+    { day: 'Thu', value: 92 },
+    { day: 'Fri', value: 88 },
+    { day: 'Sat', value: 45 },
+    { day: 'Sun', value: 30 },
+  ];
+
+  const filteredRecordsByType = useMemo(() => {
+    return records.filter(r => {
+      const isTab = r.type === activeTab;
+      if (!isTab) return false;
+      const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
+  }, [records, activeTab, searchTerm]);
 
   const FullPageEditor = () => {
     const totalQuotationVal = useMemo(() => {
@@ -436,50 +763,6 @@ export function BillingManagement({
       </div>
     );
   };
-
-  const AnalyticsView = () => (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2rem] flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '40px 40px' }} />
-          <div>
-            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] mb-3">Global Health Node</p>
-            <h3 className="text-3xl font-display font-black uppercase tracking-tight">Institutional Yield</h3>
-          </div>
-          <div className="flex items-center gap-6 mt-10">
-            <div className="relative h-24 w-24 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
-                <circle cx="48" cy="48" r="40" stroke="#00E5A8" strokeWidth="8" fill="transparent" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * biMetrics.healthScore / 100)} strokeLinecap="round" />
-              </svg>
-              <span className="absolute text-2xl font-display font-black">{biMetrics.healthScore}%</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-[#00E5A8]" /><span className="text-[10px] font-bold text-white/60">Performance</span></div>
-              <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-400" /><span className="text-[10px] font-bold text-white/60">Reliability</span></div>
-            </div>
-          </div>
-        </Card>
-        
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-           {[
-             { label: 'MTD Billing', val: `₹ ${(biMetrics.actualBillingAchieved / 100000).toFixed(1)}L`, percent: biMetrics.achievementPercent, color: 'text-emerald-500' },
-             { label: 'Collection Rate', val: `₹ ${(biMetrics.collected / 100000).toFixed(1)}L`, percent: biMetrics.collectionAchievement, color: 'text-blue-500' },
-             { label: 'Target Deficit', val: `₹ ${((biMetrics.monthlyBillingTarget - biMetrics.actualBillingAchieved) / 100000).toFixed(1)}L`, percent: 100 - biMetrics.achievementPercent, color: 'text-orange-500' },
-           ].map(item => (
-             <Card key={item.label} className="p-6 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-2xl flex flex-col justify-between group hover:border-primary/20 transition-all">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
-                <p className={cn("text-2xl font-display font-black mt-1", item.color)}>{item.val}</p>
-                <div className="mt-4 space-y-1.5">
-                   <div className="flex justify-between items-center text-[7px] font-black uppercase"><span className="text-slate-400">Achievement</span><span className="text-slate-600">{Math.round(item.percent)}%</span></div>
-                   <div className="h-1 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden"><div className={cn("h-full", item.color.replace('text-', 'bg-'))} style={{ width: `${Math.min(item.percent, 100)}%` }} /></div>
-                </div>
-             </Card>
-           ))}
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="h-full flex flex-col gap-0 animate-in fade-in duration-700">

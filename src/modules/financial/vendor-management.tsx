@@ -37,9 +37,16 @@ import {
   ShoppingCart,
   LayoutGrid,
   FileCheck,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  CheckCircle2,
+  User,
+  Phone,
+  Mail,
+  Target,
+  FileText
 } from 'lucide-react';
-import { Vendor, BillingRecord, Order, Machine } from '@/lib/types';
+import { Vendor, BillingRecord, Order, Machine, PermissionLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -57,7 +64,19 @@ import {
 } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
+import { PieChart as ReChartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
+
+function PieChart({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+  );
+}
+
+function Wallet({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+  );
+}
 
 interface VendorManagementProps {
   vendors: Vendor[];
@@ -138,8 +157,8 @@ export function VendorManagement({ vendors, billing, orders, machines, onSaveVen
   return (
     <div className="space-y-8 animate-in fade-in duration-700 font-body">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
             <Truck className="h-4 w-4" />
             Supply Chain Intelligence Center
           </div>
@@ -295,7 +314,7 @@ export function VendorManagement({ vendors, billing, orders, machines, onSaveVen
                  </div>
                  <div className="h-[300px] w-full flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
-                       <PieChart>
+                       <ReChartsPieChart>
                           <Pie
                              data={biMetrics.machineOutsourcing}
                              cx="50%" cy="50%"
@@ -309,7 +328,7 @@ export function VendorManagement({ vendors, billing, orders, machines, onSaveVen
                              ))}
                           </Pie>
                           <ChartTooltip />
-                       </PieChart>
+                       </ReChartsPieChart>
                     </ResponsiveContainer>
                     <div className="absolute flex flex-col items-center justify-center pointer-events-none">
                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Outsource</span>
@@ -461,6 +480,22 @@ export function VendorManagement({ vendors, billing, orders, machines, onSaveVen
                             Equipped with 3x HAAS VF2 VMC centers, 2x Mazak Turning nodes, and automatic surface grinding (200x500mm). 
                             Certified ISO 9001:2015. Preferred partner for aerospace component finishing.
                           </p>
+                       </div>
+                    </div>
+
+                    <div className="space-y-6">
+                       <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Account Profile</h3>
+                       <div className="grid grid-cols-2 gap-8 bg-slate-50 p-8 rounded-3xl">
+                          {[
+                            { label: 'Contact Person', val: selectedVendorData.contact, icon: User },
+                            { label: 'Email', val: selectedVendorData.email, icon: Mail },
+                            { label: 'Location', val: selectedVendorData.city || '---', icon: Target },
+                          ].map(info => (
+                            <div key={info.label} className="space-y-1">
+                               <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase"><info.icon className="h-3 w-3" /> {info.label}</div>
+                               <p className="text-sm font-bold text-slate-700 uppercase">{info.val}</p>
+                            </div>
+                          ))}
                        </div>
                     </div>
                  </div>

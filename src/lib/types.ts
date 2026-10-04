@@ -174,10 +174,62 @@ export interface ProductMaster {
   purchaseRate: number;
   drawingNumber?: string;
   revisionNumber?: string;
-  category: string;
-  type: 'Manufacturing Product' | 'Design Service' | 'Engineering Service' | 'Consulting Service';
+  category: string; // Using this as Business Unit now: Manufacturing | Electricals
+  type: string; // Raw Material, Finished Product, etc.
   status: 'Active' | 'Inactive';
   updatedAt: string;
+  
+  // Intelligence Fields
+  material?: string;
+  materialGrade?: string;
+  application?: string;
+  industry?: string;
+  process?: string;
+  tolerance?: string;
+  customerPartNumber?: string;
+  marketPrice?: number;
+  annualRequirement?: number;
+  
+  // Outsourcing Intelligence
+  inHousePercent?: number;
+  outsourcedPercent?: number;
+  machineUsed?: string;
+  vendorUsed?: string;
+  reasonForOutsourcing?: string;
+  
+  // Engineering Hours
+  vmcHours?: number;
+  cncHours?: number;
+  grindingHours?: number;
+  assemblyHours?: number;
+  inspectionHours?: number;
+  
+  // Electrical Metadata
+  voltage?: string;
+  current?: string;
+  power?: string;
+  certification?: string;
+  warranty?: string;
+  bis?: boolean;
+  ce?: boolean;
+  rohs?: boolean;
+  
+  // Media Matrix
+  imageUrls?: string[];
+  drawingUrls?: string[];
+  modelUrls?: string[];
+  datasheetUrls?: string[];
+  
+  // BOM Structure
+  bom?: {
+    id: string;
+    componentId: string;
+    name: string;
+    qty: number;
+    cost: number;
+    supplier?: string;
+    revision?: string;
+  }[];
 }
 
 export interface BillingRecord {

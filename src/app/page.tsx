@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
-import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata, ProductMaster } from '@/lib/types';
+import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, UISettings, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata, ProductMaster } from '@/lib/types';
 
 // COMMAND CENTER MODULES
 import { ShopFloorOverview } from '@/modules/command-center/shop-floor-overview';
@@ -30,9 +29,7 @@ import { WorkLogEntry } from '@/modules/production/work-log-entry';
 
 // RESOURCE HUB MODULES
 import { MachineUtilization } from '@/modules/resources/machine-utilization';
-import { MachineLoadPlan } from '@/modules/resources/machine-load-plan';
 import { PersonnelPortal } from '@/modules/resources/personnel-portal';
-import { TrainingManagement } from '@/modules/resources/training-management';
 import { HRManagement } from '@/modules/resources/hr-management';
 
 // ADMINISTRATION MODULES
@@ -49,7 +46,7 @@ import { ExternalDashboard } from '@/modules/strategic/external-dashboard';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LogOut, User, ChevronRight, ShieldAlert, Lock } from 'lucide-react';
+import { LogOut, User, ChevronRight, Lock } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,6 +82,12 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   woPrefix: 'WO-',
   woNextNumber: 1001,
   logoSize: 32,
+  dashboardLayout: 'executive',
+  currencySymbol: '₹',
+  taxLabel: 'GST',
+  erpCompanyName: 'Ferocious Tech',
+  erpTagline: 'Advanced Tool Management Platform',
+  enableNotifications: true,
   billingTableSettings: {
     colWidths: { description: 400, hsn: 112, qty: 96, unit: 112, price: 160, discount: 96, gst: 96, total: 192 },
     rowHeight: 40,
@@ -109,7 +112,7 @@ const VIEW_CONFIG: Record<ViewType | string, ViewMetadata> = {
   operations: { title: 'Operations Status', category: 'Production Hub', description: 'Sequential yield tracking and real-time operational spreadsheet.' },
   'production-planner': { title: 'Production Planner', category: 'Production Hub', description: 'Batch management and resource synchronization.' },
   gantt: { title: 'Production Timeline', category: 'Production Hub', description: 'Visual Gantt matrix of institutional production threads.' },
-  quality: { title: 'Quality Control', category: 'Production Hub', description: 'Compliance verification and dimensional audit reports.' },
+  quality: { title: 'Quality Control Hub', category: 'Production Hub', description: 'Compliance verification and dimensional audit reports.' },
   delivery: { title: 'Dispatch Ledger', category: 'Production Hub', description: 'Terminal logistics yield and delivery performance matrix.' },
   inventory: { title: 'Inventory Ledger', category: 'Production Hub', description: 'Raw material stock, tooling ledger, and stock telemetry.' },
   'machine-utilization': { title: 'Asset Management', category: 'Resource Hub', description: 'Asset fleet OEE and operational load analysis.' },
@@ -140,12 +143,10 @@ function IndustrialERPInternal() {
   const inventoryQuery = useMemoFirebase(() => collection(db, 'inventory'), [db]);
   const billingQuery = useMemoFirebase(() => collection(db, 'billing'), [db]);
   const logsQuery = useMemoFirebase(() => collection(db, 'work_logs'), [db]);
-  const batchesQuery = useMemoFirebase(() => collection(db, 'production_batches'), [db]);
-  const trainingsQuery = useMemoFirebase(() => collection(db, 'trainings'), [db]);
-  const assignmentsQuery = useMemoFirebase(() => collection(db, 'training_assignments'), [db]);
   const reportsQuery = useMemoFirebase(() => collection(db, 'quality_reports'), [db]);
   const leavesQuery = useMemoFirebase(() => collection(db, 'leaves'), [db]);
   const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
+  const assignmentsQuery = useMemoFirebase(() => collection(db, 'training_assignments'), [db]);
   const productsQuery = useMemoFirebase(() => collection(db, 'products'), [db]);
 
   const { data: orders } = useCollection<Order>(ordersQuery);
@@ -197,8 +198,15 @@ function IndustrialERPInternal() {
     if (saved) { setCurrentUser(saved); setIsLoggedIn(true); }
   }, []);
 
+  useEffect(() => {
+    const masterAdmin = usersData?.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin');
+    if (masterAdmin?.uiSettings) {
+      setUISettings(prev => ({ ...prev, ...masterAdmin.uiSettings }));
+    }
+  }, [usersData]);
+
   if (!mounted) return null;
-  if (!isLoggedIn) return <><LoginScreen onLogin={(u) => { localStorage.setItem('jayasimha_user', u); setCurrentUser(u); setIsLoggedIn(true); }} users={usersData || []} /><Toaster /></>;
+  if (!isLoggedIn) return <><LoginScreen onLogin={(u) => { localStorage.setItem('jayasimha_user', u); setCurrentUser(u); setIsLoggedIn(true); }} users={usersData || []} brandLogo={uiSettings.brandLogo} /><Toaster /></>;
 
   const currentViewMetadata = VIEW_CONFIG[currentView] || { title: 'Unknown Page', category: 'Hub', description: '' };
   const pageDisplayTitle = uiSettings.customTitles[currentView] || currentViewMetadata.title;
@@ -217,7 +225,7 @@ function IndustrialERPInternal() {
   );
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-[#0F172A] font-body overflow-hidden">
+    <div className={cn("flex h-screen text-[#0F172A] font-body overflow-hidden transition-colors duration-500", uiSettings.theme === 'dark' ? 'bg-[#020617] dark' : 'bg-[#F8FAFC]')}>
       <div className={cn("hidden lg:block shrink-0 transition-all duration-300", uiSettings.sidebarMode === 'slim' ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 
@@ -225,33 +233,36 @@ function IndustrialERPInternal() {
           permissions={permissions} 
           isSlim={uiSettings.sidebarMode === 'slim'}
           userRole={currentUserData?.role}
+          brandLogo={uiSettings.brandLogo}
+          logoSize={uiSettings.logoSize}
+          customTitles={uiSettings.customTitles}
         />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-8 flex items-center justify-between z-50">
+        <header className="h-16 bg-white dark:bg-card border-b border-slate-200 dark:border-border shrink-0 px-8 flex items-center justify-between z-50">
           <div className="flex flex-col">
              <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 <span>{currentViewMetadata.category}</span>
                 <ChevronRight className="h-2 w-2" />
                 <span className="text-blue-600">{pageDisplayTitle}</span>
              </div>
-             <h2 className="text-xl font-display font-bold text-slate-900 uppercase tracking-tight leading-none">{pageDisplayTitle}</h2>
+             <h2 className="text-xl font-display font-bold text-slate-900 dark:text-white uppercase tracking-tight leading-none">{pageDisplayTitle}</h2>
           </div>
 
           <div className="flex items-center gap-6">
              <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-bold text-slate-900 leading-none">{currentUser}</p>
+                <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-none">{currentUser}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'Personnel'}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Avatar className="h-9 w-9 border border-slate-200 cursor-pointer hover:ring-4 ring-blue-50 transition-all">
+                   <Avatar className="h-9 w-9 border border-slate-200 dark:border-border cursor-pointer hover:ring-4 ring-blue-50 transition-all">
                       <AvatarImage src={currentUserData?.image} />
                       <AvatarFallback className="bg-slate-100 text-slate-400 text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-2xl border-slate-100">
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-2xl border-slate-100 dark:border-border">
                    <DropdownMenuItem onClick={() => setCurrentView('settings')} className="text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile Settings</DropdownMenuItem>
                    <DropdownMenuSeparator />
                    <DropdownMenuItem onClick={handleLogout} className="text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Sign Out</DropdownMenuItem>
@@ -260,7 +271,7 @@ function IndustrialERPInternal() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full p-8 scrollbar-hide bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto w-full p-8 scrollbar-hide">
           <div className="animate-in fade-in duration-500 max-w-[1600px] mx-auto">
             {!isAuthorizedToView ? <AccessDenied /> : (
               <>
@@ -277,7 +288,7 @@ function IndustrialERPInternal() {
                 {currentView === 'orders' && <ShopFloorOrders orders={orders || []} billing={billing || []} logs={logs || []} machines={machines || []} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setCurrentView('operations'); }} />}
                 {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders || []} customers={customers || []} staff={usersData || []} billing={billing || []} onBack={() => setCurrentView('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={uiSettings} />}
                 {currentView === 'operations' && <OperationsStatus initialOrderId={selectedOrderId} orders={orders || []} users={usersData || []} machines={machines || []} />}
-                {currentView === 'production-planner' && <ProductionPlanner batches={batches || []} orders={orders || []} machines={machines || []} users={usersData || []} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
+                {currentView === 'production-planner' && <ProductionPlanner batches={[]} orders={orders || []} machines={machines || []} users={usersData || []} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
                 {currentView === 'gantt' && <ProductionGantt orders={orders || []} onNavigateToOperations={(id) => { setCurrentView('operations'); }} />}
                 {currentView === 'quality' && <QualityManagement orders={orders || []} users={usersData || []} vendors={vendors || []} permissions={permissions} />}
                 {currentView === 'delivery' && <DispatchLedger orders={orders || []} reports={reports || []} billing={billing || []} onSaveOrder={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} />}
@@ -285,7 +296,7 @@ function IndustrialERPInternal() {
                 {currentView === 'work-log' && <WorkLogEntry logs={logs || []} machines={machines || []} users={usersData || []} orders={orders || []} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
                 {currentView === 'machine-utilization' && <MachineUtilization machines={machines || []} orders={orders || []} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
                 {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments || []} leaves={leaves || []} slips={slips || []} holidays={[]} users={usersData || []} />}
-                {currentView === 'hr' && <HRManagement users={usersData || []} trainings={trainings || []} assignments={assignments || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={(t)=>setDocumentNonBlocking(doc(db,'trainings',t.id),t,{merge:true})} onDeleteTraining={(id)=>deleteDocumentNonBlocking(doc(db,'trainings',id))} onSaveAssignment={(a)=>setDocumentNonBlocking(doc(db,'training_assignments',a.id),a,{merge:true})} onDeleteAssignment={(id)=>deleteDocumentNonBlocking(doc(db,'training_assignments',id))} currentUser={currentUser} />}
+                {currentView === 'hr' && <HRManagement users={usersData || []} trainings={[]} assignments={assignments || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={(t)=>setDocumentNonBlocking(doc(db,'trainings',t.id),t,{merge:true})} onDeleteTraining={(id)=>deleteDocumentNonBlocking(doc(db,'trainings',id))} onSaveAssignment={(a)=>setDocumentNonBlocking(doc(db,'training_assignments',a.id),a,{merge:true})} onDeleteAssignment={(id)=>deleteDocumentNonBlocking(doc(db,'training_assignments',id))} currentUser={currentUser} />}
                 {currentView === 'users' && <UserManagement users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
                 {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData || []} onBack={() => setCurrentView('users')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); setCurrentView('my-portal'); }} />}
                 {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}

@@ -359,6 +359,17 @@ export interface UISettings {
   logoSize: number;
   numberSeries?: Record<string, NumberSeries>;
   monthlyBillingTargets?: Record<string, number>;
+  dashboardLayout?: 'executive' | 'compact' | 'focused';
+  widgetVisibility?: Record<string, boolean>;
+  currencySymbol?: string;
+  taxLabel?: string;
+  woDefaultView?: 'list' | 'kanban';
+  showOperationsInWO?: boolean;
+  enableNotifications?: boolean;
+  notificationTone?: 'none' | 'subtle' | 'industrial';
+  sidebarAutoCollapse?: boolean;
+  erpCompanyName?: string;
+  erpTagline?: string;
   billingTableSettings?: {
     colWidths: {
       description: number;

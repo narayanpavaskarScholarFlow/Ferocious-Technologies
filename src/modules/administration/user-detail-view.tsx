@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -66,7 +65,8 @@ import {
   UserCheck,
   FileBarChart,
   FileCheck,
-  Box
+  Box,
+  Target
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';

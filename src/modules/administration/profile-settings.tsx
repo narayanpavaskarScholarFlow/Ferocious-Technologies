@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -37,8 +38,6 @@ import {
   Palette,
   PanelLeft,
   Box,
-  AlignLeft,
-  AlignCenter,
   CaseSensitive,
   Settings2,
   Contact,
@@ -49,35 +48,21 @@ import {
   Eye,
   EyeOff,
   Save,
-  RefreshCw,
-  Hash,
   ChevronRight,
-  ShieldAlert,
-  Network,
+  Hash,
+  Fingerprint,
+  Mail,
   Phone,
-  ListOrdered,
-  FileText,
   Receipt,
   Building2,
-  ArrowDownLeft,
-  ArrowUpRight,
   Landmark,
-  Search,
-  Filter,
-  X,
-  Kanban,
-  PackageCheck,
-  Maximize2,
   Trash2,
   Globe,
   Upload,
-  Maximize,
   Layout,
   Type,
   Square,
   DollarSign,
-  SwitchCamera,
-  RotateCcw,
   Sun,
   Moon,
   FileBarChart,
@@ -85,10 +70,17 @@ import {
   Bell,
   Activity,
   FileCheck,
-  TrendingUp
+  TrendingUp,
+  Image as ImageIcon,
+  CheckCircle2,
+  Info,
+  Maximize2,
+  FileText,
+  Target,
+  PackageCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { SystemUser, PermissionLevel, UISettings, ViewType, NumberSeries } from '@/lib/types';
+import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
@@ -107,21 +99,21 @@ const THEME_COLORS = [
 ];
 
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
-  { id: 'overview', label: 'Executive Dashboard', category: 'Functional Hub', icon: LayoutGrid },
+  { id: 'overview', label: 'Command Matrix', category: 'Functional Hub', icon: LayoutGrid },
   { id: 'analytics', label: 'Analytics Dashboard', category: 'Functional Hub', icon: LineChart },
   { id: 'customer-master', label: 'Customer Master', category: 'Functional Hub', icon: Building2 },
   { id: 'vendor-master', label: 'Vendor Master', category: 'Functional Hub', icon: Truck },
-  { id: 'product-master', label: 'Product Master', category: 'Functional Hub', icon: Box },
+  { id: 'product-master', label: 'Product Registry', category: 'Functional Hub', icon: Box },
   { id: 'quotation', label: 'Quotation Ledger', category: 'Functional Hub', icon: FileText },
   { id: 'sale-invoice', label: 'Sales Invoice Ledger', category: 'Functional Hub', icon: Receipt },
   { id: 'purchase-order', label: 'Purchase Order Ledger', category: 'Functional Hub', icon: PackageCheck },
   { id: 'orders', label: 'Work Orders', category: 'Functional Hub', icon: ShoppingCart },
-  { id: 'production-planner', label: 'Mass Production', category: 'Functional Hub', icon: Factory },
+  { id: 'production-planner', label: 'Production Planner', category: 'Functional Hub', icon: Factory },
   { id: 'gantt', label: 'Production Timeline', category: 'Functional Hub', icon: Calendar },
   { id: 'quality', label: 'Quality Control Hub', category: 'Functional Hub', icon: ShieldCheck },
   { id: 'inventory', label: 'Inventory Ledger', category: 'Functional Hub', icon: Boxes },
   { id: 'hr', label: 'Employee Management', category: 'Functional Hub', icon: Users },
-  { id: 'settings', label: 'System Control Center', category: 'Functional Hub', icon: Settings },
+  { id: 'settings', label: 'Control Center', category: 'Functional Hub', icon: Settings },
 
   { id: 'dash-billing', label: 'Metric: Monthly Billing', category: 'Dashboard Matrix', icon: TrendingUp },
   { id: 'dash-outstanding', label: 'Metric: Outstanding Coll.', category: 'Dashboard Matrix', icon: Landmark },
@@ -317,6 +309,22 @@ export function ProfileSettings({
     }
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 800000) {
+        toast({ variant: "destructive", title: "Image Matrix Overflow", description: "Please use a logo under 800KB." });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateLocalUIField('brandLogo', reader.result as string);
+        toast({ title: "Logo Metadata Cached" });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleMatrixPermissionUpdate = (nodeId: string, level: PermissionLevel) => {
     setMatrixPermissions(prev => ({ ...prev, [nodeId]: level }));
   };
@@ -326,7 +334,7 @@ export function ProfileSettings({
     const user = users.find(u => u.id === selectedMatrixUserId);
     if (!user) return;
     onSaveUser({ ...user, permissions: matrixPermissions });
-    toast({ title: "Matrix Synchronized", description: `Permissions for ${user.name} committed.` });
+    toast({ title: "SAVE DATA", description: `Permissions for ${user.name} committed to matrix.` });
   };
 
   const handleToggleMachineLocal = (machine: string) => {
@@ -378,7 +386,7 @@ export function ProfileSettings({
                 <ShieldCheck className="h-4 w-4 mr-2" /> Access Matrix
               </TabsTrigger>
               <TabsTrigger value="ui" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-                <Palette className="h-3.5 w-3.5 mr-2" /> UI Architecture
+                <Palette className="h-4 w-4 mr-2" /> ERP Experience
               </TabsTrigger>
             </>
           )}
@@ -556,33 +564,169 @@ export function ProfileSettings({
               )}
             </TabsContent>
 
-            <TabsContent value="ui" className="m-0 space-y-10">
-               <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
-                  <div className="flex items-center gap-4">
-                     <div className="p-3 bg-primary/10 rounded-xl text-primary"><Palette className="h-7 w-7" /></div>
-                     <h3 className="text-2xl font-display font-bold uppercase">UI Architecture</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-10">
-                     <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Primary Brand Color</Label>
-                        <div className="flex flex-wrap gap-3">
-                           {THEME_COLORS.map(color => (
-                             <button key={color.value} onClick={() => updateLocalUIField('primaryColor', color.value)} className={cn("h-10 w-10 rounded-xl transition-all border-4", color.color, localUI.primaryColor === color.value ? "border-slate-900 scale-110 shadow-lg" : "border-transparent opacity-40 hover:opacity-100")} />
-                           ))}
-                        </div>
-                     </div>
-                     <div className="space-y-4">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Sidebar Interaction</Label>
-                        <div className="flex gap-4">
-                           <Button variant={localUI.sidebarMode === 'full' ? 'default' : 'outline'} className="rounded-xl h-12 px-6 uppercase font-bold text-[9px]" onClick={() => updateLocalUIField('sidebarMode', 'full')}>Full Navigation</Button>
-                           <Button variant={localUI.sidebarMode === 'slim' ? 'default' : 'outline'} className="rounded-xl h-12 px-6 uppercase font-bold text-[9px]" onClick={() => updateLocalUIField('sidebarMode', 'slim')}>Slim Protocol</Button>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="pt-10 border-t flex justify-end">
-                     <Button className="h-14 px-12 bg-slate-900 text-white rounded-xl uppercase font-bold text-[10px]" onClick={handleCommitUISettings}>Commit Global UI Protocol</Button>
-                  </div>
-               </Card>
+            <TabsContent value="ui" className="m-0 space-y-10 pb-20">
+               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                    <div className="flex items-center gap-4 border-l-4 border-primary pl-4">
+                       <div className="p-3 bg-primary/10 rounded-xl text-primary"><Building2 className="h-5 w-5" /></div>
+                       <h3 className="text-lg font-display font-bold uppercase">Institutional Branding</h3>
+                    </div>
+                    <div className="space-y-6">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Company Name</Label>
+                          <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={localUI.erpCompanyName} onChange={(e) => updateLocalUIField('erpCompanyName', e.target.value)} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Branding Tagline</Label>
+                          <Input className="h-12 bg-slate-50 border-none rounded-xl font-medium" value={localUI.erpTagline} onChange={(e) => updateLocalUIField('erpTagline', e.target.value)} />
+                       </div>
+                       <div className="space-y-4">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Logo Matrix</Label>
+                          <div className="flex items-center gap-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner">
+                             <div className="h-24 w-24 rounded-2xl bg-white border border-slate-200 flex items-center justify-center p-2 shadow-sm relative group overflow-hidden">
+                                {localUI.brandLogo ? <img src={localUI.brandLogo} alt="" className="max-h-full max-w-full object-contain" /> : <ImageIcon className="h-8 w-8 text-slate-200" />}
+                                <input type="file" id="logo-upload" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                             </div>
+                             <div className="space-y-3">
+                                <Button variant="outline" className="h-10 px-6 rounded-xl font-bold uppercase text-[9px] tracking-widest gap-2" asChild>
+                                   <label htmlFor="logo-upload" className="cursor-pointer"><Upload className="h-3.5 w-3.5" /> Upload Logo</label>
+                                </Button>
+                                <div className="flex items-center gap-4">
+                                   <Label className="text-[8px] font-bold uppercase text-slate-400">Logo Size</Label>
+                                   <Slider value={[localUI.logoSize || 32]} max={64} min={24} step={2} onValueChange={(val) => updateLocalUIField('logoSize', val[0])} className="w-32" />
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Theme Palette</Label>
+                          <div className="flex flex-wrap gap-3">
+                             {THEME_COLORS.map(color => (
+                               <button key={color.value} onClick={() => updateLocalUIField('primaryColor', color.value)} className={cn("h-10 w-10 rounded-xl transition-all border-4", color.color, localUI.primaryColor === color.value ? "border-slate-900 scale-110 shadow-lg" : "border-transparent opacity-40 hover:opacity-100")} />
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </Card>
+
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                    <div className="flex items-center gap-4 border-l-4 border-blue-600 pl-4">
+                       <div className="p-3 bg-blue-50 rounded-xl text-blue-600"><LayoutGrid className="h-5 w-5" /></div>
+                       <h3 className="text-lg font-display font-bold uppercase">Dashboard Experience</h3>
+                    </div>
+                    <div className="space-y-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Layout Protocol</Label>
+                          <RadioGroup value={localUI.dashboardLayout} onValueChange={(val: any) => updateLocalUIField('dashboardLayout', val)} className="grid grid-cols-3 gap-4">
+                             {['executive', 'compact', 'focused'].map(l => (
+                               <Label key={l} className={cn("p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 cursor-pointer", localUI.dashboardLayout === l ? "border-primary bg-primary/5 text-primary" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-white")}>
+                                  <RadioGroupItem value={l} className="sr-only" />
+                                  <span className="text-[9px] font-bold uppercase tracking-widest">{l}</span>
+                               </Label>
+                             ))}
+                          </RadioGroup>
+                       </div>
+
+                       <div className="space-y-4">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Widget Visibility</Label>
+                          <div className="space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                             {[
+                               { id: 'ai_insights', label: 'AI Business Insights' },
+                               { id: 'alerts', label: 'System Alert Command' },
+                               { id: 'approvals', label: 'Quick Approval Gateway' },
+                               { id: 'personnel', label: 'Personnel Live Feed' },
+                             ].map(w => (
+                               <div key={w.id} className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-slate-600 uppercase">{w.label}</span>
+                                  <Switch checked={localUI.widgetVisibility?.[w.id] !== false} onCheckedChange={(val) => {
+                                     const visibility = { ...(localUI.widgetVisibility || {}), [w.id]: val };
+                                     updateLocalUIField('widgetVisibility', visibility);
+                                  }} />
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </Card>
+
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                    <div className="flex items-center gap-4 border-l-4 border-emerald-600 pl-4">
+                       <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><TableProperties className="h-5 w-5" /></div>
+                       <h3 className="text-lg font-display font-bold uppercase">Workspace Density</h3>
+                    </div>
+                    <div className="space-y-8">
+                       <div className="space-y-3">
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Table Density</Label>
+                          <Select value={localUI.tableDensity} onValueChange={(val: any) => updateLocalUIField('tableDensity', val)}>
+                             <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                             <SelectContent className="rounded-xl shadow-2xl">
+                                <SelectItem value="compact" className="text-xs font-bold uppercase">High Density (Compact)</SelectItem>
+                                <SelectItem value="standard" className="text-xs font-bold uppercase">Standard Protocol</SelectItem>
+                                <SelectItem value="comfortable" className="text-xs font-bold uppercase">Maximum Breathability</SelectItem>
+                             </SelectContent>
+                          </Select>
+                       </div>
+                       <div className="grid grid-cols-2 gap-8">
+                          <div className="space-y-3">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Base Font Size (px)</Label>
+                             <Input type="number" min={11} max={16} value={localUI.fontSize} onChange={(e) => updateLocalUIField('fontSize', Number(e.target.value))} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
+                          </div>
+                          <div className="space-y-3">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Container Shadow</Label>
+                             <Select value={localUI.cardShadow} onValueChange={(val: any) => updateLocalUIField('cardShadow', val)}>
+                                <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl shadow-2xl">
+                                   <SelectItem value="none" className="text-xs font-bold uppercase">None</SelectItem>
+                                   <SelectItem value="sm" className="text-xs font-bold uppercase">Soft Industrial</SelectItem>
+                                   <SelectItem value="xl" className="text-xs font-bold uppercase">Deep Strategic</SelectItem>
+                                </SelectContent>
+                             </Select>
+                          </div>
+                       </div>
+                    </div>
+                 </Card>
+
+                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                    <div className="flex items-center gap-4 border-l-4 border-amber-500 pl-4">
+                       <div className="p-3 bg-amber-50 rounded-xl text-amber-600"><Settings2 className="h-5 w-5" /></div>
+                       <h3 className="text-lg font-display font-bold uppercase">Functional Protocols</h3>
+                    </div>
+                    <div className="space-y-6">
+                       <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">WO Prefix</Label>
+                             <Input value={localUI.woPrefix} onChange={(e) => updateLocalUIField('woPrefix', e.target.value)} className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold uppercase" />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Next WO Sequence</Label>
+                             <Input type="number" value={localUI.woNextNumber} onChange={(e) => updateLocalUIField('woNextNumber', Number(e.target.value))} className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold" />
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Currency Matrix</Label>
+                             <Input value={localUI.currencySymbol} onChange={(e) => updateLocalUIField('currencySymbol', e.target.value)} className="h-12 bg-slate-50 border-none rounded-xl text-lg font-display font-bold text-center" />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Tax Identity Label</Label>
+                             <Input value={localUI.taxLabel} onChange={(e) => updateLocalUIField('taxLabel', e.target.value)} className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase" />
+                          </div>
+                       </div>
+                       <div className="space-y-3 pt-4">
+                          <div className="flex items-center justify-between">
+                             <span className="text-[10px] font-bold text-slate-600 uppercase">Alert Protocols (Notifications)</span>
+                             <Switch checked={localUI.enableNotifications} onCheckedChange={(val) => updateLocalUIField('enableNotifications', val)} />
+                          </div>
+                       </div>
+                    </div>
+                 </Card>
+               </div>
+
+               <div className="flex justify-end pt-8">
+                  <Button className="h-14 bg-[#001F3D] hover:bg-black text-white px-16 rounded-xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl flex gap-3 group" onClick={handleCommitUISettings}>
+                    <Save className="h-4 w-4" /> Commit Global Architecture <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+               </div>
             </TabsContent>
           </>
         )}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -98,17 +97,26 @@ import placeholderImages from '@/app/lib/placeholder-images.json';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 
+const THEME_COLORS = [
+  { name: 'Classic Navy', value: '243 75% 59%', color: 'bg-[#6366f1]' },
+  { name: 'Emerald Forest', value: '142 71% 45%', color: 'bg-[#10b981]' },
+  { name: 'Cyber Crimson', value: '346 84% 61%', color: 'bg-[#f43f5e]' },
+  { name: 'Deep Amber', value: '38 92% 50%', color: 'bg-[#f59e0b]' },
+  { name: 'Royal Violet', value: '262 83% 58%', color: 'bg-[#8b5cf6]' },
+  { name: 'Stealth Grey', value: '215 25% 27%', color: 'bg-[#334155]' },
+];
+
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
-  { id: 'overview', label: 'Command Matrix', category: 'Functional Hub', icon: LayoutGrid },
+  { id: 'overview', label: 'Executive Dashboard', category: 'Functional Hub', icon: LayoutGrid },
   { id: 'analytics', label: 'Analytics Dashboard', category: 'Functional Hub', icon: LineChart },
   { id: 'customer-master', label: 'Customer Master', category: 'Functional Hub', icon: Building2 },
   { id: 'vendor-master', label: 'Vendor Master', category: 'Functional Hub', icon: Truck },
-  { id: 'product-master', label: 'Product Registry', category: 'Functional Hub', icon: Box },
+  { id: 'product-master', label: 'Product Master', category: 'Functional Hub', icon: Box },
   { id: 'quotation', label: 'Quotation Ledger', category: 'Functional Hub', icon: FileText },
   { id: 'sale-invoice', label: 'Sales Invoice Ledger', category: 'Functional Hub', icon: Receipt },
   { id: 'purchase-order', label: 'Purchase Order Ledger', category: 'Functional Hub', icon: PackageCheck },
-  { id: 'orders', label: 'Work Order Management', category: 'Functional Hub', icon: ShoppingCart },
-  { id: 'production-planner', label: 'Production Planner', category: 'Functional Hub', icon: Factory },
+  { id: 'orders', label: 'Work Orders', category: 'Functional Hub', icon: ShoppingCart },
+  { id: 'production-planner', label: 'Mass Production', category: 'Functional Hub', icon: Factory },
   { id: 'gantt', label: 'Production Timeline', category: 'Functional Hub', icon: Calendar },
   { id: 'quality', label: 'Quality Control Hub', category: 'Functional Hub', icon: ShieldCheck },
   { id: 'inventory', label: 'Inventory Ledger', category: 'Functional Hub', icon: Boxes },
@@ -145,31 +153,6 @@ const DEPARTMENTS = [
   "Admin", "Marketing", "R&D", "Design", "Engineering", "Tool Room", "Quality", "Production", "Accounts"
 ];
 
-const DOC_TYPES_FOR_SERIES = [
-  { id: 'quotation', label: 'Quotation' },
-  { id: 'sale_order', label: 'Sales Order' },
-  { id: 'purchase_order', label: 'Purchase Order' },
-  { id: 'invoice', label: 'Sales Invoice' },
-  { id: 'purchase_invoice', label: 'Purchase Invoice' },
-  { id: 'proforma', label: 'Proforma' },
-  { id: 'delivery_challan', label: 'Delivery Challan' },
-  { id: 'credit_note', label: 'Credit Note' },
-  { id: 'debit_note', label: 'Debit Note' },
-  { id: 'job_work', label: 'Job Work' },
-  { id: 'service_request', label: 'Service Request' },
-];
-
-const DEFAULT_NUMBER_SERIES: NumberSeries = {
-  prefix: 'QT',
-  startingNumber: 1,
-  currentNumber: 1,
-  length: 4,
-  fyFormat: 'YYYY',
-  separator: '-',
-  resetEveryFY: true,
-  manualOverride: false,
-};
-
 interface ProfileSettingsProps {
   currentUser: string | null;
   users: SystemUser[];
@@ -204,7 +187,6 @@ export function ProfileSettings({
 
   const isMasterAdmin = currentUser?.toLowerCase() === 'master admin';
   const masterAdminRecord = useMemo(() => users.find(u => u.role === 'Master Admin' || u.name?.toLowerCase() === 'master admin' || u.username === 'admin'), [users]);
-  const defaultBrandLogo = placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
 
   const [personalInfo, setPersonalInfo] = useState({
     firstName: currentUserData?.firstName || '',
@@ -312,14 +294,10 @@ export function ProfileSettings({
     if (targetAdmin) {
       const adminUpdate: SystemUser = {
         ...targetAdmin,
-        uiSettings: {
-          ...localUI
-        }
+        uiSettings: { ...localUI }
       };
       onSaveUser(adminUpdate);
       toast({ title: "SAVE DATA", description: "Global architecture configuration committed." });
-    } else {
-      toast({ variant: "destructive", title: "Protocol Error", description: "Administrative node not identified for global commit." });
     }
   };
 

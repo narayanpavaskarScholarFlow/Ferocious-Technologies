@@ -15,52 +15,33 @@ import {
   ChevronRight,
   TrendingUp,
   FileBox,
-  LayoutGrid,
-  X,
   Trash2,
-  Calendar,
   Save,
   Search,
-  Filter,
   FileBarChart,
   Edit3,
   CheckCircle2,
   AlertCircle,
   Clock,
   Briefcase,
-  PlusCircle,
-  Calculator,
   Landmark,
-  ClipboardList,
   FileBadge,
   PackageSearch,
   Target,
   DollarSign,
   BrainCircuit,
   Printer,
-  Copy,
-  MoreHorizontal,
-  MoreVertical,
   ArrowDownLeft,
   ArrowUpRight,
   FileCheck,
   ArrowLeft,
-  Upload,
   Download,
   Link2,
-  Info,
   Package,
   Box,
   Zap,
-  RotateCcw,
-  Settings2,
   RefreshCw,
-  MoreHorizontal as Dots,
-  Maximize2,
   Send,
-  User,
-  History,
-  Contact,
   CreditCard,
   FileSpreadsheet,
   Users,
@@ -70,7 +51,7 @@ import {
   Gauge,
   Wallet
 } from 'lucide-react';
-import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster } from '@/lib/types';
+import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -86,22 +67,10 @@ import {
   endOfMonth, 
   isWithinInterval, 
   format, 
-  startOfToday, 
-  getDaysInMonth,
-  getDate,
-  isValid,
-  subMonths,
-  isAfter,
-  eachMonthOfInterval,
-  subYears
+  subMonths, 
+  eachMonthOfInterval 
 } from 'date-fns';
-import { Switch } from '@/components/ui/switch';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell } from 'recharts';
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'QUOTATION', icon: FileBox, prefix: 'QT' },
@@ -117,16 +86,26 @@ const DOCUMENT_TYPES = [
   { id: 'outward_payment', label: 'OUTWARD PAY', icon: ArrowUpRight, prefix: 'PAY' },
 ];
 
+const DAILY_UTILIZATION_DATA = [
+  { day: 'Mon', value: 72 },
+  { day: 'Tue', value: 85 },
+  { day: 'Wed', value: 78 },
+  { day: 'Thu', value: 92 },
+  { day: 'Fri', value: 88 },
+  { day: 'Sat', value: 45 },
+  { day: 'Sun', value: 30 },
+];
+
 function numberToWords(num: number): string {
   if (num === 0) return "ZERO RUPEES ONLY";
   const single = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN"];
-  const double = ["", "", "TWENTY", "THIRTY", "FORTY", "FIVE", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
+  const double = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
   function convert(n: number): string {
     if (n < 20) return single[n];
     if (n < 100) return double[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + single[n % 10] : "");
     if (n < 1000) return single[Math.floor(n / 100)] + " HUNDRED" + (n % 100 !== 0 ? " AND " + convert(n % 100) : "");
-    if (n < 100000) convert(Math.floor(n / 1000)) + " THOUSAND" + (n % 1000 !== 0 ? " " + convert(n % 1000) : "");
-    if (n < 10000000) convert(Math.floor(n / 100000)) + " LAKH" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
+    if (n < 100000) return convert(Math.floor(n / 1000)) + " THOUSAND" + (n % 1000 !== 0 ? " " + convert(n % 1000) : "");
+    if (n < 10000000) return convert(Math.floor(n / 100000)) + " LAKH" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
     return convert(Math.floor(num)) + " RUPEES ONLY";
   }
   return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
@@ -140,6 +119,7 @@ interface BillingManagementProps {
   users: SystemUser[];
   inventory: InventoryItem[];
   products: ProductMaster[];
+  machines: Machine[];
   permissions: Record<string, PermissionLevel>;
   onSaveRecord: (record: BillingRecord) => void;
   onDeleteRecord: (id: string) => void;
@@ -148,17 +128,15 @@ interface BillingManagementProps {
 }
 
 export function BillingManagement({ 
-  customers, vendors, records, orders, users, inventory, products, permissions, 
+  customers, vendors, records, orders, users, inventory, products, machines, permissions, 
   onSaveRecord, onDeleteRecord, uiSettings, initialTab = 'invoice' 
 }: BillingManagementProps) {
-  const db = useFirestore();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
-  const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
-  const [targetValueInput, setTargetValueInput] = useState('');
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '', type: 'invoice', customerName: '', customerId: '', date: new Date().toISOString().split('T')[0],
@@ -175,7 +153,6 @@ export function BillingManagement({
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
     
-    // Top Row Metrics
     const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     
@@ -190,14 +167,12 @@ export function BillingManagement({
     const prodAchievement = orders.length > 0 ? Math.round(orders.reduce((acc, o) => acc + (o.progress || 0), 0) / orders.length) : 0;
     const machineUtil = machines.length > 0 ? Math.round(machines.reduce((acc, m) => acc + (m.load || 0), 0) / machines.length) : 0;
 
-    // Health Score
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
     const monthInward = records.filter(r => r.type === 'inward_payment' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const totalCollected = monthInward.reduce((acc, r) => acc + (r.amount || 0), 0);
     const collectionAchievement = actualBillingAchieved > 0 ? (totalCollected / actualBillingAchieved) * 100 : 100;
     const healthScore = Math.min(100, Math.round((achievementPercent * 0.3) + (collectionAchievement * 0.3) + (prodAchievement * 0.2) + (machineUtil * 0.2)));
 
-    // Trends Data (Last 6 Months)
     const months = eachMonthOfInterval({ start: subMonths(targetDate, 5), end: targetDate });
     const financialTrends = months.map(m => {
       const start = startOfMonth(m);
@@ -233,7 +208,7 @@ export function BillingManagement({
     };
   }, [records, orders, machines, uiSettings.monthlyBillingTargets]);
 
-  const filteredRecords = useMemo(() => {
+  const filteredRecordsByType = useMemo(() => {
     return records.filter(r => {
       const isTab = r.type === activeTab;
       if (!isTab) return false;
@@ -266,19 +241,8 @@ export function BillingManagement({
     setIsRecordFormOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formData.customerId || !formData.number) { 
-      toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." }); 
-      return; 
-    }
-    onSaveRecord(formData as BillingRecord);
-    toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
-    setIsRecordFormOpen(false);
-  };
-
   const AnalyticsView = () => (
     <div className="space-y-10 animate-in fade-in duration-500 font-body">
-      {/* Top Level Strategic Matrix */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <Card className="p-8 bg-[#1E293B] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '40px 40px' }} />
@@ -324,7 +288,6 @@ export function BillingManagement({
         </div>
       </div>
 
-      {/* High-Density Top KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         {[
           { label: 'Monthly Billing', val: `₹${(biMetrics.actualBillingAchieved / 1000).toFixed(0)}K`, icon: Receipt, color: 'text-blue-600' },
@@ -345,7 +308,6 @@ export function BillingManagement({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* FINANCIAL ANALYTICS SECTION */}
         <div className="lg:col-span-8 space-y-8">
           <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem]">
             <div className="flex justify-between items-center mb-10">
@@ -399,7 +361,6 @@ export function BillingManagement({
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* WORK ORDER ANALYTICS */}
             <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
               <div className="flex items-center gap-3 mb-8">
                 <Briefcase className="h-5 w-5 text-primary" />
@@ -424,7 +385,6 @@ export function BillingManagement({
               </div>
             </Card>
 
-            {/* PRODUCTION ANALYTICS */}
             <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
               <div className="flex items-center gap-3 mb-8">
                 <Factory className="h-5 w-5 text-emerald-600" />
@@ -448,23 +408,11 @@ export function BillingManagement({
                     <p className="text-xl font-display font-bold text-blue-700">84.5%</p>
                  </div>
               </div>
-              <div className="mt-8">
-                 <ResponsiveContainer width="100%" height={100}>
-                    <BarChart data={[{n: 'Yield', p: 85, r: 5}]}>
-                       <Bar dataKey="p" stackId="a" fill="#10b981" radius={[10, 10, 0, 0]} />
-                       <Bar dataKey="r" stackId="a" fill="#f43f5e" radius={[10, 10, 0, 0]} />
-                       <XAxis hide />
-                       <YAxis hide />
-                    </BarChart>
-                 </ResponsiveContainer>
-              </div>
             </Card>
           </div>
         </div>
 
-        {/* SIDE KPI SECTION */}
         <div className="lg:col-span-4 space-y-8">
-          {/* QUALITY ANALYTICS */}
           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
             <div className="flex items-center gap-3">
               <ShieldCheck className="h-5 w-5 text-blue-600" />
@@ -475,7 +423,6 @@ export function BillingManagement({
                  { label: 'Inspections Performed', val: 124, icon: FileCheck, color: 'text-blue-600' },
                  { label: 'Passed Matrix', val: 118, icon: CheckCircle2, color: 'text-emerald-600' },
                  { label: 'Rejected Nodes', val: 6, icon: AlertCircle, color: 'text-rose-600' },
-                 { label: 'Rework Required', val: 4, icon: RefreshCw, color: 'text-amber-600' },
                ].map(item => (
                  <div key={item.label} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition-all">
                     <div className="flex items-center gap-3">
@@ -488,7 +435,6 @@ export function BillingManagement({
             </div>
           </Card>
 
-          {/* MACHINE ANALYTICS */}
           <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
             <div className="flex items-center gap-3">
               <Cpu className="h-5 w-5 text-primary" />
@@ -521,7 +467,6 @@ export function BillingManagement({
             </div>
           </Card>
 
-          {/* MANAGEMENT KPI MATRIX */}
           <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] space-y-10 relative overflow-hidden">
              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
              <div className="relative z-10 space-y-10">
@@ -544,7 +489,6 @@ export function BillingManagement({
                       <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Matrix Health Score</p>
                       <p className="text-4xl font-display font-black">{biMetrics.healthScore}%</p>
                    </div>
-                   <Button className="bg-white text-[#001F3D] hover:bg-white/90 rounded-xl font-bold uppercase text-[9px] px-8 h-12">Institutional Report</Button>
                 </div>
              </div>
           </Card>
@@ -552,26 +496,6 @@ export function BillingManagement({
       </div>
     </div>
   );
-
-  const DAILY_UTILIZATION_DATA = [
-    { day: 'Mon', value: 72 },
-    { day: 'Tue', value: 85 },
-    { day: 'Wed', value: 78 },
-    { day: 'Thu', value: 92 },
-    { day: 'Fri', value: 88 },
-    { day: 'Sat', value: 45 },
-    { day: 'Sun', value: 30 },
-  ];
-
-  const filteredRecordsByType = useMemo(() => {
-    return records.filter(r => {
-      const isTab = r.type === activeTab;
-      if (!isTab) return false;
-      const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-  }, [records, activeTab, searchTerm]);
 
   const FullPageEditor = () => {
     const totalQuotationVal = useMemo(() => {
@@ -789,10 +713,10 @@ export function BillingManagement({
             <div className="space-y-8">
               <div className="flex justify-between items-end gap-4">
                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total {activeTab}s</p><p className="text-2xl font-display font-black text-[#001F3D] dark:text-white">{filteredRecords.length}</p></Card>
-                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Valuation</p><p className="text-2xl font-display font-black text-emerald-600">₹ {filteredRecords.reduce((acc, r) => acc + (r.amount || 0), 0).toLocaleString()}</p></Card>
-                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Protocol</p><p className="text-2xl font-display font-black text-orange-500">{filteredRecords.filter(r => r.status === 'Pending').length}</p></Card>
-                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Settled Nodes</p><p className="text-2xl font-display font-black text-blue-500">{filteredRecords.filter(r => r.status === 'Paid' || r.status === 'Authorized').length}</p></Card>
+                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total {activeTab}s</p><p className="text-2xl font-display font-black text-[#001F3D] dark:text-white">{filteredRecordsByType.length}</p></Card>
+                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Valuation</p><p className="text-2xl font-display font-black text-emerald-600">₹ {filteredRecordsByType.reduce((acc, r) => acc + (r.amount || 0), 0).toLocaleString()}</p></Card>
+                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Protocol</p><p className="text-2xl font-display font-black text-orange-500">{filteredRecordsByType.filter(r => r.status === 'Pending').length}</p></Card>
+                    <Card className="p-6 bg-white dark:bg-card border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Settled Nodes</p><p className="text-2xl font-display font-black text-blue-500">{filteredRecordsByType.filter(r => r.status === 'Paid' || r.status === 'Authorized').length}</p></Card>
                  </div>
                  <Button className="h-14 bg-[#001F3D] dark:bg-primary hover:bg-black text-white dark:text-card rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-3 px-8" onClick={() => handleOpenForm(activeTab)}>
                     <Plus className="h-4 w-4" /> NEW {activeTab.toUpperCase()}
@@ -809,7 +733,7 @@ export function BillingManagement({
                   <TableHeader className="bg-slate-50 dark:bg-slate-900">
                     <TableRow className="hover:bg-transparent"><TableHead className="px-8 py-5 font-black text-[9px] uppercase">Document Node</TableHead><TableHead className="font-black text-[9px] uppercase">Identity Account</TableHead><TableHead className="text-right font-black text-[9px] uppercase">Grand Total</TableHead><TableHead className="text-center font-black text-[9px] uppercase">State</TableHead><TableHead className="text-right px-8 font-black text-[9px] uppercase">Action</TableHead></TableRow>
                   </TableHeader>
-                  <TableBody>{filteredRecords.map(r => (
+                  <TableBody>{filteredRecordsByType.map(r => (
                     <TableRow key={r.id} onClick={() => handleOpenForm(r.type, r)} className="h-20 hover:bg-slate-50/50 dark:hover:bg-slate-800 transition-all cursor-pointer group">
                       <TableCell className="px-8"><div className="flex flex-col"><span className="text-xs font-bold text-primary font-code">{r.number}</span><span className="text-[9px] text-slate-400 font-bold uppercase">{r.date}</span></div></TableCell>
                       <TableCell><span className="text-sm font-black text-[#001F3D] dark:text-white uppercase tracking-tight">{r.customerName}</span></TableCell>

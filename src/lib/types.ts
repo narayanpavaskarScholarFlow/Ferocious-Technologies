@@ -88,7 +88,10 @@ export type ViewType =
   | 'user-detail'
   | 'weekly-plan'
   | 'work-log'
-  | 'billing';
+  | 'billing'
+  | 'dash-billing' | 'dash-outstanding' | 'dash-po' | 'dash-production' | 'dash-health' | 'dash-ai' | 'dash-alerts' | 'dash-approvals' | 'dash-personnel' | 'dash-flow'
+  | 'report-sales' | 'report-quality' | 'report-production' | 'report-dispatch' | 'report-machine' | 'report-financial'
+  | 'approve-quotation' | 'approve-wo' | 'approve-dispatch' | 'approve-invoice' | 'approve-payment';
 
 export interface ViewMetadata {
   title: string;
@@ -526,4 +529,19 @@ export interface PrintTemplate {
   layout: 'classic' | 'corporate' | 'industrial' | 'compact';
   letterheadId: string;
   isDefault: boolean;
+}
+
+export interface SystemActivity {
+  id: string;
+  type: 'usage' | 'ai_update' | 'alert' | 'maintenance';
+  message: string;
+  timestamp: string;
+  user?: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface CatalogFilter {
+  search: string;
+  category: string;
+  status: 'all' | ToolStatus;
 }

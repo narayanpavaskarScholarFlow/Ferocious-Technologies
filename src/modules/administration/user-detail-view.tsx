@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -58,7 +59,14 @@ import {
   Trash2,
   PackageCheck,
   Globe,
-  DollarSign
+  DollarSign,
+  TrendingUp,
+  Activity,
+  Bell,
+  UserCheck,
+  FileBarChart,
+  FileCheck,
+  Box
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
@@ -66,37 +74,44 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
-  { id: 'overview', label: 'Command Matrix', category: 'Strategic Hub', icon: LayoutGrid },
-  { id: 'agile', label: 'Agile Kanban', category: 'Strategic Hub', icon: Kanban },
-  { id: 'smart-quote', label: 'AI Quoting Assistant', category: 'Strategic Hub', icon: BrainCircuit },
-  { id: 'sqcdp', label: 'Performance Analytics', category: 'Strategic Hub', icon: LineChart },
-  { id: 'team-matrix', label: 'My Team Matrix', category: 'Strategic Hub', icon: Users },
-  { id: 'orders', label: 'Master Orders', category: 'Production Management', icon: ShoppingCart },
-  { id: 'production-planner', label: 'Mass Production', category: 'Production Management', icon: Factory },
-  { id: 'gantt', label: 'Visual Timeline', category: 'Production Management', icon: LayoutGrid },
-  { id: 'operations', label: 'Operational Spreadsheet', category: 'Production Management', icon: Layers },
-  { id: 'weekly-plan', label: 'Master Schedule', category: 'Production Management', icon: Calendar },
-  { id: 'work-log', label: 'Daily Work Logs', category: 'Production Management', icon: ClipboardList },
-  { id: 'quality', label: 'Quality Hub', category: 'Quality Hub', icon: ShieldCheck },
-  { id: 'training', label: 'Training Matrix', category: 'Quality Hub', icon: GraduationCap },
-  { id: 'delivery', label: 'Dispatch Ledger', category: 'Commercial Operations', icon: PackageCheck },
-  { id: 'customer-orders', label: 'Customer Identity', category: 'Commercial Operations', icon: Contact },
-  { id: 'inventory', label: 'Stock Ledger', category: 'Commercial Operations', icon: Boxes },
-  { id: 'billing', label: 'Financial Hub (Main)', category: 'Commercial Operations', icon: CreditCard },
-  { id: 'billing-quotation', label: 'Financial: Quotation', category: 'Commercial Operations', icon: FileText },
-  { id: 'billing-invoice', label: 'Financial: Invoice', category: 'Commercial Operations', icon: Receipt },
-  { id: 'billing-po', label: 'Financial: Purchase Order', category: 'Commercial Operations', icon: ShoppingCart },
-  { id: 'billing-dc', label: 'Financial: Delivery Challan', category: 'Commercial Operations', icon: PackageCheck },
-  { id: 'billing-proforma', label: 'Financial: Proforma', category: 'Commercial Operations', icon: Building2 },
-  { id: 'billing-inward', label: 'Financial: Inward', category: 'Commercial Operations', icon: ArrowDownLeft },
-  { id: 'billing-outward', label: 'Financial: Outward', category: 'Commercial Operations', icon: ArrowUpRight },
-  { id: 'billing-bank', label: 'Financial: Bank Ledger', category: 'Commercial Operations', icon: Landmark },
-  { id: 'billing-edit', label: 'Financial: Global Edit', category: 'Commercial Operations', icon: Edit3 },
-  { id: 'billing-delete', label: 'Financial: Global Delete', category: 'Commercial Operations', icon: Trash2 },
-  { id: 'vendor', label: 'Supply Chain Partner', category: 'Commercial Operations', icon: Truck },
-  { id: 'machine-utilization', label: 'Asset Fleet', category: 'Resources & Assets', icon: Cpu },
-  { id: 'hr', label: 'HR Command Hub', category: 'Resources & Assets', icon: Users },
-  { id: 'settings', label: 'Control Center', category: 'System Governance', icon: Settings },
+  { id: 'overview', label: 'Command Matrix', category: 'Functional Hub', icon: LayoutGrid },
+  { id: 'analytics', label: 'Analytics Dashboard', category: 'Functional Hub', icon: LineChart },
+  { id: 'customer-master', label: 'Customer Master', category: 'Functional Hub', icon: Building2 },
+  { id: 'vendor-master', label: 'Vendor Master', category: 'Functional Hub', icon: Truck },
+  { id: 'product-master', label: 'Product Registry', category: 'Functional Hub', icon: Box },
+  { id: 'quotation', label: 'Quotation Ledger', category: 'Functional Hub', icon: FileText },
+  { id: 'sale-invoice', label: 'Sales Invoice Ledger', category: 'Functional Hub', icon: Receipt },
+  { id: 'purchase-order', label: 'Purchase Order Ledger', category: 'Functional Hub', icon: PackageCheck },
+  { id: 'orders', label: 'Work Order Management', category: 'Functional Hub', icon: ShoppingCart },
+  { id: 'production-planner', label: 'Production Planner', category: 'Functional Hub', icon: Factory },
+  { id: 'gantt', label: 'Production Timeline', category: 'Functional Hub', icon: Calendar },
+  { id: 'quality', label: 'Quality Control Hub', category: 'Functional Hub', icon: ShieldCheck },
+  { id: 'inventory', label: 'Inventory Ledger', category: 'Functional Hub', icon: Boxes },
+  { id: 'hr', label: 'Employee Management', category: 'Functional Hub', icon: Users },
+  { id: 'settings', label: 'System Control Center', category: 'Functional Hub', icon: Settings },
+
+  { id: 'dash-billing', label: 'Metric: Monthly Billing', category: 'Dashboard Matrix', icon: TrendingUp },
+  { id: 'dash-outstanding', label: 'Metric: Outstanding Coll.', category: 'Dashboard Matrix', icon: Landmark },
+  { id: 'dash-po', label: 'Metric: Customer PO Value', category: 'Dashboard Matrix', icon: Receipt },
+  { id: 'dash-machine', label: 'Metric: Asset OEE', category: 'Dashboard Matrix', icon: Cpu },
+  { id: 'dash-production', label: 'Metric: Production Achieve.', category: 'Dashboard Matrix', icon: Factory },
+  { id: 'dash-health', label: 'Metric: Business Health', category: 'Dashboard Matrix', icon: Activity },
+  { id: 'dash-ai', label: 'Widget: AI Business Insights', category: 'Dashboard Matrix', icon: BrainCircuit },
+  { id: 'dash-alerts', label: 'Widget: System Alert Panel', category: 'Dashboard Matrix', icon: Bell },
+  { id: 'dash-approvals', label: 'Widget: Approval Gateway', category: 'Dashboard Matrix', icon: UserCheck },
+  
+  { id: 'report-sales', label: 'Report: Sales & Revenue', category: 'Reports Matrix', icon: FileBarChart },
+  { id: 'report-quality', label: 'Report: Quality Audit', category: 'Reports Matrix', icon: ShieldCheck },
+  { id: 'report-production', label: 'Report: Yield Analysis', category: 'Reports Matrix', icon: Factory },
+  { id: 'report-dispatch', label: 'Report: Dispatch Ledger', category: 'Reports Matrix', icon: PackageCheck },
+  { id: 'report-machine', label: 'Report: Machine Load', category: 'Reports Matrix', icon: Cpu },
+  { id: 'report-financial', label: 'Report: Financial Liquidity', category: 'Reports Matrix', icon: Landmark },
+
+  { id: 'approve-quotation', label: 'Auth: Quotation Release', category: 'Certification Matrix', icon: FileCheck },
+  { id: 'approve-wo', label: 'Auth: Work Order Start', category: 'Certification Matrix', icon: ShoppingCart },
+  { id: 'approve-dispatch', label: 'Auth: Dispatch Protocol', category: 'Certification Matrix', icon: Truck },
+  { id: 'approve-invoice', label: 'Auth: Invoice Finalization', category: 'Certification Matrix', icon: Receipt },
+  { id: 'approve-payment', label: 'Auth: Payment Settlement', category: 'Certification Matrix', icon: Landmark },
 ];
 
 interface UserDetailViewProps {

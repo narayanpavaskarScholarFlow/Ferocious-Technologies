@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -20,7 +19,7 @@ import {
   Cpu, 
   Save, 
   Hash, 
-  ArchiveX, 
+  Archive, 
   CalendarDays, 
   ChevronRight, 
   ChevronLeft,
@@ -342,7 +341,7 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
                         <span className="text-lg text-white/20 ml-2">/ 9.0h</span>
                       </p>
                       {dailyStats.isOT && (
-                        <Badge className="bg-emerald-500 text-white border-none font-bold uppercase text-[8px] px-3 py-1 rounded-full animate-pulse shadow-lg shadow-emerald-500/30 mb-1">
+                        <Badge className="bg-emerald-50 text-white border-none font-bold uppercase text-[8px] px-3 py-1 rounded-full animate-pulse shadow-lg shadow-emerald-500/30 mb-1">
                           OT ACTIVE (+{dailyStats.otHours.toFixed(1)}h)
                         </Badge>
                       )}
@@ -775,7 +774,7 @@ export function WorkLogEntry({ logs, onAddLog, onDeleteLog, machines, users, ord
                     <TableRow>
                       <TableCell colSpan={8} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center opacity-20 py-10">
-                          <ArchiveX className="h-16 w-16 text-slate-300 mb-4" />
+                          <Archive className="h-16 w-16 text-slate-300 mb-4" />
                           <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Matrix Query Null</p>
                           <p className="text-[10px] text-slate-300 mt-2 font-medium">No operational nodes matched the current filter parameters.</p>
                         </div>

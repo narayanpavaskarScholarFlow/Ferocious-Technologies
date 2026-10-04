@@ -23,7 +23,8 @@ import {
   Receipt,
   X,
   Building2,
-  Truck
+  Truck,
+  Archive
 } from 'lucide-react';
 import { Customer, Vendor } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -322,7 +323,7 @@ export function CustomerOrders({ customers, vendors, onSaveCustomer, onSaveVendo
                   <TableRow>
                     <TableCell colSpan={7} className="h-64 text-center">
                        <div className="flex flex-col items-center justify-center opacity-30 py-10">
-                          <ArchiveX className="h-12 w-12 text-slate-300 mb-4" />
+                          <Archive className="h-12 w-12 text-slate-300 mb-4" />
                           <p className="text-[#001F3D] font-headline font-bold text-lg uppercase tracking-tight">Ledger Matrix Null</p>
                           <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase">No identity nodes discovered in this classification.</p>
                        </div>

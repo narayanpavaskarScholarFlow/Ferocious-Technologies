@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Order, BillingRecord, WorkLogEntry, Machine } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Search, Plus, ArchiveX, Edit2, TrendingUp, Filter, User, Receipt, Cpu, DollarSign, ChevronRight, Info, Link2 } from 'lucide-react';
+import { Search, Plus, Archive, Edit2, TrendingUp, Filter, User, Receipt, Cpu, DollarSign, ChevronRight, Info, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { 
@@ -219,7 +219,7 @@ export function ShopFloorOrders({ orders, onNavigateToOperations, onNavigateToOr
                   <TableCell colSpan={12} className="h-[480px] text-center">
                     <div className="flex flex-col items-center justify-center opacity-30 py-10">
                       <div className="p-10 bg-slate-50 rounded-[3rem] mb-8">
-                        <ArchiveX className="h-20 w-20 text-slate-300" />
+                        <Archive className="h-20 w-20 text-slate-300" />
                       </div>
                       <p className="text-[#001F3D] font-headline font-bold text-2xl uppercase tracking-tight">Ledger Matrix Null</p>
                       <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto font-medium leading-relaxed">No active execution threads discovered. Link a Customer PO to initialize a Master Order protocol.</p>

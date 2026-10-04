@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -28,7 +27,7 @@ import {
   FileBadge,
   Unlock,
   ShieldAlert,
-  ArchiveX,
+  Archive,
   Edit2,
   Upload,
   ImageIcon,
@@ -55,7 +54,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord, PermissionLevel } from '@/lib/types';
+import { Order, RoutingOperation, SystemUser, Vendor, QualityReport, DimensionRecord, PermissionLevel, BillingRecord } from '@/lib/types';
 import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 
@@ -761,7 +760,7 @@ export function QualityManagement({ orders, users = [], vendors = [], permission
                         onChange={handleDrawingUpload}
                       />
                       <label 
-                        htmlFor="initial-drawing-upload"
+                        for="initial-drawing-upload"
                         className={cn(
                           "h-24 w-full flex flex-col items-center justify-center gap-2 px-4 rounded-2xl text-[9px] font-bold uppercase tracking-widest cursor-pointer transition-all border-2 border-dashed",
                           pendingDrawingFile ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-white border-slate-200 text-slate-400 hover:border-primary/50"
@@ -830,7 +829,7 @@ export function QualityManagement({ orders, users = [], vendors = [], permission
                     ))}
                     {orderReports.length === 0 && (
                       <div className="col-span-2 py-20 flex flex-col items-center justify-center opacity-30 text-center">
-                        <ArchiveX className="h-12 w-12 mb-4" />
+                        <Archive className="h-12 w-12 mb-4" />
                         <p className="text-xs font-bold uppercase tracking-widest">No Manual Protocols Logged</p>
                       </div>
                     )}
@@ -879,7 +878,7 @@ export function QualityManagement({ orders, users = [], vendors = [], permission
                           onChange={handleDrawingUpload}
                         />
                         <Button variant="ghost" asChild className="h-8 px-4 rounded-xl font-bold uppercase text-[9px] tracking-widest text-primary hover:bg-primary/5">
-                          <label htmlFor="matrix-drawing-upload" className="cursor-pointer flex items-center gap-2">
+                          <label for="matrix-drawing-upload" className="cursor-pointer flex items-center gap-2">
                             <Upload className="h-3.5 w-3.5" /> Replace Drawing
                           </label>
                         </Button>
@@ -1206,7 +1205,7 @@ export function QualityManagement({ orders, users = [], vendors = [], permission
                   onChange={handleDrawingUpload}
                 />
                 <label 
-                  htmlFor="final-drawing-upload"
+                  for="final-drawing-upload"
                   className={cn(
                     "h-24 w-full flex flex-col items-center justify-center gap-3 px-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-all border-2 border-dashed",
                     pendingDrawingFile ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400 hover:border-primary/50"

@@ -155,7 +155,7 @@ export function BillingManagement({
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
     
-    const monthInvoices = records.filter(r => r.type === 'invoice' && r.amount && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
+    const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     
     const customerPOValue = records.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
@@ -210,7 +210,7 @@ export function BillingManagement({
     };
   }, [records, orders, machines, uiSettings.monthlyBillingTargets]);
 
-  const filteredRecords = useMemo(() => {
+  const filteredRecordsByType = useMemo(() => {
     return records.filter(r => {
       const isTab = r.type === activeTab;
       if (!isTab) return false;
@@ -254,461 +254,221 @@ export function BillingManagement({
   };
 
   const AnalyticsView = () => (
-    <div className="space-y-10 animate-in fade-in duration-500 font-body">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="p-8 bg-[#1E293B] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '40px 40px' }} />
-          <div>
-            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] mb-3">Enterprise Stability</p>
-            <h3 className="text-3xl font-display font-black uppercase tracking-tight">Business Health Score</h3>
+    <div className="space-y-6 animate-in fade-in duration-500 font-body">
+      {/* ROW 1: EXECUTIVE KPI MATRIX */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <Card className="p-4 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-500/50 transition-all">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Monthly Billing</p>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-2xl font-display font-black text-slate-900">₹ {(biMetrics.actualBillingAchieved / 100000).toFixed(1)}L</span>
+            <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Receipt className="h-4 w-4" /></div>
           </div>
-          <div className="flex items-center gap-6 mt-10">
-            <div className="relative h-28 w-28 flex items-center justify-center">
+        </Card>
+
+        <Card className="p-4 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-emerald-500/50 transition-all">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Collection Rate</p>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-2xl font-display font-black text-emerald-600">{biMetrics.collectionAchievement.toFixed(1)}%</span>
+            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><Landmark className="h-4 w-4" /></div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-orange-500/50 transition-all">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Production Achievement</p>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-2xl font-display font-black text-orange-600">{biMetrics.prodAchievement}%</span>
+            <div className="p-2 bg-orange-50 rounded-lg text-orange-600"><Factory className="h-4 w-4" /></div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-primary/50 transition-all">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Machine Utilization</p>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-2xl font-display font-black text-primary">{biMetrics.machineUtil}%</span>
+            <div className="p-2 bg-primary/5 rounded-lg text-primary"><Cpu className="h-4 w-4" /></div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-[#1E293B] text-white border-none shadow-lg flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+          <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Business Health Score</p>
+          <div className="flex items-center justify-between mt-2 relative z-10">
+            <span className="text-3xl font-display font-black text-white">{biMetrics.healthScore}%</span>
+            <div className="h-10 w-10 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90">
-                <circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,0.05)" strokeWidth="10" fill="transparent" />
-                <circle cx="56" cy="56" r="48" stroke="#10b981" strokeWidth="10" fill="transparent" strokeDasharray="301.59" strokeDashoffset={301.59 - (301.59 * biMetrics.healthScore / 100)} strokeLinecap="round" />
+                <circle cx="20" cy="20" r="16" stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
+                <circle cx="20" cy="20" r="16" stroke="#10b981" strokeWidth="4" fill="transparent" strokeDasharray="100.5" strokeDashoffset={100.5 - (100.5 * biMetrics.healthScore / 100)} strokeLinecap="round" />
               </svg>
-              <span className="absolute text-3xl font-display font-black">{biMetrics.healthScore}%</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-[10px] font-bold text-white/60">Operational Yield</span></div>
-              <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-[10px] font-bold text-white/60">Financial Reliability</span></div>
             </div>
           </div>
         </Card>
-        
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-           {[
-             { label: 'Billing Achievement', val: `₹ ${(biMetrics.actualBillingAchieved / 100000).toFixed(1)}L`, icon: Receipt, percent: biMetrics.achievementPercent, color: 'text-blue-600', bg: 'bg-blue-50' },
-             { label: 'Collection Rate', val: `₹ ${(biMetrics.collected / 100000).toFixed(1)}L`, icon: Landmark, percent: biMetrics.collectionAchievement, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-             { label: 'Production Velocity', val: `${biMetrics.prodAchievement}%`, icon: Factory, percent: biMetrics.prodAchievement, color: 'text-orange-600', bg: 'bg-orange-50' },
-           ].map(item => (
-             <Card key={item.label} className="p-8 bg-white border-slate-200 shadow-xl rounded-[2rem] flex flex-col justify-between group hover:border-primary/20 transition-all">
-                <div className="flex justify-between items-start">
-                   <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
-                      <p className={cn("text-3xl font-display font-black mt-2", item.color)}>{item.val}</p>
-                   </div>
-                   <div className={cn("p-3 rounded-xl", item.bg, item.color)}><item.icon className="h-6 w-6" /></div>
-                </div>
-                <div className="mt-8 space-y-2">
-                   <div className="flex justify-between items-center text-[8px] font-black uppercase"><span className="text-slate-400">Execution Index</span><span className="text-slate-600">{Math.round(item.percent)}%</span></div>
-                   <div className="h-2 bg-slate-50 rounded-full overflow-hidden shadow-inner"><div className={cn("h-full transition-all duration-1000", item.color.replace('text-', 'bg-'))} style={{ width: `${Math.min(item.percent, 100)}%` }} /></div>
-                </div>
-             </Card>
-           ))}
-        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-        {[
-          { label: 'Monthly Billing', val: `₹${(biMetrics.actualBillingAchieved / 1000).toFixed(0)}K`, icon: Receipt, color: 'text-blue-600' },
-          { label: 'Customer PO', val: `₹${(biMetrics.customerPOValue / 1000).toFixed(0)}K`, icon: ShoppingCart, color: 'text-emerald-600' },
-          { label: 'Outstanding', val: `₹${(biMetrics.outstanding / 1000).toFixed(0)}K`, icon: Landmark, color: 'text-rose-600' },
-          { label: 'Open Quotes', val: biMetrics.openQuotes, icon: FileText, color: 'text-amber-600' },
-          { label: 'Active WO', val: biMetrics.activeOrders, icon: Briefcase, color: 'text-primary' },
-          { label: 'Pending Dispatch', val: biMetrics.pendingDispatch, icon: Truck, color: 'text-purple-600' },
-          { label: 'Prod. Achievement', val: `${biMetrics.prodAchievement}%`, icon: Factory, color: 'text-emerald-600' },
-          { label: 'Machine OEE', val: `${biMetrics.machineUtil}%`, icon: Cpu, color: 'text-primary' },
-        ].map(kpi => (
-          <Card key={kpi.label} className="p-4 bg-white border-slate-200 shadow-sm flex flex-col items-center text-center gap-2 hover:shadow-md transition-all">
-            <kpi.icon className={cn("h-4 w-4", kpi.color)} />
-            <p className="text-[11px] font-display font-black text-slate-900">{kpi.val}</p>
-            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter leading-none px-1">{kpi.label}</p>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-8">
-          <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[2.5rem]">
-            <div className="flex justify-between items-center mb-10">
-               <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-50 rounded-xl text-blue-600"><TrendingUp className="h-6 w-6" /></div>
-                  <div>
-                    <h3 className="text-xl font-display font-bold text-slate-900 uppercase tracking-tight">Institutional Yield Trends</h3>
-                    <p className="text-xs text-slate-400 font-medium">Billing, Collection & PO Velocity Matrix (6 Months)</p>
-                  </div>
-               </div>
-               <div className="flex gap-4">
-                  <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-[9px] font-bold text-slate-500 uppercase">Billing</span></div>
-                  <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-[9px] font-bold text-slate-500 uppercase">Collection</span></div>
-                  <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-amber-500" /><span className="text-[9px] font-bold text-slate-500 uppercase">PO Intake</span></div>
-               </div>
-            </div>
-            <div className="h-[320px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
+      {/* ROW 2: PERFORMANCE INTELLIGENCE */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <Card className="lg:col-span-8 p-6 bg-white border-slate-200 shadow-sm">
+           <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 uppercase">Business Performance Trend</h3>
+                <p className="text-[10px] text-slate-400 font-medium">MTD Billing, Collection & PO Matrix</p>
+              </div>
+              <div className="flex gap-4">
+                 <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-[8px] font-bold text-slate-500 uppercase">Billing</span></div>
+                 <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-[8px] font-bold text-slate-500 uppercase">Collection</span></div>
+              </div>
+           </div>
+           <div className="h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
                  <AreaChart data={biMetrics.financialTrends}>
                    <defs>
-                     <linearGradient id="colorBilling" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
-                     <linearGradient id="colorColl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
+                     <linearGradient id="colorBilling" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.05}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
+                     <linearGradient id="colorColl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.05}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
                    </defs>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} dy={10} />
-                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} tickFormatter={(v) => `₹${v/1000}K`} />
-                   <ChartTooltip 
-                    content={({active, payload}) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border-none">
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-3">{payload[0].payload.month} Summary</p>
-                            {payload.map((entry: any) => (
-                              <div key={entry.name} className="flex justify-between gap-8 items-center mb-1">
-                                <span className="text-[10px] font-bold uppercase">{entry.name}</span>
-                                <span className="text-xs font-code font-bold">₹{entry.value.toLocaleString()}</span>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                   />
-                   <Area name="Billing" type="monotone" dataKey="billing" stroke="#3b82f6" strokeWidth={4} fill="url(#colorBilling)" />
-                   <Area name="Collection" type="monotone" dataKey="collection" stroke="#10b981" strokeWidth={4} fill="url(#colorColl)" />
-                   <Area name="PO Value" type="monotone" dataKey="po" stroke="#f59e0b" strokeWidth={4} fill="transparent" strokeDasharray="5 5" />
+                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}K`} />
+                   <ChartTooltip />
+                   <Area name="Billing" type="monotone" dataKey="billing" stroke="#3b82f6" strokeWidth={3} fill="url(#colorBilling)" />
+                   <Area name="Collection" type="monotone" dataKey="collection" stroke="#10b981" strokeWidth={3} fill="url(#colorColl)" />
                  </AreaChart>
-               </ResponsiveContainer>
-            </div>
-          </Card>
+              </ResponsiveContainer>
+           </div>
+        </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
-              <div className="flex items-center gap-3 mb-8">
-                <Briefcase className="h-5 w-5 text-primary" />
-                <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Work Order Matrix</h4>
+        <div className="lg:col-span-4 space-y-6">
+           <Card className="p-6 bg-white border-slate-200 shadow-sm flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer PO Analysis</h4>
+                 <ShoppingCart className="h-4 w-4 text-emerald-600" />
               </div>
-              <div className="space-y-6">
-                 {[
-                   { label: 'Total Thread Nodes', val: orders.length, color: 'text-slate-900' },
-                   { label: 'Operational (Active)', val: biMetrics.activeOrders, color: 'text-blue-600' },
-                   { label: 'Certified Complete', val: orders.filter(o=>o.status==='Completed' || o.status==='Delivered').length, color: 'text-emerald-600' },
-                   { label: 'Delayed Protocol', val: orders.filter(o=>o.status==='Delayed').length, color: 'text-rose-600' },
-                 ].map(item => (
-                   <div key={item.label} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{item.label}</span>
-                      <span className={cn("text-lg font-display font-black", item.color)}>{item.val}</span>
-                   </div>
-                 ))}
-                 <div className="pt-4 space-y-2">
-                    <div className="flex justify-between text-[8px] font-black uppercase text-slate-400"><span>Weighted Progress</span><span>{biMetrics.prodAchievement}%</span></div>
-                    <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100"><div className="h-full bg-primary transition-all duration-1000" style={{ width: `${biMetrics.prodAchievement}%` }} /></div>
-                 </div>
-              </div>
-            </Card>
-
-            <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem]">
-              <div className="flex items-center gap-3 mb-8">
-                <Factory className="h-5 w-5 text-emerald-600" />
-                <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Production Yield</h4>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="p-4 bg-slate-50 rounded-2xl space-y-1">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase">Target Qty</p>
-                    <p className="text-xl font-display font-bold text-slate-900">8.4K</p>
-                 </div>
-                 <div className="p-4 bg-emerald-50 rounded-2xl space-y-1">
-                    <p className="text-[8px] font-bold text-emerald-600 uppercase">Produced</p>
-                    <p className="text-xl font-display font-bold text-emerald-700">7.1K</p>
-                 </div>
-                 <div className="p-4 bg-rose-50 rounded-2xl space-y-1">
-                    <p className="text-[8px] font-bold text-rose-600 uppercase">Rejected</p>
-                    <p className="text-xl font-display font-bold text-rose-700">142</p>
-                 </div>
-                 <div className="p-4 bg-blue-50 rounded-2xl space-y-1">
-                    <p className="text-[8px] font-bold text-blue-600 uppercase">Achievement</p>
-                    <p className="text-xl font-display font-bold text-blue-700">84.5%</p>
-                 </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        <div className="lg:col-span-4 space-y-8">
-          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 text-blue-600" />
-              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Quality Compliance</h4>
-            </div>
-            <div className="space-y-4">
-               {[
-                 { label: 'Inspections Performed', val: 124, icon: FileCheck, color: 'text-blue-600' },
-                 { label: 'Passed Matrix', val: 118, icon: CheckCircle2, color: 'text-emerald-600' },
-                 { label: 'Rejected Nodes', val: 6, icon: AlertCircle, color: 'text-rose-600' },
-               ].map(item => (
-                 <div key={item.label} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition-all">
-                    <div className="flex items-center gap-3">
-                       <item.icon className={cn("h-4 w-4", item.color)} />
-                       <span className="text-[10px] font-bold text-slate-500 uppercase">{item.label}</span>
+              <div className="space-y-4">
+                 <p className="text-3xl font-display font-black text-slate-900">₹ {(biMetrics.customerPOValue / 100000).toFixed(1)}L</p>
+                 <div className="space-y-2">
+                    <div className="flex justify-between text-[8px] font-black uppercase">
+                       <span className="text-slate-400">Target Achievement</span>
+                       <span className="text-emerald-600">{Math.round(biMetrics.achievementPercent)}%</span>
                     </div>
-                    <span className="text-lg font-display font-black text-slate-900">{item.val}</span>
+                    <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                       <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${Math.min(biMetrics.achievementPercent, 100)}%` }} />
+                    </div>
                  </div>
-               ))}
-            </div>
-          </Card>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-50">
+                 <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Open Quotes</span>
+                    <span className="text-sm font-bold text-slate-900">{biMetrics.openQuotes}</span>
+                 </div>
+              </div>
+           </Card>
+        </div>
+      </div>
 
-          <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-            <div className="flex items-center gap-3">
-              <Cpu className="h-5 w-5 text-primary" />
-              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Asset Intelligence</h4>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase">Avg Utilization</p>
-                  <p className="text-2xl font-display font-black text-primary">{biMetrics.machineUtil}%</p>
+      {/* ROW 3: OPERATIONAL DEPTH MATRIX */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 bg-white border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3">
+            <Briefcase className="h-4 w-4 text-blue-600" />
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Work Order Analytics</h4>
+          </div>
+          <div className="space-y-3">
+             {[
+               { label: 'Active Threads', val: biMetrics.activeOrders, color: 'text-blue-600' },
+               { label: 'Pending Dispatch', val: biMetrics.pendingDispatch, color: 'text-amber-600' },
+               { label: 'Delayed Protocol', val: orders.filter(o=>o.status==='Delayed').length, color: 'text-rose-600' },
+             ].map(item => (
+               <div key={item.label} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">{item.label}</span>
+                  <span className={cn("text-sm font-display font-black", item.color)}>{item.val}</span>
                </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase">Availability</p>
-                  <p className="text-2xl font-display font-black text-emerald-600">92.4%</p>
-               </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase">Total Op Hours</p>
-                  <p className="text-2xl font-display font-black text-slate-700">1,240h</p>
-               </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase">Downtime</p>
-                  <p className="text-2xl font-display font-black text-rose-500">14h</p>
-               </div>
-            </div>
-            <div className="h-16 w-full opacity-30">
-               <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={DAILY_UTILIZATION_DATA}>
-                     <Bar dataKey="value" fill="#6366f1" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-               </ResponsiveContainer>
-            </div>
-          </Card>
+             ))}
+          </div>
+        </Card>
 
-          <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] space-y-10 relative overflow-hidden">
-             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-             <div className="relative z-10 space-y-10">
-                <div className="flex items-center gap-3">
-                   <Gauge className="h-6 w-6 text-primary" />
-                   <h3 className="text-lg font-display font-bold uppercase tracking-tight">Executive Summary</h3>
+        <Card className="p-6 bg-white border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3">
+            <Factory className="h-4 w-4 text-emerald-600" />
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Production Analytics</h4>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+             <div className="p-3 bg-slate-50 rounded-xl space-y-1">
+                <p className="text-[7px] font-bold text-slate-400 uppercase">Produced</p>
+                <p className="text-lg font-display font-bold text-slate-900">7.1K</p>
+             </div>
+             <div className="p-3 bg-rose-50 rounded-xl space-y-1">
+                <p className="text-[7px] font-bold text-rose-600 uppercase">Rejected</p>
+                <p className="text-lg font-display font-bold text-rose-700">142</p>
+             </div>
+             <div className="p-3 bg-emerald-50 rounded-xl space-y-1">
+                <p className="text-[7px] font-bold text-emerald-600 uppercase">Efficiency</p>
+                <p className="text-lg font-display font-bold text-emerald-700">84%</p>
+             </div>
+             <div className="p-3 bg-blue-50 rounded-xl space-y-1">
+                <p className="text-[7px] font-bold text-blue-600 uppercase">OEE</p>
+                <p className="text-lg font-display font-bold text-blue-700">{biMetrics.machineUtil}%</p>
+             </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-white border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-4 w-4 text-indigo-600" />
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Quality Analytics</h4>
+          </div>
+          <div className="space-y-4">
+             <div className="flex justify-between items-center px-1">
+                <span className="text-[9px] font-bold text-slate-500 uppercase">Inspection Compliance</span>
+                <span className="text-[11px] font-black text-indigo-600">96.2%</span>
+             </div>
+             <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: '96%' }} />
+             </div>
+             <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="flex flex-col"><span className="text-[7px] font-bold text-slate-400 uppercase">Passed</span><span className="text-sm font-display font-bold text-slate-900">118</span></div>
+                <div className="flex flex-col"><span className="text-[7px] font-bold text-slate-400 uppercase">NCR Released</span><span className="text-sm font-display font-bold text-rose-600">6</span></div>
+             </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* ROW 4: ASSET TELEMETRY (FULL WIDTH) */}
+      <Card className="p-8 bg-white border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between mb-8">
+           <div className="flex items-center gap-4">
+              <div className="p-3 bg-slate-50 rounded-xl text-slate-900"><Cpu className="h-6 w-6" /></div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 uppercase">Institutional Machine Analytics</h3>
+                <p className="text-xs text-slate-400">Live operational load distribution across all asset nodes.</p>
+              </div>
+           </div>
+           <div className="flex gap-6">
+              <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase">Active Nodes</p><p className="text-xl font-display font-black text-slate-900">{machines.filter(m=>m.status==='active'||m.status==='Running').length}</p></div>
+              <div className="text-right"><p className="text-[8px] font-bold text-slate-400 uppercase">Avg Availability</p><p className="text-xl font-display font-black text-emerald-600">92.4%</p></div>
+           </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+           {machineStatuses.map(m => (
+             <div key={m.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 group hover:border-primary/30 transition-all">
+                <div className="flex justify-between items-center mb-4">
+                   <span className="text-[8px] font-bold text-slate-400 uppercase font-code">{m.id}</span>
+                   <div className={cn("h-1.5 w-1.5 rounded-full", m.status === 'active' || m.status === 'Running' ? 'bg-emerald-500' : 'bg-slate-300')} />
                 </div>
-                <div className="space-y-6">
-                   <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-bold uppercase text-white/40"><span>Target Billing Achieved</span><span>{Math.round(biMetrics.achievementPercent)}%</span></div>
-                      <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${Math.min(biMetrics.achievementPercent, 100)}%` }} /></div>
-                   </div>
-                   <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-bold uppercase text-white/40"><span>Collection Pipeline Efficiency</span><span>{Math.round(biMetrics.collectionAchievement)}%</span></div>
-                      <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${Math.min(biMetrics.collectionAchievement, 100)}%` }} /></div>
-                   </div>
-                </div>
-                <div className="pt-6 border-t border-white/10 flex justify-between items-end">
-                   <div>
-                      <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Matrix Health Score</p>
-                      <p className="text-4xl font-display font-black">{biMetrics.healthScore}%</p>
+                <p className="text-[10px] font-bold text-slate-700 uppercase truncate mb-3">{m.name}</p>
+                <div className="flex items-end justify-between">
+                   <span className="text-xl font-display font-black text-slate-900">{m.yield}%</span>
+                   <div className="h-8 w-12 opacity-30 group-hover:opacity-100 transition-opacity">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <BarChart data={DAILY_UTILIZATION_DATA.slice(0, 3)}>
+                            <Bar dataKey="value" fill="#6366f1" radius={[1, 1, 0, 0]} />
+                         </BarChart>
+                      </ResponsiveContainer>
                    </div>
                 </div>
              </div>
-          </Card>
+           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
-
-  const filteredRecordsByType = useMemo(() => {
-    return records.filter(r => {
-      const isTab = r.type === activeTab;
-      if (!isTab) return false;
-      const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-  }, [records, activeTab, searchTerm]);
-
-  const FullPageEditor = () => {
-    const totalQuotationVal = useMemo(() => {
-      return (formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0);
-    }, [formData.items]);
-
-    const totalTax = useMemo(() => {
-      return (formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0);
-    }, [formData.items]);
-
-    const grandTotal = useMemo(() => {
-      let total = totalQuotationVal + totalTax;
-      total += (formData.additionalCharges || 0);
-      total += (formData.tcsAmount || 0);
-      total -= (formData.discountTotal || 0);
-      if (formData.isRoundOffActive) {
-        return Math.round(total);
-      }
-      return total;
-    }, [totalQuotationVal, totalTax, formData.additionalCharges, formData.tcsAmount, formData.discountTotal, formData.isRoundOffActive]);
-
-    return (
-      <div className="flex flex-col bg-[#F8FAFC] dark:bg-slate-950 min-h-screen animate-in fade-in duration-300 pb-20 font-body">
-        <div className="sticky top-0 z-50 bg-[#001F3D] text-white px-6 h-14 flex items-center justify-between shadow-lg">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)} className="text-white hover:bg-white/10 rounded-full h-10 w-10">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Transaction Matrix</span>
-              <h2 className="text-lg font-display font-bold uppercase leading-none">{activeTab.replace('_', ' ')} Registry</h2>
-            </div>
-          </div>
-          <div className="flex gap-3">
-             <Button variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl px-6 h-10 font-bold uppercase text-[9px] tracking-widest" onClick={() => setIsRecordFormOpen(false)}>Back</Button>
-             <Button className="bg-[#00E5A8] hover:bg-emerald-600 text-[#001F3D] h-10 px-8 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl flex gap-2" onClick={handleSave}>
-               <Printer className="h-4 w-4" /> Save & Print
-             </Button>
-             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-8 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl" onClick={handleSave}>
-               <Save className="h-4 w-4 mr-2" /> Save
-             </Button>
-          </div>
-        </div>
-
-        <div className="max-w-[1400px] mx-auto w-full p-6 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-xl">
-               <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">Customer Identification</h3>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
-                  <div className="md:col-span-1 flex items-center"><Label className="text-[10px] font-black uppercase text-slate-400">Account M/S.<span className="text-red-500">*</span></Label></div>
-                  <div className="md:col-span-2">
-                    <Select value={formData.customerId} onValueChange={(id) => { 
-                      const c = customers.find(x => x.id === id); 
-                      setFormData({ ...formData, customerId: id, customerName: c?.name || '', contactPerson: c?.contactPerson || '', phoneNo: c?.contactNumber || '', gstNumber: c?.gstNumber || '' }); 
-                    }}>
-                      <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900 border-none rounded-lg text-xs font-bold uppercase">
-                        <SelectValue placeholder="Identify Account..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase">{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="md:col-span-1 flex items-start pt-2"><Label className="text-[10px] font-black uppercase text-slate-400">Dispatch Address</Label></div>
-                  <div className="md:col-span-2"><Textarea className="bg-slate-50 dark:bg-slate-900 border-none rounded-lg text-xs min-h-[60px]" value={formData.shipTo} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
-                  <div className="md:col-span-1 flex items-center"><Label className="text-[10px] font-black uppercase text-slate-400">GSTIN / PAN</Label></div>
-                  <div className="md:col-span-2"><Input className="h-10 bg-slate-50 dark:bg-slate-900 border-none rounded-lg text-xs font-bold uppercase" value={formData.gstNumber} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} /></div>
-               </div>
-            </Card>
-
-            <Card className="p-6 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-xl">
-               <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">Document Metadata</h3>
-               <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-4">
-                  <div className="md:col-span-1 flex items-center"><Label className="text-[10px] font-black uppercase text-slate-400">Doc. Number<span className="text-red-500">*</span></Label></div>
-                  <div className="md:col-span-2"><Input className="h-10 bg-slate-50 dark:bg-slate-900 border-none rounded-lg text-xs font-bold text-center" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} /></div>
-                  <div className="md:col-span-1"><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-10" /></div>
-                  <div className="md:col-span-1 flex items-center"><Label className="text-[10px] font-black uppercase text-slate-400">Status Node</Label></div>
-                  <div className="md:col-span-3">
-                    <Select value={formData.status} onValueChange={(val)=>setFormData({...formData, status: val})}>
-                      <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900 border-none rounded-lg text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="Authorized">Authorized</SelectItem>
-                        <SelectItem value="Paid">Settled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-               </div>
-            </Card>
-          </div>
-
-          <Card className="bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-slate-50 dark:border-border bg-slate-50/50">
-              <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest">Product / Service Matrix</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-border text-[8px] font-black uppercase text-slate-400">
-                    <th className="py-3 px-4 w-12 text-center border-r dark:border-border">SR.</th>
-                    <th className="py-3 px-4 border-r dark:border-border">IDENTITY</th>
-                    <th className="py-3 px-4 w-32 border-r dark:border-border">HSN/SAC</th>
-                    <th className="py-3 px-4 w-24 text-center border-r dark:border-border">QTY.</th>
-                    <th className="py-3 px-4 w-32 text-center border-r dark:border-border">RATE</th>
-                    <th className="py-3 px-4 w-40 text-center border-r dark:border-border">TAX (IGST)</th>
-                    <th className="py-3 px-4 w-32 text-right">TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(formData.items || []).map((item, idx) => (
-                    <tr key={item.id} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50">
-                      <td className="text-center py-4 border-r dark:border-border text-[10px] font-bold text-slate-400">{idx + 1}</td>
-                      <td className="p-0 border-r dark:border-border">
-                        <Select value={item.productId} onValueChange={(pId) => {
-                          const p = products.find(x => x.id === pId);
-                          const newItems = [...(formData.items || [])];
-                          newItems[idx] = { ...newItems[idx], productId: pId, description: p?.name || '', hsn: p?.hsn || '', price: p?.saleRate || 0, gstRate: p?.gstRate || 18, total: (newItems[idx].qty || 1) * (p?.saleRate || 0) };
-                          setFormData({...formData, items: newItems});
-                        }}>
-                          <SelectTrigger className="border-none bg-transparent h-10 text-[10px] font-bold uppercase rounded-none focus:ring-0">
-                            <SelectValue placeholder="Select Product/Service..." />
-                          </SelectTrigger>
-                          <SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase">{p.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </td>
-                      <td className="border-r dark:border-border"><Input className="border-none bg-transparent h-10 text-center text-[10px] font-code" value={item.hsn} readOnly /></td>
-                      <td className="border-r dark:border-border"><Input type="number" className="border-none bg-transparent h-10 text-center text-[10px] font-bold" value={item.qty} onChange={(e)=>{
-                         const newItems = [...(formData.items || [])];
-                         newItems[idx].qty = Number(e.target.value);
-                         newItems[idx].total = Number(e.target.value) * newItems[idx].price;
-                         setFormData({...formData, items: newItems});
-                      }} /></td>
-                      <td className="border-r dark:border-border"><Input type="number" className="border-none bg-transparent h-10 text-center text-[10px] font-bold" value={item.price} onChange={(e)=>{
-                         const newItems = [...(formData.items || [])];
-                         newItems[idx].price = Number(e.target.value);
-                         newItems[idx].total = Number(e.target.value) * newItems[idx].qty;
-                         setFormData({...formData, items: newItems});
-                      }} /></td>
-                      <td className="border-r dark:border-border">
-                        <Select value={item.gstRate.toString()} onValueChange={(val)=> {
-                            const newItems = [...(formData.items || [])];
-                            newItems[idx].gstRate = Number(val);
-                            setFormData({...formData, items: newItems});
-                         }}>
-                            <SelectTrigger className="border-none bg-transparent h-10 text-[10px] font-bold text-center"><SelectValue /></SelectTrigger>
-                            <SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent>
-                         </Select>
-                      </td>
-                      <td className="text-right px-6 text-[10px] font-black">₹ {item.total?.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-[#FFFDE7] dark:bg-slate-800/80 border-t-2 border-[#001F3D] dark:border-primary font-black text-[10px] uppercase text-[#001F3D] dark:text-primary">
-                    <td colSpan={2} className="py-4 px-6 text-right border-r dark:border-border">Total Matrix Yield</td>
-                    <td className="border-r dark:border-border"></td>
-                    <td className="text-center border-r dark:border-border">{(formData.items || []).reduce((acc, i) => acc + i.qty, 0)}</td>
-                    <td className="border-r dark:border-border"></td>
-                    <td className="text-center border-r dark:border-border">---</td>
-                    <td className="text-right px-6">{totalQuotationVal.toLocaleString()}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-7">
-               <Card className="p-6 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-xl space-y-6">
-                  <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Commercial Terms</h3>
-                  <Textarea className="min-h-[80px] bg-slate-50 dark:bg-slate-900 border-none text-[10px] font-medium" defaultValue="Subject to our home Jurisdiction. All deliverables released upon settlement matrix synchronization." />
-               </Card>
-            </div>
-            <div className="lg:col-span-5">
-               <Card className="p-8 bg-white dark:bg-card border-slate-200 dark:border-border shadow-xl rounded-2xl">
-                  <div className="space-y-4">
-                     <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase"><span>Sub Total</span><span>₹ {totalQuotationVal.toLocaleString()}</span></div>
-                     <div className="bg-[#FFFDE7] dark:bg-slate-800/80 p-4 -mx-8 flex justify-between items-center border-y-2 border-[#001F3D] dark:border-primary">
-                        <span className="text-sm font-black uppercase text-[#001F3D] dark:text-primary ml-4">Grand Total</span>
-                        <span className="text-xl font-display font-black text-[#001F3D] dark:text-primary mr-4">₹ {grandTotal.toLocaleString()}</span>
-                     </div>
-                     <div className="pt-4 space-y-1">
-                        <p className="text-[9px] font-black uppercase text-slate-300 tracking-widest">Transcription</p>
-                        <p className="text-[10px] font-black uppercase text-[#001F3D] dark:text-primary">{numberToWords(grandTotal)}</p>
-                     </div>
-                  </div>
-               </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="h-full flex flex-col gap-0 animate-in fade-in duration-700">

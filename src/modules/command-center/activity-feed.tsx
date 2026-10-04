@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   History, 
   Clock, 
@@ -293,7 +294,7 @@ export function ActivityFeed({ orders, billing, reports, assignments, users, log
 
         <div className="lg:col-span-3 space-y-6">
           <Card className="p-6 bg-[#1E293B] text-white border-none shadow-xl rounded-[2rem] relative overflow-hidden group">
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '30px 30px' }} />
             <div className="relative z-10 space-y-6">
               <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                 <TrendingUp className="h-4 w-4 text-primary" />

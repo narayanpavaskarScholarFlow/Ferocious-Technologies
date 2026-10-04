@@ -49,7 +49,9 @@ import {
   Activity,
   Cpu,
   Gauge,
-  Wallet
+  Wallet,
+  History,
+  Factory
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -153,7 +155,7 @@ export function BillingManagement({
     const targetKey = format(targetDate, 'yyyy-MM');
     const monthlyBillingTarget = uiSettings.monthlyBillingTargets?.[targetKey] || 0;
     
-    const monthInvoices = records.filter(r => r.type === 'invoice' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
+    const monthInvoices = records.filter(r => r.type === 'invoice' && r.amount && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
     const actualBillingAchieved = monthInvoices.reduce((sum, r) => sum + (r.amount || 0), 0);
     
     const customerPOValue = records.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
@@ -208,7 +210,7 @@ export function BillingManagement({
     };
   }, [records, orders, machines, uiSettings.monthlyBillingTargets]);
 
-  const filteredRecordsByType = useMemo(() => {
+  const filteredRecords = useMemo(() => {
     return records.filter(r => {
       const isTab = r.type === activeTab;
       if (!isTab) return false;
@@ -239,6 +241,16 @@ export function BillingManagement({
       });
     }
     setIsRecordFormOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!formData.customerId || !formData.number) { 
+      toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." }); 
+      return; 
+    }
+    onSaveRecord(formData as BillingRecord);
+    toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
+    setIsRecordFormOpen(false);
   };
 
   const AnalyticsView = () => (
@@ -496,6 +508,16 @@ export function BillingManagement({
       </div>
     </div>
   );
+
+  const filteredRecordsByType = useMemo(() => {
+    return records.filter(r => {
+      const isTab = r.type === activeTab;
+      if (!isTab) return false;
+      const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
+  }, [records, activeTab, searchTerm]);
 
   const FullPageEditor = () => {
     const totalQuotationVal = useMemo(() => {

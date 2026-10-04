@@ -97,7 +97,7 @@ const DEFAULT_UI_SETTINGS: UISettings = {
 const VIEW_CONFIG: Record<ViewType | string, ViewMetadata> = {
   overview: { title: 'Executive Dashboard', category: 'Command Center', description: 'Institutional performance summary and real-time business health.' },
   analytics: { title: 'Analytics Dashboard', category: 'Command Center', description: 'Business intelligence and strategic yield analysis.' },
-  activity: { title: 'Activity Log', category: 'Command Center', description: 'Full audit trail of all institutional events.' },
+  activity: { title: 'Performance Center', category: 'Command Center', description: 'Employee contributions, performance history and operational activities.' },
   sqcdp: { title: 'Performance Metrics', category: 'Command Center', description: 'Safety, Quality, Cost, Delivery, and People KPI matrix.' },
   'customer-master': { title: 'Customer Master', category: 'Financial Hub', description: 'Manage customer accounts and commercial metadata.' },
   'vendor-master': { title: 'Vendor Master', category: 'Financial Hub', description: 'Supply chain partner directory and external resource management.' },
@@ -278,7 +278,7 @@ function IndustrialERPInternal() {
                 {currentView === 'overview' && <ShopFloorOverview orders={orders || []} reports={reports || []} logs={logs || []} machines={machines || []} inventory={inventory || []} billing={billing || []} permissions={permissions} isMasterAdmin={isMasterAdmin} />}
                 {currentView === 'analytics' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} machines={machines || []} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="dashboard" />}
                 {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders || []} reports={reports || []} logs={logs || []} users={usersData || []} assignments={assignments || []} />}
-                {currentView === 'activity' && <ActivityFeed orders={orders || []} billing={billing || []} reports={reports || []} assignments={assignments || []} users={usersData || []} logs={logs || []} />}
+                {currentView === 'activity' && <ActivityFeed orders={orders || []} billing={billing || []} reports={reports || []} assignments={assignments || []} users={usersData || []} logs={logs || []} leaves={leaves || []} currentUser={currentUser} />}
                 {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
                 {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
                 {currentView === 'product-master' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} machines={machines || []} permissions={permissions} onSaveRecord={()=>{}} onDeleteRecord={()=>{}} initialTab="product-master" />}

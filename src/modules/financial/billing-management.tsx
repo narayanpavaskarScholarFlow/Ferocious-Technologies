@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -57,7 +56,8 @@ import {
   Hammer,
   Settings2,
   ImageIcon,
-  Maximize2
+  Maximize2,
+  PackageCheck
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -78,8 +78,16 @@ import {
   subMonths, 
   eachMonthOfInterval 
 } from 'date-fns';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell, PieChart as ReChartsPieChart, Pie } from 'recharts';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
+function PieChart({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+  );
+}
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'QUOTATION', icon: FileBox, prefix: 'QT' },
@@ -93,11 +101,6 @@ const DOCUMENT_TYPES = [
   { id: 'debit_note', label: 'DB NOTE', icon: ArrowUpRight, prefix: 'DN' },
   { id: 'inward_payment', label: 'INWARD PAY', icon: ArrowDownLeft, prefix: 'REC' },
   { id: 'outward_payment', label: 'OUTWARD PAY', icon: ArrowUpRight, prefix: 'PAY' },
-];
-
-const PRODUCT_TYPES = [
-  "Raw Material", "Semi Finished", "Finished Product", "Assembly", 
-  "Sub Assembly", "Service", "Design Service", "Engineering Service"
 ];
 
 function numberToWords(num: number): string {
@@ -135,12 +138,12 @@ export function BillingManagement({
   customers, vendors, records, orders, users, inventory, products, machines, permissions, 
   onSaveRecord, onDeleteRecord, uiSettings, initialTab = 'invoice' 
 }: BillingManagementProps) {
+  const db = useFirestore();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-
-  const { toast } = useToast();
 
   const productMetrics = useMemo(() => {
     const total = products.length;
@@ -157,7 +160,6 @@ export function BillingManagement({
     const p = products.find(x => x.id === selectedProductId);
     if (!p) return null;
 
-    // Simulated Intelligence Data
     const lifetimeRev = records.filter(r => r.items?.some(i => i.productId === p.id)).reduce((acc, r) => acc + (r.amount || 0), 0);
     const activeWOs = orders.filter(o => o.items?.some(i => i.productId === p.id) && o.status !== 'Delivered').length;
 
@@ -178,17 +180,8 @@ export function BillingManagement({
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const handleOpenForm = (type: string, record?: BillingRecord) => {
-    // Logic for new billing record
-  };
-
-  const handleSave = () => {
-    // Logic for save
-  };
-
   const ProductIntelligenceView = () => (
     <div className="space-y-8 animate-in fade-in duration-500 font-body">
-      {/* KPI ROW */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-1">
         {[
           { label: 'Total Products', val: productMetrics.total, icon: Box, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -251,7 +244,7 @@ export function BillingManagement({
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                       <Badge variant="outline" className="text-[8px] font-bold uppercase w-fit bg-slate-50 border-slate-100">{p.businessUnit || 'MANUFACTURING'}</Badge>
+                       <Badge variant="outline" className="text-[8px] font-bold uppercase w-fit bg-slate-50 border-slate-100">{p.category || 'MANUFACTURING'}</Badge>
                        <span className="text-[9px] font-bold text-slate-400 uppercase">{p.type}</span>
                     </div>
                   </TableCell>
@@ -278,7 +271,6 @@ export function BillingManagement({
         </div>
       </Card>
 
-      {/* PRODUCT INTELLIGENCE SHEET */}
       <Sheet open={!!selectedProductId} onOpenChange={(open) => !open && setSelectedProductId(null)}>
         <SheetContent className="sm:max-w-[900px] p-0 border-none shadow-2xl bg-white flex flex-col h-screen font-body overflow-hidden">
           {selectedProductData && (
@@ -300,7 +292,6 @@ export function BillingManagement({
 
               <ScrollArea className="flex-1">
                  <div className="p-10 space-y-12 pb-32">
-                    {/* ENGINEERING & COSTING NODES */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <Card className="p-8 bg-slate-50 border-none shadow-inner rounded-3xl space-y-6">
                           <div className="flex items-center gap-3 text-primary"><Cpu className="h-4 w-4" /><h4 className="text-[10px] font-black uppercase tracking-widest">Engineering Specs</h4></div>
@@ -320,8 +311,7 @@ export function BillingManagement({
                        </Card>
                     </div>
 
-                    {/* ELECTRICAL PROTOCOL NODE - CONDITIONAL */}
-                    {selectedProductData.businessUnit === 'Electricals' && (
+                    {selectedProductData.category === 'Electricals' && (
                        <Card className="p-8 bg-blue-50/50 border border-blue-100 rounded-3xl space-y-8">
                           <div className="flex items-center gap-3 text-blue-600"><Zap className="h-4 w-4" /><h4 className="text-[10px] font-black uppercase tracking-widest">Electrical Parameters Matrix</h4></div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -330,15 +320,9 @@ export function BillingManagement({
                              <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Power</p><p className="text-sm font-bold text-blue-900">{selectedProductData.power || '---'}</p></div>
                              <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Warranty</p><p className="text-sm font-bold text-blue-900">{selectedProductData.warranty || '---'}</p></div>
                           </div>
-                          <div className="flex gap-4 pt-4 border-t border-blue-100">
-                             {['BIS', 'CE', 'RoHS'].map(cert => (
-                               <Badge key={cert} variant="outline" className="bg-white border-blue-200 text-blue-600 font-bold text-[8px] px-3">{cert}_CERTIFIED</Badge>
-                             ))}
-                          </div>
                        </Card>
                     )}
 
-                    {/* MANUFACTURING ANALYTICS */}
                     <div className="space-y-8">
                        <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Institutional Manufacturing Analytics</h3>
                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -357,7 +341,6 @@ export function BillingManagement({
                        </div>
                     </div>
 
-                    {/* OUTSOURCING ANALYSIS */}
                     <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-3xl flex flex-col md:flex-row items-center gap-10 overflow-hidden">
                        <div className="space-y-6 flex-1">
                           <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">In-House vs Outsourcing Yield</h4>
@@ -372,51 +355,8 @@ export function BillingManagement({
                              </div>
                           </div>
                        </div>
-                       <div className="w-full md:w-56 space-y-4">
-                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                             <p className="text-[7px] font-bold text-white/30 uppercase">Primary Vendor</p>
-                             <p className="text-[11px] font-bold text-white uppercase mt-1">{selectedProductData.vendorUsed || 'IN-HOUSE_ONLY'}</p>
-                          </div>
-                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                             <p className="text-[7px] font-bold text-white/30 uppercase">Primary Asset</p>
-                             <p className="text-[11px] font-bold text-white uppercase mt-1">{selectedProductData.machineUsed || 'VMC_HASS_VF2'}</p>
-                          </div>
-                       </div>
                     </Card>
 
-                    {/* BOM STRUCTURE - FOR ASSEMBLIES */}
-                    {(selectedProductData.type === 'Assembly' || selectedProductData.type === 'Sub Assembly') && (
-                      <div className="space-y-6">
-                         <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-indigo-600 pl-4">Bill of Materials (BOM) Matrix</h3>
-                         <div className="overflow-hidden border border-slate-100 rounded-3xl bg-slate-50/50">
-                            <Table>
-                               <TableHeader>
-                                  <TableRow className="hover:bg-transparent">
-                                     <TableHead className="text-[8px] uppercase font-bold py-4">Component</TableHead>
-                                     <TableHead className="text-[8px] uppercase font-bold text-center">Qty</TableHead>
-                                     <TableHead className="text-[8px] uppercase font-bold text-right">Unit Cost (₹)</TableHead>
-                                     <TableHead className="text-[8px] uppercase font-bold text-right pr-6">Total</TableHead>
-                                  </TableRow>
-                               </TableHeader>
-                               <TableBody>
-                                  {selectedProductData.bom?.map(item => (
-                                    <TableRow key={item.id} className="h-14 border-b border-white hover:bg-white transition-all">
-                                       <TableCell className="font-bold text-[10px] text-slate-700 uppercase">{item.name}</TableCell>
-                                       <TableCell className="text-center font-bold text-[10px] text-slate-500">{item.qty}</TableCell>
-                                       <TableCell className="text-right font-display font-bold text-[10px]">₹ {item.cost.toLocaleString()}</TableCell>
-                                       <TableCell className="text-right font-display font-black text-[11px] pr-6">₹ {(item.qty * item.cost).toLocaleString()}</TableCell>
-                                    </TableRow>
-                                  ))}
-                                  {(!selectedProductData.bom || selectedProductData.bom.length === 0) && (
-                                    <TableRow><TableCell colSpan={4} className="h-24 text-center opacity-30 text-[9px] font-bold uppercase italic">BOM Structure Not Defined</TableCell></TableRow>
-                                  )}
-                               </TableBody>
-                            </Table>
-                         </div>
-                      </div>
-                    )}
-
-                    {/* MEDIA MATRIX */}
                     <div className="space-y-8">
                        <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Engineering Document Matrix</h3>
                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -457,18 +397,44 @@ export function BillingManagement({
     <div className="h-full flex flex-col gap-0 animate-in fade-in duration-700">
       {isRecordFormOpen ? <div /> : (
         <div className="space-y-8">
-          {activeTab === 'dashboard' ? <AnalyticsView /> : 
+          {activeTab === 'dashboard' ? <div /> : 
            activeTab === 'product-master' ? <ProductIntelligenceView /> : (
             <div className="space-y-8">
-              {/* Other tabs logic (invoice, quotation, etc.) */}
+               <div className="flex justify-between items-end gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+                    <Card className="p-6 bg-white border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total {activeTab}s</p><p className="text-2xl font-display font-black text-[#001F3D]">{filteredRecordsByType.length}</p></Card>
+                    <Card className="p-6 bg-white border-none shadow-sm rounded-2xl"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Valuation</p><p className="text-2xl font-display font-black text-emerald-600">₹ {filteredRecordsByType.reduce((acc, r) => acc + (r.amount || 0), 0).toLocaleString()}</p></Card>
+                 </div>
+                 <Button className="h-14 bg-[#001F3D] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-3 px-8" onClick={() => handleOpenForm(activeTab)}>
+                    <Plus className="h-4 w-4" /> NEW {activeTab.toUpperCase()}
+                 </Button>
+              </div>
+
+              <Card className="p-4 bg-white border-slate-200 rounded-2xl flex gap-4">
+                 <div className="relative flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" /><Input placeholder="SEARCH NUMBER OR CUSTOMER..." className="h-12 pl-12 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                 <Button variant="outline" className="h-12 px-6 rounded-xl font-bold uppercase text-[9px] gap-2"><Download className="h-4 w-4" /> Export Ledger</Button>
+              </Card>
+
+              <Card className="overflow-hidden border-none bg-white shadow-sm rounded-2xl">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow className="hover:bg-transparent"><TableHead className="px-8 py-5 font-black text-[9px] uppercase">Document Node</TableHead><TableHead className="font-black text-[9px] uppercase">Identity Account</TableHead><TableHead className="text-right font-black text-[9px] uppercase">Grand Total</TableHead><TableHead className="text-center font-black text-[9px] uppercase">State</TableHead><TableHead className="text-right px-8 font-black text-[9px] uppercase">Action</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>{filteredRecordsByType.map(r => (
+                    <TableRow key={r.id} onClick={() => handleOpenForm(r.type, r)} className="h-20 hover:bg-slate-50 transition-all cursor-pointer group">
+                      <TableCell className="px-8"><div className="flex flex-col"><span className="text-xs font-bold text-primary font-code">{r.number}</span><span className="text-[9px] text-slate-400 font-bold uppercase">{r.date}</span></div></TableCell>
+                      <TableCell><span className="text-sm font-black text-[#001F3D] uppercase tracking-tight">{r.customerName}</span></TableCell>
+                      <TableCell className="text-right font-display font-black text-sm px-6">₹ {r.amount?.toLocaleString()}</TableCell>
+                      <TableCell className="text-center"><Badge variant="outline" className="text-[8px] font-black uppercase px-4 py-1.5 rounded-full border-slate-100">{r.status}</Badge></TableCell>
+                      <TableCell className="text-right px-8"><ChevronRight className="h-4 w-4 text-slate-200 group-hover:text-primary ml-auto" /></TableCell>
+                    </TableRow>
+                  ))}</TableBody>
+                </Table>
+              </Card>
             </div>
           )}
         </div>
       )}
     </div>
   );
-
-  function AnalyticsView() {
-    return <div />; // Existing Analytics Logic
-  }
 }

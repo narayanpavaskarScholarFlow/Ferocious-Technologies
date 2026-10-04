@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { SystemActivity } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { User, Clock, History, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,7 +49,7 @@ export function ActivityFeed() {
                  <div className="flex gap-2">
                     <Badge className={cn(
                       "text-[7px] font-bold uppercase border-none px-2 py-0.5 rounded-full",
-                      activity.severity === 'high' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                      activity.severity === 'high' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
                     )}>
                       {activity.severity === 'high' ? <AlertCircle className="h-2 w-2 mr-1" /> : <Info className="h-2 w-2 mr-1" />}
                       {activity.type}

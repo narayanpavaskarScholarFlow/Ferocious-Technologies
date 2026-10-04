@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -8,8 +7,7 @@ import {
   QualityReport, 
   TrainingAssignment, 
   SystemUser, 
-  WorkLogEntry, 
-  SystemActivity 
+  WorkLogEntry 
 } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
@@ -20,7 +18,6 @@ import {
   History, 
   Clock, 
   User, 
-  Filter, 
   FileText, 
   ShoppingCart, 
   ShieldCheck, 
@@ -35,10 +32,15 @@ import {
   XCircle,
   ArrowRight,
   Landmark,
-  Box
+  Box,
+  Zap,
+  UserCheck,
+  ChevronRight,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, isToday, parseISO } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { isToday, parseISO } from 'date-fns';
 
 interface ActivityFeedProps {
   orders: Order[];
@@ -174,7 +176,6 @@ export function ActivityFeed({ orders, billing, reports, assignments, users, log
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700 font-body">
-      {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           { label: "Today's Events", val: summary.today, icon: Zap, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -197,7 +198,6 @@ export function ActivityFeed({ orders, billing, reports, assignments, users, log
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* MAIN FEED & FILTERS */}
         <div className="lg:col-span-9 space-y-6">
           <Card className="p-4 bg-white border-slate-200 shadow-sm flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[240px]">
@@ -240,7 +240,7 @@ export function ActivityFeed({ orders, billing, reports, assignments, users, log
                 {filteredActivities.length > 0 ? (
                   <div className="space-y-0 relative">
                     <div className="absolute left-[33px] top-2 bottom-0 w-[1px] bg-slate-100" />
-                    {filteredActivities.map((activity, idx) => (
+                    {filteredActivities.map((activity) => (
                       <div key={activity.id} className="relative pl-16 pb-12 last:pb-0 group">
                         <div className={cn(
                           "absolute left-[26px] top-1 h-4 w-4 rounded-full border-4 border-white shadow-md transition-all group-hover:scale-125 z-10",
@@ -257,7 +257,9 @@ export function ActivityFeed({ orders, billing, reports, assignments, users, log
                            <div className="md:col-span-8">
                               <div className="flex items-center gap-3 mb-1">
                                  <Avatar className="h-6 w-6 border-slate-100">
-                                    <AvatarFallback className="bg-slate-50 text-slate-400 text-[8px] font-black">{activity.user[0]}</AvatarFallback>
+                                    <AvatarFallback className="bg-slate-50 text-slate-400 text-[8px] font-black">
+                                      {activity.user ? activity.user[0] : 'S'}
+                                    </AvatarFallback>
                                  </Avatar>
                                  <span className="text-xs font-bold text-slate-900">{activity.user}</span>
                                  <ChevronRight className="h-3 w-3 text-slate-200" />
@@ -289,7 +291,6 @@ export function ActivityFeed({ orders, billing, reports, assignments, users, log
           </Card>
         </div>
 
-        {/* SIDEBAR PANEL */}
         <div className="lg:col-span-3 space-y-6">
           <Card className="p-6 bg-[#1E293B] text-white border-none shadow-xl rounded-[2rem] relative overflow-hidden group">
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />

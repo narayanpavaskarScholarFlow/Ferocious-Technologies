@@ -52,7 +52,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Users,
-  Download
+  Download,
+  User
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order } from '@/lib/types';
 import { cn } from '@/lib/utils';

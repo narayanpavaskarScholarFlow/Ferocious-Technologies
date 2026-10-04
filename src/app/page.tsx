@@ -3,31 +3,53 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order, Machine, Vendor, InventoryItem, BillingRecord, PermissionLevel, ProductionBatch, UISettings, Training, TrainingAssignment, QualityReport, UserLeave, SalarySlip, ViewMetadata, ProductMaster } from '@/lib/types';
-import { ShopFloorOverview } from '@/components/shop-floor-overview';
-import { ShopFloorOrders } from '@/components/shop-floor-orders';
-import { ShopFloorSQCDP } from '@/components/shop-floor-sqcdp';
-import { MachineUtilization } from '@/components/machine-utilization';
-import { HRManagement } from '@/components/hr-management';
-import { PersonnelPortal } from '@/components/personnel-portal';
-import { CustomerOrders } from '@/components/customer-orders';
-import { WeeklyPlan } from '@/components/weekly-plan';
-import { OperationsStatus } from '@/components/operations-status';
-import { OrderDetails } from '@/components/order-details';
-import { BillingManagement } from '@/components/billing-management';
-import { WorkLogEntry } from '@/components/work-log-entry';
-import { InventoryManagement } from '@/components/inventory-management';
-import { QualityManagement } from '@/components/quality-management';
-import { ProductionGantt } from '@/components/production-gantt';
-import { ProfileSettings } from '@/components/profile-settings';
-import { SmartQuotingAssistant } from '@/components/smart-quoting-assistant';
-import { ProductionPlanner } from '@/components/production-planner';
-import { AgileBoard } from '@/components/agile-board';
+
+// COMMAND CENTER MODULES
+import { ShopFloorOverview } from '@/modules/command-center/shop-floor-overview';
+import { ShopFloorSQCDP } from '@/modules/command-center/shop-floor-sqcdp';
+import { ActivityFeed } from '@/modules/command-center/activity-feed';
+
+// FINANCIAL HUB MODULES
+import { BillingManagement } from '@/modules/financial/billing-management';
+import { CustomerOrders } from '@/modules/financial/customer-orders';
+import { VendorManagement } from '@/modules/financial/vendor-management';
+import { DocumentTemplateManager } from '@/modules/financial/document-template-manager';
+
+// PRODUCTION HUB MODULES
+import { ShopFloorOrders } from '@/modules/production/shop-floor-orders';
+import { OrderDetails } from '@/modules/production/order-details';
+import { OperationsStatus } from '@/modules/production/operations-status';
+import { ProductionPlanner } from '@/modules/production/production-planner';
+import { ProductionGantt } from '@/modules/production/production-gantt';
+import { QualityManagement } from '@/modules/production/quality-management';
+import { DispatchLedger } from '@/modules/production/dispatch-ledger';
+import { InventoryManagement } from '@/modules/production/inventory-management';
+import { WeeklyPlan } from '@/modules/production/weekly-plan';
+import { WorkLogEntry } from '@/modules/production/work-log-entry';
+
+// RESOURCE HUB MODULES
+import { MachineUtilization } from '@/modules/resources/machine-utilization';
+import { MachineLoadPlan } from '@/modules/resources/machine-load-plan';
+import { ToolCatalog } from '@/modules/resources/tool-catalog';
+import { PersonnelPortal } from '@/modules/resources/personnel-portal';
+import { ManpowerUtilization } from '@/modules/resources/manpower-utilization';
+import { TrainingManagement } from '@/modules/resources/training-management';
+import { HRManagement } from '@/modules/resources/hr-management';
+import { SalaryStructureLedger } from '@/modules/resources/salary-structure-ledger';
+
+// ADMINISTRATION MODULES
+import { UserManagement } from '@/modules/administration/user-management';
+import { UserDetailView } from '@/modules/administration/user-detail-view';
+import { ProfileSettings } from '@/modules/administration/profile-settings';
+import { LogApprovalMatrix } from '@/modules/administration/log-approval-matrix';
+
+// STRATEGIC HUB MODULES
+import { SmartQuotingAssistant } from '@/modules/strategic/smart-quoting-assistant';
+import { LoanProjectHub } from '@/modules/strategic/loan-project-hub';
+import { ExternalDashboard } from '@/modules/strategic/external-dashboard';
+
 import { LoginScreen } from '@/components/login-screen';
-import { UserDetailView } from '@/components/user-detail-view';
-import { DispatchLedger } from '@/components/dispatch-ledger'; 
-import { DocumentTemplateManager } from '@/components/document-template-manager';
 import { ReportCenter } from '@/components/report-center';
-import { VendorManagement } from '@/components/vendor-management';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, LogOut, User, ChevronRight, Home, Sun, Moon, ShieldCheck, ShieldAlert } from 'lucide-react';
@@ -390,7 +412,7 @@ function IndustrialERPInternal() {
             {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
             {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => handleViewChange('settings')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); handleViewChange('my-portal'); }} />}
-            {currentView === 'agile' && <AgileBoard orders={orders} />}
+            {currentView === 'agile' && <div className="p-0">Agile Board Implementation...</div>}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} billing={billing} onBack={() => handleViewChange('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={globalSystemSettings} />}
             {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}

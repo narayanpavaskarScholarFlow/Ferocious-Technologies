@@ -51,7 +51,8 @@ import {
   Zap,
   CheckCircle2,
   AlertTriangle,
-  Users
+  Users,
+  Download
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -378,7 +379,7 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
                   <TableHead className="font-bold text-[9px] uppercase text-slate-400 py-6">Customer / Account</TableHead>
                   <TableHead className="font-bold text-[9px] uppercase text-slate-400">Industry / City</TableHead>
                   <TableHead className="font-bold text-[9px] uppercase text-slate-400">Financial Hub (₹)</TableHead>
-                  <TableHead className="font-bold text-[9px] uppercase text-slate-400 text-center">Ops Nodes</TableHead>
+                  <TableHead className="font-bold text-[9px] uppercase text-center">Ops Nodes</TableHead>
                   <TableHead className="font-bold text-[9px] uppercase text-center">Health</TableHead>
                   <TableHead className="font-bold text-[9px] uppercase text-right px-10">Actions</TableHead>
                 </TableRow>
@@ -744,7 +745,7 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
           <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
             <Button 
               variant="ghost" 
-              className="h-14 px-10 rounded-2xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
+              className="h-14 px-10 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
               onClick={() => setIsAddIdentityOpen(false)}
             >
               Cancel
@@ -757,7 +758,7 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
               Save Draft
             </Button>
             <Button 
-              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl flex gap-3 group"
+              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl flex gap-3 group"
               onClick={handleSaveIdentity}
             >
               <Check className="h-5 w-5" /> Save Customer <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -768,4 +769,3 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -42,7 +43,8 @@ import {
   FileCheck,
   Shield,
   Lock,
-  Target
+  Target,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -77,7 +79,6 @@ export function SidebarNav({
 
   const menuSections = useMemo(() => {
     const isMasterAdmin = userRole === 'Master Admin' || userRole?.toLowerCase() === 'master admin';
-    const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || isMasterAdmin;
 
     const sections = [
       {
@@ -85,8 +86,8 @@ export function SidebarNav({
         items: [
           { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
           { id: 'analytics', icon: LineChart, label: 'Analytics' },
-          { id: 'activity', icon: History, label: 'Activity Log' },
-          { id: 'sqcdp', icon: Target, label: 'Performance Metrics' },
+          { id: 'activity', icon: Activity, label: 'Performance Hub' },
+          { id: 'sqcdp', icon: Target, label: 'Quality Metrics' },
         ]
       },
       {
@@ -94,9 +95,9 @@ export function SidebarNav({
         items: [
           { id: 'customer-master', icon: Building2, label: 'Customers' },
           { id: 'vendor-master', icon: Truck, label: 'Vendors' },
-          { id: 'product-master', icon: Box, label: 'Product Registry' },
+          { id: 'product-master', icon: Box, label: 'Products' },
           { id: 'quotation', icon: FileText, label: 'Quotations' },
-          { id: 'sale-invoice', icon: Receipt, label: 'Sales Invoices' },
+          { id: 'sale-invoice', icon: Receipt, label: 'Invoices' },
           { id: 'purchase-order', icon: PackageCheck, label: 'Purchase Orders' },
           { id: 'payments', icon: Landmark, label: 'Payments' },
         ]
@@ -107,32 +108,32 @@ export function SidebarNav({
           { id: 'orders', icon: ShoppingCart, label: 'Work Orders' },
           { id: 'production-planner', icon: Factory, label: 'Planner' },
           { id: 'gantt', icon: Calendar, label: 'Timeline' },
-          { id: 'quality', icon: ShieldCheck, label: 'Quality Control' },
+          { id: 'quality', icon: ShieldCheck, label: 'Quality' },
           { id: 'inventory', icon: Boxes, label: 'Inventory' },
-          { id: 'work-log', icon: ClipboardList, label: 'Daily Logs' },
+          { id: 'work-log', icon: ClipboardList, label: 'Work Logs' },
         ]
       },
       {
         name: 'RESOURCE HUB',
         items: [
           { id: 'machine-utilization', icon: Cpu, label: 'Assets' },
-          { id: 'my-portal', icon: Contact, label: 'Employee Portal' },
-          { id: 'hr', icon: Briefcase, label: 'HR Management' },
+          { id: 'my-portal', icon: Contact, label: 'Self Service' },
+          { id: 'hr', icon: Briefcase, label: 'HR Admin' },
         ]
       },
       {
         name: 'ADMINISTRATION',
         items: [
-          { id: 'users', icon: Users, label: 'User Directory' },
-          { id: 'print-templates', icon: Printer, label: 'Document Designer' },
-          { id: 'settings', icon: Settings, label: 'System Settings' },
+          { id: 'users', icon: Users, label: 'User Ledger' },
+          { id: 'print-templates', icon: Printer, label: 'Designer' },
+          { id: 'settings', icon: Settings, label: 'Configuration' },
         ]
       },
       {
         name: 'STRATEGIC HUB',
         items: [
           { id: 'smart-quote', icon: BrainCircuit, label: 'AI Quoting' },
-          { id: 'strategy-hub', icon: Target, label: 'Loan Project Hub' },
+          { id: 'strategy-hub', icon: Target, label: 'Strategy Hub' },
         ]
       }
     ];
@@ -141,13 +142,17 @@ export function SidebarNav({
       ...section,
       items: section.items.filter(item => {
         if (isMasterAdmin) return true;
-        if (item.id === 'my-portal' || item.id === 'overview' || item.id === 'settings') return true;
-        if (item.id === 'hr') return isHRAdmin;
+        // Access Matrix Visibility Lock: If NONE, hide completely.
         const level = permissions[item.id];
+        if (level === 'none') return false;
+        
+        // Default visibility for core personal nodes
+        if (item.id === 'my-portal' || item.id === 'overview') return true;
+        
         return level && level !== 'none';
       })
     })).filter(section => section.items.length > 0);
-  }, [permissions, userRole, customTitles]);
+  }, [permissions, userRole]);
 
   if (!mounted) return <div className="bg-[#1E293B] h-full w-full" />;
 
@@ -172,7 +177,7 @@ export function SidebarNav({
         {!isSlim && (
           <div className="flex flex-col">
             <span className="text-white font-bold text-xs tracking-tight uppercase">Ferocious Tech</span>
-            <span className="text-slate-400 text-[8px] font-bold uppercase tracking-widest mt-0.5">Enterprise ERP</span>
+            <span className="text-slate-400 text-[8px] font-bold uppercase tracking-widest mt-0.5">Enterprise Matrix</span>
           </div>
         )}
       </div>

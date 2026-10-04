@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -66,52 +67,88 @@ import {
   FileBarChart,
   FileCheck,
   Box,
-  Target
+  Target,
+  CalendarDays,
+  Settings2
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SystemUser, PermissionLevel, ViewType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+function PieChart({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+  );
+}
+
+function Wallet({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+  );
+}
+
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
+  // FUNCTIONAL HUB (Sidebar & Modules)
   { id: 'overview', label: 'Command Matrix', category: 'Functional Hub', icon: LayoutGrid },
   { id: 'analytics', label: 'Analytics Dashboard', category: 'Functional Hub', icon: LineChart },
+  { id: 'activity', label: 'Performance Center', category: 'Functional Hub', icon: Activity },
   { id: 'customer-master', label: 'Customer Master', category: 'Functional Hub', icon: Building2 },
   { id: 'vendor-master', label: 'Vendor Master', category: 'Functional Hub', icon: Truck },
   { id: 'product-master', label: 'Product Registry', category: 'Functional Hub', icon: Box },
   { id: 'quotation', label: 'Quotation Ledger', category: 'Functional Hub', icon: FileText },
   { id: 'sale-invoice', label: 'Sales Invoice Ledger', category: 'Functional Hub', icon: Receipt },
   { id: 'purchase-order', label: 'Purchase Order Ledger', category: 'Functional Hub', icon: PackageCheck },
-  { id: 'orders', label: 'Work Order Management', category: 'Functional Hub', icon: ShoppingCart },
+  { id: 'orders', label: 'Work Orders', category: 'Functional Hub', icon: ShoppingCart },
   { id: 'production-planner', label: 'Production Planner', category: 'Functional Hub', icon: Factory },
-  { id: 'gantt', label: 'Production Timeline', category: 'Functional Hub', icon: Calendar },
-  { id: 'quality', label: 'Quality Control Hub', category: 'Functional Hub', icon: ShieldCheck },
-  { id: 'inventory', label: 'Inventory Ledger', category: 'Functional Hub', icon: Boxes },
+  { id: 'gantt', label: 'Visual Timeline', category: 'Functional Hub', icon: Calendar },
+  { id: 'quality', label: 'Quality Control', category: 'Functional Hub', icon: ShieldCheck },
+  { id: 'inventory', label: 'Stock Ledger', category: 'Functional Hub', icon: Boxes },
   { id: 'hr', label: 'Employee Management', category: 'Functional Hub', icon: Users },
-  { id: 'settings', label: 'System Control Center', category: 'Functional Hub', icon: Settings },
+  { id: 'settings', label: 'System Settings', category: 'Functional Hub', icon: Settings },
 
-  { id: 'dash-billing', label: 'Metric: Monthly Billing', category: 'Dashboard Matrix', icon: TrendingUp },
-  { id: 'dash-outstanding', label: 'Metric: Outstanding Coll.', category: 'Dashboard Matrix', icon: Landmark },
-  { id: 'dash-po', label: 'Metric: Customer PO Value', category: 'Dashboard Matrix', icon: Receipt },
-  { id: 'dash-machine', label: 'Metric: Asset OEE', category: 'Dashboard Matrix', icon: Cpu },
-  { id: 'dash-production', label: 'Metric: Production Achieve.', category: 'Dashboard Matrix', icon: Factory },
-  { id: 'dash-health', label: 'Metric: Business Health', category: 'Dashboard Matrix', icon: Activity },
-  { id: 'dash-ai', label: 'Widget: AI Business Insights', category: 'Dashboard Matrix', icon: BrainCircuit },
-  { id: 'dash-alerts', label: 'Widget: System Alert Panel', category: 'Dashboard Matrix', icon: Bell },
-  { id: 'dash-approvals', label: 'Widget: Approval Gateway', category: 'Dashboard Matrix', icon: UserCheck },
+  // DASHBOARD MATRIX (Widgets)
+  { id: 'dash-billing', label: 'Widget: Monthly Billing', category: 'Dashboard Matrix', icon: TrendingUp },
+  { id: 'dash-outstanding', label: 'Widget: Outstanding Collection', category: 'Dashboard Matrix', icon: Landmark },
+  { id: 'dash-po', label: 'Widget: Customer PO Value', category: 'Dashboard Matrix', icon: Receipt },
+  { id: 'dash-machine', label: 'Widget: Asset OEE', category: 'Dashboard Matrix', icon: Cpu },
+  { id: 'dash-production', label: 'Widget: Production Achievement', category: 'Dashboard Matrix', icon: Factory },
+  { id: 'dash-health', label: 'Widget: Business Health', category: 'Dashboard Matrix', icon: Activity },
+  { id: 'dash-ai', label: 'Widget: AI Insights', category: 'Dashboard Matrix', icon: BrainCircuit },
+  { id: 'dash-alerts', label: 'Widget: Alert Command', category: 'Dashboard Matrix', icon: Bell },
+  { id: 'dash-approvals', label: 'Widget: Quick Approvals', category: 'Dashboard Matrix', icon: UserCheck },
   
-  { id: 'report-sales', label: 'Report: Sales & Revenue', category: 'Reports Matrix', icon: FileBarChart },
+  // REPORTS MATRIX
+  { id: 'report-financial', label: 'Report: Financial Liquidity', category: 'Reports Matrix', icon: FileBarChart },
   { id: 'report-quality', label: 'Report: Quality Audit', category: 'Reports Matrix', icon: ShieldCheck },
   { id: 'report-production', label: 'Report: Yield Analysis', category: 'Reports Matrix', icon: Factory },
   { id: 'report-dispatch', label: 'Report: Dispatch Ledger', category: 'Reports Matrix', icon: PackageCheck },
   { id: 'report-machine', label: 'Report: Machine Load', category: 'Reports Matrix', icon: Cpu },
-  { id: 'report-financial', label: 'Report: Financial Liquidity', category: 'Reports Matrix', icon: Landmark },
+  { id: 'report-training', label: 'Report: Training Matrix', category: 'Reports Matrix', icon: GraduationCap },
+  { id: 'report-management', label: 'Report: Management Summary', category: 'Reports Matrix', icon: PieChart },
 
-  { id: 'approve-quotation', label: 'Auth: Quotation Release', category: 'Certification Matrix', icon: FileCheck },
-  { id: 'approve-wo', label: 'Auth: Work Order Start', category: 'Certification Matrix', icon: ShoppingCart },
-  { id: 'approve-dispatch', label: 'Auth: Dispatch Protocol', category: 'Certification Matrix', icon: Truck },
-  { id: 'approve-invoice', label: 'Auth: Invoice Finalization', category: 'Certification Matrix', icon: Receipt },
-  { id: 'approve-payment', label: 'Auth: Payment Settlement', category: 'Certification Matrix', icon: Landmark },
+  // DATA VISIBILITY MATRIX
+  { id: 'data-financial', label: 'Data: Institutional Financials', category: 'Data Matrix', icon: DollarSign },
+  { id: 'data-payroll', label: 'Data: Payroll Details', category: 'Data Matrix', icon: Landmark },
+  { id: 'data-vendor-fin', label: 'Data: Vendor Balances', category: 'Data Matrix', icon: Truck },
+  { id: 'data-machine-cost', label: 'Data: Asset Cost Centers', category: 'Data Matrix', icon: Settings2 },
+  { id: 'data-quality', label: 'Data: Non-Compliance Logs', category: 'Data Matrix', icon: ShieldAlert },
+
+  // AUTHORIZATION MATRIX (Approvals)
+  { id: 'auth-quotation', label: 'Auth: Quotation Release', category: 'Authorization Matrix', icon: FileCheck },
+  { id: 'auth-po', label: 'Auth: Customer PO Commit', category: 'Authorization Matrix', icon: ShoppingCart },
+  { id: 'auth-wo', label: 'Auth: Work Order Protocol', category: 'Authorization Matrix', icon: Target },
+  { id: 'auth-dispatch', label: 'Auth: Dispatch Authorization', category: 'Authorization Matrix', icon: Truck },
+  { id: 'auth-invoice', label: 'Auth: Invoice Certification', category: 'Authorization Matrix', icon: Receipt },
+  { id: 'auth-payment', label: 'Auth: Payment Settlement', category: 'Authorization Matrix', icon: Wallet },
+  { id: 'auth-quality', label: 'Auth: Quality Release', category: 'Authorization Matrix', icon: ShieldCheck },
+
+  // ACCOUNTABILITY MATRIX (Performance)
+  { id: 'perf-center', label: 'Performance Center Access', category: 'Accountability Matrix', icon: Activity },
+  { id: 'perf-logs', label: 'Employee Work Logs', category: 'Accountability Matrix', icon: ClipboardList },
+  { id: 'perf-attendance', label: 'Attendance Records', category: 'Accountability Matrix', icon: CalendarDays },
+  { id: 'perf-training', label: 'Training & Skill Matrix', category: 'Accountability Matrix', icon: GraduationCap },
+  { id: 'perf-metrics', label: 'Contribution Metrics', category: 'Accountability Matrix', icon: Target },
 ];
 
 interface UserDetailViewProps {

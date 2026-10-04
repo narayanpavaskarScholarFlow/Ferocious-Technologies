@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -25,7 +26,6 @@ import {
   Package, 
   Truck, 
   Calendar,
-  Monitor,
   Edit3,
   Unlock,
   UserCircle,
@@ -35,12 +35,9 @@ import {
   Factory,
   GraduationCap,
   Palette,
-  PanelLeft,
   Box,
   Settings2,
-  Contact,
   TableProperties,
-  QrCode,
   Camera,
   Lock,
   Eye,
@@ -58,8 +55,6 @@ import {
   Globe,
   Upload,
   Layout,
-  Type,
-  Square,
   DollarSign,
   Sun,
   Moon,
@@ -69,19 +64,17 @@ import {
   Activity,
   FileCheck,
   TrendingUp,
-  Image as ImageIcon,
-  CheckCircle2,
-  Info,
-  Maximize2,
-  FileText,
-  Target,
-  PackageCheck,
+  ImageIcon,
   ShieldAlert,
   Search,
   Filter,
   X,
   Kanban,
-  Check
+  FileText,
+  Target,
+  PackageCheck,
+  CalendarDays,
+  Contact
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser, PermissionLevel, UISettings, ViewType, NumberSeries } from '@/lib/types';
@@ -92,55 +85,82 @@ import { UserManagement } from '@/modules/administration/user-management';
 import placeholderImages from '@/app/lib/placeholder-images.json';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
+import { useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
-const THEME_COLORS = [
-  { name: 'Classic Navy', value: '221.2 83.2% 53.3%', color: 'bg-primary' },
-  { name: 'Emerald Forest', value: '142.1 76.2% 36.3%', color: 'bg-emerald-600' },
-  { name: 'Cyber Crimson', value: '0 72.2% 50.6%', color: 'bg-red-600' },
-  { name: 'Deep Amber', value: '38 92% 50%', color: 'bg-amber-500' },
-  { name: 'Royal Violet', value: '262 83% 58%', color: 'bg-violet-600' },
-  { name: 'Stealth Grey', value: '215 25% 27%', color: 'bg-slate-700' },
-];
+function PieChart({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+  );
+}
+
+function Wallet({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+  );
+}
 
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
+  // FUNCTIONAL HUB (Sidebar & Modules)
   { id: 'overview', label: 'Command Matrix', category: 'Functional Hub', icon: LayoutGrid },
   { id: 'analytics', label: 'Analytics Dashboard', category: 'Functional Hub', icon: LineChart },
+  { id: 'activity', label: 'Performance Center', category: 'Functional Hub', icon: Activity },
   { id: 'customer-master', label: 'Customer Master', category: 'Functional Hub', icon: Building2 },
   { id: 'vendor-master', label: 'Vendor Master', category: 'Functional Hub', icon: Truck },
-  { id: 'product-master', label: 'Product Master', category: 'Functional Hub', icon: Box },
+  { id: 'product-master', label: 'Product Registry', category: 'Functional Hub', icon: Box },
   { id: 'quotation', label: 'Quotation Ledger', category: 'Functional Hub', icon: FileText },
   { id: 'sale-invoice', label: 'Sales Invoice Ledger', category: 'Functional Hub', icon: Receipt },
   { id: 'purchase-order', label: 'Purchase Order Ledger', category: 'Functional Hub', icon: PackageCheck },
   { id: 'orders', label: 'Work Orders', category: 'Functional Hub', icon: ShoppingCart },
   { id: 'production-planner', label: 'Production Planner', category: 'Functional Hub', icon: Factory },
-  { id: 'gantt', label: 'Production Timeline', category: 'Functional Hub', icon: Calendar },
-  { id: 'quality', label: 'Quality Control Hub', category: 'Functional Hub', icon: ShieldCheck },
-  { id: 'inventory', label: 'Inventory Ledger', category: 'Functional Hub', icon: Boxes },
+  { id: 'gantt', label: 'Visual Timeline', category: 'Functional Hub', icon: Calendar },
+  { id: 'quality', label: 'Quality Control', category: 'Functional Hub', icon: ShieldCheck },
+  { id: 'inventory', label: 'Stock Ledger', category: 'Functional Hub', icon: Boxes },
   { id: 'hr', label: 'Employee Management', category: 'Functional Hub', icon: Users },
-  { id: 'settings', label: 'Control Center', category: 'Functional Hub', icon: Settings },
+  { id: 'settings', label: 'System Settings', category: 'Functional Hub', icon: Settings },
 
-  { id: 'dash-billing', label: 'Metric: Monthly Billing', category: 'Dashboard Matrix', icon: TrendingUp },
-  { id: 'dash-outstanding', label: 'Metric: Outstanding Coll.', category: 'Dashboard Matrix', icon: Landmark },
-  { id: 'dash-po', label: 'Metric: Customer PO Value', category: 'Dashboard Matrix', icon: Receipt },
-  { id: 'dash-machine', label: 'Metric: Asset OEE', category: 'Dashboard Matrix', icon: Cpu },
-  { id: 'dash-production', label: 'Metric: Production Achieve.', category: 'Dashboard Matrix', icon: Factory },
-  { id: 'dash-health', label: 'Metric: Business Health', category: 'Dashboard Matrix', icon: Activity },
-  { id: 'dash-ai', label: 'Widget: AI Business Insights', category: 'Dashboard Matrix', icon: BrainCircuit },
-  { id: 'dash-alerts', label: 'Widget: System Alert Panel', category: 'Dashboard Matrix', icon: Bell },
-  { id: 'dash-approvals', label: 'Widget: Approval Gateway', category: 'Dashboard Matrix', icon: UserCheck },
+  // DASHBOARD MATRIX (Widgets)
+  { id: 'dash-billing', label: 'Widget: Monthly Billing', category: 'Dashboard Matrix', icon: TrendingUp },
+  { id: 'dash-outstanding', label: 'Widget: Outstanding Collection', category: 'Dashboard Matrix', icon: Landmark },
+  { id: 'dash-po', label: 'Widget: Customer PO Value', category: 'Dashboard Matrix', icon: Receipt },
+  { id: 'dash-machine', label: 'Widget: Asset OEE', category: 'Dashboard Matrix', icon: Cpu },
+  { id: 'dash-production', label: 'Widget: Production Achievement', category: 'Dashboard Matrix', icon: Factory },
+  { id: 'dash-health', label: 'Widget: Business Health', category: 'Dashboard Matrix', icon: Activity },
+  { id: 'dash-ai', label: 'Widget: AI Insights', category: 'Dashboard Matrix', icon: BrainCircuit },
+  { id: 'dash-alerts', label: 'Widget: Alert Command', category: 'Dashboard Matrix', icon: Bell },
+  { id: 'dash-approvals', label: 'Widget: Quick Approvals', category: 'Dashboard Matrix', icon: UserCheck },
   
-  { id: 'report-sales', label: 'Report: Sales & Revenue', category: 'Reports Matrix', icon: FileBarChart },
+  // REPORTS MATRIX
+  { id: 'report-financial', label: 'Report: Financial Liquidity', category: 'Reports Matrix', icon: FileBarChart },
   { id: 'report-quality', label: 'Report: Quality Audit', category: 'Reports Matrix', icon: ShieldCheck },
   { id: 'report-production', label: 'Report: Yield Analysis', category: 'Reports Matrix', icon: Factory },
   { id: 'report-dispatch', label: 'Report: Dispatch Ledger', category: 'Reports Matrix', icon: PackageCheck },
   { id: 'report-machine', label: 'Report: Machine Load', category: 'Reports Matrix', icon: Cpu },
-  { id: 'report-financial', label: 'Report: Financial Liquidity', category: 'Reports Matrix', icon: Landmark },
+  { id: 'report-training', label: 'Report: Training Matrix', category: 'Reports Matrix', icon: GraduationCap },
+  { id: 'report-management', label: 'Report: Management Summary', category: 'Reports Matrix', icon: PieChart },
 
-  { id: 'approve-quotation', label: 'Auth: Quotation Release', category: 'Certification Matrix', icon: FileCheck },
-  { id: 'approve-wo', label: 'Auth: Work Order Start', category: 'Certification Matrix', icon: ShoppingCart },
-  { id: 'approve-dispatch', label: 'Auth: Dispatch Protocol', category: 'Certification Matrix', icon: Truck },
-  { id: 'approve-invoice', label: 'Auth: Invoice Finalization', category: 'Certification Matrix', icon: Receipt },
-  { id: 'approve-payment', label: 'Auth: Payment Settlement', category: 'Certification Matrix', icon: Landmark },
+  // DATA VISIBILITY MATRIX
+  { id: 'data-financial', label: 'Data: Institutional Financials', category: 'Data Matrix', icon: DollarSign },
+  { id: 'data-payroll', label: 'Data: Payroll Details', category: 'Data Matrix', icon: Landmark },
+  { id: 'data-vendor-fin', label: 'Data: Vendor Balances', category: 'Data Matrix', icon: Truck },
+  { id: 'data-machine-cost', label: 'Data: Asset Cost Centers', category: 'Data Matrix', icon: Settings2 },
+  { id: 'data-quality', label: 'Data: Non-Compliance Logs', category: 'Data Matrix', icon: ShieldAlert },
+
+  // AUTHORIZATION MATRIX (Approvals)
+  { id: 'auth-quotation', label: 'Auth: Quotation Release', category: 'Authorization Matrix', icon: FileCheck },
+  { id: 'auth-po', label: 'Auth: Customer PO Commit', category: 'Authorization Matrix', icon: ShoppingCart },
+  { id: 'auth-wo', label: 'Auth: Work Order Protocol', category: 'Authorization Matrix', icon: Target },
+  { id: 'auth-dispatch', label: 'Auth: Dispatch Authorization', category: 'Authorization Matrix', icon: Truck },
+  { id: 'auth-invoice', label: 'Auth: Invoice Certification', category: 'Authorization Matrix', icon: Receipt },
+  { id: 'auth-payment', label: 'Auth: Payment Settlement', category: 'Authorization Matrix', icon: Wallet },
+  { id: 'auth-quality', label: 'Auth: Quality Release', category: 'Authorization Matrix', icon: ShieldCheck },
+
+  // ACCOUNTABILITY MATRIX (Performance)
+  { id: 'perf-center', label: 'Performance Center Access', category: 'Accountability Matrix', icon: Activity },
+  { id: 'perf-logs', label: 'Employee Work Logs', category: 'Accountability Matrix', icon: ClipboardList },
+  { id: 'perf-attendance', label: 'Attendance Records', category: 'Accountability Matrix', icon: CalendarDays },
+  { id: 'perf-training', label: 'Training & Skill Matrix', category: 'Accountability Matrix', icon: GraduationCap },
+  { id: 'perf-metrics', label: 'Contribution Metrics', category: 'Accountability Matrix', icon: Target },
 ];
 
 const MACHINE_ACCESS_LIST = ["VMC", "CNC Turning", "Surface Grinding", "VMM"];
@@ -172,6 +192,7 @@ export function ProfileSettings({
   onNavigateToDetail,
   title = 'Control Center'
 }: ProfileSettingsProps) {
+  const db = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
@@ -290,7 +311,9 @@ export function ProfileSettings({
     if (targetAdmin) {
       const adminUpdate: SystemUser = {
         ...targetAdmin,
-        uiSettings: { ...localUI }
+        uiSettings: {
+          ...localUI
+        }
       };
       onSaveUser(adminUpdate);
       toast({ title: "SAVE DATA", description: "Global architecture configuration committed." });
@@ -337,6 +360,7 @@ export function ProfileSettings({
     if (!selectedMatrixUserId) return;
     const user = users.find(u => u.id === selectedMatrixUserId);
     if (!user) return;
+    
     onSaveUser({ ...user, permissions: matrixPermissions });
     toast({ title: "SAVE DATA", description: `Permissions for ${user.name} committed to matrix.` });
   };
@@ -413,7 +437,7 @@ export function ProfileSettings({
                    </div>
                    <div>
                      <h3 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase">{currentUserData?.name || 'Master Admin'}</h3>
-                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role || 'Master Admin'} • {currentUserData?.dept || 'Admin'}</p>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{currentUserData?.role || 'Master Admin'} • {currentUserData?.dept || 'Admin'} • ID: {currentUserData?.id || 'admin-master-node'}</p>
                    </div>
                  </div>
 
@@ -441,6 +465,22 @@ export function ProfileSettings({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Security Key</Label>
+                      <div className="relative">
+                        <Input type={showPassword ? "text" : "password"} className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl pr-12 font-bold" value={personalInfo.password} onChange={(e)=>setPersonalInfo({...personalInfo, password: e.target.value})} />
+                        <button onClick={()=>setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary">
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Approval Limit (₹)</Label>
+                      <div className="relative">
+                        <Input type="number" className="h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl pl-10 font-bold" value={personalInfo.approvalLimit} onChange={(e)=>setPersonalInfo({...personalInfo, approvalLimit: Number(e.target.value)})} />
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
+                    </div>
                  </div>
 
                  <Button className="h-14 bg-[#001F3D] dark:bg-primary hover:bg-black dark:hover:bg-primary/90 text-white dark:text-card px-10 rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleUpdatePersonal}>
@@ -453,11 +493,11 @@ export function ProfileSettings({
               <Card className="p-8 border-slate-200 dark:border-border bg-white dark:bg-card shadow-xl rounded-[2rem] space-y-6">
                  <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
                     <Cpu className="h-4 w-4 text-primary" />
-                    <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D] dark:text-white">Asset Access</h4>
+                    <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#001F3D] dark:text-white">Asset Authorization</h4>
                  </div>
                  <div className="space-y-4 pt-2">
                     {MACHINE_ACCESS_LIST.map(machine => (
-                      <div key={machine} className="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-border">
+                      <div key={machine} className="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-border transition-all hover:bg-white dark:hover:bg-slate-800">
                         <Checkbox 
                           id={`profile-machine-${machine}`} 
                           checked={personalInfo.machineAccess?.includes(machine)}
@@ -483,22 +523,29 @@ export function ProfileSettings({
                  <div className="flex items-center gap-4">
                     <div className="p-3 bg-[#001F3D] dark:bg-primary rounded-xl text-white dark:text-card shadow-lg"><ShieldCheck className="h-6 w-6" /></div>
                     <div>
-                       <h3 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Governance Hub</h3>
-                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Select identity to manage cross-functional access.</p>
+                       <h3 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Access Matrix Hub</h3>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Single authority for ERP governance and visibility.</p>
                     </div>
                  </div>
-                 <Select value={selectedMatrixUserId || ''} onValueChange={setSelectedMatrixUserId}>
-                    <SelectTrigger className="w-full md:w-64 h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-inner">
-                       <SelectValue placeholder="Identify Personnel..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-100 dark:border-border shadow-2xl">
-                       {users.map(u => (
-                         <SelectItem key={u.id} value={u.id} className="text-[10px] font-bold uppercase py-2">
-                           {u.name} ({u.role})
-                         </SelectItem>
-                       ))}
-                    </SelectContent>
-                 </Select>
+                 <div className="flex items-center gap-4 w-full md:w-auto">
+                    <Select value={selectedMatrixUserId || ''} onValueChange={setSelectedMatrixUserId}>
+                       <SelectTrigger className="w-full md:w-64 h-12 bg-slate-50 dark:bg-slate-900 border-none rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-inner">
+                          <SelectValue placeholder="Identify Personnel..." />
+                       </SelectTrigger>
+                       <SelectContent className="rounded-xl border-slate-100 dark:border-border shadow-2xl">
+                          {users.map(u => (
+                            <SelectItem key={u.id} value={u.id} className="text-[10px] font-bold uppercase py-2">
+                              {u.name} ({u.role})
+                            </SelectItem>
+                          ))}
+                       </SelectContent>
+                    </Select>
+                    {selectedMatrixUserId && (
+                      <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleSaveMatrix}>
+                        <Save className="h-4 w-4" /> SAVE DATA
+                      </Button>
+                    )}
+                 </div>
               </Card>
 
               {selectedMatrixUserId ? (
@@ -507,6 +554,7 @@ export function ProfileSettings({
                     <Card key={cat} className="overflow-hidden border-slate-200 dark:border-border bg-white dark:bg-card shadow-xl rounded-[2rem]">
                       <div className="bg-slate-50/50 dark:bg-slate-900/10 p-6 border-b border-slate-100 dark:border-border flex items-center justify-between">
                         <h3 className="text-[11px] font-bold text-[#001F3D] dark:text-white uppercase tracking-[0.2em]">{cat}</h3>
+                        <Badge variant="outline" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-border text-slate-400 text-[8px] font-bold px-3 uppercase tracking-tighter">GATED_NODES</Badge>
                       </div>
                       <Table>
                         <TableHeader>
@@ -528,24 +576,32 @@ export function ProfileSettings({
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
-                                  <div className="flex justify-center"><RadioGroupItem value="none" className="h-5 w-5 border-slate-200 text-slate-400" /></div>
-                                </RadioGroup>
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="none" className="h-5 w-5 border-slate-200 text-slate-400" />
+                                  </RadioGroup>
+                                </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
-                                  <div className="flex justify-center"><RadioGroupItem value="read" className="h-5 w-5 border-slate-200 text-blue-500" /></div>
-                                </RadioGroup>
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="read" className="h-5 w-5 border-slate-200 text-blue-500" />
+                                  </RadioGroup>
+                                </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
-                                  <div className="flex justify-center"><RadioGroupItem value="edit" className="h-5 w-5 border-slate-200 text-primary" /></div>
-                                </RadioGroup>
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="edit" className="h-5 w-5 border-slate-200 text-primary" />
+                                  </RadioGroup>
+                                </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
-                                  <div className="flex justify-center"><RadioGroupItem value="full" className="h-5 w-5 border-slate-200 text-emerald-500" /></div>
-                                </RadioGroup>
+                                <div className="flex justify-center">
+                                  <RadioGroup value={matrixPermissions[node.id] || 'none'} onValueChange={(val) => handleMatrixPermissionUpdate(node.id, val as any)}>
+                                    <RadioGroupItem value="full" className="h-5 w-5 border-slate-200 text-emerald-500" />
+                                  </RadioGroup>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -553,17 +609,12 @@ export function ProfileSettings({
                       </Table>
                     </Card>
                   ))}
-                  <div className="flex justify-end pt-6">
-                    <Button className="h-14 bg-emerald-600 hover:bg-emerald-700 text-white px-12 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3" onClick={handleSaveMatrix}>
-                      <Save className="h-4 w-4" /> Commit Matrix Synchronizations
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 <div className="h-[400px] flex flex-col items-center justify-center opacity-30 text-center border-4 border-dashed border-slate-200 dark:border-border rounded-[3rem]">
                    <ShieldAlert className="h-16 w-16 mb-6 text-slate-300" />
                    <h4 className="text-xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Identity Required</h4>
-                   <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity to initialize the access matrix.</p>
+                   <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">Select a personnel identity from the ledger above to initialize the access matrix protocol.</p>
                 </div>
               )}
             </TabsContent>
@@ -602,14 +653,6 @@ export function ProfileSettings({
                              </div>
                           </div>
                        </div>
-                       <div className="space-y-3">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Primary Brand Color</Label>
-                          <div className="flex flex-wrap gap-3">
-                             {THEME_COLORS.map(color => (
-                               <button key={color.value} onClick={() => updateLocalUIField('primaryColor', color.value)} className={cn("h-10 w-10 rounded-xl transition-all border-4", color.color, localUI.primaryColor === color.value ? "border-slate-900 scale-110 shadow-lg" : "border-transparent opacity-40 hover:opacity-100")} />
-                             ))}
-                          </div>
-                       </div>
                     </div>
                  </Card>
 
@@ -633,12 +676,12 @@ export function ProfileSettings({
 
                        <div className="space-y-4">
                           <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Widget Visibility</Label>
-                          <div className="space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                          <div className="space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner">
                              {[
-                               { id: 'ai_insights', label: 'AI Business Insights' },
-                               { id: 'alerts', label: 'System Alert Panel' },
-                               { id: 'approvals', label: 'Quick Approval Gateway' },
-                               { id: 'personnel', label: 'Personnel Live Feed' },
+                               { id: 'dash-ai', label: 'AI Business Insights' },
+                               { id: 'dash-alerts', label: 'System Alert Panel' },
+                               { id: 'dash-approvals', label: 'Quick Approval Gateway' },
+                               { id: 'dash-personnel', label: 'Personnel Live Feed' },
                              ].map(w => (
                                <div key={w.id} className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-slate-600 uppercase">{w.label}</span>
@@ -648,78 +691,6 @@ export function ProfileSettings({
                                   }} />
                                </div>
                              ))}
-                          </div>
-                       </div>
-                    </div>
-                 </Card>
-
-                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <div className="flex items-center gap-4 border-l-4 border-emerald-600 pl-4">
-                       <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><TableProperties className="h-5 w-5" /></div>
-                       <h3 className="text-lg font-display font-bold uppercase">Workspace Density</h3>
-                    </div>
-                    <div className="space-y-8">
-                       <div className="space-y-3">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Table Density</Label>
-                          <Select value={localUI.tableDensity} onValueChange={(val: any) => updateLocalUIField('tableDensity', val)}>
-                             <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
-                             <SelectContent className="rounded-xl shadow-2xl">
-                                <SelectItem value="compact" className="text-xs font-bold uppercase">High Density (Compact)</SelectItem>
-                                <SelectItem value="standard" className="text-xs font-bold uppercase">Standard Protocol</SelectItem>
-                                <SelectItem value="comfortable" className="text-xs font-bold uppercase">Maximum Breathability</SelectItem>
-                             </SelectContent>
-                          </Select>
-                       </div>
-                       <div className="grid grid-cols-2 gap-8">
-                          <div className="space-y-3">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Base Font Size (px)</Label>
-                             <Input type="number" min={11} max={16} value={localUI.fontSize} onChange={(e) => updateLocalUIField('fontSize', Number(e.target.value))} className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
-                          </div>
-                          <div className="space-y-3">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Container Shadow</Label>
-                             <Select value={localUI.cardShadow} onValueChange={(val: any) => updateLocalUIField('cardShadow', val)}>
-                                <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl shadow-2xl">
-                                   <SelectItem value="none" className="text-xs font-bold uppercase">None</SelectItem>
-                                   <SelectItem value="sm" className="text-xs font-bold uppercase">Soft Industrial</SelectItem>
-                                   <SelectItem value="xl" className="text-xs font-bold uppercase">Deep Strategic</SelectItem>
-                                </SelectContent>
-                             </Select>
-                          </div>
-                       </div>
-                    </div>
-                 </Card>
-
-                 <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                    <div className="flex items-center gap-4 border-l-4 border-amber-500 pl-4">
-                       <div className="p-3 bg-amber-50 rounded-xl text-amber-600"><Settings2 className="h-5 w-5" /></div>
-                       <h3 className="text-lg font-display font-bold uppercase">Functional Protocols</h3>
-                    </div>
-                    <div className="space-y-6">
-                       <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">WO Prefix</Label>
-                             <Input value={localUI.woPrefix} onChange={(e) => updateLocalUIField('woPrefix', e.target.value)} className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold uppercase" />
-                          </div>
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Next WO Sequence</Label>
-                             <Input type="number" value={localUI.woNextNumber} onChange={(e) => updateLocalUIField('woNextNumber', Number(e.target.value))} className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold" />
-                          </div>
-                       </div>
-                       <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Currency Matrix</Label>
-                             <Input value={localUI.currencySymbol} onChange={(e) => updateLocalUIField('currencySymbol', e.target.value)} className="h-12 bg-slate-50 border-none rounded-xl text-lg font-display font-bold text-center" />
-                          </div>
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Tax Identity Label</Label>
-                             <Input value={localUI.taxLabel} onChange={(e) => updateLocalUIField('taxLabel', e.target.value)} className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase" />
-                          </div>
-                       </div>
-                       <div className="space-y-3 pt-4">
-                          <div className="flex items-center justify-between">
-                             <span className="text-[10px] font-bold text-slate-600 uppercase">Alert Protocols (Notifications)</span>
-                             <Switch checked={localUI.enableNotifications} onCheckedChange={(val) => updateLocalUIField('enableNotifications', val)} />
                           </div>
                        </div>
                     </div>

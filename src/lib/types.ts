@@ -93,6 +93,8 @@ export type ViewType =
 export interface ViewMetadata {
   title: string;
   category: string;
+  description?: string;
+  parent?: string;
 }
 
 export interface SubTask {

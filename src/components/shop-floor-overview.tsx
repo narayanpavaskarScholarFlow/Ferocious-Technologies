@@ -22,7 +22,9 @@ import {
   Receipt,
   Landmark,
   Users,
-  Settings
+  Settings,
+  FileText,
+  DollarSign
 } from 'lucide-react';
 import { Order, Machine, QualityReport, WorkLogEntry, InventoryItem, BillingRecord } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -44,7 +46,7 @@ interface ShopFloorOverviewProps {
 
 export function ShopFloorOverview({ orders, reports, logs, machines, inventory, billing }: ShopFloorOverviewProps) {
   
-  // REAL-TIME DATA BINDING
+  // REAL-TIME DATA BINDING V3
   const metrics = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -60,11 +62,14 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
 
     const openQuotations = billing.filter(r => r.type === 'quotation' && r.status === 'Pending').length;
     const activeWorkOrders = orders.filter(o => o.status === 'Production' || o.status === 'Active').length;
-    const pendingDispatch = orders.filter(o => o.status === 'Inspection').length;
+    const pendingDispatch = orders.filter(o => o.status === 'Inspection' || o.status === 'Ready for Delivery').length;
 
     const totalInvoiced = billing.filter(r => r.type === 'invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
     const totalPayments = billing.filter(r => r.type === 'inward_payment').reduce((acc, r) => acc + (r.amount || 0), 0);
     const outstanding = totalInvoiced - totalPayments;
+
+    const pendingInvoices = billing.filter(r => r.type === 'invoice' && r.status === 'Pending').length;
+    const pendingPayments = billing.filter(r => r.type === 'purchase_invoice' && r.status === 'Pending').length;
 
     const prodAchievement = orders.length > 0 
       ? Math.round(orders.reduce((acc, o) => acc + (o.progress || 0), 0) / orders.length)
@@ -82,7 +87,9 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
       pendingDispatch, 
       outstanding, 
       prodAchievement,
-      machineUtil
+      machineUtil,
+      pendingInvoices,
+      pendingPayments
     };
   }, [orders, billing, machines]);
 
@@ -100,9 +107,9 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
     { label: 'ENQUIRY', count: billing.filter(r => r.type === 'enquiry').length || 0 },
     { label: 'QUOTATION', count: billing.filter(r => r.type === 'quotation').length || 0 },
     { label: 'SALES ORDER', count: billing.filter(r => r.type === 'sale_order').length || 0 },
-    { label: 'PRODUCTION', count: orders.filter(o => o.status === 'Production').length || 0 },
-    { label: 'INSPECTION', count: orders.filter(o => o.status === 'Inspection').length || 0 },
-    { label: 'DISPATCH', count: orders.filter(o => o.status === 'Dispatch').length || 0 },
+    { label: 'PRODUCTION', count: orders.filter(o => o.status === 'Production' || o.status === 'Active').length || 0 },
+    { label: 'INSPECTION', count: reports.filter(r => r.status === 'Review Pending').length || 0 },
+    { label: 'DISPATCH', count: orders.filter(o => o.status === 'Ready for Delivery').length || 0 },
     { label: 'INVOICE', count: billing.filter(r => r.type === 'invoice').length || 0 },
     { label: 'PAYMENT', count: billing.filter(r => r.type === 'inward_payment').length || 0 },
   ];
@@ -147,6 +154,7 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
         </div>
       </div>
 
+      {/* PRIMARY KPI ROW */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-1">
         <Card className="p-6 bg-[#071427] border-[#0F2745] shadow-xl hover:border-primary/20 transition-all">
           <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Monthly Billing</p>
@@ -156,26 +164,48 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
           </div>
         </Card>
         <Card className="p-6 bg-[#071427] border-[#0F2745] shadow-xl hover:border-primary/20 transition-all">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Open Quotations</p>
+          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Customer PO Value</p>
           <div className="flex items-end gap-3">
-            <span className="text-4xl font-display font-black text-white leading-none">{metrics.openQuotations}</span>
-            <span className="text-[10px] font-bold text-primary mb-1 uppercase tracking-tighter">Active Nodes</span>
+            <span className="text-2xl font-display font-black text-white leading-none">₹ {(metrics.customerPOValue / 100000).toFixed(1)}L</span>
+            <span className="text-[10px] font-bold text-primary mb-1 uppercase tracking-tighter">Authorized</span>
           </div>
         </Card>
         <Card className="p-6 bg-[#071427] border-[#0F2745] shadow-xl hover:border-primary/20 transition-all">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Active Work Orders</p>
+          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Outstanding Collection</p>
           <div className="flex items-end gap-3">
-            <span className="text-4xl font-display font-black text-white leading-none">{metrics.activeWorkOrders}</span>
-            <span className="text-[10px] font-bold text-emerald-500 mb-1 uppercase tracking-tighter">Production</span>
+            <span className="text-2xl font-display font-black text-rose-500 leading-none">₹ {(metrics.outstanding / 100000).toFixed(1)}L</span>
+            <span className="text-[10px] font-bold text-rose-400/40 mb-1 uppercase tracking-tighter">Receivables</span>
           </div>
         </Card>
         <Card className="p-6 bg-[#071427] border-[#0F2745] shadow-xl hover:border-primary/20 transition-all">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Pending Dispatch</p>
+          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Production Achievement</p>
           <div className="flex items-end gap-3">
-            <span className="text-4xl font-display font-black text-white leading-none">{metrics.pendingDispatch}</span>
-            <span className="text-[10px] font-bold text-amber-500 mb-1 uppercase tracking-tighter">Inspection</span>
+            <span className="text-4xl font-display font-black text-white leading-none">{metrics.prodAchievement}%</span>
+            <span className="text-[10px] font-bold text-emerald-500 mb-1 uppercase tracking-tighter">Velocity</span>
           </div>
         </Card>
+      </div>
+
+      {/* SECONDARY MANAGEMENT KPI ROW */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 px-1">
+        {[
+          { label: 'Pending Invoices', val: metrics.pendingInvoices, icon: Receipt, color: 'text-orange-500' },
+          { label: 'Pending Payments', val: metrics.pendingPayments, icon: Landmark, color: 'text-blue-500' },
+          { label: 'Open Quotations', val: metrics.openQuotations, icon: FileText, color: 'text-primary' },
+          { label: 'Active Work Orders', val: metrics.activeWorkOrders, icon: ShoppingCart, color: 'text-emerald-500' },
+          { label: 'Pending Dispatch', val: metrics.pendingDispatch, icon: PackageCheck, color: 'text-amber-500' },
+          { label: 'Machine OEE', val: `${metrics.machineUtil}%`, icon: Cpu, color: 'text-primary' },
+        ].map(item => (
+          <Card key={item.label} className="p-4 bg-[#071427] border-[#0F2745] flex items-center justify-between group hover:border-white/10">
+            <div className="space-y-1">
+              <p className="text-[7px] font-black text-white/30 uppercase tracking-widest">{item.label}</p>
+              <p className={cn("text-xl font-display font-black", item.color)}>{item.val}</p>
+            </div>
+            <div className="p-2 bg-white/5 rounded-lg text-white/20 group-hover:text-white transition-colors">
+              <item.icon className="h-4 w-4" />
+            </div>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-hidden">
@@ -273,10 +303,10 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
              </div>
              <div className="space-y-3">
                 {[
-                  `Monthly target deficit: ₹${((3000000 - metrics.monthlyBilling) / 100000).toFixed(1)}L remaining.`,
-                  "Steel inventory projected to reach critical node in 4 days.",
-                  `${metrics.activeWorkOrders} Work Orders requiring baseline yield verification.`,
-                  "Unused capacity detected on CNC-02 hub."
+                  `Monthly billing target: ₹${(metrics.monthlyBilling / 100000).toFixed(1)}L archived.`,
+                  "Inventory nodes projected to reach critical levels in 4 days.",
+                  `${metrics.activeWorkOrders} active threads requiring baseline yield sync.`,
+                  "Asset under-utilization detected on GRINDING-01 node."
                 ].map((text, i) => (
                   <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:border-primary/20 transition-all group flex items-start gap-3">
                      <div className="h-1 w-1 rounded-full bg-primary mt-1.5" />
@@ -348,6 +378,7 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
         </div>
       </div>
 
+      {/* QUICK ACCESS TILES */}
       <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-3 px-1 pb-4">
         {[
           { label: 'SALES', icon: ShoppingCart },
@@ -374,26 +405,4 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
       </div>
     </div>
   );
-}
-
-function FileText(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="M9 15h6" />
-      <path d="M9 11h6" />
-    </svg>
-  )
 }

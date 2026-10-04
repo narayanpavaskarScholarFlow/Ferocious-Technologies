@@ -86,6 +86,7 @@ export function SidebarNav({
           { id: 'analytics', icon: TrendingUp, label: 'Analytics Dashboard' },
           { id: 'activity', icon: History, label: 'Activity Feed' },
           { id: 'approvals', icon: UserCheck, label: 'Approvals' },
+          { id: 'notifications', icon: Bell, label: 'Notifications' },
           { id: 'sqcdp', icon: LineChart, label: 'SQCDP Dashboard' },
         ]
       },
@@ -96,7 +97,7 @@ export function SidebarNav({
           { id: 'vendor-master', icon: Truck, label: 'Vendor Master' },
           { id: 'product-master', icon: Box, label: 'Product Master' },
           { id: 'quotation', icon: FileText, label: 'Quotation' },
-          { id: 'customer-po', icon: FileCheck, label: 'Customer PO' },
+          { id: 'customer-po', icon: FileCheck, label: 'Customer Purchase Orders' },
           { id: 'sale-order', icon: ShoppingCart, label: 'Sales Orders' },
           { id: 'sale-invoice', icon: Receipt, label: 'Sales Invoices' },
           { id: 'purchase-order', icon: PackageCheck, label: 'Purchase Orders' },
@@ -115,6 +116,7 @@ export function SidebarNav({
           { id: 'operations', icon: Layers, label: 'Operations Status' },
           { id: 'production-planner', icon: Factory, label: 'Production Planner' },
           { id: 'gantt', icon: LayoutGrid, label: 'Production Gantt' },
+          { id: 'shop-floor', icon: LayoutDashboard, label: 'Shop Floor' },
           { id: 'quality', icon: ShieldCheck, label: 'Quality Management' },
           { id: 'delivery', icon: PackageCheck, label: 'Dispatch Ledger' },
           { id: 'inventory', icon: Box, label: 'Inventory Management' },
@@ -126,7 +128,10 @@ export function SidebarNav({
           { id: 'machine-utilization', icon: Cpu, label: 'Machine Utilization' },
           { id: 'machine-load-plan', icon: Calendar, label: 'Machine Load Planning' },
           { id: 'tool-catalog', icon: Box, label: 'Tool Catalog' },
-          { id: 'my-portal', icon: Contact, label: 'Employee Portal' },
+          { id: 'tool-cards', icon: CreditCard, label: 'Tool Cards' },
+          { id: 'my-portal', icon: Contact, label: 'Personnel Portal' },
+          { id: 'manpower', icon: Users, label: 'Manpower Utilization' },
+          { id: 'training', icon: GraduationCap, label: 'Training Management' },
           { id: 'hr', icon: Briefcase, label: 'HR Management' },
           { id: 'salary', icon: CreditCard, label: 'Salary Structure' },
         ]
@@ -135,16 +140,22 @@ export function SidebarNav({
         name: 'ADMINISTRATION',
         items: [
           { id: 'users', icon: Users, label: 'User Management' },
-          { id: 'print-templates', icon: Printer, label: 'Template Manager' },
-          { id: 'reports', icon: FileBarChart, label: 'Report Center' },
+          { id: 'roles', icon: Shield, label: 'Roles' },
+          { id: 'permissions', icon: Lock, label: 'Permissions' },
+          { id: 'approval-matrix', icon: ClipboardList, label: 'Approval Matrix' },
+          { id: 'print-templates', icon: Printer, label: 'Document Template Manager' },
+          { id: 'reports', icon: FileBarChart, label: 'Reports' },
           { id: 'settings', icon: Settings, label: 'Settings' },
         ]
       },
       {
         name: 'STRATEGIC HUB',
         items: [
-          { id: 'smart-quote', icon: BrainCircuit, label: 'AI Smart Quoting' },
+          { id: 'smart-quote', icon: BrainCircuit, label: 'Smart Quoting Assistant' },
           { id: 'strategy-hub', icon: Target, label: 'Loan Project Hub' },
+          { id: 'business-planning', icon: LineChart, label: 'Business Planning' },
+          { id: 'dpr-generator', icon: FileText, label: 'DPR Generator' },
+          { id: 'financial-projections', icon: TrendingUp, label: 'Financial Projections' },
         ]
       }
     ];
@@ -153,7 +164,7 @@ export function SidebarNav({
       ...section,
       items: section.items.filter(item => {
         if (isMasterAdmin) return true;
-        if (item.id === 'my-portal' || item.id === 'overview') return true;
+        if (item.id === 'my-portal' || item.id === 'overview' || item.id === 'settings') return true;
         if (item.id === 'hr') return isHRAdmin;
         const level = permissions[item.id];
         return level && level !== 'none';
@@ -260,6 +271,45 @@ function FileCheck(props: any) {
       <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
       <path d="M14 2v4a2 2 0 0 0 2 2h4" />
       <path d="m9 15 2 2 4-4" />
+    </svg>
+  )
+}
+
+function Shield(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  )
+}
+
+function Bell(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </svg>
   )
 }

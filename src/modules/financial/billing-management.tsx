@@ -63,7 +63,11 @@ import {
   CalendarDays,
   Menu,
   MoreVertical,
-  BarChart3
+  BarChart3,
+  Check,
+  ChevronLeft,
+  Upload,
+  X
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ViewType, NumberSeries, ProductMaster, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -86,8 +90,11 @@ import {
 } from 'date-fns';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, BarChart, Bar, Cell, PieChart as ReChartsPieChart, Pie } from 'recharts';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 
 const DOCUMENT_TYPES = [
   { id: 'quotation', label: 'QUOTATION', icon: FileBox, prefix: 'QT' },
@@ -103,6 +110,15 @@ const DOCUMENT_TYPES = [
   { id: 'outward_payment', label: 'OUTWARD PAY', icon: ArrowUpRight, prefix: 'PAY' },
 ];
 
+const PRODUCT_TYPES = [
+  "Raw Material", "Purchased Part", "Semi Finished", "Finished Product", "Assembly", "Sub Assembly", "Design Service", "Engineering Service"
+];
+
+const BUSINESS_UNITS = [
+  { id: 'Manufacturing', label: 'Ferocious Technologies', icon: Factory },
+  { id: 'Electricals', label: 'Ferocious Electricals', icon: Zap }
+];
+
 interface BillingManagementProps {
   customers: Customer[];
   vendors: Vendor[];
@@ -115,13 +131,14 @@ interface BillingManagementProps {
   permissions: Record<string, PermissionLevel>;
   onSaveRecord: (record: BillingRecord) => void;
   onDeleteRecord: (id: string) => void;
+  onSaveProduct?: (product: ProductMaster) => void;
   uiSettings: UISettings;
   initialTab?: string;
 }
 
 export function BillingManagement({ 
   customers, vendors, records, orders, users, inventory, products, machines, permissions, 
-  onSaveRecord, onDeleteRecord, uiSettings, initialTab = 'invoice' 
+  onSaveRecord, onDeleteRecord, onSaveProduct, uiSettings, initialTab = 'invoice' 
 }: BillingManagementProps) {
   const db = useFirestore();
   const { toast } = useToast();
@@ -130,13 +147,24 @@ export function BillingManagement({
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
+  // Wizard State
+  const [isProductWizardOpen, setIsProductWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardData, setWizardData] = useState<Partial<ProductMaster>>({
+    businessUnit: 'Manufacturing',
+    type: 'Finished Product',
+    status: 'Active',
+    machinesRequired: [],
+    materialCost: 0, machiningCost: 0, toolingCost: 0, inspectionCost: 0, assemblyCost: 0, packagingCost: 0,
+    canManufactureInHouse: true
+  });
+
   const productMetrics = useMemo(() => {
     const total = products.length;
     const raw = products.filter(p => p.type === 'Raw Material').length;
     const assemblies = products.filter(p => p.type === 'Assembly' || p.type === 'Sub Assembly').length;
     const finished = products.filter(p => p.type === 'Finished Product').length;
     
-    // Revenue calculations
     const now = new Date();
     const currentFY = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -152,7 +180,7 @@ export function BillingManagement({
     const totalInHouse = products.filter(p => (p.inHousePercent || 0) >= 80).length;
     const totalOutsourced = products.filter(p => (p.outsourcedPercent || 0) > 20).length;
 
-    return { total, raw, assemblies, finished, fyRev, monthlyRev, totalInHouse, totalOutsourced };
+    return { total, raw, assemblies, finished, fyRev, monthlyRev, totalInHouse, totalOutsourced, active: products.filter(p=>p.status==='Active').length };
   }, [products, records]);
 
   const filteredRecordsByType = useMemo(() => {
@@ -178,20 +206,58 @@ export function BillingManagement({
     return { ...p, lifetimeRev, activeWOs, openQuotes, poVal };
   }, [selectedProductId, products, records, orders]);
 
-  useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
+  const totalWizardCost = useMemo(() => {
+    return (wizardData.materialCost || 0) + (wizardData.machiningCost || 0) + (wizardData.toolingCost || 0) + (wizardData.inspectionCost || 0) + (wizardData.assemblyCost || 0) + (wizardData.packagingCost || 0);
+  }, [wizardData]);
+
+  const handleNextWizard = () => setWizardStep(s => Math.min(s + 1, 9));
+  const handlePrevWizard = () => setWizardStep(s => Math.max(s - 1, 1));
+
+  const handleCommitProduct = () => {
+    if (!wizardData.name || !wizardData.code) {
+      toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Product Code are mandatory." });
+      return;
+    }
+
+    const finalProduct: ProductMaster = {
+      ...wizardData as ProductMaster,
+      id: `PROD-${Date.now()}`,
+      updatedAt: new Date().toISOString(),
+      standardCost: totalWizardCost,
+      finalProductScore: 85
+    };
+
+    if (onSaveProduct) onSaveProduct(finalProduct);
+    else setDocumentNonBlocking(doc(db, 'products', finalProduct.id), finalProduct, { merge: true });
+
+    toast({ title: "Product Synchronized", description: `${finalProduct.name} committed to matrix.` });
+    setIsProductWizardOpen(false);
+    setWizardStep(1);
+    setWizardData({ businessUnit: 'Manufacturing', type: 'Finished Product', status: 'Active', machinesRequired: [], canManufactureInHouse: true });
+  };
+
+  const updateWizardField = (field: string, value: any) => {
+    setWizardData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleToggleWizardMachine = (m: string) => {
+    const current = wizardData.machinesRequired || [];
+    const updated = current.includes(m) ? current.filter(x => x !== m) : [...current, m];
+    updateWizardField('machinesRequired', updated);
+  };
 
   const ProductIntelligenceView = () => (
     <div className="space-y-8 animate-in fade-in duration-700 font-body">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 px-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 px-1">
         {[
-          { label: 'Total Products', val: productMetrics.total, icon: Box, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'FY Revenue', val: `₹${(productMetrics.fyRev / 100000).toFixed(1)}L`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'In-House Yield', val: productMetrics.totalInHouse, icon: Factory, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { label: 'Total', val: productMetrics.total, icon: Box, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'FY Rev', val: `₹${(productMetrics.fyRev / 100000).toFixed(1)}L`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'In-House', val: productMetrics.totalInHouse, icon: Factory, color: 'text-indigo-600', bg: 'bg-indigo-50' },
           { label: 'Outsourced', val: productMetrics.totalOutsourced, icon: Truck, color: 'text-rose-600', bg: 'bg-rose-50' },
           { label: 'Assemblies', val: productMetrics.assemblies, icon: Boxes, color: 'text-amber-600', bg: 'bg-amber-50' },
-          { label: 'Raw Matrix', val: productMetrics.raw, icon: Layers, color: 'text-primary', bg: 'bg-primary/5' },
+          { label: 'Raw Materials', val: productMetrics.raw, icon: Layers, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Finished Goods', val: productMetrics.finished, icon: PackageCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Active Matrix', val: productMetrics.active, icon: Zap, color: 'text-primary', bg: 'bg-primary/5' },
         ].map(kpi => (
           <Card key={kpi.label} className="p-4 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-primary transition-all">
             <div className="flex justify-between items-start mb-4">
@@ -215,9 +281,9 @@ export function BillingManagement({
            <div className="flex items-center gap-4">
               <div className="relative w-64">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                 <Input placeholder="Filter matrix..." className="h-10 pl-9 rounded-xl border-slate-200 text-xs font-bold" />
+                 <Input placeholder="Filter matrix..." className="h-10 pl-9 rounded-xl border-slate-200 text-xs font-bold" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
               </div>
-              <Button className="h-10 bg-[#001F3D] text-white rounded-xl px-6 font-bold uppercase text-[9px] shadow-lg flex gap-2">
+              <Button className="h-10 bg-[#001F3D] text-white rounded-xl px-6 font-bold uppercase text-[9px] shadow-lg flex gap-2" onClick={() => { setIsProductWizardOpen(true); setWizardStep(1); }}>
                 <Plus className="h-3.5 w-3.5" /> New Product Node
               </Button>
            </div>
@@ -238,7 +304,7 @@ export function BillingManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map(p => {
+              {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(p => {
                 const score = p.finalProductScore || 85;
                 return (
                   <TableRow key={p.id} className="h-24 border-b border-slate-50 hover:bg-slate-50 transition-all group">
@@ -282,7 +348,6 @@ export function BillingManagement({
         </div>
       </Card>
 
-      {/* INTELLIGENCE SHEET OVERHAUL */}
       <Sheet open={!!selectedProductId} onOpenChange={(open) => !open && setSelectedProductId(null)}>
         <SheetContent className="sm:max-w-[1000px] p-0 border-none shadow-2xl bg-white flex flex-col h-screen font-body overflow-hidden">
           {selectedProductData && (
@@ -295,9 +360,6 @@ export function BillingManagement({
                        ) : (
                          <Box className="h-10 w-10 text-primary" />
                        )}
-                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                          <ImageIcon className="h-5 w-5 text-white" />
-                       </div>
                     </div>
                     <div className="space-y-2">
                        <div className="flex items-center gap-3">
@@ -305,31 +367,19 @@ export function BillingManagement({
                           <Badge variant="outline" className="border-white/20 text-white/60 text-[8px] uppercase">{selectedProductData.type}</Badge>
                        </div>
                        <SheetTitle className="text-4xl font-display font-black uppercase tracking-tight text-white leading-none">{selectedProductData.name}</SheetTitle>
-                       <div className="flex items-center gap-6">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 font-code">PROT_NODE: {selectedProductData.code}</p>
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <p className="text-[9px] font-black uppercase text-emerald-400 tracking-widest">Quality Verified</p>
-                       </div>
+                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 font-code">PROT_NODE: {selectedProductData.code}</p>
                     </div>
                  </div>
-                 <div className="text-right space-y-4">
-                    <div className="space-y-1">
-                       <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.3em]">Institutional Score</p>
-                       <div className="text-5xl font-display font-black text-primary tracking-tighter">{selectedProductData.finalProductScore || 85}</div>
-                    </div>
+                 <div className="text-right">
+                    <div className="text-5xl font-display font-black text-primary tracking-tighter">{selectedProductData.finalProductScore || 85}</div>
                  </div>
               </SheetHeader>
 
               <ScrollArea className="flex-1">
                  <div className="p-10 space-y-12 pb-40">
-                    
-                    {/* SECTION 1: ENGINEERING & MANUFACTURING MATRIX */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                        <Card className="p-8 bg-slate-50 border-none shadow-inner rounded-[2.5rem] space-y-8">
-                          <div className="flex items-center gap-3 border-l-4 border-primary pl-4">
-                             <Cpu className="h-5 w-5 text-primary" />
-                             <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Engineering Protocol</h4>
-                          </div>
+                          <div className="flex items-center gap-3 border-l-4 border-primary pl-4"><Cpu className="h-5 w-5 text-primary" /><h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Engineering Node</h4></div>
                           <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                              {[
                                { l: 'Drawing No.', v: selectedProductData.drawingNumber },
@@ -338,8 +388,6 @@ export function BillingManagement({
                                { l: 'Grade', v: selectedProductData.materialGrade },
                                { l: 'Tolerance', v: selectedProductData.tolerance },
                                { l: 'Industry', v: selectedProductData.industry },
-                               { l: 'Surface Finish', v: selectedProductData.surfaceFinish },
-                               { l: 'Weight', v: selectedProductData.weight },
                              ].map(item => (
                                <div key={item.l} className="space-y-1">
                                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{item.l}</p>
@@ -348,247 +396,288 @@ export function BillingManagement({
                              ))}
                           </div>
                        </Card>
-
                        <Card className="p-8 bg-slate-50 border-none shadow-inner rounded-[2.5rem] space-y-8">
-                          <div className="flex items-center gap-3 border-l-4 border-accent pl-4">
-                             <Factory className="h-5 w-5 text-accent" />
-                             <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Manufacturing Analytics</h4>
-                          </div>
-                          <div className="space-y-6">
-                             <div className="flex flex-wrap gap-2">
-                                {['VMC', 'CNC', 'Grinding', 'Assembly', 'QC'].map(m => (
-                                  <Badge key={m} className={cn("text-[8px] font-bold uppercase px-3 py-1", selectedProductData.machinesRequired?.includes(m) ? 'bg-accent text-white' : 'bg-white text-slate-300 border-slate-100')}>
-                                    {m}
-                                  </Badge>
-                                ))}
-                             </div>
-                             <div className="grid grid-cols-3 gap-6 pt-4 border-t border-slate-200">
-                                <div className="text-center space-y-1">
-                                   <p className="text-[7px] font-bold text-slate-400 uppercase">Cycle Time</p>
-                                   <p className="text-lg font-display font-black text-slate-800">{selectedProductData.cycleTimeSec || 0}s</p>
-                                </div>
-                                <div className="text-center space-y-1">
-                                   <p className="text-[7px] font-bold text-slate-400 uppercase">Setup</p>
-                                   <p className="text-lg font-display font-black text-slate-800">{selectedProductData.setupTimeMin || 0}m</p>
-                                </div>
-                                <div className="text-center space-y-1">
-                                   <p className="text-[7px] font-bold text-slate-400 uppercase">Inspection</p>
-                                   <p className="text-lg font-display font-black text-slate-800">{selectedProductData.inspectionTimeMin || 0}m</p>
-                                </div>
-                             </div>
+                          <div className="flex items-center gap-3 border-l-4 border-accent pl-4"><Factory className="h-5 w-5 text-accent" /><h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Manufacturing Yield</h4></div>
+                          <div className="grid grid-cols-3 gap-6 pt-4 border-t border-slate-200">
+                             <div className="text-center"><p className="text-[7px] font-bold text-slate-400 uppercase">Cycle</p><p className="text-lg font-display font-black text-slate-800">{selectedProductData.cycleTimeSec || 0}s</p></div>
+                             <div className="text-center"><p className="text-[7px] font-bold text-slate-400 uppercase">Setup</p><p className="text-lg font-display font-black text-slate-800">{selectedProductData.setupTimeMin || 0}m</p></div>
+                             <div className="text-center"><p className="text-[7px] font-bold text-slate-400 uppercase">Inspect</p><p className="text-lg font-display font-black text-slate-800">{selectedProductData.inspectionTimeMin || 0}m</p></div>
                           </div>
                        </Card>
                     </div>
 
-                    {/* SECTION 2: ELECTRICAL MODE (CONDITIONAL) */}
-                    {selectedProductData.businessUnit === 'Electricals' && (
-                       <Card className="p-10 bg-blue-50/50 border border-blue-100 rounded-[2.5rem] space-y-10 animate-in slide-in-from-top-4 duration-500">
-                          <div className="flex items-center gap-3 text-blue-600">
-                             <Zap className="h-6 w-6" />
-                             <h4 className="text-sm font-black uppercase tracking-widest">Electrical Power Node Details</h4>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-                             {[
-                               { l: 'Voltage', v: selectedProductData.voltage, i: Zap },
-                               { l: 'Current', v: selectedProductData.current, i: Activity },
-                               { l: 'Power', v: selectedProductData.power, i: TrendingUp },
-                               { l: 'Phase', v: selectedProductData.phase, i: RefreshCw },
-                               { l: 'Frequency', v: selectedProductData.frequency, i: Gauge },
-                             ].map(spec => (
-                               <div key={spec.l} className="space-y-1">
-                                  <div className="flex items-center gap-2 text-blue-400"><spec.i className="h-3 w-3" /><span className="text-[8px] font-bold uppercase">{spec.l}</span></div>
-                                  <p className="text-sm font-bold text-blue-900">{spec.v || '---'}</p>
-                               </div>
-                             ))}
-                          </div>
-                          <div className="flex gap-8 pt-6 border-t border-blue-100">
-                             {['BIS', 'CE', 'RoHS'].map(cert => (
-                               <div key={cert} className="flex items-center gap-2">
-                                  <div className={cn("h-4 w-4 rounded-full flex items-center justify-center", (selectedProductData as any)[cert.toLowerCase()] ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400')}>
-                                     <Check className="h-2.5 w-2.5" />
-                                  </div>
-                                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{cert} Certified</span>
-                               </div>
-                             ))}
-                          </div>
-                       </Card>
-                    )}
-
-                    {/* SECTION 3: COMMERCIAL & MARKET INTELLIGENCE */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                       <Card className="lg:col-span-8 p-10 bg-white border border-slate-100 shadow-xl rounded-[2.5rem] space-y-10">
-                          <div className="flex items-center justify-between">
-                             <div className="flex items-center gap-3">
-                                <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><Wallet className="h-5 w-5" /></div>
-                                <h4 className="text-sm font-black uppercase text-slate-900 tracking-widest">Commercial Ledger</h4>
-                             </div>
-                             <Badge className="bg-emerald-500 text-white border-none px-4">Margin: {selectedProductData.marginPercent || 0}%</Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-4 gap-8">
-                             <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Standard Cost</p><p className="text-xl font-display font-black text-slate-900">₹ {(selectedProductData.standardCost || 0).toLocaleString()}</p></div>
-                             <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Current Cost</p><p className="text-xl font-display font-black text-slate-900">₹ {(selectedProductData.currentCost || 0).toLocaleString()}</p></div>
-                             <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Selling Price</p><p className="text-xl font-display font-black text-primary">₹ {selectedProductData.saleRate.toLocaleString()}</p></div>
-                             <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Profit Contribution</p><p className="text-xl font-display font-black text-emerald-600">{selectedProductData.profitPercent || 0}%</p></div>
-                          </div>
-
-                          <div className="pt-10 border-t border-slate-50 space-y-6">
-                             <div className="flex items-center gap-3"><BarChart3 className="h-4 w-4 text-slate-400" /><h5 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Market Positioning</h5></div>
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                                <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Annual Demand</p><p className="text-xs font-bold text-slate-700">{selectedProductData.annualRequirement?.toLocaleString() || '---'} Units</p></div>
-                                <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Target Industry</p><p className="text-xs font-bold text-slate-700 uppercase">{selectedProductData.targetIndustry || '---'}</p></div>
-                                <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Demand Forecast</p><Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-none px-2 py-0.5 text-[8px]">+15% CAGR</Badge></div>
-                                <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Market Price</p><p className="text-xs font-bold text-slate-700">₹ {selectedProductData.marketPrice?.toLocaleString() || '---'}</p></div>
-                             </div>
-                          </div>
-                       </Card>
-
-                       <Card className="lg:col-span-4 p-8 bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between overflow-hidden group">
-                          <div className="absolute top-0 right-0 p-8 opacity-[0.05] group-hover:opacity-[0.08] transition-opacity"><TrendingUp className="h-40 w-40" /></div>
-                          <div className="relative z-10 space-y-8">
-                             <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em]">Lifecycle Revenue</p>
-                             <div className="space-y-1">
-                                <p className="text-4xl font-display font-black tracking-tighter">₹ {(selectedProductData.lifetimeRev / 100000).toFixed(1)}L</p>
-                                <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Aggregate Sales Yield</p>
-                             </div>
-                             <div className="pt-8 space-y-6">
-                                <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Open WO Nodes</span><span className="text-sm font-display font-bold text-white">{selectedProductData.activeWOs}</span></div>
-                                <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-white/40 uppercase">Awaiting PO</span><span className="text-sm font-display font-bold text-primary">₹ {(selectedProductData.poVal / 100000).toFixed(1)}L</span></div>
-                             </div>
-                          </div>
-                          <Button className="w-full h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl font-bold uppercase text-[9px] tracking-widest shadow-xl relative z-10">Download Business Audit</Button>
-                       </Card>
-                    </div>
-
-                    {/* SECTION 4: OUTSOURCING & FACILITY GAP ANALYSIS */}
-                    <Card className="p-10 bg-white border border-slate-200 shadow-xl rounded-[2.5rem] space-y-10 overflow-hidden">
-                       <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-4">
-                             <div className="p-3 bg-orange-50 rounded-2xl text-orange-600"><History className="h-6 w-6" /></div>
-                             <div>
-                                <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Outsourcing & Gap Analysis</h4>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Value Lost vs In-House Capacity</p>
-                             </div>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">Outsource Dependency</p>
-                             <div className="text-4xl font-display font-black text-rose-600">{selectedProductData.outsourcedPercent || 0}%</div>
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                          <div className="space-y-6">
-                             <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Matrix Distribution</h5>
-                             <div className="space-y-8">
-                                <div className="space-y-3">
-                                   <div className="flex justify-between text-[9px] font-bold uppercase"><span className="text-slate-500">In-House Production</span><span className="text-emerald-600">{selectedProductData.inHousePercent || 100}%</span></div>
-                                   <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${selectedProductData.inHousePercent || 100}%` }} /></div>
-                                </div>
-                                <div className="space-y-3">
-                                   <div className="flex justify-between text-[9px] font-bold uppercase"><span className="text-slate-500">Outsourced Process</span><span className="text-rose-600">{selectedProductData.outsourcedPercent || 0}%</span></div>
-                                   <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-rose-500 transition-all duration-1000" style={{ width: `${selectedProductData.outsourcedPercent || 0}%` }} /></div>
-                                </div>
-                             </div>
-                          </div>
-                          
-                          <Card className="p-6 bg-rose-50/50 border border-rose-100 rounded-3xl space-y-6 shadow-inner">
-                             <div className="flex items-center gap-3 text-rose-600"><ShieldAlert className="h-4 w-4" /><h5 className="text-[9px] font-black uppercase tracking-widest">Protocol Deviation</h5></div>
-                             <div className="space-y-4">
-                                <div className="space-y-1">
-                                   <p className="text-[8px] font-bold text-slate-400 uppercase">Reason for Outsourcing</p>
-                                   <div className="flex flex-wrap gap-1.5">
-                                      {selectedProductData.outsourcingReason?.map(r => <Badge key={r} variant="outline" className="text-[7px] font-bold uppercase bg-white">{r}</Badge>) || <span className="text-[10px] font-bold text-slate-400 uppercase italic">NONE_LOGGED</span>}
-                                   </div>
-                                </div>
-                                <div className="space-y-1"><p className="text-[8px] font-bold text-slate-400 uppercase">Annual Outsource Value</p><p className="text-lg font-display font-black text-rose-700">₹ {(selectedProductData.annualOutsourcingValue || 0).toLocaleString()}</p></div>
-                             </div>
-                          </Card>
-
-                          <Card className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-3xl space-y-6 shadow-inner">
-                             <div className="flex items-center gap-3 text-emerald-600"><TrendingUp className="h-4 w-4" /><h5 className="text-[9px] font-black uppercase tracking-widest">Investment ROI Node</h5></div>
-                             <div className="space-y-4">
-                                <p className="text-[10px] text-slate-600 font-medium leading-relaxed">High spend on <b>{selectedProductData.mostOutsourcedProcess || '---'}</b> outsourcing detected. Machine investment recommended to recover ₹ 1.2M+ annual margin.</p>
-                                <Button variant="outline" className="w-full h-10 border-emerald-200 text-emerald-700 font-bold uppercase text-[9px] rounded-xl hover:bg-emerald-50">Launch Project Hub</Button>
-                             </div>
-                          </Card>
+                    <Card className="lg:col-span-4 p-8 bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] space-y-8">
+                       <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em]">Lifecycle Revenue Matrix</p>
+                       <div className="space-y-1">
+                          <p className="text-4xl font-display font-black tracking-tighter">₹ {(selectedProductData.lifetimeRev / 100000).toFixed(1)}L</p>
                        </div>
                     </Card>
-
-                    {/* SECTION 5: BOM MANAGEMENT (FOR ASSEMBLIES) */}
-                    {selectedProductData.type === 'Assembly' && (
-                       <Card className="p-10 bg-white border border-slate-200 shadow-xl rounded-[2.5rem] space-y-10">
-                          <div className="flex items-center justify-between">
-                             <div className="flex items-center gap-3">
-                                <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600"><Layers className="h-6 w-6" /></div>
-                                <h4 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Bill of Materials (BOM)</h4>
-                             </div>
-                             <div className="flex gap-4">
-                                <div className="text-center px-6 border-r border-slate-100"><p className="text-[8px] font-bold text-slate-400 uppercase">Child Nodes</p><p className="text-lg font-display font-black text-indigo-600">{selectedProductData.bom?.length || 0}</p></div>
-                                <div className="text-center px-6"><p className="text-[8px] font-bold text-slate-400 uppercase">Assembly Cost</p><p className="text-lg font-display font-black text-[#001F3D]">₹ {selectedProductData.bom?.reduce((a,b)=>a+(b.cost*b.qty), 0).toLocaleString() || 0}</p></div>
-                             </div>
-                          </div>
-                          <Table>
-                             <TableHeader className="bg-slate-50/50">
-                                <TableRow>
-                                   <TableHead className="text-[8px] font-bold uppercase py-4 px-6">Component Identity</TableHead>
-                                   <TableHead className="text-[8px] font-bold uppercase text-center w-24">Qty</TableHead>
-                                   <TableHead className="text-[8px] font-bold uppercase text-center w-24">Type</TableHead>
-                                   <TableHead className="text-[8px] font-bold uppercase text-right px-6">Unit Cost (₹)</TableHead>
-                                </TableRow>
-                             </TableHeader>
-                             <TableBody>
-                                {selectedProductData.bom?.map(item => (
-                                  <TableRow key={item.id} className="h-16 border-b border-slate-50">
-                                     <TableCell className="px-6 font-bold text-[10px] uppercase text-slate-700">{item.name}</TableCell>
-                                     <TableCell className="text-center font-code text-xs font-bold text-slate-500">{item.qty}</TableCell>
-                                     <TableCell className="text-center"><Badge variant="outline" className="text-[7px] font-bold uppercase">{item.type}</Badge></TableCell>
-                                     <TableCell className="text-right px-6 font-display font-bold text-xs">₹ {item.cost.toLocaleString()}</TableCell>
-                                  </TableRow>
-                                ))}
-                             </TableBody>
-                          </Table>
-                       </Card>
-                    )}
-
-                    {/* SECTION 6: DOCUMENT MATRIX */}
-                    <div className="space-y-6">
-                       <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Institutional Media Matrix</h3>
-                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                          {[
-                            { l: 'Engineering Dwg', i: FileText, c: 'text-blue-600' },
-                            { l: '3D CAD Model', i: Box, c: 'text-indigo-600' },
-                            { l: 'Datasheet', i: FileCheck, c: 'text-emerald-600' },
-                            { l: 'Catalog', i: Archive, c: 'text-amber-600' },
-                            { l: 'Certificates', i: ShieldCheck, c: 'text-slate-900' },
-                            { l: 'QC Photo', i: ImageIcon, c: 'text-primary' },
-                            { l: 'Assembly Drg', i: Layers, c: 'text-indigo-600' },
-                          ].map(media => (
-                            <Card key={media.l} className="p-6 border-slate-100 shadow-sm hover:border-primary/30 transition-all flex flex-col items-center gap-3 group cursor-pointer text-center">
-                               <div className={cn("p-3 rounded-2xl bg-slate-50 group-hover:scale-110 transition-transform", media.c)}><media.i className="h-6 w-6" /></div>
-                               <span className="text-[8px] font-bold uppercase text-slate-400 tracking-tighter leading-tight">{media.l}</span>
-                            </Card>
-                          ))}
-                       </div>
-                    </div>
                  </div>
               </ScrollArea>
-
-              <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-between items-center z-50 shadow-2xl">
-                 <div className="flex gap-10">
-                    <div className="flex flex-col"><span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lifetime Revenue Matrix</span><span className="text-xl font-display font-black text-emerald-600">₹ {(selectedProductData.lifetimeRev / 100000).toFixed(2)}L</span></div>
-                    <div className="flex flex-col"><span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-1">FY Performance</span><span className="text-xl font-display font-black text-[#001F3D]">₹ {(selectedProductData.currentFYOutsourcing / 100000).toFixed(2) || '0.00'}L</span></div>
-                 </div>
-                 <div className="flex gap-4">
-                    <Button variant="ghost" className="h-14 px-10 rounded-2xl font-bold uppercase text-[10px] text-slate-400" onClick={() => setSelectedProductId(null)}>Close Hub</Button>
-                    <Button className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group">
-                       <Edit3 className="h-4 w-4" /> Edit Technical Matrix <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                 </div>
+              <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-end gap-4 z-50 shadow-2xl">
+                 <Button variant="ghost" className="h-14 px-10 rounded-2xl font-bold uppercase text-[10px]" onClick={() => setSelectedProductId(null)}>Close</Button>
+                 <Button className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl">
+                    <Edit3 className="h-4 w-4 mr-2" /> Edit Matrix Node
+                 </Button>
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* PRODUCT CREATION WIZARD */}
+      <Dialog open={isProductWizardOpen} onOpenChange={setIsProductWizardOpen}>
+        <DialogContent className="max-w-6xl h-[90vh] bg-white p-0 border-none shadow-2xl overflow-hidden rounded-[2.5rem] flex flex-col font-body">
+          <div className="flex h-full">
+            {/* Sidebar Steps Indicator */}
+            <div className="w-80 bg-[#001F3D] p-10 flex flex-col justify-between shrink-0 relative overflow-hidden">
+               <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+               <div className="space-y-10 relative z-10">
+                  <div className="p-4 bg-primary/20 rounded-2xl w-fit shadow-2xl border border-primary/20"><Plus className="h-8 w-8 text-primary" /></div>
+                  <div className="space-y-6">
+                    {[
+                      { s: 1, l: 'Business Unit' },
+                      { s: 2, l: 'Product Type' },
+                      { s: 3, l: 'Identity Matrix' },
+                      { s: 4, l: 'Institutional Media' },
+                      { s: 5, l: 'Engineering Node' },
+                      { s: 6, l: 'Manufacturing Yield' },
+                      { s: 7, l: 'Commercial Matrix' },
+                      { s: 8, l: 'Market Intelligence' },
+                      { s: 9, l: 'In-House/Outsource' },
+                    ].map(step => (
+                      <div key={step.s} className="flex items-center gap-4 group">
+                         <div className={cn(
+                           "h-6 w-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold transition-all",
+                           wizardStep === step.s ? "bg-primary border-primary text-white scale-110 shadow-lg" : 
+                           wizardStep > step.s ? "bg-emerald-500 border-emerald-500 text-white" : "border-white/10 text-white/20"
+                         )}>
+                           {wizardStep > step.s ? <Check className="h-3.5 w-3.5" /> : step.s}
+                         </div>
+                         <span className={cn("text-[10px] font-black uppercase tracking-widest transition-all", wizardStep === step.s ? "text-white" : "text-white/20")}>{step.l}</span>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+               <div className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] relative z-10">PROD_ONBOARD_v2.4</div>
+            </div>
+
+            {/* Main Form Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+               <DialogHeader className="p-10 border-b border-slate-100 bg-slate-50/50 shrink-0">
+                  <DialogTitle className="text-3xl font-display font-black text-[#001F3D] uppercase tracking-tight">Onboarding Matrix Node</DialogTitle>
+                  <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Sequential yield tracking for industrial assets.</DialogDescription>
+               </DialogHeader>
+
+               <ScrollArea className="flex-1 p-10">
+                  <div className="max-w-4xl mx-auto py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                     {wizardStep === 1 && (
+                       <div className="space-y-12">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">01. Business Unit Assignment</h4>
+                          <div className="grid grid-cols-2 gap-8">
+                             {BUSINESS_UNITS.map(bu => (
+                               <Card 
+                                key={bu.id} 
+                                onClick={() => updateWizardField('businessUnit', bu.id)}
+                                className={cn(
+                                  "p-10 cursor-pointer border-2 transition-all flex flex-col items-center gap-6 group hover:shadow-2xl rounded-[2rem]",
+                                  wizardData.businessUnit === bu.id ? "border-primary bg-primary/5 ring-8 ring-primary/5" : "border-slate-100 hover:border-primary/20"
+                                )}
+                               >
+                                  <div className={cn("p-6 rounded-3xl transition-transform group-hover:scale-110", wizardData.businessUnit === bu.id ? "bg-primary text-white" : "bg-slate-50 text-slate-400")}>
+                                     <bu.icon className="h-10 w-10" />
+                                  </div>
+                                  <span className={cn("font-display font-black uppercase tracking-widest text-center leading-tight", wizardData.businessUnit === bu.id ? "text-primary" : "text-slate-400")}>{bu.label}</span>
+                               </Card>
+                             ))}
+                          </div>
+                       </div>
+                     )}
+
+                     {wizardStep === 2 && (
+                       <div className="space-y-8">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">02. Product Type Classification</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                             {PRODUCT_TYPES.map(type => (
+                               <button 
+                                key={type} 
+                                onClick={() => updateWizardField('type', type)}
+                                className={cn(
+                                  "h-20 rounded-2xl font-bold uppercase text-[9px] tracking-widest border-2 transition-all",
+                                  wizardData.type === type ? "bg-[#001F3D] border-[#001F3D] text-white shadow-xl" : "bg-white border-slate-100 text-slate-400 hover:border-primary/30"
+                                )}
+                               >
+                                  {type}
+                               </button>
+                             ))}
+                          </div>
+                       </div>
+                     )}
+
+                     {wizardStep === 3 && (
+                       <div className="space-y-10">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">03. Identity Matrix Registry</h4>
+                          <div className="grid grid-cols-2 gap-8">
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Product Name *</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.name} onChange={(e)=>updateWizardField('name', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Institutional Code *</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold text-xs" value={wizardData.code} onChange={(e)=>updateWizardField('code', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Internal Part Number</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.internalPartNumber} onChange={(e)=>updateWizardField('internalPartNumber', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Customer Part Number</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.customerPartNumber} onChange={(e)=>updateWizardField('customerPartNumber', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Drawing Number</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.drawingNumber} onChange={(e)=>updateWizardField('drawingNumber', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Revision Matrix</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.revisionNumber} onChange={(e)=>updateWizardField('revisionNumber', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">HSN/SAC Node</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.hsn} onChange={(e)=>updateWizardField('hsn', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">UOM Classification</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs" value={wizardData.uom} onChange={(e)=>updateWizardField('uom', e.target.value)} /></div>
+                          </div>
+                       </div>
+                     )}
+
+                     {wizardStep === 4 && (
+                       <div className="space-y-10">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">04. Institutional Media Matrix</h4>
+                          <div className="grid grid-cols-2 gap-8">
+                             {['Product Image', 'Assembly Image', 'Drawing', '3D Model', 'Datasheet'].map(media => (
+                               <Card key={media} className="p-10 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 hover:border-primary/50 transition-all group cursor-pointer">
+                                  <Upload className="h-10 w-10 text-slate-300 group-hover:text-primary transition-colors" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-[#001F3D]">{media} Protocol</span>
+                               </Card>
+                             ))}
+                          </div>
+                       </div>
+                     )}
+
+                     {wizardStep === 5 && (
+                       <div className="space-y-8">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">05. Engineering Metadata Node</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Material Selection</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.material} onChange={(e)=>updateWizardField('material', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Material Grade Protocol</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.materialGrade} onChange={(e)=>updateWizardField('materialGrade', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Net Weight (kg)</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.weight} onChange={(e)=>updateWizardField('weight', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Surface Finish (Ra)</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.surfaceFinish} onChange={(e)=>updateWizardField('surfaceFinish', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Tolerance Class</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.tolerance} onChange={(e)=>updateWizardField('tolerance', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Industry Vertical</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.industry} onChange={(e)=>updateWizardField('industry', e.target.value)} /></div>
+                          </div>
+                          <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Functional Description</Label><Textarea className="min-h-[150px] bg-slate-50 border-none rounded-3xl" value={wizardData.description} onChange={(e)=>updateWizardField('description', e.target.value)} /></div>
+                       </div>
+                     )}
+
+                     {wizardStep === 6 && (
+                       <div className="space-y-12">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">06. Manufacturing Yield Protocol</h4>
+                          <div className="space-y-8">
+                             <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Resource Node Allocation</Label>
+                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                {['VMC Required', 'CNC Turning Required', 'Surface Grinding Required', 'Assembly Required', 'Inspection Required'].map(machine => (
+                                  <div key={machine} className={cn("p-5 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all cursor-pointer group", wizardData.machinesRequired?.includes(machine) ? "border-primary bg-primary/5 text-primary" : "border-slate-100 text-slate-400 hover:border-primary/20")} onClick={()=>handleToggleWizardMachine(machine)}>
+                                     <Cpu className="h-6 w-6" />
+                                     <span className="text-[9px] font-black uppercase text-center leading-tight">{machine.replace(' Required', '')}</span>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-8 pt-10 border-t border-slate-100">
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Cycle Time (Sec)</Label><Input type="number" className="h-14 bg-slate-50 border-none rounded-xl font-display font-black text-2xl text-center" value={wizardData.cycleTimeSec} onChange={(e)=>updateWizardField('cycleTimeSec', Number(e.target.value))} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Setup Time (Min)</Label><Input type="number" className="h-14 bg-slate-50 border-none rounded-xl font-display font-black text-2xl text-center" value={wizardData.setupTimeMin} onChange={(e)=>updateWizardField('setupTimeMin', Number(e.target.value))} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Inspect Time (Min)</Label><Input type="number" className="h-14 bg-slate-50 border-none rounded-xl font-display font-black text-2xl text-center" value={wizardData.inspectionTimeMin} onChange={(e)=>updateWizardField('inspectionTimeMin', Number(e.target.value))} /></div>
+                          </div>
+                       </div>
+                     )}
+
+                     {wizardStep === 7 && (
+                       <div className="space-y-12">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">07. Commercial Cost Center Matrix</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                             {[
+                               { f: 'materialCost', l: 'Material Cost' },
+                               { f: 'machiningCost', l: 'Machining Cost' },
+                               { f: 'toolingCost', l: 'Tooling Cost' },
+                               { f: 'inspectionCost', l: 'Inspection Cost' },
+                               { f: 'assemblyCost', l: 'Assembly Cost' },
+                               { f: 'packagingCost', l: 'Packaging Cost' },
+                             ].map(cost => (
+                               <div key={cost.f} className="space-y-2">
+                                  <Label className="text-[9px] font-bold uppercase text-slate-500">{cost.l}</Label>
+                                  <div className="relative">
+                                     <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={(wizardData as any)[cost.f]} onChange={(e)=>updateWizardField(cost.f, Number(e.target.value))} />
+                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">₹</span>
+                                  </div>
+                               </div>
+                             ))}
+                          </div>
+                          <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[3rem] space-y-10 relative overflow-hidden">
+                             <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
+                             <div className="flex justify-between items-end relative z-10">
+                                <div className="space-y-1">
+                                   <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Total Matrix Cost</p>
+                                   <p className="text-5xl font-display font-black text-primary tracking-tighter">₹ {totalWizardCost.toLocaleString()}</p>
+                                </div>
+                                <div className="text-right space-y-4">
+                                   <div className="space-y-1"><p className="text-[8px] font-bold text-white/40 uppercase">Target Margin %</p><Input type="number" className="bg-white/10 border-none text-white h-10 w-32 text-center text-xl font-display" value={wizardData.marginPercent} onChange={(e)=>updateWizardField('marginPercent', Number(e.target.value))} /></div>
+                                   <div className="space-y-1"><p className="text-[8px] font-bold text-white/40 uppercase">Selling Price Node</p><Input type="number" className="bg-primary/20 border-none text-primary h-12 w-48 text-center text-2xl font-display font-black" value={wizardData.saleRate} onChange={(e)=>updateWizardField('saleRate', Number(e.target.value))} /></div>
+                                </div>
+                             </div>
+                          </Card>
+                       </div>
+                     )}
+
+                     {wizardStep === 8 && (
+                       <div className="space-y-10">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">08. Market Intelligence Discovery</h4>
+                          <div className="grid grid-cols-2 gap-8">
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Annual Requirement (Qty)</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.annualRequirement} onChange={(e)=>updateWizardField('annualRequirement', Number(e.target.value))} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Potential annual demand</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.potentialAnnualRequirement} onChange={(e)=>updateWizardField('potentialAnnualRequirement', Number(e.target.value))} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Competitor Product Hub</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.competitorProducts} onChange={(e)=>updateWizardField('competitorProducts', e.target.value)} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Competitor Price Point (₹)</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={wizardData.competitorPrice} onChange={(e)=>updateWizardField('competitorPrice', Number(e.target.value))} /></div>
+                          </div>
+                          <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Forecasting & Growth Projections</Label><Textarea className="h-24 bg-slate-50 border-none rounded-2xl" value={wizardData.forecastGrowth} onChange={(e)=>updateWizardField('forecastGrowth', e.target.value)} /></div>
+                       </div>
+                     )}
+
+                     {wizardStep === 9 && (
+                       <div className="space-y-12">
+                          <h4 className="text-sm font-black uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-6">09. Strategic Capacity Matrix</h4>
+                          <Card className="p-10 bg-white border border-slate-100 shadow-xl rounded-[3rem] space-y-10">
+                             <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                   <h5 className="text-lg font-bold text-[#001F3D] uppercase">In-House Manufacturing Protocol</h5>
+                                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Internal Resource Readiness Confirmation</p>
+                                </div>
+                                <Switch checked={wizardData.canManufactureInHouse} onCheckedChange={(v)=>updateWizardField('canManufactureInHouse', v)} />
+                             </div>
+                             <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 flex gap-6 items-start">
+                                <ShieldCheck className="h-8 w-8 text-primary shrink-0 mt-1" />
+                                <div className="space-y-2">
+                                   <p className="text-sm font-bold text-slate-700">Strategic Compliance Confirmation</p>
+                                   <p className="text-xs text-slate-500 leading-relaxed">By committing this node, you confirm that all technical blueprints, manufacturing routings, and commercial cost centers have been verified according to institucional standards.</p>
+                                </div>
+                             </div>
+                          </Card>
+                       </div>
+                     )}
+                  </div>
+               </ScrollArea>
+
+               <DialogFooter className="p-8 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-4">
+                     {wizardStep > 1 && (
+                       <Button variant="ghost" className="h-14 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-400" onClick={handlePrevWizard}><ChevronLeft className="h-4 w-4 mr-2" /> Protocol Back</Button>
+                     )}
+                     <Button variant="ghost" className="h-14 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-400" onClick={() => setIsProductWizardOpen(false)}>Abort Onboarding</Button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                     {wizardStep < 9 ? (
+                       <Button className="h-14 px-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group" onClick={handleNextWizard}>
+                          Execute Next Node <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                       </Button>
+                     ) : (
+                       <Button className="h-14 px-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group" onClick={handleCommitProduct}>
+                          <CheckCircle2 className="h-5 w-5" /> Commit Product Matrix
+                       </Button>
+                     )}
+                  </div>
+               </DialogFooter>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 

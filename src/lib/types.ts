@@ -210,12 +210,22 @@ export interface ProductMaster {
   marketPrice?: number;
   marginPercent?: number;
   profitPercent?: number;
+
+  // Cost Breakup
+  materialCost?: number;
+  machiningCost?: number;
+  toolingCost?: number;
+  inspectionCost?: number;
+  assemblyCost?: number;
+  packagingCost?: number;
   
   // Market Intelligence
   annualRequirement?: number;
   potentialAnnualRequirement?: number;
   projectedDemand?: number;
   competitorProducts?: string;
+  competitorPrice?: number;
+  forecastGrowth?: string;
   targetIndustry?: string;
   targetCustomerType?: string;
   
@@ -227,6 +237,7 @@ export interface ProductMaster {
   currentMonthOutsourcing?: number;
   outsourcingReason?: string[];
   mostOutsourcedProcess?: string;
+  canManufactureInHouse?: boolean;
   
   // Electrical Metadata
   voltage?: string;

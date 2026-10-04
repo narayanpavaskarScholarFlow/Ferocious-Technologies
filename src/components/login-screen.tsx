@@ -11,7 +11,6 @@ import {
   Lock, 
   User, 
   ShieldCheck, 
-  Zap, 
   Key, 
   ChevronRight,
   RefreshCw,
@@ -19,8 +18,7 @@ import {
   EyeOff,
   LayoutDashboard,
   Mail,
-  Fingerprint,
-  Terminal
+  Fingerprint
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser } from '@/lib/types';
@@ -42,245 +40,106 @@ export function LoginScreen({ onLogin, users, brandLogo = '' }: LoginScreenProps
   const [resetEmail, setResetEmail] = useState('');
 
   const handleLogin = () => {
-    // Strict manual trigger only
     if (!username.trim() || !password.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Protocol Interrupted",
-        description: "Credentials required for identity verification."
-      });
+      toast({ variant: "destructive", title: "Missing Credentials" });
       return;
     }
-
     setIsLoading(true);
-    
-    // Simulate network verification delay
     setTimeout(() => {
       setIsLoading(false);
-      
       const foundUser = users.find(u => 
         (u.username && u.username.toLowerCase() === username.toLowerCase()) ||
         u.name.toLowerCase() === username.toLowerCase() || 
         u.email.toLowerCase() === username.toLowerCase()
       );
-
-      // Verify credentials against master ledger
       const isMasterAdmin = username.toLowerCase() === 'master admin' && password === 'admin123';
       const isUserMatch = foundUser && (foundUser.password === password || (!foundUser.password && password === 'user123'));
 
       if (isMasterAdmin || isUserMatch) {
-        const loginIdentity = foundUser ? foundUser.name : 'Master Admin';
-        onLogin(loginIdentity);
-        toast({
-          title: "Access Granted",
-          description: `Welcome back, ${loginIdentity}. Ferocious Matrix initialized.`
-        });
+        onLogin(foundUser ? foundUser.name : 'Master Admin');
       } else {
-        toast({
-          variant: "destructive",
-          title: "Identity Rejection",
-          description: "Unauthorized credentials detected. Security key mismatch."
-        });
+        toast({ variant: "destructive", title: "Authentication Failed", description: "Identity check rejected." });
       }
     }, 800);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
-  };
-
-  const handleResetRequest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetEmail) return;
-    
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Recovery Dispatched",
-        description: `Security token transmitted to ${resetEmail}.`
-      });
-      setView('login');
-    }, 1000);
-  };
-
   return (
-    <div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center p-6 relative overflow-hidden font-body">
-      {/* Background Matrix layers - guaranteed no-block */}
-      <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] animate-pulse pointer-events-none z-0" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-accent/5 rounded-full blur-[150px] animate-pulse pointer-events-none z-0" />
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 0)', backgroundSize: '60px 60px' }} />
-
-      <div className="w-full max-w-[520px] z-50 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 relative font-body">
+      <div className="w-full max-w-[480px] space-y-12 animate-in fade-in zoom-in-95 duration-700">
         <div className="flex flex-col items-center text-center gap-6">
-          <div className="relative group">
-            <div className="p-6 bg-white rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border border-slate-100 relative w-28 h-28 flex items-center justify-center">
-              <div className="relative w-16 h-16">
-                <Image 
-                  src={brandLogo} 
-                  alt="Ferocious Tech Logo" 
-                  fill 
-                  className="object-contain"
-                  data-ai-hint="lion technology logo"
-                />
-              </div>
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-4 border-white animate-pulse pointer-events-none" />
-            </div>
+          <div className="relative h-20 w-20 bg-white rounded-2xl shadow-xl p-3 border border-slate-100 flex items-center justify-center">
+             <Image src={brandLogo} alt="Logo" fill className="object-contain p-2" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-6xl font-display font-bold text-[#001F3D] tracking-tighter uppercase flex items-center gap-2 justify-center">
-              FEROCIOUS<span className="text-primary">TECH</span>
+            <h1 className="text-4xl font-display font-bold text-[#0F172A] tracking-tighter uppercase">
+              FEROCIOUS<span className="text-blue-600">TECH</span>
             </h1>
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.6em] ml-2">Industrial Command Gateway</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.4em] ml-2">Enterprise Resource Platform</p>
           </div>
         </div>
 
-        <Card className="p-12 bg-white border-none shadow-[0_64px_128px_-24px_rgba(0,0,0,0.15)] rounded-[3.5rem] relative overflow-hidden z-50">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
-          
+        <Card className="p-12 bg-white border-slate-200 shadow-2xl rounded-3xl relative overflow-hidden">
           {view === 'login' ? (
             <div className="space-y-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">Identity Protocol</span>
-                </div>
-                <Badge className="bg-slate-100 text-slate-400 border-none uppercase font-bold text-[9px] px-4 py-1.5 rounded-full">v2.4.1_STABLE</Badge>
-              </div>
-
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Network Identifier</Label>
-                  <div className="relative group/input z-50">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Identity Username</Label>
+                  <div className="relative">
                     <Input 
-                      autoFocus
-                      name="username"
-                      placeholder="Username, ID or Email" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300 relative z-50"
+                      placeholder="e.g. admin" 
+                      className="h-14 bg-slate-50 border-slate-100 text-slate-900 text-sm font-bold rounded-xl pl-12 focus-visible:ring-blue-600/20"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      onKeyDown={handleKeyDown}
                     />
-                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none z-[60]" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center px-1">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em]">Security Token</Label>
-                    <button 
-                      type="button"
-                      onClick={() => setView('reset')}
-                      className="text-[10px] font-bold uppercase text-primary hover:text-primary/80 transition-colors tracking-widest relative z-50"
-                    >
-                      Reset Token?
-                    </button>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Password</Label>
                   </div>
-                  <div className="relative group/input z-50">
+                  <div className="relative">
                     <Input 
-                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 pr-16 focus-visible:ring-primary/20 shadow-inner placeholder:text-slate-300 relative z-50"
+                      className="h-14 bg-slate-50 border-slate-100 text-slate-900 text-sm font-bold rounded-xl pl-12 pr-14 focus-visible:ring-blue-600/20"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={handleKeyDown}
                     />
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none z-[60]" />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-[70]"
-                    >
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                    <button onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-600 transition-colors">
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-start gap-4">
-                <Terminal className="h-4 w-4 text-slate-400 mt-0.5 pointer-events-none" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                  Encryption Layer: SHA-256 Synchronized. Identifier: "Master Admin", Token: "admin123"
-                </p>
-              </div>
-
               <Button 
-                type="button" 
                 disabled={isLoading}
                 onClick={handleLogin}
-                className="w-full h-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-[0.4em] text-[11px] shadow-2xl shadow-primary/20 transition-all duration-300 group overflow-hidden relative z-50"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] shadow-xl shadow-blue-600/20 transition-all flex gap-3"
               >
-                {isLoading ? (
-                  <RefreshCw className="h-6 w-6 animate-spin" />
-                ) : (
-                  <div className="flex items-center gap-4 relative z-10">
-                    Synchronize Identity
-                    <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </div>
-                )}
+                {isLoading ? <RefreshCw className="h-5 w-5 animate-spin" /> : <>Sign In to ERP <ChevronRight className="h-4 w-4" /></>}
               </Button>
             </div>
           ) : (
-            <div className="space-y-10 animate-in slide-in-from-right-4 duration-500 z-50">
-              <div className="flex items-center gap-5 mb-2">
-                <div className="p-4 bg-primary/10 rounded-2xl text-primary"><Mail className="h-6 w-6 pointer-events-none" /></div>
-                <div>
-                  <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight leading-none">Protocol Reset</h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Security Token Recovery</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Registered Node Email</Label>
-                  <div className="relative group/input z-50">
-                    <Input 
-                      placeholder="e.g. admin@ferocious.tech" 
-                      className="h-16 bg-[#F8FAFC] border-none text-[#001F3D] text-sm font-bold rounded-2xl pl-14 focus-visible:ring-primary/20 shadow-inner relative z-50"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                    />
-                    <Fingerprint className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 pointer-events-none z-[60]" />
+            <div className="space-y-8">
+               <h3 className="text-xl font-bold text-slate-900 uppercase">Reset Password</h3>
+               <div className="space-y-4">
+                  <Input placeholder="Enter your registered email" className="h-14 bg-slate-50" />
+                  <div className="flex gap-4">
+                     <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setView('login')}>Cancel</Button>
+                     <Button className="flex-1 bg-blue-600 text-white rounded-xl h-12 uppercase font-bold text-[10px]">Send Link</Button>
                   </div>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <Button 
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setView('login')}
-                  className="flex-1 h-16 text-slate-400 hover:text-[#001F3D] rounded-2xl text-[10px] font-bold uppercase tracking-widest relative z-50"
-                >
-                  Abort
-                </Button>
-                <Button 
-                  type="button" 
-                  disabled={isLoading}
-                  onClick={handleResetRequest}
-                  className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 relative z-50"
-                >
-                  Request Key
-                </Button>
-              </div>
+               </div>
             </div>
           )}
         </Card>
-
-        <div className="flex items-center justify-center gap-10 opacity-30 pointer-events-none z-50">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-slate-600" />
-            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.4em]">SSL_MATRIX_ACTIVE</span>
-          </div>
-          <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-          <div className="flex items-center gap-3">
-            <LayoutDashboard className="h-5 w-5 text-slate-600" />
-            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.4em]">NODE_SYNC_2.4</span>
-          </div>
+        
+        <div className="flex items-center justify-center gap-10 opacity-30 text-slate-400">
+           <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">Secure SSL Matrix</span></div>
+           <div className="flex items-center gap-2"><Fingerprint className="h-4 w-4" /><span className="text-[10px] font-bold uppercase tracking-widest">SHA-256 Protocol</span></div>
         </div>
       </div>
     </div>

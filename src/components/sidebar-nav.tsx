@@ -29,10 +29,7 @@ import {
   Printer,
   ChevronRight,
   FileText,
-  Lock,
-  Target,
   UserCheck,
-  TrendingUp,
   History,
   FileBarChart,
   Building2,
@@ -40,10 +37,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Landmark,
-  ShieldAlert,
   Bell,
   FileCheck,
-  Shield
+  Shield,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -56,7 +53,6 @@ interface SidebarNavProps {
   isSlim?: boolean;
   customTitles?: Record<string, string>;
   userRole?: string;
-  isReportingManager?: boolean;
   brandLogo?: string;
   logoSize?: number;
 }
@@ -86,79 +82,55 @@ export function SidebarNav({
         name: 'COMMAND CENTER',
         items: [
           { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
-          { id: 'analytics', icon: TrendingUp, label: 'Analytics Dashboard' },
-          { id: 'activity', icon: History, label: 'Activity Feed' },
-          { id: 'approvals', icon: UserCheck, label: 'Approvals' },
-          { id: 'notifications', icon: Bell, label: 'Notifications' },
-          { id: 'sqcdp', icon: LineChart, label: 'SQCDP Dashboard' },
+          { id: 'analytics', icon: LineChart, label: 'Analytics' },
+          { id: 'activity', icon: History, label: 'Activity Log' },
+          { id: 'sqcdp', icon: Target, label: 'Performance Metrics' },
         ]
       },
       {
         name: 'FINANCIAL HUB',
         items: [
-          { id: 'customer-master', icon: Building2, label: 'Customer Master' },
-          { id: 'vendor-master', icon: Truck, label: 'Vendor Master' },
-          { id: 'product-master', icon: Box, label: 'Product Master' },
-          { id: 'quotation', icon: FileText, label: 'Quotation' },
-          { id: 'customer-po', icon: FileCheck, label: 'Customer Purchase Orders' },
-          { id: 'sale-order', icon: ShoppingCart, label: 'Sales Orders' },
+          { id: 'customer-master', icon: Building2, label: 'Customers' },
+          { id: 'vendor-master', icon: Truck, label: 'Vendors' },
+          { id: 'product-master', icon: Box, label: 'Product Registry' },
+          { id: 'quotation', icon: FileText, label: 'Quotations' },
           { id: 'sale-invoice', icon: Receipt, label: 'Sales Invoices' },
           { id: 'purchase-order', icon: PackageCheck, label: 'Purchase Orders' },
-          { id: 'purchase-invoice', icon: Receipt, label: 'Purchase Invoices' },
-          { id: 'delivery-challan', icon: Truck, label: 'Delivery Challans' },
           { id: 'payments', icon: Landmark, label: 'Payments' },
-          { id: 'credit-note', icon: ArrowDownLeft, label: 'Credit Notes' },
-          { id: 'debit-note', icon: ArrowUpRight, label: 'Debit Notes' },
         ]
       },
       {
         name: 'PRODUCTION HUB',
         items: [
           { id: 'orders', icon: ShoppingCart, label: 'Work Orders' },
-          { id: 'order-details', icon: Target, label: 'Order Details' },
-          { id: 'operations', icon: Layers, label: 'Operations Status' },
-          { id: 'production-planner', icon: Factory, label: 'Production Planner' },
-          { id: 'gantt', icon: LayoutGrid, label: 'Production Gantt' },
-          { id: 'shop-floor', icon: LayoutDashboard, label: 'Shop Floor' },
-          { id: 'quality', icon: ShieldCheck, label: 'Quality Management' },
-          { id: 'delivery', icon: PackageCheck, label: 'Dispatch Ledger' },
-          { id: 'inventory', icon: Box, label: 'Inventory Management' },
+          { id: 'production-planner', icon: Factory, label: 'Planner' },
+          { id: 'gantt', icon: Calendar, label: 'Timeline' },
+          { id: 'quality', icon: ShieldCheck, label: 'Quality Control' },
+          { id: 'inventory', icon: Boxes, label: 'Inventory' },
+          { id: 'work-log', icon: ClipboardList, label: 'Daily Logs' },
         ]
       },
       {
         name: 'RESOURCE HUB',
         items: [
-          { id: 'machine-utilization', icon: Cpu, label: 'Machine Utilization' },
-          { id: 'machine-load-plan', icon: Calendar, label: 'Machine Load Planning' },
-          { id: 'tool-catalog', icon: Box, label: 'Tool Catalog' },
-          { id: 'tool-cards', icon: CreditCard, label: 'Tool Cards' },
+          { id: 'machine-utilization', icon: Cpu, label: 'Assets' },
           { id: 'my-portal', icon: Contact, label: 'Employee Portal' },
-          { id: 'manpower', icon: Users, label: 'Manpower Utilization' },
-          { id: 'training', icon: GraduationCap, label: 'Training Management' },
           { id: 'hr', icon: Briefcase, label: 'HR Management' },
-          { id: 'salary', icon: CreditCard, label: 'Salary Structure' },
         ]
       },
       {
         name: 'ADMINISTRATION',
         items: [
-          { id: 'users', icon: Users, label: 'User Management' },
-          { id: 'roles', icon: Shield, label: 'Roles' },
-          { id: 'permissions', icon: Lock, label: 'Permissions' },
-          { id: 'approval-matrix', icon: ClipboardList, label: 'Approval Matrix' },
-          { id: 'print-templates', icon: Printer, label: 'Document Template Manager' },
-          { id: 'reports', icon: FileBarChart, label: 'Reports' },
-          { id: 'settings', icon: Settings, label: 'Settings' },
+          { id: 'users', icon: Users, label: 'User Directory' },
+          { id: 'print-templates', icon: Printer, label: 'Document Designer' },
+          { id: 'settings', icon: Settings, label: 'System Settings' },
         ]
       },
       {
         name: 'STRATEGIC HUB',
         items: [
-          { id: 'smart-quote', icon: BrainCircuit, label: 'Smart Quoting Assistant' },
+          { id: 'smart-quote', icon: BrainCircuit, label: 'AI Quoting' },
           { id: 'strategy-hub', icon: Target, label: 'Loan Project Hub' },
-          { id: 'business-planning', icon: LineChart, label: 'Business Planning' },
-          { id: 'dpr-generator', icon: FileText, label: 'DPR Generator' },
-          { id: 'financial-projections', icon: TrendingUp, label: 'Financial Projections' },
         ]
       }
     ];
@@ -175,39 +147,38 @@ export function SidebarNav({
     })).filter(section => section.items.length > 0);
   }, [permissions, userRole]);
 
-  if (!mounted) return <div className="bg-[#001F3D] h-full w-full" />;
+  if (!mounted) return <div className="bg-[#1E293B] h-full w-full" />;
 
   return (
     <div className={cn(
-      "bg-[#001F3D] dark:bg-card h-full flex flex-col border-r border-white/5 dark:border-border transition-all duration-300",
+      "bg-[#1E293B] h-full flex flex-col border-r border-white/5 transition-all duration-300",
       isSlim ? "w-20" : "w-64"
     )}>
       <div className={cn(
-        "bg-white/5 dark:bg-card border-b border-white/5 dark:border-border p-4 flex items-center gap-3 shrink-0",
+        "p-6 flex items-center gap-3 shrink-0 border-b border-white/5",
         isSlim && "justify-center"
       )}>
-        <div className="relative rounded bg-white p-1" style={{ width: logoSize + 8, height: logoSize + 8 }}>
+        <div className="relative rounded-lg bg-white p-1" style={{ width: logoSize + 4, height: logoSize + 4 }}>
           <Image src={brandLogo} alt="Logo" fill className="object-contain" />
         </div>
         {!isSlim && (
           <div className="flex flex-col">
-            <span className="text-white dark:text-primary font-black text-[10px] tracking-widest uppercase leading-none">Ferocious Tech</span>
-            <span className="text-white/40 dark:text-slate-400 text-[7px] font-bold tracking-tighter uppercase mt-1">Control Node v2.4</span>
+            <span className="text-white font-bold text-xs tracking-tight uppercase">Ferocious Tech</span>
+            <span className="text-slate-400 text-[8px] font-bold uppercase tracking-widest mt-0.5">Enterprise ERP</span>
           </div>
         )}
       </div>
 
       <ScrollArea className="flex-1 w-full">
-        <div className="p-3 space-y-8 pb-20">
+        <div className="p-4 space-y-8 pb-20">
           {menuSections.map((section) => (
             <div key={section.name} className="space-y-2">
               {!isSlim && (
-                <div className="px-3 pt-4 pb-2 flex items-center justify-between border-t border-white/5 first:border-0">
-                  <span className="text-[8px] font-black text-white/20 dark:text-slate-500 uppercase tracking-[0.35em]">{section.name}</span>
-                  <ChevronDown className="h-2.5 w-2.5 text-white/10" />
+                <div className="px-3 py-2">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{section.name}</span>
                 </div>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon || Box;
                   const isActive = currentView === item.id;
@@ -219,15 +190,14 @@ export function SidebarNav({
                           <button
                             onClick={() => onViewChange(item.id as ViewType)}
                             className={cn(
-                              "w-full flex items-center gap-3 px-3 h-11 rounded-xl transition-all group",
+                              "w-full flex items-center gap-3 px-3 h-10 rounded-lg transition-all group",
                               isActive 
-                                ? "bg-primary text-[#001F3D] font-black shadow-[0_4px_12px_rgba(var(--primary),0.3)]" 
-                                : "text-white/40 dark:text-slate-400 hover:bg-white/5 dark:hover:bg-slate-900 hover:text-white"
+                                ? "bg-blue-600 text-white font-semibold shadow-lg shadow-blue-900/20" 
+                                : "text-slate-400 hover:bg-white/5 hover:text-white"
                             )}
                           >
-                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#001F3D]" : "text-white/20 group-hover:text-white transition-colors")} />
-                            {!isSlim && <span className="text-[10px] font-bold uppercase tracking-widest truncate">{customTitles[item.id] || item.label}</span>}
-                            {isActive && !isSlim && <ChevronRight className="h-3 w-3 ml-auto text-[#001F3D]/40" />}
+                            <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300")} />
+                            {!isSlim && <span className="text-[11px] font-medium tracking-wide truncate">{customTitles[item.id] || item.label}</span>}
                           </button>
                         </TooltipTrigger>
                         {isSlim && <TooltipContent side="right" className="bg-slate-900 text-white border-none text-[10px] font-bold uppercase">{item.label}</TooltipContent>}
@@ -241,16 +211,16 @@ export function SidebarNav({
         </div>
       </ScrollArea>
 
-      <div className="p-3 mt-auto border-t border-white/5 dark:border-border shrink-0 bg-[#001F3D] dark:bg-card">
+      <div className="p-4 border-t border-white/5 bg-[#1E293B]">
         <button 
           onClick={() => onViewChange('settings')}
           className={cn(
-            "w-full flex items-center gap-3 px-3 h-12 rounded-xl text-white/40 dark:text-slate-400 hover:text-white hover:bg-white/5 dark:hover:bg-slate-900 transition-colors",
+            "w-full flex items-center gap-3 px-3 h-10 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors",
             isSlim && "justify-center"
           )}
         >
           <Settings className="h-4 w-4 shrink-0" />
-          {!isSlim && <span className="text-[10px] font-bold uppercase tracking-widest">Configuration</span>}
+          {!isSlim && <span className="text-[11px] font-medium uppercase tracking-wider">Configuration</span>}
         </button>
       </div>
     </div>

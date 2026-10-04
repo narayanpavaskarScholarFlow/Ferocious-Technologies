@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -79,8 +78,8 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   theme: 'light',
   fontSize: 13,
   tableDensity: 'compact',
-  borderRadius: 0.25,
-  primaryColor: '215 60% 12%',
+  borderRadius: 0.5,
+  primaryColor: '221.2 83.2% 53.3%',
   sidebarMode: 'full',
   cardShadow: 'sm',
   labelCase: 'uppercase',
@@ -90,78 +89,40 @@ const DEFAULT_UI_SETTINGS: UISettings = {
   woNextNumber: 1001,
   logoSize: 32,
   billingTableSettings: {
-    colWidths: {
-      description: 400,
-      hsn: 112,
-      qty: 96,
-      unit: 112,
-      price: 160,
-      discount: 96,
-      gst: 96,
-      total: 192,
-    },
+    colWidths: { description: 400, hsn: 112, qty: 96, unit: 112, price: 160, discount: 96, gst: 96, total: 192 },
     rowHeight: 40,
   }
 };
 
-const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
-  overview: { title: 'Dashboard', category: 'Command Center', description: 'Real-time Industry 4.0 monitoring cockpit and executive KPI matrix.' },
-  analytics: { title: 'Analytics Dashboard', category: 'Command Center', description: 'Business intelligence and strategic performance analysis.' },
-  activity: { title: 'Activity Feed', category: 'Command Center', description: 'Real-time scrolling audit trail of all institutional events.' },
-  approvals: { title: 'Approvals', category: 'Command Center', description: 'Centralized management authorization gateway for institutional protocols.' },
-  notifications: { title: 'Notifications', category: 'Command Center', description: 'System alerts and high-priority operational signals.' },
-  sqcdp: { title: 'SQCDP Dashboard', category: 'Command Center', description: 'Safety, Quality, Cost, Delivery, and People performance matrix.' },
-  'customer-master': { title: 'Customer Master', category: 'Financial Hub', description: 'Manage customer identities, commercial terms, and account metadata.' },
+const VIEW_CONFIG: Record<ViewType | string, ViewMetadata> = {
+  overview: { title: 'Executive Dashboard', category: 'Command Center', description: 'Institutional performance summary and real-time business health.' },
+  analytics: { title: 'Analytics Dashboard', category: 'Command Center', description: 'Business intelligence and strategic yield analysis.' },
+  activity: { title: 'Activity Log', category: 'Command Center', description: 'Full audit trail of all institutional events.' },
+  sqcdp: { title: 'Performance Metrics', category: 'Command Center', description: 'Safety, Quality, Cost, Delivery, and People KPI matrix.' },
+  'customer-master': { title: 'Customer Master', category: 'Financial Hub', description: 'Manage customer accounts and commercial metadata.' },
   'vendor-master': { title: 'Vendor Master', category: 'Financial Hub', description: 'Supply chain partner directory and external resource management.' },
-  'product-master': { title: 'Product Master', category: 'Financial Hub', description: 'Institutional product registry and service classification matrix.' },
-  quotation: { title: 'Quotation', category: 'Financial Hub', description: 'Manage customer proposals, price estimations, and quote history.' },
-  'customer-po': { title: 'Customer Purchase Orders', category: 'Financial Hub', description: 'Track received purchase mandates and link to production threads.' },
-  'sale-order': { title: 'Sales Orders', category: 'Financial Hub', description: 'Master registry of authorized sales mandates.' },
-  'sale-invoice': { title: 'Sales Invoices', category: 'Financial Hub', description: 'Track institutional revenue, billing cycles, and tax compliance.' },
-  'purchase-order': { title: 'Purchase Orders', category: 'Financial Hub', description: 'Manage external procurement mandates for vendors.' },
-  'purchase-invoice': { title: 'Purchase Invoices', category: 'Financial Hub', description: 'Record and verify inward billing from supply chain partners.' },
-  'delivery-challan': { title: 'Delivery Challans', category: 'Financial Hub', description: 'Logistical delivery documentation and shipping manifests.' },
-  payments: { title: 'Payments', category: 'Financial Hub', description: 'Track inward capital flow and commercial settlements.' },
-  'credit-note': { title: 'Credit Notes', category: 'Financial Hub', description: 'Manage commercial adjustments and sales returns.' },
-  'debit-note': { title: 'Debit Notes', category: 'Financial Hub', description: 'Manage purchase adjustments and vendor returns.' },
-  orders: { title: 'Work Orders', category: 'Production Hub', description: 'Master production threads and project lifecycle management.' },
-  'order-details': { title: 'Order Details', category: 'Production Hub', description: 'Deep-dive into specific work order metadata and technical links.' },
-  operations: { title: 'Operations Status', category: 'Production Hub', description: 'Real-time sequential yield tracking and operational spreadsheet.' },
-  'production-planner': { title: 'Production Planner', category: 'Production Hub', description: 'High-volume batch management and machine scheduling.' },
-  gantt: { title: 'Production Gantt', category: 'Production Hub', description: 'Visual timeline matrix of institutional production threads.' },
-  'shop-floor': { title: 'Shop Floor', category: 'Production Hub', description: 'Live telemetry from machine nodes and manufacturing cells.' },
-  quality: { title: 'Quality Management', category: 'Production Hub', description: 'Compliance verification, inspection reports, and dimensional audit.' },
-  delivery: { title: 'Dispatch Ledger', category: 'Production Hub', description: 'Triple-lock verification for terminal logistics and delivery.' },
-  inventory: { title: 'Inventory Management', category: 'Production Hub', description: 'Raw material stock, tooling ledger, and warehouse telemetry.' },
-  'machine-utilization': { title: 'Machine Management', category: 'Resource Hub', description: 'Asset fleet telemetry and OEE performance matrix.' },
-  'machine-load-plan': { title: 'Machine Load Planning', category: 'Resource Hub', description: 'Capacity allocation and asset block planning.' },
-  'tool-catalog': { title: 'Tool Catalog', category: 'Resource Hub', description: 'Technical specifications and metadata for industrial tooling.' },
-  'tool-cards': { title: 'Tool Cards', category: 'Resource Hub', description: 'Digital identity nodes for individual shop floor resources.' },
-  'my-portal': { title: 'Employee Portal', category: 'Resource Hub', description: 'Personal identity dashboard, training matrix, and absence ledger.' },
-  manpower: { title: 'Manpower Utilization', category: 'Resource Hub', description: 'Personnel allocation, efficiency index, and workforce health.' },
-  training: { title: 'Training Management', category: 'Resource Hub', description: 'Educational curriculum nodes and protocol certifications.' },
+  'product-master': { title: 'Product Registry', category: 'Financial Hub', description: 'Institutional product registry and service classification matrix.' },
+  quotation: { title: 'Quotation Ledger', category: 'Financial Hub', description: 'Manage customer proposals and price estimations.' },
+  'sale-order': { title: 'Sales Order Ledger', category: 'Financial Hub', description: 'Master registry of authorized sales mandates.' },
+  'sale-invoice': { title: 'Sales Invoice Ledger', category: 'Financial Hub', description: 'Track revenue, billing cycles, and tax compliance.' },
+  'purchase-order': { title: 'Purchase Order Ledger', category: 'Financial Hub', description: 'Manage procurement mandates for supply chain partners.' },
+  payments: { title: 'Payment Ledger', category: 'Financial Hub', description: 'Track inward capital flow and commercial settlements.' },
+  orders: { title: 'Work Order Management', category: 'Production Hub', description: 'Master production threads and project lifecycle management.' },
+  'order-details': { title: 'Order Identity', category: 'Production Hub', description: 'Deep-dive into specific work order metadata.' },
+  operations: { title: 'Operations Status', category: 'Production Hub', description: 'Sequential yield tracking and real-time operational spreadsheet.' },
+  'production-planner': { title: 'Production Planner', category: 'Production Hub', description: 'Batch management and resource synchronization.' },
+  gantt: { title: 'Production Timeline', category: 'Production Hub', description: 'Visual Gantt matrix of institutional production threads.' },
+  quality: { title: 'Quality Control', category: 'Production Hub', description: 'Compliance verification and dimensional audit reports.' },
+  delivery: { title: 'Dispatch Ledger', category: 'Production Hub', description: 'Terminal logistics yield and delivery performance matrix.' },
+  inventory: { title: 'Inventory Ledger', category: 'Production Hub', description: 'Raw material stock, tooling ledger, and stock telemetry.' },
+  'machine-utilization': { title: 'Asset Management', category: 'Resource Hub', description: 'Asset fleet OEE and operational load analysis.' },
+  'my-portal': { title: 'Employee Portal', category: 'Resource Hub', description: 'Personal dashboard, training matrix, and absence ledger.' },
   hr: { title: 'Employee Management', category: 'Resource Hub', description: 'Personnel governance, identity management, and payroll structure.' },
-  salary: { title: 'Salary Structure', category: 'Resource Hub', description: 'Financial compensation protocols and institutional payroll ledger.' },
-  users: { title: 'User Management', category: 'Administration', description: 'Global identity governance, roles, and security protocols.' },
-  roles: { title: 'Roles', category: 'Administration', description: 'Define functional role hierarchies and permission inheritance.' },
-  permissions: { title: 'Permissions', category: 'Administration', description: 'Granular control of institutional node access.' },
-  'approval-matrix': { title: 'Approval Matrix', category: 'Administration', description: 'Define hierarchical authorization thresholds for institutional transactions.' },
-  'print-templates': { title: 'Document Template Manager', category: 'Administration', description: 'Design and govern institutional print architectures and branding.' },
-  reports: { title: 'Reports', category: 'Administration', description: 'Consolidated analytical repository for cross-functional intelligence.' },
-  settings: { title: 'Settings', category: 'Administration', description: 'Global system configuration and UI architectural parameters.' },
-  'smart-quote': { title: 'Smart Quoting Assistant', category: 'Strategic Hub', description: 'AI-driven CAD analysis and predictive cost estimation.' },
+  users: { title: 'User Directory', category: 'Administration', description: 'Global identity governance, roles, and security protocols.' },
+  'print-templates': { title: 'Document Designer', category: 'Administration', description: 'Manage institutional print architectures and branding.' },
+  settings: { title: 'System Settings', category: 'Administration', description: 'Global system configuration and UI architectural parameters.' },
+  'smart-quote': { title: 'AI Quoting Assistant', category: 'Strategic Hub', description: 'AI-driven CAD analysis and predictive cost estimation.' },
   'strategy-hub': { title: 'Loan Project Hub', category: 'Strategic Hub', description: 'Strategic business planning and financial projection matrix.' },
-  'business-planning': { title: 'Business Planning', category: 'Strategic Hub', description: 'Institutional roadmap and long-term objective planning.' },
-  'dpr-generator': { title: 'DPR Generator', category: 'Strategic Hub', description: 'Automated generation of Detailed Project Reports for financial nodes.' },
-  'financial-projections': { title: 'Financial Projections', category: 'Strategic Hub', description: '5-year predictive financial matrix and growth forecasting.' },
-  // Compatibility mappings
-  'customer-orders': { title: 'Customer Master', category: 'Financial Hub', description: 'Manage customer identities and commercial metadata.' },
-  'user-detail': { title: 'User Identity', category: 'Administration', description: 'Deep-dive into personnel identity and access matrix.' },
-  'weekly-plan': { title: 'Master Schedule', category: 'Production Hub', description: 'Weekly operational plan and resource synchronization.' },
-  'work-log': { title: 'Daily Yield Logs', category: 'Production Hub', description: 'Personnel operational tracking and sequential log submission.' },
-  billing: { title: 'Financial Hub', category: 'Financial Hub', description: 'Unified financial transaction and ledger management node.' },
-  agile: { title: 'Agile Kanban', category: 'Command Center', description: 'High-velocity visual management of production threads.' },
-  'team-matrix': { title: 'My Team Matrix', category: 'Command Center', description: 'Monitoring hub for direct report personnel nodes.' },
 };
 
 function IndustrialERPInternal() {
@@ -174,10 +135,8 @@ function IndustrialERPInternal() {
   const [selectedDetailUserId, setSelectedDetailUserId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
   const [uiSettings, setUISettings] = useState<UISettings>(DEFAULT_UI_SETTINGS);
 
-  // Firestore Collections
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
   const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
   const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
@@ -194,114 +153,38 @@ function IndustrialERPInternal() {
   const slipsQuery = useMemoFirebase(() => collection(db, 'salary_slips'), [db]);
   const productsQuery = useMemoFirebase(() => collection(db, 'products'), [db]);
 
-  const { data: ordersData } = useCollection<Order>(ordersQuery);
-  const { data: customersData } = useCollection<Customer>(customersQuery);
-  const { data: usersDataRaw } = useCollection<SystemUser>(usersQuery);
-  const { data: machinesData } = useCollection<Machine>(machinesQuery);
-  const { data: vendorsData } = useCollection<Vendor>(vendorsQuery);
-  const { data: inventoryData } = useCollection<InventoryItem>(inventoryQuery);
-  const { data: billingData } = useCollection<BillingRecord>(billingQuery);
-  const { data: logsData } = useCollection<WorkLogEntryType>(logsQuery);
-  const { data: batchesData } = useCollection<ProductionBatch>(batchesQuery);
-  const { data: trainingsData } = useCollection<Training>(trainingsQuery);
-  const { data: assignmentsData } = useCollection<TrainingAssignment>(assignmentsQuery);
-  const { data: reportsData } = useCollection<QualityReport>(reportsQuery);
-  const { data: leavesData } = useCollection<UserLeave>(leavesQuery);
-  const { data: slipsData } = useCollection<SalarySlip>(slipsQuery);
-  const { data: productsData } = useCollection<ProductMaster>(productsQuery);
+  const { data: orders } = useCollection<Order>(ordersQuery);
+  const { data: customers } = useCollection<Customer>(customersQuery);
+  const { data: usersData } = useCollection<SystemUser>(usersQuery);
+  const { data: machines } = useCollection<Machine>(machinesQuery);
+  const { data: vendors } = useCollection<Vendor>(vendorsQuery);
+  const { data: inventory } = useCollection<InventoryItem>(inventoryQuery);
+  const { data: billing } = useCollection<BillingRecord>(billingQuery);
+  const { data: logs } = useCollection<WorkLogEntryType>(logsQuery);
+  const { data: batches } = useCollection<ProductionBatch>(batchesQuery);
+  const { data: trainings } = useCollection<Training>(trainingsQuery);
+  const { data: assignments } = useCollection<TrainingAssignment>(assignmentsQuery);
+  const { data: reports } = useCollection<QualityReport>(reportsQuery);
+  const { data: leaves } = useCollection<UserLeave>(leavesQuery);
+  const { data: slips } = useCollection<SalarySlip>(slipsQuery);
+  const { data: products } = useCollection<ProductMaster>(productsQuery);
 
-  const orders = ordersData || [];
-  const customers = customersData || [];
-  const usersData = usersDataRaw || [];
-  const machines = machinesData || [];
-  const vendors = vendorsData || [];
-  const inventory = inventoryData || [];
-  const billing = billingData || [];
-  const logs = logsData || [];
-  const batches = batchesData || [];
-  const trainings = trainingsData || [];
-  const assignments = assignmentsData || [];
-  const reports = reportsData || [];
-  const leaves = leavesData || [];
-  const slips = slipsData || [];
-  const products = productsData || [];
-
-  // Current User Context
   const currentUserData = useMemo(() => {
     if (!currentUser || !usersData) return null;
-    return usersData.find(u => 
-      u.name?.toLowerCase() === currentUser.toLowerCase() || 
-      u.email?.toLowerCase() === currentUser.toLowerCase() || 
-      u.username?.toLowerCase() === currentUser.toLowerCase()
-    );
+    return usersData.find(u => u.name === currentUser || u.email === currentUser);
   }, [currentUser, usersData]);
 
-  const masterAdmin = useMemo(() => {
-    return usersData.find(u => u.role === 'Master Admin' || u.username === 'admin');
-  }, [usersData]);
-
-  const brandLogo = useMemo(() => {
-    return masterAdmin?.uiSettings?.brandLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '';
-  }, [masterAdmin]);
-
-  const globalSystemSettings = useMemo(() => {
-    return masterAdmin?.uiSettings || DEFAULT_UI_SETTINGS;
-  }, [masterAdmin]);
-
-  useEffect(() => {
-    const targetSettings = { ...DEFAULT_UI_SETTINGS, ...(currentUserData?.uiSettings || {}) };
-    setUISettings(targetSettings);
-    
-    if (typeof document !== 'undefined') {
-      document.documentElement.style.setProperty('--primary', targetSettings.primaryColor);
-      document.documentElement.style.setProperty('--radius', `${targetSettings.borderRadius}rem`);
-      
-      if (targetSettings.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-  }, [currentUserData?.uiSettings]);
-
-  const handleToggleTheme = useCallback(() => {
-    if (!currentUserData) return;
-    const nextTheme = uiSettings.theme === 'dark' ? 'light' : 'dark';
-    const updatedSettings = { ...uiSettings, theme: nextTheme };
-    
-    setUISettings(updatedSettings);
-    setDocumentNonBlocking(doc(db, 'users', currentUserData.id), {
-      uiSettings: updatedSettings
-    }, { merge: true });
-
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [uiSettings, currentUserData, db]);
-
-  const isReportingManager = useMemo(() => {
-    if (!currentUser || !usersData) return false;
-    return usersData.some(u => u.reportingManager === currentUser);
-  }, [usersData, currentUser]);
+  const masterAdmin = useMemo(() => usersData?.find(u => u.role === 'Master Admin'), [usersData]);
+  const brandLogo = useMemo(() => masterAdmin?.uiSettings?.brandLogo || placeholderImages.placeholderImages.find(i => i.id === 'brand-logo')?.imageUrl || '', [masterAdmin]);
 
   const permissions = useMemo(() => {
-    const isMasterAdminUser = currentUser?.toLowerCase() === 'master admin';
-    if (isMasterAdminUser) {
-      const clearance: Record<string, PermissionLevel> = {};
-      Object.keys(VIEW_CONFIG).forEach(k => clearance[k] = 'full');
-      return clearance;
+    if (currentUser?.toLowerCase() === 'master admin') {
+      const p: Record<string, PermissionLevel> = {};
+      Object.keys(VIEW_CONFIG).forEach(k => p[k] = 'full');
+      return p;
     }
     return currentUserData?.permissions || {};
   }, [currentUser, currentUserData]);
-
-  const hasAccess = useCallback((view: string): boolean => {
-    if (currentUser?.toLowerCase() === 'master admin') return true;
-    if (view === 'my-portal' || view === 'settings' || view === 'user-detail') return true;
-    const level = permissions[view];
-    return level && level !== 'none';
-  }, [permissions, currentUser]);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('jayasimha_user');
@@ -309,137 +192,93 @@ function IndustrialERPInternal() {
     setCurrentUser(null);
   }, []);
 
-  const handleViewChange = (view: ViewType) => {
-    if (!hasAccess(view)) return;
-    setCurrentView(view);
-    setIsMobileMenuOpen(false);
-  };
-
   useEffect(() => {
     setMounted(true);
-    const savedUser = localStorage.getItem('jayasimha_user');
-    if (savedUser) {
-      setCurrentUser(savedUser);
-      setIsLoggedIn(true);
-    }
+    const saved = localStorage.getItem('jayasimha_user');
+    if (saved) { setCurrentUser(saved); setIsLoggedIn(true); }
   }, []);
 
   if (!mounted) return null;
+  if (!isLoggedIn) return <><LoginScreen onLogin={(u) => { localStorage.setItem('jayasimha_user', u); setCurrentUser(u); setIsLoggedIn(true); }} users={usersData || []} brandLogo={brandLogo} /><Toaster /></>;
 
-  if (!isLoggedIn) {
-    return <><LoginScreen onLogin={(user) => { localStorage.setItem('jayasimha_user', user); setCurrentUser(user); setIsLoggedIn(true); }} users={usersData} brandLogo={brandLogo} /><Toaster /></>;
-  }
-
-  const currentViewMetadata = VIEW_CONFIG[currentView] || { title: 'Mission Control', category: 'Command Center', description: 'Master operational node.' };
+  const currentViewMetadata = VIEW_CONFIG[currentView] || { title: 'Unknown Page', category: 'Hub', description: '' };
   const pageDisplayTitle = uiSettings.customTitles[currentView] || currentViewMetadata.title;
 
   return (
-    <div className={cn("flex h-screen bg-background text-foreground font-body overflow-hidden transition-colors duration-500", uiSettings.theme === 'dark' ? "dark" : "")}>
+    <div className="flex h-screen bg-[#F8FAFC] text-[#0F172A] font-body overflow-hidden">
       <div className={cn("hidden lg:block shrink-0 transition-all duration-300", uiSettings.sidebarMode === 'slim' ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 
-          onViewChange={handleViewChange} 
+          onViewChange={setCurrentView} 
           permissions={permissions} 
           isSlim={uiSettings.sidebarMode === 'slim'}
-          customTitles={uiSettings.customTitles}
-          userRole={currentUserData?.role || 'User'}
-          isReportingManager={isReportingManager}
+          userRole={currentUserData?.role}
           brandLogo={brandLogo}
-          logoSize={uiSettings.logoSize}
         />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-16 bg-white dark:bg-card border-b border-slate-200 dark:border-border shrink-0 px-6 flex items-center justify-between shadow-sm z-50">
-          <div className="flex items-center gap-4">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 bg-[#001F3D] text-white border-none">
-                <SidebarNav 
-                  currentView={currentView} 
-                  onViewChange={handleViewChange} 
-                  permissions={permissions} 
-                  isSlim={false}
-                  brandLogo={brandLogo}
-                />
-              </SheetContent>
-            </Sheet>
-
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+        <header className="h-16 bg-white border-b border-slate-200 shrink-0 px-8 flex items-center justify-between z-50">
+          <div className="flex flex-col">
+             <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 <span>{currentViewMetadata.category}</span>
                 <ChevronRight className="h-2 w-2" />
-                <span className="text-primary">{pageDisplayTitle}</span>
-              </div>
-              <h2 className="text-xl font-display font-black text-[#001F3D] dark:text-white uppercase tracking-tight leading-none">{pageDisplayTitle}</h2>
-              <p className="text-[10px] text-slate-400 font-medium mt-1 leading-none hidden md:block">{currentViewMetadata.description}</p>
-            </div>
+                <span className="text-blue-600">{pageDisplayTitle}</span>
+             </div>
+             <h2 className="text-xl font-display font-bold text-slate-900 uppercase tracking-tight leading-none">{pageDisplayTitle}</h2>
           </div>
 
           <div className="flex items-center gap-6">
-             <Button variant="ghost" size="icon" onClick={handleToggleTheme} className="h-9 w-9 text-slate-400 hover:text-primary">
-                {uiSettings.theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-             </Button>
              <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-bold text-[#001F3D] dark:text-white leading-none">{currentUser}</p>
+                <p className="text-[11px] font-bold text-slate-900 leading-none">{currentUser}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'Personnel'}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 ring-primary/10">
+                   <Avatar className="h-9 w-9 border border-slate-200 cursor-pointer hover:ring-4 ring-blue-50 transition-all">
                       <AvatarImage src={currentUserData?.image} />
-                      <AvatarFallback className="bg-slate-100 dark:bg-slate-800 text-primary text-[10px] font-bold">FT</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 text-slate-400 text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1 rounded-md shadow-xl dark:bg-card">
-                   <DropdownMenuItem onClick={() => handleViewChange('settings')} className="text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile Matrix</DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-2xl border-slate-100">
+                   <DropdownMenuItem onClick={() => setCurrentView('settings')} className="text-xs gap-2"><User className="h-3.5 w-3.5" /> Profile Settings</DropdownMenuItem>
                    <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={handleLogout} className="text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Secure Exit</DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleLogout} className="text-xs gap-2 text-red-600"><LogOut className="h-3.5 w-3.5" /> Sign Out</DropdownMenuItem>
                 </DropdownMenuContent>
              </DropdownMenu>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full bg-background p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto w-full p-8 scrollbar-hide bg-[#F8FAFC]">
           <div className="animate-in fade-in duration-500 max-w-[1600px] mx-auto">
-            {currentView === 'overview' && <ShopFloorOverview orders={orders} reports={reports} logs={logs} machines={machines} inventory={inventory} billing={billing} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
-            {currentView === 'analytics' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="dashboard" /></div>}
-            {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
-            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} title="Employee Portal" />}
-            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} title="Employee Management" />}
-            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => handleViewChange('settings')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); handleViewChange('my-portal'); }} />}
-            {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
-            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} billing={billing} onBack={() => handleViewChange('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={globalSystemSettings} />}
-            {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders} users={usersData} machines={machines} />}
-            {currentView === 'billing' && <BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
-            {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
-            {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
-            {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} title="Control Center" />}
-            {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
-            {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
-            {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} />}
-            {currentView === 'production-planner' && <ProductionPlanner batches={batches} orders={orders} machines={machines} users={usersData} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
-            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines} />}
+            {currentView === 'overview' && <ShopFloorOverview orders={orders || []} reports={reports || []} logs={logs || []} machines={machines || []} inventory={inventory || []} billing={billing || []} />}
+            {currentView === 'analytics' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="dashboard" />}
+            {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders || []} reports={reports || []} logs={logs || []} users={usersData || []} assignments={assignments || []} />}
+            {currentView === 'activity' && <ActivityFeed />}
+            {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
+            {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
+            {currentView === 'product-master' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} permissions={permissions} onSaveRecord={()=>{}} onDeleteRecord={()=>{}} initialTab="product-master" />}
+            {currentView === 'quotation' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="quotation" />}
+            {currentView === 'sale-invoice' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="invoice" />}
+            {currentView === 'purchase-order' && <BillingManagement uiSettings={uiSettings} customers={customers || []} vendors={vendors || []} records={billing || []} orders={orders || []} users={usersData || []} inventory={inventory || []} products={products || []} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="purchase_order" />}
+            {currentView === 'orders' && <ShopFloorOrders orders={orders || []} billing={billing || []} logs={logs || []} machines={machines || []} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
+            {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders || []} customers={customers || []} staff={usersData || []} billing={billing || []} onBack={() => setCurrentView('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={uiSettings} />}
+            {currentView === 'operations' && <OperationsStatus initialOrderId={activeWorkOrderId} onOrderIdChange={setActiveWorkOrderId} orders={orders || []} users={usersData || []} machines={machines || []} />}
+            {currentView === 'production-planner' && <ProductionPlanner batches={batches || []} orders={orders || []} machines={machines || []} users={usersData || []} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
+            {currentView === 'gantt' && <ProductionGantt orders={orders || []} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
+            {currentView === 'quality' && <QualityManagement orders={orders || []} users={usersData || []} vendors={vendors || []} permissions={permissions} />}
+            {currentView === 'delivery' && <DispatchLedger orders={orders || []} reports={reports || []} billing={billing || []} onSaveOrder={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} />}
+            {currentView === 'inventory' && <InventoryManagement items={inventory || []} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
+            {currentView === 'work-log' && <WorkLogEntry logs={logs || []} machines={machines || []} users={usersData || []} orders={orders || []} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
+            {currentView === 'machine-utilization' && <MachineUtilization machines={machines || []} orders={orders || []} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
+            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments || []} leaves={leaves || []} slips={slips || []} holidays={[]} users={usersData || []} onNavigateToLogs={() => setCurrentView('work-log')} />}
+            {currentView === 'hr' && <HRManagement users={usersData || []} trainings={trainings || []} assignments={assignments || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={(t)=>setDocumentNonBlocking(doc(db,'trainings',t.id),t,{merge:true})} onDeleteTraining={(id)=>deleteDocumentNonBlocking(doc(db,'trainings',id))} onSaveAssignment={(a)=>setDocumentNonBlocking(doc(db,'training_assignments',a.id),a,{merge:true})} onDeleteAssignment={(id)=>deleteDocumentNonBlocking(doc(db,'training_assignments',id))} currentUser={currentUser} />}
+            {currentView === 'users' && <UserManagement users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
+            {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData || []} onBack={() => setCurrentView('settings')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); setCurrentView('my-portal'); }} />}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
+            {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines || []} />}
+            {currentView === 'strategy-hub' && <LoanProjectHub brandLogo={brandLogo} />}
             {currentView === 'print-templates' && <DocumentTemplateManager />}
-            {currentView === 'reports' && <ReportCenter billing={billing} orders={orders} machines={machines} logs={logs} reports={reports} />}
-            {currentView === 'customer-master' && <CustomerOrders customers={customers} vendors={vendors} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
-            {currentView === 'vendor-master' && <div className="p-0"><VendorManagement vendors={vendors} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} /></div>}
-            {currentView === 'product-master' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={()=>{}} onDeleteRecord={()=>{}} initialTab="product-master" /></div>}
-            {currentView === 'quotation' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="quotation" /></div>}
-            {currentView === 'customer-po' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="purchase_order" /></div>}
-            {currentView === 'sale-order' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="sale_order" /></div>}
-            {currentView === 'sale-invoice' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="invoice" /></div>}
-            {currentView === 'purchase-order' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="purchase_order" /></div>}
-            {currentView === 'purchase-invoice' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="purchase_invoice" /></div>}
-            {currentView === 'delivery-challan' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="delivery_challan" /></div>}
-            {currentView === 'payments' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="inward_payment" /></div>}
-            {currentView === 'credit-note' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="credit_note" /></div>}
-            {currentView === 'debit-note' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="debit_note" /></div>}
           </div>
         </main>
       </div>

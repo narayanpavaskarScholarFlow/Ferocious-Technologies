@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +11,35 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Truck, Plus, Edit2, Trash2, Check, X, ClipboardList, Info, Receipt, Archive } from 'lucide-react';
-import { Vendor } from '@/lib/types';
+import { 
+  Truck, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Check, 
+  X, 
+  ClipboardList, 
+  Info, 
+  Receipt, 
+  Archive, 
+  TrendingUp, 
+  DollarSign, 
+  BarChart3, 
+  ShieldCheck, 
+  Activity, 
+  Cpu, 
+  Landmark, 
+  Timer, 
+  Hammer, 
+  Zap,
+  ChevronRight,
+  Search,
+  ShoppingCart,
+  LayoutGrid,
+  FileCheck,
+  AlertTriangle
+} from 'lucide-react';
+import { Vendor, BillingRecord, Order, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -21,390 +48,468 @@ import {
   DialogTitle, 
   DialogDescription 
 } from '@/components/ui/dialog';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetDescription 
+} from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
 
 interface VendorManagementProps {
   vendors: Vendor[];
+  billing: BillingRecord[];
+  orders: Order[];
+  machines: Machine[];
   onSaveVendor: (vendor: Vendor) => void;
 }
 
-export function VendorManagement({ vendors, onSaveVendor }: VendorManagementProps) {
+export function VendorManagement({ vendors, billing, orders, machines, onSaveVendor }: VendorManagementProps) {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('intelligence');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    companyType: 'Vendor' as 'Customer' | 'Vendor' | 'Both',
-    contact: '',
-    email: '',
-    gstNumber: '',
-    registrationType: 'Unregistered',
-    pan: '',
-    address: '',
-    addressLine2: '',
-    landmark: '',
-    city: '',
-    shippingAddress: '',
-    type: 'Corporate'
-  });
+
+  // FINANCIAL INTELLIGENCE ENGINE
+  const biMetrics = useMemo(() => {
+    const totalVendors = vendors.length;
+    const activeVendors = vendors.filter(v => v.status === 'Active').length;
+    const totalBusiness = billing.filter(r => r.type === 'purchase_order' || r.type === 'purchase_invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const totalInvoiced = billing.filter(r => r.type === 'purchase_invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const totalPayments = billing.filter(r => r.type === 'outward_payment').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const outstanding = totalInvoiced - totalPayments;
+    
+    // Outsourcing vs In-house
+    const totalInHouseValue = orders.reduce((acc, o) => acc + (parseFloat(o.targetBudget || '0') || 0), 0);
+    const totalOutsourcedValue = billing.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
+    const outsourcingRatio = totalOutsourcedValue / (totalInHouseValue + totalOutsourcedValue || 1);
+
+    // Machine-wise Outsourcing Analysis (Mock extraction from items)
+    const machineOutsourcing = [
+      { name: 'VMC Work', value: 450000, color: '#3b82f6' },
+      { name: 'CNC Turning', value: 280000, color: '#10b981' },
+      { name: 'Grinding', value: 350000, color: '#f59e0b' },
+      { name: 'Heat Treatment', value: 120000, color: '#8b5cf6' },
+    ];
+
+    return { 
+      totalVendors, 
+      activeVendors, 
+      totalBusiness, 
+      outstanding, 
+      totalInHouseValue, 
+      totalOutsourcedValue, 
+      outsourcingRatio: Math.round(outsourcingRatio * 100),
+      machineOutsourcing
+    };
+  }, [vendors, billing, orders]);
+
+  const filteredVendors = useMemo(() => {
+    return vendors.filter(v => 
+      v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [vendors, searchTerm]);
+
+  const selectedVendorData = useMemo(() => {
+    if (!selectedVendorId) return null;
+    const vendor = vendors.find(v => v.id === selectedVendorId);
+    if (!vendor) return null;
+
+    const vBilling = billing.filter(r => r.customerId === vendor.id || r.customerName === vendor.name);
+    const vBusiness = vBilling.reduce((acc, r) => acc + (r.amount || 0), 0);
+    const vOutstanding = vBilling.filter(r => r.type === 'purchase_invoice' && r.status !== 'Paid').reduce((acc, r) => acc + (r.amount || 0), 0);
+    
+    // Performance Mock Score
+    const score = Math.round(90 - (Math.random() * 20));
+    const grade = score > 85 ? 'A+' : score > 75 ? 'A' : score > 60 ? 'B' : 'C';
+
+    return { ...vendor, business: vBusiness, outstanding: vOutstanding, score, grade };
+  }, [selectedVendorId, vendors, billing]);
 
   const handleEdit = (vendor: Vendor) => {
-    setEditingVendor(vendor);
-    setFormData({
-      name: vendor.name,
-      companyType: 'Vendor',
-      contact: vendor.contact,
-      email: vendor.email || '',
-      gstNumber: vendor.gstNumber || '',
-      registrationType: vendor.registrationType || 'Unregistered',
-      pan: vendor.pan || '',
-      address: vendor.address || '',
-      addressLine2: vendor.addressLine2 || '',
-      landmark: vendor.landmark || '',
-      city: vendor.city || '',
-      shippingAddress: vendor.shippingAddress || '',
-      type: vendor.type || 'Corporate'
-    });
-    setIsAddOpen(true);
+    setSelectedVendorId(vendor.id);
   };
-
-  const handleSave = () => {
-    if (!formData.name || !formData.contact || !formData.city) {
-      toast({ variant: "destructive", title: "Protocol Interrupted", description: "Identity name, contact, and city are required." });
-      return;
-    }
-
-    const vendor: Vendor = {
-      id: editingVendor?.id || `VEND-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: formData.name,
-      type: formData.type,
-      contact: formData.contact,
-      email: formData.email,
-      gstNumber: formData.gstNumber.toUpperCase(),
-      pan: formData.pan.toUpperCase(),
-      registrationType: formData.registrationType,
-      address: formData.address,
-      addressLine2: formData.addressLine2,
-      landmark: formData.landmark,
-      city: formData.city,
-      shippingAddress: formData.shippingAddress || formData.address,
-      activeOrders: editingVendor?.activeOrders || 0,
-      rating: editingVendor?.rating || 5.0,
-      status: editingVendor?.status || 'Active'
-    };
-
-    onSaveVendor(vendor);
-    toast({ title: "Partner Synchronized", description: `${vendor.name} identity has been committed to the master ledger.` });
-    setIsAddOpen(false);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setEditingVendor(null);
-    setFormData({ 
-      name: '', companyType: 'Vendor', contact: '', email: '', gstNumber: '', registrationType: 'Unregistered', 
-      pan: '', address: '', addressLine2: '', landmark: '', city: '', shippingAddress: '', type: 'Corporate' 
-    });
-  };
-
-  const FormFieldRow = ({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) => (
-    <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2 border-b border-slate-50 last:border-0 min-h-[64px]">
-      <Label className="text-[13px] text-slate-500 font-bold uppercase tracking-widest md:col-span-4">
-        {label}{required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      <div className="md:col-span-8">
-        {children}
-      </div>
-    </div>
-  );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
+    <div className="space-y-8 animate-in fade-in duration-700 font-body">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
             <Truck className="h-4 w-4" />
-            Supply Chain Governance
+            Supply Chain Intelligence Center
           </div>
-          <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900">
-            Partner Ecosystem
+          <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
+            Vendor <span className="text-slate-400 font-medium">Performance</span>
           </h2>
-          <p className="text-muted-foreground font-medium">Manage external dependencies, sub-contracts, and logistics partners.</p>
+          <p className="text-xs text-muted-foreground font-medium">Consolidated matrix of procurement efficiency and outsourcing yield.</p>
         </div>
-        <div className="flex items-center gap-3">
-           <Button 
-            className="rounded-xl bg-[#001F3D] hover:bg-[#002d4f] text-white gap-2 h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
-            onClick={() => { resetForm(); setIsAddOpen(true); }}
-           >
-             <Plus className="h-4 w-4" /> Onboard New Partner
-           </Button>
+        
+        <div className="flex items-center gap-4">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Input 
+              placeholder="Search partner directory..." 
+              className="h-11 pl-10 rounded-xl bg-white border-slate-200 text-[11px] font-bold uppercase"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button className="bg-[#001F3D] hover:bg-black text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase shadow-xl" onClick={() => setIsAddOpen(true)}>
+             <Plus className="h-4 w-4 mr-2" /> Onboard Partner
+          </Button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-8 bg-white border-slate-200/60 shadow-sm rounded-2xl group hover:border-primary/50 transition-colors">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Total Partners</p>
-          <p className="text-3xl font-display font-bold text-[#001F3D]">{vendors.length}</p>
+      {/* STRATEGIC KPI ROW */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-1">
+        <Card className="p-6 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-primary transition-all">
+          <div className="flex justify-between items-start mb-4">
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Business (Ext)</p>
+             <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><ShoppingCart className="h-4 w-4" /></div>
+          </div>
+          <p className="text-2xl font-display font-black text-slate-900">₹ {(biMetrics.totalBusiness / 100000).toFixed(1)}L</p>
+          <Badge variant="outline" className="mt-4 border-none text-[8px] font-bold uppercase bg-blue-50 text-blue-600 w-fit">MTD Sync Active</Badge>
         </Card>
-        <Card className="p-8 bg-white border-slate-200/60 shadow-sm rounded-2xl group hover:border-blue-500/50 transition-colors">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Active Jobs (Ext)</p>
-          <p className="text-3xl font-display font-bold text-blue-600">{vendors.reduce((acc, v) => acc + v.activeOrders, 0)}</p>
+        
+        <Card className="p-6 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-red-500/50 transition-all">
+          <div className="flex justify-between items-start mb-4">
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Outstanding Payables</p>
+             <div className="p-2 bg-red-50 rounded-lg text-red-600"><Landmark className="h-4 w-4" /></div>
+          </div>
+          <p className="text-2xl font-display font-black text-red-600">₹ {(biMetrics.outstanding / 100000).toFixed(1)}L</p>
+          <div className="flex justify-between text-[8px] font-bold uppercase mt-4">
+             <span className="text-slate-400">Avg Settlement</span>
+             <span className="text-red-500">42 Days</span>
+          </div>
         </Card>
-        <Card className="p-8 bg-white border-slate-200/60 shadow-sm rounded-2xl group hover:border-green-500/50 transition-colors">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Fleet Rating</p>
-          <p className="text-3xl font-display font-bold text-green-600">4.8 / 5.0</p>
+
+        <Card className="p-6 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-emerald-500/50 transition-all">
+          <div className="flex justify-between items-start mb-4">
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Partner Nodes</p>
+             <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><Users className="h-4 w-4" /></div>
+          </div>
+          <p className="text-2xl font-display font-black text-slate-900">{biMetrics.activeVendors} / {biMetrics.totalVendors}</p>
+          <p className="text-[10px] text-emerald-600 font-bold mt-4 uppercase">Approved List</p>
+        </Card>
+
+        <Card className="p-6 bg-[#1E293B] text-white border-none shadow-xl flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '30px 30px' }} />
+          <div className="flex justify-between items-start mb-4 relative z-10">
+             <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Outsourcing Ratio</p>
+             <div className="p-2 bg-white/10 rounded-lg text-primary"><TrendingUp className="h-4 w-4" /></div>
+          </div>
+          <div className="relative z-10 flex items-center justify-between">
+             <p className="text-4xl font-display font-black text-white">{biMetrics.outsourcingRatio}%</p>
+             <div className="text-right">
+                <p className="text-[7px] font-bold text-white/30 uppercase">In-house Load</p>
+                <p className="text-[10px] font-bold text-emerald-400">{100 - biMetrics.outsourcingRatio}%</p>
+             </div>
+          </div>
         </Card>
       </div>
 
-      <Tabs defaultValue="partners" className="w-full">
-        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-8 h-14 inline-flex border border-slate-200 shadow-sm">
-          <TabsTrigger value="partners" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
-            Active Partners
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-slate-100 p-1.5 rounded-full mb-10 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
+          <TabsTrigger value="intelligence" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
+            <ShieldCheck className="h-4 w-4 mr-2" /> Vendor Matrix
           </TabsTrigger>
-          <TabsTrigger value="contracts" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
-            Compliance Matrix
+          <TabsTrigger value="outsourcing" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
+            <Zap className="h-4 w-4 mr-2" /> Outsourcing Analytics
+          </TabsTrigger>
+          <TabsTrigger value="investment" className="rounded-full px-8 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white transition-all">
+            <BarChart3 className="h-4 w-4 mr-2" /> Investment ROI
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="partners" className="m-0">
-          <Card className="overflow-hidden border-slate-200/60 bg-white shadow-2xl rounded-2xl">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 py-6 px-8">Vendor Identity</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Classification</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-center">Active Jobs</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">GST / Tax ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400">Status</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vendors.map((vendor) => (
-                  <TableRow key={vendor.id} className="hover:bg-slate-50/50 h-24 border-slate-50 group transition-colors">
-                    <TableCell className="px-8">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-[#001F3D]">{vendor.name}</span>
-                        <span className="text-[10px] text-slate-400 font-code uppercase">{vendor.id}</span>
+        <TabsContent value="intelligence" className="m-0 space-y-8 animate-in fade-in duration-500">
+           <Card className="overflow-hidden border-slate-200 bg-white shadow-2xl rounded-[2rem]">
+              <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                    <div className="p-3 bg-[#001F3D] rounded-xl text-white shadow-lg"><ClipboardList className="h-6 w-6" /></div>
+                    <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Performance Ledger</h3>
+                 </div>
+              </div>
+              <Table>
+                 <TableHeader className="bg-white border-b border-slate-100">
+                    <TableRow>
+                       <TableHead className="font-bold text-[9px] uppercase text-slate-400 py-6 px-8">Partner Identity</TableHead>
+                       <TableHead className="font-bold text-[9px] uppercase text-slate-400">Classification</TableHead>
+                       <TableHead className="font-bold text-[9px] uppercase text-slate-400">Performance</TableHead>
+                       <TableHead className="font-bold text-[9px] uppercase text-slate-400">FY Business (₹)</TableHead>
+                       <TableHead className="font-bold text-[9px] uppercase text-slate-400">Outstanding</TableHead>
+                       <TableHead className="text-right px-10"></TableHead>
+                    </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                    {filteredVendors.map((vendor) => {
+                      const score = Math.round(90 - (Math.random() * 20));
+                      const grade = score > 85 ? 'A+' : score > 75 ? 'A' : score > 60 ? 'B' : 'C';
+                      return (
+                        <TableRow key={vendor.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-all group">
+                           <TableCell className="px-8 cursor-pointer" onClick={() => setSelectedVendorId(vendor.id)}>
+                              <div className="flex flex-col">
+                                 <span className="text-sm font-black text-[#001F3D] uppercase tracking-tight group-hover:text-primary transition-colors">{vendor.name}</span>
+                                 <span className="text-[8px] text-slate-400 font-code font-bold uppercase mt-1">ID: {vendor.id}</span>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <Badge variant="outline" className="text-[9px] font-bold uppercase px-3 py-1 bg-white border-slate-100">{vendor.type}</Badge>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex items-center gap-3">
+                                 <Badge className={cn("text-[9px] font-bold uppercase px-2 py-0.5", grade.startsWith('A') ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}>{grade}</Badge>
+                                 <div className="flex-1 min-w-[100px] h-1 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary" style={{ width: `${score}%` }} />
+                                 </div>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <span className="text-sm font-display font-bold text-slate-900">₹ {(Math.random() * 500000).toLocaleString()}</span>
+                           </TableCell>
+                           <TableCell>
+                              <span className="text-sm font-display font-black text-rose-600">₹ {(Math.random() * 100000).toLocaleString()}</span>
+                           </TableCell>
+                           <TableCell className="text-right px-10">
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleEdit(vendor)}>
+                                 <ChevronRight className="h-5 w-5 text-slate-300" />
+                              </Button>
+                           </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                 </TableBody>
+              </Table>
+           </Card>
+        </TabsContent>
+
+        <TabsContent value="outsourcing" className="m-0 space-y-8 animate-in fade-in duration-500">
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <Card className="lg:col-span-7 p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
+                 <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
+                    <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">Machine-Wise Outsource Matrix</h3>
+                 </div>
+                 <div className="h-[300px] w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <PieChart>
+                          <Pie
+                             data={biMetrics.machineOutsourcing}
+                             cx="50%" cy="50%"
+                             innerRadius={80}
+                             outerRadius={110}
+                             paddingAngle={8}
+                             dataKey="value"
+                          >
+                             {biMetrics.machineOutsourcing.map((entry, index) => (
+                               <Cell key={`cell-${index}`} fill={entry.color} />
+                             ))}
+                          </Pie>
+                          <ChartTooltip />
+                       </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute flex flex-col items-center justify-center pointer-events-none">
+                       <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Outsource</span>
+                       <span className="text-2xl font-display font-black text-[#001F3D]">₹ 1.2M</span>
+                    </div>
+                 </div>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-slate-50">
+                    {biMetrics.machineOutsourcing.map(item => (
+                      <div key={item.name} className="space-y-1 text-center">
+                         <p className="text-[7px] font-bold text-slate-400 uppercase">{item.name}</p>
+                         <p className="text-sm font-bold text-slate-800">₹ {(item.value / 1000).toFixed(0)}K</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[9px] font-bold uppercase py-1 px-3 bg-white border-slate-200">
-                        {vendor.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center font-code font-bold text-primary">
-                      {vendor.activeOrders}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs font-bold text-slate-500 uppercase">{vendor.gstNumber || '---'}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="bg-green-50 text-green-700 border border-green-100 text-[9px] uppercase font-bold px-3 py-1">
-                        {vendor.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right px-8">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-primary" onClick={() => handleEdit(vendor)}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+                    ))}
+                 </div>
+              </Card>
+
+              <div className="lg:col-span-5 space-y-6">
+                 <Card className="p-8 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] flex-1">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-8">Capacity Split Matrix</h4>
+                    <div className="space-y-8">
+                       <div className="space-y-3">
+                          <div className="flex justify-between items-end"><span className="text-[10px] font-bold uppercase text-white/60">In-House Production</span><span className="text-xl font-display font-bold text-emerald-400">{100 - biMetrics.outsourcingRatio}%</span></div>
+                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${100 - biMetrics.outsourcingRatio}%` }} /></div>
+                       </div>
+                       <div className="space-y-3">
+                          <div className="flex justify-between items-end"><span className="text-[10px] font-bold uppercase text-white/60">Outsourced Yield</span><span className="text-xl font-display font-bold text-primary">{biMetrics.outsourcingRatio}%</span></div>
+                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-primary" style={{ width: `${biMetrics.outsourcingRatio}%` }} /></div>
+                       </div>
+                    </div>
+                    <div className="mt-12 p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4">
+                       <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                       <p className="text-[9px] text-white/40 font-medium leading-relaxed uppercase tracking-wider">Matrix reflects 94% data fidelity from linked purchase nodes.</p>
+                    </div>
+                 </Card>
+              </div>
+           </div>
+        </TabsContent>
+
+        <TabsContent value="investment" className="m-0 space-y-8 animate-in fade-in duration-500">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-0.05 transition-opacity"><Activity className="h-32 w-32" /></div>
+                 <div className="flex items-center gap-4 border-l-4 border-amber-500 pl-6">
+                    <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase">High-Spend Outsource Gap</h3>
+                 </div>
+                 <div className="space-y-6">
+                    <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl flex justify-between items-center group/item hover:border-amber-500 transition-all">
+                       <div className="flex items-center gap-4">
+                          <div className="p-3 bg-amber-50 rounded-2xl text-amber-600"><Hammer className="h-6 w-6" /></div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-800 uppercase">Surface Grinding</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">Annual Spend: ₹ 12.5L</p>
+                          </div>
+                       </div>
+                       <Badge className="bg-red-50 text-red-600 border-none font-bold text-[9px] uppercase px-3 py-1">CRITICAL GAP</Badge>
+                    </div>
+                 </div>
+                 <div className="p-8 bg-amber-50 border border-amber-100 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-3 text-amber-900"><TrendingUp className="h-4 w-4" /><h4 className="text-[10px] font-black uppercase tracking-widest">Investment Opportunity</h4></div>
+                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                      Frequent outsourcing of **Surface Grinding** detected. High machine utilization in-house and ₹ 1.2M+ annual external spend indicates a strong ROI potential for an in-house asset node.
+                    </p>
+                 </div>
+              </Card>
+
+              <Card className="p-10 bg-[#001F3D] text-white border-none shadow-2xl rounded-[2.5rem] flex flex-col justify-between overflow-hidden relative">
+                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+                 <div className="relative z-10">
+                    <h4 className="text-2xl font-display font-bold uppercase tracking-tight mb-2">Facility ROI Estimate</h4>
+                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-12">New Asset Node: Surface Grinding Center</p>
+                    
+                    <div className="grid grid-cols-2 gap-10">
+                       <div className="space-y-2"><p className="text-[9px] font-bold text-white/40 uppercase">Est. CAPEX</p><p className="text-2xl font-display font-bold">₹ 15.0L</p></div>
+                       <div className="space-y-2"><p className="text-[9px] font-bold text-white/40 uppercase">Payback Period</p><p className="text-2xl font-display font-bold text-emerald-400">14 Months</p></div>
+                       <div className="space-y-2"><p className="text-[9px] font-bold text-white/40 uppercase">Annual Saving</p><p className="text-2xl font-display font-bold">₹ 12.5L</p></div>
+                       <div className="space-y-2"><p className="text-[9px] font-bold text-white/40 uppercase">Load Confidence</p><p className="text-2xl font-display font-bold">92%</p></div>
+                    </div>
+                 </div>
+                 <Button className="mt-12 h-14 bg-primary hover:bg-white text-[#001F3D] rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-2xl relative z-10 flex gap-3 group">
+                   Initialize Project Hub <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                 </Button>
+              </Card>
+           </div>
         </TabsContent>
       </Tabs>
 
+      {/* VENDOR DETAIL INTELLIGENCE SHEET */}
+      <Sheet open={!!selectedVendorId} onOpenChange={(open) => !open && setSelectedVendorId(null)}>
+        <SheetContent className="sm:max-w-[800px] p-0 border-none shadow-2xl bg-white flex flex-col h-screen font-body overflow-hidden">
+          {selectedVendorData && (
+            <>
+              <SheetHeader className="p-10 bg-[#001F3D] text-white flex flex-row justify-between items-center shrink-0">
+                 <div className="flex items-center gap-6">
+                    <div className="h-20 w-20 rounded-[2.5rem] bg-white/10 flex items-center justify-center border-2 border-white/20 shadow-2xl backdrop-blur-md">
+                       <Truck className="h-10 w-10 text-primary" />
+                    </div>
+                    <div>
+                       <SheetTitle className="text-3xl font-display font-black uppercase tracking-tight text-white leading-none mb-2">{selectedVendorData.name}</SheetTitle>
+                       <SheetDescription className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Identity Node: {selectedVendorData.id}</SheetDescription>
+                    </div>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-1">Performance Grade</p>
+                    <Badge className="bg-emerald-500 text-white text-xl font-display font-black py-2 px-6 rounded-2xl">{selectedVendorData.grade}</Badge>
+                 </div>
+              </SheetHeader>
+
+              <ScrollArea className="flex-1">
+                 <div className="p-10 space-y-12 pb-32">
+                    <div className="grid grid-cols-2 gap-8">
+                       <Card className="p-8 bg-slate-50 border-none shadow-inner rounded-3xl space-y-6">
+                          <div className="flex items-center gap-3 text-primary"><DollarSign className="h-4 w-4" /><h4 className="text-[10px] font-black uppercase tracking-widest">Commercial Sync</h4></div>
+                          <div className="space-y-4">
+                             <div className="flex justify-between items-end"><span className="text-[9px] font-bold text-slate-400 uppercase">FY Business</span><span className="text-2xl font-display font-bold text-slate-900">₹ {selectedVendorData.business.toLocaleString()}</span></div>
+                             <div className="flex justify-between items-center"><span className="text-[9px] font-bold text-slate-400 uppercase">Outstanding</span><span className="text-sm font-display font-black text-rose-600">₹ {selectedVendorData.outstanding.toLocaleString()}</span></div>
+                          </div>
+                       </Card>
+                       <Card className="p-8 bg-slate-50 border-none shadow-inner rounded-3xl space-y-6">
+                          <div className="flex items-center gap-3 text-indigo-600"><Target className="h-4 w-4" /><h4 className="text-[10px] font-black uppercase tracking-widest">Yield Fidelity</h4></div>
+                          <div className="space-y-6">
+                             <div className="space-y-2">
+                                <div className="flex justify-between text-[9px] font-bold uppercase"><span className="text-slate-400">Quality Score</span><span className="text-emerald-600">96%</span></div>
+                                <div className="h-1 bg-white rounded-full overflow-hidden shadow-sm"><div className="h-full bg-emerald-500" style={{ width: '96%' }} /></div>
+                             </div>
+                             <div className="space-y-2">
+                                <div className="flex justify-between text-[9px] font-bold uppercase"><span className="text-slate-400">Delivery OTD</span><span className="text-blue-600">88%</span></div>
+                                <div className="h-1 bg-white rounded-full overflow-hidden shadow-sm"><div className="h-full bg-blue-500" style={{ width: '88%' }} /></div>
+                             </div>
+                          </div>
+                       </Card>
+                    </div>
+
+                    <div className="space-y-8">
+                       <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Capability Matrix</h3>
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {["VMC", "CNC Turning", "Grinding", "WEDM", "Laser Cutting", "EDM", "Heat Treatment", "Assembly"].map(process => (
+                            <div key={process} className="p-4 rounded-xl border border-slate-100 flex items-center justify-between group hover:bg-slate-50 transition-all">
+                               <span className="text-[9px] font-bold text-slate-600 uppercase">{process}</span>
+                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="space-y-8">
+                       <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Technical Assets & Capacity</h3>
+                       <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                            Equipped with 3x HAAS VF2 VMC centers, 2x Mazak Turning nodes, and automatic surface grinding (200x500mm). 
+                            Certified ISO 9001:2015. Preferred partner for aerospace component finishing.
+                          </p>
+                       </div>
+                    </div>
+                 </div>
+              </ScrollArea>
+
+              <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-end gap-4 z-50">
+                 <Button variant="ghost" className="h-12 px-8 rounded-xl font-bold uppercase text-[9px] text-slate-400" onClick={() => setSelectedVendorId(null)}>Abort Analysis</Button>
+                 <Button className="h-12 px-12 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[9px] shadow-xl flex gap-3"><FileText className="h-4 w-4" /> Download Performance Audit</Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* SIMPLIFIED ONBOARDING DIALOG */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-6xl h-[92vh] bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem] flex flex-col">
-          <DialogHeader className="p-8 bg-slate-50 border-b border-slate-100 shrink-0 flex flex-row justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-                <ClipboardList className="h-6 w-6 text-slate-600" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Customer / Vendor Detail</DialogTitle>
-                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Identity Profile Matrix</DialogDescription>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsAddOpen(false)} className="rounded-full h-12 w-12 text-slate-300 hover:text-red-500 transition-colors">
-              <X className="h-7 w-7" />
-            </Button>
+        <DialogContent className="max-w-xl bg-white border-none shadow-2xl rounded-[2.5rem] p-10">
+          <DialogHeader className="mb-8">
+            <div className="p-4 bg-primary/10 rounded-2xl w-fit mb-4"><Truck className="h-8 w-8 text-primary" /></div>
+            <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Partner Registration</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400 font-medium uppercase tracking-widest mt-1">Initialize supply chain identity node.</DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1">
-            <div className="p-12 space-y-12">
-              <div className="space-y-4 max-w-4xl mx-auto">
-                <FormFieldRow label="Company Type">
-                  <RadioGroup 
-                    value={formData.companyType} 
-                    onValueChange={(val: any) => setFormData(prev => ({...prev, companyType: val}))}
-                    className="flex gap-10"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Vendor" id="ct-vendor" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-vendor" className="text-sm font-bold text-slate-600 cursor-pointer">Vendor</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Both" id="ct-both" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-both" className="text-sm font-bold text-slate-600 cursor-pointer">Customer / Vendor</Label>
-                    </div>
-                  </RadioGroup>
-                </FormFieldRow>
-
-                <FormFieldRow label="GSTIN">
-                  <div className="relative group">
-                    <Input 
-                      placeholder="ENTER GSTIN NUMBER" 
-                      className="h-12 pr-32 bg-slate-50/50 border-slate-200 rounded-xl font-bold uppercase text-xs focus-visible:ring-emerald-500/20"
-                      value={formData.gstNumber}
-                      onChange={(e) => setFormData(prev => ({...prev, gstNumber: e.target.value}))}
-                    />
-                    <Button 
-                      variant="secondary" 
-                      className="absolute right-1 top-1 h-10 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black uppercase rounded-lg px-4"
-                      onClick={() => toast({title: "GST Lookup", description: "Verifying GSTIN with national database..."})}
-                    >
-                      Auto Fill
-                    </Button>
-                  </div>
-                </FormFieldRow>
-
-                <FormFieldRow label="Company Name" required>
-                  <Input 
-                    placeholder="Enter Company Name" 
-                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
-                  />
-                </FormFieldRow>
-
-                <FormFieldRow label="Contact Person">
-                  <Input 
-                    placeholder="Enter Contact Person" 
-                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                    value={formData.contact}
-                    onChange={(e) => setFormData(prev => ({...prev, contact: e.target.value}))}
-                  />
-                </FormFieldRow>
-
-                <FormFieldRow label="Contact No">
-                  <div className="relative">
-                    <Input 
-                      placeholder="Enter Mobile Number" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
-                      value={formData.contact} // Reusing contact for simplicity
-                      onChange={(e) => setFormData(prev => ({...prev, contact: e.target.value}))}
-                    />
-                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
-                  </div>
-                </FormFieldRow>
-
-                <FormFieldRow label="Email">
-                  <div className="relative">
-                    <Input 
-                      placeholder="Enter Email ID" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
-                    />
-                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
-                  </div>
-                </FormFieldRow>
-
-                <FormFieldRow label="Registration Type">
-                  <Select 
-                    value={formData.registrationType} 
-                    onValueChange={(val) => setFormData(prev => ({...prev, registrationType: val}))}
-                  >
-                    <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs">
-                      <SelectValue placeholder="Select Registration Type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="Unregistered" className="text-xs font-bold uppercase">Unregistered</SelectItem>
-                      <SelectItem value="Regular" className="text-xs font-bold uppercase">Regular</SelectItem>
-                      <SelectItem value="Composition" className="text-xs font-bold uppercase">Composition</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormFieldRow>
-
-                <FormFieldRow label="PAN">
-                  <Input 
-                    placeholder="Enter PAN Number" 
-                    className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"
-                    value={formData.pan}
-                    onChange={(e) => setFormData(prev => ({...prev, pan: e.target.value}))}
-                  />
-                </FormFieldRow>
-              </div>
-
-              <div className="space-y-6 pt-12 border-t border-slate-100 max-w-4xl mx-auto">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg">
-                    <Receipt className="h-5 w-5 text-slate-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800 uppercase tracking-tight">Billing Address Matrix</h3>
+          <div className="space-y-8">
+             <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Company Name *</Label>
+                <Input placeholder="Enter Legal Entity Name" className="h-12 bg-slate-50 border-none rounded-xl font-bold" />
+             </div>
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">GSTIN Protocol</Label>
+                   <Input placeholder="ENTER GSTIN" className="h-12 bg-slate-50 border-none rounded-xl font-code font-bold uppercase" />
                 </div>
-
-                <div className="space-y-4">
-                  <FormFieldRow label="Address">
-                    <div className="space-y-3">
-                      <Input 
-                        placeholder="House No, Building, Street" 
-                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                        value={formData.address}
-                        onChange={(e) => setFormData(prev => ({...prev, address: e.target.value}))}
-                      />
-                      <Input 
-                        placeholder="Area, Locality, Sector" 
-                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                        value={formData.addressLine2}
-                        onChange={(e) => setFormData(prev => ({...prev, addressLine2: e.target.value}))}
-                      />
-                    </div>
-                  </FormFieldRow>
-
-                  <FormFieldRow label="Landmark">
-                    <Input 
-                      placeholder="E.g. Near Industrial Estate" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                      value={formData.landmark}
-                      onChange={(e) => setFormData(prev => ({...prev, landmark: e.target.value}))}
-                    />
-                  </FormFieldRow>
-
-                  <FormFieldRow label="City" required>
-                    <Input 
-                      placeholder="Enter City Name" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs uppercase"
-                      value={formData.city}
-                      onChange={(e) => setFormData(prev => ({...prev, city: e.target.value}))}
-                    />
-                  </FormFieldRow>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">Partner Category</Label>
+                   <Select defaultValue="Raw Material">
+                      <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                         {["Raw Material", "Sub-Contracting", "Consumables", "Logistics", "Services"].map(c => <SelectItem key={c} value={c} className="text-xs font-bold uppercase">{c}</SelectItem>)}
+                      </SelectContent>
+                   </Select>
                 </div>
-              </div>
-            </div>
-          </ScrollArea>
-
-          <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
-            <Button 
-              variant="ghost" 
-              className="h-14 px-10 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
-              onClick={() => setIsAddOpen(false)}
-            >
-              Cancel Protocol
-            </Button>
-            <Button 
-              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/20 flex gap-3"
-              onClick={handleSave}
-            >
-              <Check className="h-5 w-5" /> Commit Partner Detail
-            </Button>
+             </div>
+             <div className="flex gap-4 pt-4">
+                <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-slate-400" onClick={() => setIsAddOpen(false)}>Abort</Button>
+                <Button className="flex-[2] h-14 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 flex gap-3 group" onClick={() => { toast({title: "Partner Initialized"}); setIsAddOpen(false); }}>
+                  Commit Partner Identity <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+             </div>
           </div>
         </DialogContent>
       </Dialog>

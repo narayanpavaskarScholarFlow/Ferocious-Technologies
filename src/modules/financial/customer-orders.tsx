@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -51,7 +50,8 @@ import {
   Wallet,
   Zap,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Users
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -768,3 +768,4 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
     </div>
   );
 }
+

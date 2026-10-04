@@ -50,10 +50,9 @@ import { LoanProjectHub } from '@/modules/strategic/loan-project-hub';
 import { ExternalDashboard } from '@/modules/strategic/external-dashboard';
 
 import { LoginScreen } from '@/components/login-screen';
-import { ReportCenter } from '@/components/report-center';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LogOut, User, ChevronRight, Home, Sun, Moon, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Menu, LogOut, User, ChevronRight, Sun, Moon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,16 +114,16 @@ const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
   'customer-master': { title: 'Customer Master', category: 'Financial Hub', description: 'Manage customer identities, commercial terms, and account metadata.' },
   'vendor-master': { title: 'Vendor Master', category: 'Financial Hub', description: 'Supply chain partner directory and external resource management.' },
   'product-master': { title: 'Product Master', category: 'Financial Hub', description: 'Institutional product registry and service classification matrix.' },
-  quotation: { title: 'Quotation Ledger', category: 'Financial Hub', description: 'Manage customer proposals, price estimations, and quote history.' },
+  quotation: { title: 'Quotation', category: 'Financial Hub', description: 'Manage customer proposals, price estimations, and quote history.' },
   'customer-po': { title: 'Customer Purchase Orders', category: 'Financial Hub', description: 'Track received purchase mandates and link to production threads.' },
-  'sale-order': { title: 'Sales Order Ledger', category: 'Financial Hub', description: 'Master registry of authorized sales mandates.' },
-  'sale-invoice': { title: 'Sales Invoice Ledger', category: 'Financial Hub', description: 'Track institutional revenue, billing cycles, and tax compliance.' },
-  'purchase-order': { title: 'Purchase Order Ledger', category: 'Financial Hub', description: 'Manage external procurement mandates for vendors.' },
-  'purchase-invoice': { title: 'Purchase Invoice Ledger', category: 'Financial Hub', description: 'Record and verify inward billing from supply chain partners.' },
-  'delivery-challan': { title: 'Delivery Challan Ledger', category: 'Financial Hub', description: 'Logistical delivery documentation and shipping manifests.' },
-  payments: { title: 'Payment Ledger', category: 'Financial Hub', description: 'Track inward capital flow and commercial settlements.' },
-  'credit-note': { title: 'Credit Note Ledger', category: 'Financial Hub', description: 'Manage commercial adjustments and sales returns.' },
-  'debit-note': { title: 'Debit Note Ledger', category: 'Financial Hub', description: 'Manage purchase adjustments and vendor returns.' },
+  'sale-order': { title: 'Sales Orders', category: 'Financial Hub', description: 'Master registry of authorized sales mandates.' },
+  'sale-invoice': { title: 'Sales Invoices', category: 'Financial Hub', description: 'Track institutional revenue, billing cycles, and tax compliance.' },
+  'purchase-order': { title: 'Purchase Orders', category: 'Financial Hub', description: 'Manage external procurement mandates for vendors.' },
+  'purchase-invoice': { title: 'Purchase Invoices', category: 'Financial Hub', description: 'Record and verify inward billing from supply chain partners.' },
+  'delivery-challan': { title: 'Delivery Challans', category: 'Financial Hub', description: 'Logistical delivery documentation and shipping manifests.' },
+  payments: { title: 'Payments', category: 'Financial Hub', description: 'Track inward capital flow and commercial settlements.' },
+  'credit-note': { title: 'Credit Notes', category: 'Financial Hub', description: 'Manage commercial adjustments and sales returns.' },
+  'debit-note': { title: 'Debit Notes', category: 'Financial Hub', description: 'Manage purchase adjustments and vendor returns.' },
   orders: { title: 'Work Orders', category: 'Production Hub', description: 'Master production threads and project lifecycle management.' },
   'order-details': { title: 'Order Details', category: 'Production Hub', description: 'Deep-dive into specific work order metadata and technical links.' },
   operations: { title: 'Operations Status', category: 'Production Hub', description: 'Real-time sequential yield tracking and operational spreadsheet.' },
@@ -134,21 +133,21 @@ const VIEW_CONFIG: Record<ViewType, ViewMetadata> = {
   quality: { title: 'Quality Management', category: 'Production Hub', description: 'Compliance verification, inspection reports, and dimensional audit.' },
   delivery: { title: 'Dispatch Ledger', category: 'Production Hub', description: 'Triple-lock verification for terminal logistics and delivery.' },
   inventory: { title: 'Inventory Management', category: 'Production Hub', description: 'Raw material stock, tooling ledger, and warehouse telemetry.' },
-  'machine-utilization': { title: 'Machine Utilization', category: 'Resource Hub', description: 'Asset fleet telemetry and OEE performance matrix.' },
+  'machine-utilization': { title: 'Machine Management', category: 'Resource Hub', description: 'Asset fleet telemetry and OEE performance matrix.' },
   'machine-load-plan': { title: 'Machine Load Planning', category: 'Resource Hub', description: 'Capacity allocation and asset block planning.' },
   'tool-catalog': { title: 'Tool Catalog', category: 'Resource Hub', description: 'Technical specifications and metadata for industrial tooling.' },
   'tool-cards': { title: 'Tool Cards', category: 'Resource Hub', description: 'Digital identity nodes for individual shop floor resources.' },
   'my-portal': { title: 'Employee Portal', category: 'Resource Hub', description: 'Personal identity dashboard, training matrix, and absence ledger.' },
   manpower: { title: 'Manpower Utilization', category: 'Resource Hub', description: 'Personnel allocation, efficiency index, and workforce health.' },
   training: { title: 'Training Management', category: 'Resource Hub', description: 'Educational curriculum nodes and protocol certifications.' },
-  hr: { title: 'HR Management', category: 'Resource Hub', description: 'Personnel governance, identity management, and payroll structure.' },
+  hr: { title: 'Employee Management', category: 'Resource Hub', description: 'Personnel governance, identity management, and payroll structure.' },
   salary: { title: 'Salary Structure', category: 'Resource Hub', description: 'Financial compensation protocols and institutional payroll ledger.' },
   users: { title: 'User Management', category: 'Administration', description: 'Global identity governance, roles, and security protocols.' },
   roles: { title: 'Roles', category: 'Administration', description: 'Define functional role hierarchies and permission inheritance.' },
   permissions: { title: 'Permissions', category: 'Administration', description: 'Granular control of institutional node access.' },
   'approval-matrix': { title: 'Approval Matrix', category: 'Administration', description: 'Define hierarchical authorization thresholds for institutional transactions.' },
   'print-templates': { title: 'Document Template Manager', category: 'Administration', description: 'Design and govern institutional print architectures and branding.' },
-  reports: { title: 'Report Center', category: 'Administration', description: 'Consolidated analytical repository for cross-functional intelligence.' },
+  reports: { title: 'Reports', category: 'Administration', description: 'Consolidated analytical repository for cross-functional intelligence.' },
   settings: { title: 'Settings', category: 'Administration', description: 'Global system configuration and UI architectural parameters.' },
   'smart-quote': { title: 'Smart Quoting Assistant', category: 'Strategic Hub', description: 'AI-driven CAD analysis and predictive cost estimation.' },
   'strategy-hub': { title: 'Loan Project Hub', category: 'Strategic Hub', description: 'Strategic business planning and financial projection matrix.' },
@@ -410,8 +409,8 @@ function IndustrialERPInternal() {
             {currentView === 'overview' && <ShopFloorOverview orders={orders} reports={reports} logs={logs} machines={machines} inventory={inventory} billing={billing} onNavigateToOrders={() => handleViewChange('orders')} onNavigateToMachine={() => handleViewChange('machine-utilization')} onNavigateToInventory={() => handleViewChange('inventory')} onNavigateToBilling={() => handleViewChange('billing')} />}
             {currentView === 'analytics' && <div className="p-0"><BillingManagement uiSettings={uiSettings} customers={customers} vendors={vendors} records={billing} orders={orders} users={usersData} inventory={inventory} products={products} permissions={permissions} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="dashboard" /></div>}
             {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders} reports={reports} logs={logs} users={usersData} assignments={assignments} />}
-            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} />}
-            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} />}
+            {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments} leaves={leaves} slips={slips} holidays={[]} users={usersData} onNavigateToLogs={() => handleViewChange('work-log')} title="Employee Portal" />}
+            {currentView === 'hr' && <HRManagement users={usersData} trainings={trainings} assignments={assignments} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={()=>{}} onDeleteTraining={()=>{}} onSaveAssignment={()=>{}} onDeleteAssignment={()=>{}} currentUser={currentUser} isReportingManager={isReportingManager} title="Employee Management" />}
             {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData} onBack={() => handleViewChange('settings')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); handleViewChange('my-portal'); }} />}
             {currentView === 'orders' && <ShopFloorOrders orders={orders} billing={billing} logs={logs} machines={machines} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders} customers={customers} staff={usersData} billing={billing} onBack={() => handleViewChange('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={globalSystemSettings} />}
@@ -420,7 +419,7 @@ function IndustrialERPInternal() {
             {currentView === 'work-log' && <WorkLogEntry logs={logs} machines={machines} users={usersData} orders={orders} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
             {currentView === 'inventory' && <InventoryManagement items={inventory} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
             {currentView === 'machine-utilization' && <MachineUtilization machines={machines} orders={orders} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
+            {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} title="Control Center" />}
             {currentView === 'gantt' && <ProductionGantt orders={orders} onNavigateToOperations={(id) => { setActiveWorkOrderId(id); setCurrentView('operations'); }} />}
             {currentView === 'quality' && <QualityManagement orders={orders} users={usersData} vendors={vendors} permissions={permissions} />}
             {currentView === 'delivery' && <DispatchLedger orders={orders} reports={reports} billing={billing} onSaveOrder={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} />}

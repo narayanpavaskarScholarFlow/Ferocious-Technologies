@@ -205,7 +205,7 @@ export function CustomerOrders({ customers, vendors, onSaveCustomer, onSaveVendo
             Institutional Identity Registry
           </div>
           <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D]">
-            Identity <span className="text-slate-400 font-medium">Registry</span>
+            Customer & Vendor <span className="text-slate-400 font-medium">Master</span>
           </h2>
           <p className="text-xs text-muted-foreground font-medium">Unified management for Customers and Supply Chain Partners.</p>
         </div>
@@ -238,10 +238,10 @@ export function CustomerOrders({ customers, vendors, onSaveCustomer, onSaveVendo
       <Tabs value={activeSubTab} onValueChange={(v: any) => setActiveSubTab(v)} className="w-full">
         <TabsList className="bg-slate-100 p-1.5 rounded-full mb-8 h-14 inline-flex border border-slate-200 shadow-sm gap-2">
           <TabsTrigger value="customers" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <Building2 className="h-4 w-4 mr-2" /> Customer Ledger
+            <Building2 className="h-4 w-4 mr-2" /> Customer Master
           </TabsTrigger>
           <TabsTrigger value="vendors" className="rounded-full px-10 h-11 font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-[#001F3D] data-[state=active]:text-white shadow-sm transition-all">
-            <Truck className="h-4 w-4 mr-2" /> Vendor Ledger
+            <Truck className="h-4 w-4 mr-2" /> Vendor Master
           </TabsTrigger>
         </TabsList>
 
@@ -249,7 +249,7 @@ export function CustomerOrders({ customers, vendors, onSaveCustomer, onSaveVendo
           <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
               <h3 className="text-lg font-display font-bold text-[#001F3D] uppercase tracking-tight">
-                {activeSubTab === 'customers' ? 'Active Customer Ledger' : 'Supply Chain Partner Matrix'}
+                {activeSubTab === 'customers' ? 'Active Customer Master' : 'Supply Chain Partner Matrix'}
               </h3>
             </div>
             <div className="flex items-center gap-4">
@@ -345,7 +345,7 @@ export function CustomerOrders({ customers, vendors, onSaveCustomer, onSaveVendo
                 <ClipboardList className="h-6 w-6 text-slate-600" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identify Matrix Node</DialogTitle>
+                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Identity Matrix Node</DialogTitle>
                 <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Identity Profile Matrix</DialogDescription>
               </div>
             </div>

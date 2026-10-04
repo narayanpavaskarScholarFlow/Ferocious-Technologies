@@ -163,10 +163,10 @@ export function MachineUtilization({ machines, orders, onSaveMachine }: MachineU
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-xs uppercase tracking-[0.2em]">
             <Activity className="h-4 w-4" />
-            Industrial Asset Telemetry
+            Machine Management Hub
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D]">
-            Assets <span className="text-slate-400 font-medium">& Infrastructure</span>
+            Machine <span className="text-slate-400 font-medium">Management</span>
           </h2>
           <p className="text-muted-foreground font-medium">Monitoring {machines.length} operational nodes across the plant floor.</p>
         </div>
@@ -497,7 +497,7 @@ export function MachineUtilization({ machines, orders, onSaveMachine }: MachineU
                     </div>
                   )}
                 </div>
-                <div className="text-[9px] font-bold text-white/20 uppercase tracking-[0.4em]">
+                <div className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">
                   {editingMachine ? 'ASSET_MOD_v2.4' : 'ASSET_REG_v2.4'}
                 </div>
               </div>

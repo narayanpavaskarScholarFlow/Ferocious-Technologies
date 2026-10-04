@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -211,11 +212,11 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-3xl font-display font-bold uppercase text-[#001F3D] tracking-tight leading-none">
-                {isNew ? 'Initialize Order' : 'Modify Order Matrix'}
+                {isNew ? 'Initialize Work Order' : 'Work Orders'}
               </h2>
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse-red" />
             </div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Master Order Architecture v2.4</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Master Order Hub v2.4</p>
           </div>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
@@ -230,7 +231,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
             className="flex-1 md:flex-none bg-[#001F3D] hover:bg-black text-white gap-3 h-12 px-8 font-bold text-[10px] uppercase tracking-widest rounded-xl shadow-xl shadow-primary/20 transition-all" 
             onClick={handleCommitOrder}
           >
-            <Save className="h-4 w-4" /> {isNew ? 'Finalize Master Order' : 'Synchronize Identity'}
+            <Save className="h-4 w-4" /> {isNew ? 'Finalize Work Order' : 'Synchronize Identity'}
           </Button>
         </div>
       </div>
@@ -271,7 +272,7 @@ export function OrderDetails({ orderId, onBack, customers, staff, onSave, orders
 
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
-                  <Building2 className="h-3 w-3" /> Customer Identity
+                  <Building2 className="h-3 w-3" /> Customer Master
                 </Label>
                 <Select value={customer} onValueChange={setCustomer}>
                   <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">

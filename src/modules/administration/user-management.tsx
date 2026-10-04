@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -157,7 +158,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Full credentials (Network Identifier, First/Last Name, and Security Key) are required."
+        description: "Full credentials (Username, First/Last Name, and Password) are required."
       });
       return;
     }
@@ -341,8 +342,8 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Username</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Functional Role</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100 text-center">Approval Limit</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Username login ID</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Pass</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Email Identifier</TableHead>
+                  <TableHead className="font-bold text-[10px] uppercase text-slate-400 border-r border-slate-100">Password</TableHead>
                   <TableHead className="font-bold text-[10px] uppercase text-right px-8">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -475,7 +476,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                 </div>
                 <div className="space-y-8">
                   {[
-                    { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & USER NAME' },
+                    { s: 1, label: editingUser ? 'Update Identity' : 'Register Identity', desc: 'NAME & USERNAME' },
                     { s: 2, label: 'Role Setup', desc: 'DEPT & FUNCTION' },
                     { s: 3, label: 'Credentials', desc: 'SECURITY SETUP' },
                   ].map((item) => (
@@ -557,7 +558,7 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Username login ID (Username)</Label>
+                            <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em]">Username</Label>
                             <div className="relative">
                               <Input 
                                 placeholder="unique_alias" 
@@ -711,13 +712,13 @@ export function UserManagement({ users, onSaveUser, onDeleteUser, onNavigateToDe
                     <div className="flex items-center gap-3">
                       <div className="h-1 w-8 bg-red-500 rounded-full" />
                       <div>
-                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">03. Password</h3>
+                        <h3 className="text-3xl font-display font-bold text-[#001F3D] tracking-tight uppercase">03. Credentials</h3>
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Secure Identity Initialization</p>
                       </div>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Identity Security Key (Password)</Label>
+                        <Label className="text-[9px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Password</Label>
                         <div className="relative">
                           <Input 
                             type={showPassword ? "text" : "password"} 

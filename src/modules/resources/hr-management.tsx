@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -41,7 +42,7 @@ export function HRManagement({
   onDeleteAssignment,
   currentUser,
   isReportingManager,
-  title = 'HR Management'
+  title = 'Employee Management'
 }: HRManagementProps) {
   const currentUserData = useMemo(() => {
     return users.find(u => u.name === currentUser || u.email === currentUser);
@@ -80,11 +81,12 @@ export function HRManagement({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 text-primary font-bold text-[10px] uppercase tracking-[0.2em]">
             <Briefcase className="h-4 w-4" />
-            Human Capital Hub
+            Resource Hub
           </div>
           <h2 className="text-4xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
             {title}
           </h2>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Employee governance and organizational matrix.</p>
         </div>
         
         <Card className="px-8 py-4 bg-white border border-slate-100 rounded-2xl shadow-xl">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -151,7 +152,7 @@ export function OperationsStatus({
             <FileSpreadsheet className="h-7 w-7" />
           </div>
           <div>
-            <h2 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Execution Control Matrix</h2>
+            <h2 className="text-2xl font-display font-bold text-[#001F3D] dark:text-white uppercase tracking-tight">Operations Status</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Master Routing & Sequential Yield</p>
           </div>
         </div>
@@ -333,7 +334,7 @@ export function OperationsStatus({
           </div>
           <h4 className="text-4xl font-display font-black text-[#001F3D] dark:text-white uppercase tracking-tight">Identity Required</h4>
           <p className="text-sm text-slate-400 mt-6 max-w-md mx-auto font-medium leading-relaxed uppercase tracking-widest">
-            Identify an active Work Order thread from the registry above to initialize the operational execution matrix.
+            Identify an active Work Order thread from the registry above to initialize the operations status matrix.
           </p>
         </div>
       )}

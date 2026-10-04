@@ -40,7 +40,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Landmark,
-  ShieldAlert
+  ShieldAlert,
+  Bell,
+  FileCheck,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -75,7 +78,7 @@ export function SidebarNav({
   }, []);
 
   const menuSections = useMemo(() => {
-    const isMasterAdmin = userRole === 'Master Admin';
+    const isMasterAdmin = userRole === 'Master Admin' || userRole?.toLowerCase() === 'master admin';
     const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || isMasterAdmin;
 
     const sections = [
@@ -129,7 +132,7 @@ export function SidebarNav({
           { id: 'machine-load-plan', icon: Calendar, label: 'Machine Load Planning' },
           { id: 'tool-catalog', icon: Box, label: 'Tool Catalog' },
           { id: 'tool-cards', icon: CreditCard, label: 'Tool Cards' },
-          { id: 'my-portal', icon: Contact, label: 'Personnel Portal' },
+          { id: 'my-portal', icon: Contact, label: 'Employee Portal' },
           { id: 'manpower', icon: Users, label: 'Manpower Utilization' },
           { id: 'training', icon: GraduationCap, label: 'Training Management' },
           { id: 'hr', icon: Briefcase, label: 'HR Management' },
@@ -180,7 +183,7 @@ export function SidebarNav({
       isSlim ? "w-20" : "w-64"
     )}>
       <div className={cn(
-        "bg-white/5 dark:bg-card border-b border-white/5 dark:border-border p-4 flex items-center gap-3",
+        "bg-white/5 dark:bg-card border-b border-white/5 dark:border-border p-4 flex items-center gap-3 shrink-0",
         isSlim && "justify-center"
       )}>
         <div className="relative rounded bg-white p-1" style={{ width: logoSize + 8, height: logoSize + 8 }}>
@@ -194,17 +197,17 @@ export function SidebarNav({
         )}
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-3 space-y-6">
+      <ScrollArea className="flex-1 w-full">
+        <div className="p-3 space-y-8 pb-20">
           {menuSections.map((section) => (
-            <div key={section.name} className="space-y-1">
+            <div key={section.name} className="space-y-2">
               {!isSlim && (
-                <div className="px-3 py-1 flex items-center justify-between">
-                  <span className="text-[8px] font-black text-white/20 dark:text-slate-500 uppercase tracking-[0.3em]">{section.name}</span>
+                <div className="px-3 pt-4 pb-2 flex items-center justify-between border-t border-white/5 first:border-0">
+                  <span className="text-[8px] font-black text-white/20 dark:text-slate-500 uppercase tracking-[0.35em]">{section.name}</span>
                   <ChevronDown className="h-2.5 w-2.5 text-white/10" />
                 </div>
               )}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon || Box;
                   const isActive = currentView === item.id;
@@ -216,14 +219,14 @@ export function SidebarNav({
                           <button
                             onClick={() => onViewChange(item.id as ViewType)}
                             className={cn(
-                              "w-full flex items-center gap-3 px-3 h-10 rounded-lg transition-all group",
+                              "w-full flex items-center gap-3 px-3 h-11 rounded-xl transition-all group",
                               isActive 
-                                ? "bg-primary text-[#001F3D] font-black shadow-lg" 
+                                ? "bg-primary text-[#001F3D] font-black shadow-[0_4px_12px_rgba(var(--primary),0.3)]" 
                                 : "text-white/40 dark:text-slate-400 hover:bg-white/5 dark:hover:bg-slate-900 hover:text-white"
                             )}
                           >
                             <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#001F3D]" : "text-white/20 group-hover:text-white transition-colors")} />
-                            {!isSlim && <span className="text-[10px] font-bold uppercase tracking-wider truncate">{customTitles[item.id] || item.label}</span>}
+                            {!isSlim && <span className="text-[10px] font-bold uppercase tracking-widest truncate">{customTitles[item.id] || item.label}</span>}
                             {isActive && !isSlim && <ChevronRight className="h-3 w-3 ml-auto text-[#001F3D]/40" />}
                           </button>
                         </TooltipTrigger>
@@ -238,11 +241,11 @@ export function SidebarNav({
         </div>
       </ScrollArea>
 
-      <div className="p-3 mt-auto border-t border-white/5 dark:border-border">
+      <div className="p-3 mt-auto border-t border-white/5 dark:border-border shrink-0 bg-[#001F3D] dark:bg-card">
         <button 
           onClick={() => onViewChange('settings')}
           className={cn(
-            "w-full flex items-center gap-3 px-3 h-10 rounded-lg text-white/40 dark:text-slate-400 hover:text-white hover:bg-white/5 dark:hover:bg-slate-900 transition-colors",
+            "w-full flex items-center gap-3 px-3 h-12 rounded-xl text-white/40 dark:text-slate-400 hover:text-white hover:bg-white/5 dark:hover:bg-slate-900 transition-colors",
             isSlim && "justify-center"
           )}
         >
@@ -252,64 +255,4 @@ export function SidebarNav({
       </div>
     </div>
   );
-}
-
-function FileCheck(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="m9 15 2 2 4-4" />
-    </svg>
-  )
-}
-
-function Shield(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  )
-}
-
-function Bell(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-    </svg>
-  )
 }

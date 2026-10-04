@@ -15,6 +15,7 @@ import {
   CreditCard,
   ClipboardList,
   Box,
+  Boxes,
   LineChart,
   ShieldCheck,
   LayoutGrid,
@@ -40,7 +41,8 @@ import {
   Bell,
   FileCheck,
   Shield,
-  Lock
+  Lock,
+  Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -145,7 +147,7 @@ export function SidebarNav({
         return level && level !== 'none';
       })
     })).filter(section => section.items.length > 0);
-  }, [permissions, userRole]);
+  }, [permissions, userRole, customTitles]);
 
   if (!mounted) return <div className="bg-[#1E293B] h-full w-full" />;
 
@@ -159,7 +161,13 @@ export function SidebarNav({
         isSlim && "justify-center"
       )}>
         <div className="relative rounded-lg bg-white p-1" style={{ width: logoSize + 4, height: logoSize + 4 }}>
-          <Image src={brandLogo} alt="Logo" fill className="object-contain" />
+          {brandLogo ? (
+            <Image src={brandLogo} alt="Logo" fill className="object-contain" />
+          ) : (
+            <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+              <Box className="h-4 w-4 text-slate-400" />
+            </div>
+          )}
         </div>
         {!isSlim && (
           <div className="flex flex-col">

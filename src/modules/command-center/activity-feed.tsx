@@ -15,6 +15,17 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { 
   History, 
   Clock, 
@@ -34,7 +45,10 @@ import {
   Filter,
   ArrowUpRight,
   LineChart,
-  Edit3
+  Edit3,
+  UserCheck,
+  FileText,
+  ShoppingCart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -90,7 +104,6 @@ export function ActivityFeed({ orders, reports, assignments, users, logs, leaves
       ? Math.round((filteredData.assignments.filter(a => a.status === 'Completed').length / filteredData.assignments.length) * 100)
       : 100;
 
-    // Performance Score logic
     const score = Math.round((qualityScore * 0.4) + (trainingComplete * 0.2) + (Math.min(100, (totalHours / 160) * 100) * 0.4));
 
     return { totalHours, completedTasks, qualityScore, trainingComplete, score };
@@ -107,8 +120,7 @@ export function ActivityFeed({ orders, reports, assignments, users, logs, leaves
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 font-body">
-      {/* Precision Header & Selector Matrix */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 px-2">
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-6 px-2">
         <div className="flex items-center gap-6 flex-1 w-full">
            <div className="space-y-1 shrink-0">
               <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-1">Identity Node</Label>
@@ -141,10 +153,7 @@ export function ActivityFeed({ orders, reports, assignments, users, logs, leaves
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Main Intelligence Grid */}
         <div className="lg:col-span-8 space-y-6">
-          
-          {/* Performance Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
              {[
                { label: 'Yield Hours', val: `${stats.totalHours.toFixed(1)}h`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -252,7 +261,6 @@ export function ActivityFeed({ orders, reports, assignments, users, logs, leaves
           </Tabs>
         </div>
 
-        {/* Accountability & Appraisal Panel */}
         <div className="lg:col-span-4 space-y-6 sticky top-24">
           <Card className="p-8 bg-slate-50 border border-slate-200 shadow-xl rounded-[2.5rem] relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] pointer-events-none transition-opacity"><Target className="h-32 w-32" /></div>
@@ -306,37 +314,8 @@ export function ActivityFeed({ orders, reports, assignments, users, logs, leaves
                 <Button className="w-full h-12 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[9px] tracking-[0.2em] shadow-xl">Commit Review</Button>
              </div>
           </Card>
-
-          <div className="p-6 bg-blue-50 border border-blue-100 rounded-[2rem] flex items-start gap-4">
-             <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-             <p className="text-[10px] text-blue-700 font-medium leading-relaxed">
-               This Center provides authoritative performance evidence derived from live ERP telemetry. Use these metrics for absolute objectivity during <b>Appraisal & Increment Protocols</b>.
-             </p>
-          </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function Info({ className, ...props }: any) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className} 
-      {...props}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4" />
-      <path d="M12 8h.01" />
-    </svg>
   );
 }

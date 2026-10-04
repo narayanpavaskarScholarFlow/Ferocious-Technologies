@@ -167,7 +167,7 @@ export function BillingManagement({
     const activeOrders = orders.filter(o => o.status === 'Active' || o.status === 'Production').length;
     const pendingDispatch = orders.filter(o => o.status === 'Ready for Delivery' || o.status === 'Inspection').length;
     const prodAchievement = orders.length > 0 ? Math.round(orders.reduce((acc, o) => acc + (o.progress || 0), 0) / orders.length) : 0;
-    const machineUtil = machines.length > 0 ? Math.round(machines.reduce((acc, m) => acc + (m.load || 0), 0) / machines.length) : 0;
+    const machineUtil = (machines || []).length > 0 ? Math.round(machines.reduce((acc, m) => acc + (m.load || 0), 0) / machines.length) : 0;
 
     const achievementPercent = monthlyBillingTarget > 0 ? (actualBillingAchieved / monthlyBillingTarget) * 100 : 0;
     const monthInward = records.filter(r => r.type === 'inward_payment' && isWithinInterval(parseISO(r.date), { start: mStart, end: mEnd }));
@@ -209,6 +209,16 @@ export function BillingManagement({
       financialTrends
     };
   }, [records, orders, machines, uiSettings.monthlyBillingTargets]);
+
+  const machineStatuses = useMemo(() => {
+    return (machines || []).slice(0, 6).map(m => ({
+      id: m.mcNumber || m.id,
+      name: m.name,
+      status: m.status,
+      yield: m.load,
+      color: m.status === 'Running' || m.status === 'active' ? 'text-emerald-600' : 'text-amber-600'
+    }));
+  }, [machines]);
 
   const filteredRecordsByType = useMemo(() => {
     return records.filter(r => {
@@ -532,4 +542,74 @@ export function BillingManagement({
       )}
     </div>
   );
+
+  function FullPageEditor() {
+    const totalQuotationVal = useMemo(() => {
+      return (formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0);
+    }, []);
+
+    const totalTax = useMemo(() => {
+      return (formData.items || []).reduce((acc, i) => acc + (i.total * (i.gstRate/100)), 0);
+    }, []);
+
+    const grandTotal = useMemo(() => {
+      let total = totalQuotationVal + totalTax;
+      total += (formData.additionalCharges || 0);
+      total += (formData.tcsAmount || 0);
+      total -= (formData.discountTotal || 0);
+      if (formData.isRoundOffActive) {
+        return Math.round(total);
+      }
+      return total;
+    }, [totalQuotationVal, totalTax, formData.additionalCharges, formData.tcsAmount, formData.discountTotal, formData.isRoundOffActive]);
+
+    return (
+      <div className="flex flex-col bg-[#F8FAFC] dark:bg-slate-950 min-h-screen animate-in fade-in duration-300 pb-20 font-body">
+        <div className="sticky top-0 z-50 bg-[#001F3D] text-white px-6 h-14 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => setIsRecordFormOpen(false)} className="text-white hover:bg-white/10 rounded-full h-10 w-10">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Transaction Matrix</span>
+              <h2 className="text-lg font-display font-bold uppercase leading-none">{activeTab.replace('_', ' ')} Registry</h2>
+            </div>
+          </div>
+          <div className="flex gap-3">
+             <Button variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl px-6 h-10 font-bold uppercase text-[9px] tracking-widest" onClick={() => setIsRecordFormOpen(false)}>Back</Button>
+             <Button className="bg-[#00E5A8] hover:bg-emerald-600 text-[#001F3D] h-10 px-8 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl flex gap-2" onClick={handleSave}>
+               <Printer className="h-4 w-4" /> Save & Print
+             </Button>
+             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-8 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl" onClick={handleSave}>
+               <Save className="h-4 w-4 mr-2" /> Save
+             </Button>
+          </div>
+        </div>
+
+        <div className="max-w-[1400px] mx-auto w-full p-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6 bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm rounded-xl">
+               <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">Customer Identification</h3>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+                  <div className="md:col-span-1 flex items-center"><Label className="text-[10px] font-black uppercase text-slate-400">Account M/S.<span className="text-red-500">*</span></Label></div>
+                  <div className="md:col-span-2">
+                    <Select value={formData.customerId} onValueChange={(id) => { 
+                      const c = customers.find(x => x.id === id); 
+                      setFormData({ ...formData, customerId: id, customerName: c?.name || '', contactPerson: c?.contactPerson || '', phoneNo: c?.contactNumber || '', gstNumber: c?.gstNumber || '' }); 
+                    }}>
+                      <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900 border-none rounded-lg text-xs font-bold uppercase">
+                        <SelectValue placeholder="Identify Account..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase">{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+               </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

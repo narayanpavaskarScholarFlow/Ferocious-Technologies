@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, 
@@ -36,7 +35,9 @@ import {
   ExternalLink,
   MoreVertical,
   Contact,
-  CreditCard
+  CreditCard,
+  ClipboardList,
+  Edit2
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -138,11 +139,7 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
     const quotes = cBilling.filter(r => r.type === 'quotation' && r.status === 'Pending').length;
     const activeWO = cOrders.filter(o => ['Active', 'Production', 'Planning'].includes(o.status)).length;
     
-    let health: 'A+' | 'A' | 'B' | 'C' | 'D' = 'B';
-    if (outstanding <= 0 && poVal > 100000) health = 'A';
-    else if (outstanding > poVal * 0.5) health = 'C';
-
-    return { poVal, outstanding, quotes, activeWO, health, invoiced, payments };
+    return { poVal, outstanding, quotes, activeWO, invoiced, payments };
   };
 
   const selectedCustomerData = useMemo(() => {
@@ -187,29 +184,17 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
     setEditingIdentityId(null);
   };
 
-  const HealthBadge = ({ health }: { health: string }) => {
-    const colors: Record<string, string> = {
-      'A+': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      'A': 'bg-green-50 text-green-700 border-green-200',
-      'B': 'bg-blue-50 text-blue-700 border-blue-200',
-      'C': 'bg-amber-50 text-amber-700 border-amber-200',
-      'D': 'bg-red-50 text-red-700 border-red-200'
-    };
-    return <Badge className={cn("text-[10px] font-black px-2 py-0.5 border shadow-sm", colors[health] || 'bg-slate-100')}>{health}</Badge>;
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-700 font-body">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
             <Target className="h-4 w-4" />
-            Customer Directory
+            Customer Master
           </div>
           <h2 className="text-3xl font-display font-bold tracking-tight text-[#001F3D] uppercase">
-            Customer <span className="text-slate-400 font-medium">Master</span>
+            Customer <span className="text-slate-400 font-medium">Directory</span>
           </h2>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Master registry of customer relationships and commercial standings.</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -234,7 +219,7 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
       {/* KPI SUMMARY */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-1">
         {[
-          { label: 'Total Customers', val: kpis.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Total', val: kpis.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Active', val: kpis.active, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Inactive', val: kpis.inactive, icon: XCircle, color: 'text-slate-400', bg: 'bg-slate-50' },
           { label: 'Outstanding', val: `₹ ${(kpis.outstanding / 100000).toFixed(1)}L`, icon: Landmark, color: 'text-rose-600', bg: 'bg-rose-50' },
@@ -377,7 +362,7 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
                             { label: 'Contact Person', val: selectedCustomerData.contactPerson, icon: User },
                             { label: 'Mobile', val: selectedCustomerData.contactNumber, icon: Phone },
                             { label: 'Email', val: selectedCustomerData.email, icon: Mail },
-                            { label: 'Location', val: selectedCustomerData.city, icon: Target },
+                            { label: 'Location', val: (selectedCustomerData as any).city || selectedCustomerData.location, icon: Target },
                           ].map(info => (
                             <div key={info.label} className="space-y-1">
                                <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase"><info.icon className="h-3 w-3" /> {info.label}</div>
@@ -477,7 +462,7 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
           </ScrollArea>
 
           <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
-            <Button variant="ghost" className="h-14 px-10 rounded-2xl font-bold uppercase text-[10px] text-slate-400" onClick={()=>setIsAddIdentityOpen(false)}>Cancel</Button>
+            <Button variant="ghost" className="h-14 px-10 rounded-xl font-bold uppercase text-[10px] text-slate-400" onClick={()=>setIsAddIdentityOpen(false)}>Cancel</Button>
             <Button className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={handleSaveIdentity}><Check className="h-4 w-4" /> Save Customer</Button>
           </div>
         </DialogContent>

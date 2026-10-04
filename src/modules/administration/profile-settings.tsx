@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -38,7 +37,6 @@ import {
   Palette,
   PanelLeft,
   Box,
-  CaseSensitive,
   Settings2,
   Contact,
   TableProperties,
@@ -77,10 +75,16 @@ import {
   Maximize2,
   FileText,
   Target,
-  PackageCheck
+  PackageCheck,
+  ShieldAlert,
+  Search,
+  Filter,
+  X,
+  Kanban,
+  Check
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { SystemUser, PermissionLevel, UISettings, ViewType } from '@/lib/types';
+import { SystemUser, PermissionLevel, UISettings, ViewType, NumberSeries } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
@@ -90,12 +94,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 
 const THEME_COLORS = [
-  { name: 'Classic Navy', value: '243 75% 59%', color: 'bg-[#6366f1]' },
-  { name: 'Emerald Forest', value: '142 71% 45%', color: 'bg-[#10b981]' },
-  { name: 'Cyber Crimson', value: '346 84% 61%', color: 'bg-[#f43f5e]' },
-  { name: 'Deep Amber', value: '38 92% 50%', color: 'bg-[#f59e0b]' },
-  { name: 'Royal Violet', value: '262 83% 58%', color: 'bg-[#8b5cf6]' },
-  { name: 'Stealth Grey', value: '215 25% 27%', color: 'bg-[#334155]' },
+  { name: 'Classic Navy', value: '221.2 83.2% 53.3%', color: 'bg-primary' },
+  { name: 'Emerald Forest', value: '142.1 76.2% 36.3%', color: 'bg-emerald-600' },
+  { name: 'Cyber Crimson', value: '0 72.2% 50.6%', color: 'bg-red-600' },
+  { name: 'Deep Amber', value: '38 92% 50%', color: 'bg-amber-500' },
+  { name: 'Royal Violet', value: '262 83% 58%', color: 'bg-violet-600' },
+  { name: 'Stealth Grey', value: '215 25% 27%', color: 'bg-slate-700' },
 ];
 
 const ACCESS_NODES: { id: ViewType | string; label: string; category: string; icon: any }[] = [
@@ -103,7 +107,7 @@ const ACCESS_NODES: { id: ViewType | string; label: string; category: string; ic
   { id: 'analytics', label: 'Analytics Dashboard', category: 'Functional Hub', icon: LineChart },
   { id: 'customer-master', label: 'Customer Master', category: 'Functional Hub', icon: Building2 },
   { id: 'vendor-master', label: 'Vendor Master', category: 'Functional Hub', icon: Truck },
-  { id: 'product-master', label: 'Product Registry', category: 'Functional Hub', icon: Box },
+  { id: 'product-master', label: 'Product Master', category: 'Functional Hub', icon: Box },
   { id: 'quotation', label: 'Quotation Ledger', category: 'Functional Hub', icon: FileText },
   { id: 'sale-invoice', label: 'Sales Invoice Ledger', category: 'Functional Hub', icon: Receipt },
   { id: 'purchase-order', label: 'Purchase Order Ledger', category: 'Functional Hub', icon: PackageCheck },
@@ -599,7 +603,7 @@ export function ProfileSettings({
                           </div>
                        </div>
                        <div className="space-y-3">
-                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Theme Palette</Label>
+                          <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Primary Brand Color</Label>
                           <div className="flex flex-wrap gap-3">
                              {THEME_COLORS.map(color => (
                                <button key={color.value} onClick={() => updateLocalUIField('primaryColor', color.value)} className={cn("h-10 w-10 rounded-xl transition-all border-4", color.color, localUI.primaryColor === color.value ? "border-slate-900 scale-110 shadow-lg" : "border-transparent opacity-40 hover:opacity-100")} />
@@ -632,7 +636,7 @@ export function ProfileSettings({
                           <div className="space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-100">
                              {[
                                { id: 'ai_insights', label: 'AI Business Insights' },
-                               { id: 'alerts', label: 'System Alert Command' },
+                               { id: 'alerts', label: 'System Alert Panel' },
                                { id: 'approvals', label: 'Quick Approval Gateway' },
                                { id: 'personnel', label: 'Personnel Live Feed' },
                              ].map(w => (

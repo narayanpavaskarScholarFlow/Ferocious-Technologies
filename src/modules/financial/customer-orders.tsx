@@ -43,7 +43,15 @@ import {
   ShieldCheck,
   Mail,
   Phone,
-  LayoutGrid
+  LayoutGrid,
+  ShieldAlert,
+  Globe,
+  Upload,
+  Calendar,
+  Wallet,
+  Zap,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -71,13 +79,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 
 const CUSTOMER_TYPES = [
-  "OEM", "Supplier", "Channel Partner", "Dealer", "Corporate", "Government", "R&D Customer", "Strategic Customer"
+  "OEM", "Corporate", "Government", "Channel Partner", "Dealer", "Service Customer", "Strategic Customer"
 ];
 
 const INDUSTRIES = [
   "Automotive", "Aerospace", "Medical", "Consumer Electronics", "Energy", "Defence", "General Engineering"
+];
+
+const PRIORITY_LEVELS = [
+  { id: 'VIP', label: 'VIP Customer', color: 'text-purple-600 bg-purple-50' },
+  { id: 'Strategic', label: 'Strategic Partner', color: 'text-blue-600 bg-blue-50' },
+  { id: 'Regular', label: 'Regular Customer', color: 'text-slate-600 bg-slate-50' },
+  { id: 'New', label: 'New Lead', color: 'text-emerald-600 bg-emerald-50' },
 ];
 
 interface CustomerOrdersProps {
@@ -114,10 +130,31 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
     addressLine2: '',
     landmark: '',
     city: '',
+    state: '',
+    pincode: '',
+    country: 'India',
     shippingAddress: '',
+    shippingSameAsBilling: true,
     type: 'Corporate' as 'Corporate' | 'Individual',
     industry: 'General Engineering',
-    customerType: 'Corporate'
+    customerType: 'Corporate',
+    website: '',
+    yearEstablished: '',
+    employeeCount: '',
+    annualTurnover: '',
+    designation: '',
+    department: '',
+    creditDays: '30',
+    creditLimit: '0',
+    currency: 'INR',
+    paymentTerms: 'Net 30',
+    taxTreatment: 'GST',
+    accountManager: '',
+    salesExecutive: '',
+    priority: 'Regular',
+    leadSource: 'Direct',
+    expectedCategory: 'Moulds',
+    projectedBiz: '0'
   });
 
   const kpis = useMemo(() => {
@@ -156,17 +193,14 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
     const outstanding = invoiced - payments;
     const quotes = cBilling.filter(r => r.type === 'quotation' && r.status === 'Pending').length;
     const activeWO = cOrders.filter(o => ['Active', 'Production', 'Planning'].includes(o.status)).length;
-    const completedWO = cOrders.filter(o => o.status === 'Completed').length;
-    const pendingDispatch = cOrders.filter(o => o.status === 'Ready for Delivery' || o.status === 'Dispatch').length;
-
-    // Health Score Logic (A+ to D)
+    
     let health: 'A+' | 'A' | 'B' | 'C' | 'D' = 'B';
     if (outstanding <= 0 && poVal > 1000000) health = 'A+';
     else if (outstanding < poVal * 0.2) health = 'A';
     else if (outstanding > poVal * 0.5) health = 'C';
     else if (outstanding > poVal) health = 'D';
 
-    return { poVal, outstanding, quotes, activeWO, completedWO, pendingDispatch, health, invoiced, payments };
+    return { poVal, outstanding, quotes, activeWO, health, invoiced, payments };
   };
 
   const selectedCustomerData = useMemo(() => {
@@ -186,28 +220,25 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
       return;
     }
     const id = editingIdentityId || `${newIdentity.companyType === 'Vendor' ? 'VEND' : 'CUST'}-${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    const baseData = {
+      ...newIdentity,
+      id,
+      gstNumber: newIdentity.gstNumber.toUpperCase(),
+      pan: newIdentity.pan.toUpperCase(),
+      status: 'Active',
+      totalOrders: 0
+    };
+
     if (newIdentity.companyType === 'Vendor') {
-      const vendorData: Vendor = {
-        id, name: newIdentity.name, type: newIdentity.type, contact: newIdentity.contactNumber, email: newIdentity.email,
-        gstNumber: newIdentity.gstNumber.toUpperCase(), pan: newIdentity.pan.toUpperCase(), registrationType: newIdentity.registrationType,
-        address: newIdentity.address, addressLine2: newIdentity.addressLine2, landmark: newIdentity.landmark,
-        city: newIdentity.city, shippingAddress: newIdentity.shippingAddress || newIdentity.address,
-        activeOrders: 0, rating: 5.0, status: 'Active'
-      };
-      onSaveVendor(vendorData);
+      onSaveVendor(baseData as any);
     } else {
-      const customerData: Customer = {
-        id, name: newIdentity.name, companyType: newIdentity.companyType, gstNumber: newIdentity.gstNumber.toUpperCase(),
-        contactPerson: newIdentity.contactPerson, contactNumber: newIdentity.contactNumber, email: newIdentity.email,
-        registrationType: newIdentity.registrationType, pan: newIdentity.pan.toUpperCase(), address: newIdentity.address,
-        addressLine2: newIdentity.addressLine2, landmark: newIdentity.landmark, city: newIdentity.city,
-        shippingAddress: newIdentity.shippingAddress || newIdentity.address, type: newIdentity.type, location: newIdentity.city,
-        totalOrders: 0, status: 'Active'
-      };
-      onSaveCustomer(customerData);
+      onSaveCustomer(baseData as any);
     }
-    toast({ title: "Identity Synchronized", description: `${newIdentity.name} details committed.` });
-    setIsAddIdentityOpen(false); setEditingIdentityId(null);
+    
+    toast({ title: "Customer Synchronized", description: `${newIdentity.name} has been onboarded.` });
+    setIsAddIdentityOpen(false); 
+    setEditingIdentityId(null);
   };
 
   const handleSelectAll = () => {
@@ -229,6 +260,29 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
     };
     return <Badge className={cn("text-[10px] font-black px-2 py-0.5 border shadow-sm", colors[health] || 'bg-slate-100')}>{health}</Badge>;
   };
+
+  const OnboardingSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+    <div className="space-y-6 pb-10 border-b border-slate-100 last:border-0 last:pb-0 pt-10 first:pt-0">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
+          <Icon className="h-4 w-4 text-slate-600" />
+        </div>
+        <h3 className="text-sm font-black uppercase text-slate-900 tracking-widest">{title}</h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+        {children}
+      </div>
+    </div>
+  );
+
+  const FormField = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
+    <div className="space-y-2">
+      <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest ml-1">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </Label>
+      {children}
+    </div>
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 font-body">
@@ -258,7 +312,7 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
             onClick={() => { setEditingIdentityId(null); setIsAddIdentityOpen(true); }}
             className="bg-[#001F3D] hover:bg-black text-white rounded-xl h-11 px-8 font-bold text-[10px] uppercase tracking-widest shadow-xl"
           >
-            <UserPlus className="mr-3 h-4 w-4" /> Register New Identity
+            <UserPlus className="mr-3 h-4 w-4" /> Onboard New Customer
           </Button>
         </div>
       </header>
@@ -312,16 +366,7 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
                   {INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm"><Download className="h-3.5 w-3.5" /> Export Intelligence</Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="rounded-xl border-slate-100 shadow-2xl p-1">
-                   <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 px-4">Export Customer List</DropdownMenuItem>
-                   <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 px-4">Export Global Ledger</DropdownMenuItem>
-                   <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 px-4">Export Outstanding Report</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest gap-2 shadow-sm"><Download className="h-3.5 w-3.5" /> Export Matrix</Button>
             </div>
           </div>
 
@@ -451,23 +496,6 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
                                 </div>
                              </Card>
                           </div>
-
-                          <div className="space-y-6">
-                             <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] border-l-4 border-primary pl-4">Critical Action Gateway</h4>
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {[
-                                  { label: 'Follow-up', icon: Phone, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                  { label: 'Pending PO', icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' },
-                                  { label: 'Payment Due', icon: Receipt, color: 'text-rose-600', bg: 'bg-rose-50' },
-                                  { label: 'Dispatch Hub', icon: PackageCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                ].map(task => (
-                                  <Card key={task.label} className="p-4 bg-white border border-slate-100 hover:border-primary transition-all cursor-pointer flex flex-col items-center gap-3 text-center rounded-2xl shadow-sm">
-                                     <div className={cn("p-2 rounded-xl", task.bg, task.color)}><task.icon className="h-5 w-5" /></div>
-                                     <span className="text-[9px] font-bold uppercase text-slate-700">{task.label}</span>
-                                  </Card>
-                                ))}
-                             </div>
-                          </div>
                        </TabsContent>
 
                        <TabsContent value="profile" className="m-0 animate-in fade-in duration-500">
@@ -487,258 +515,252 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
                                   </div>
                                 ))}
                              </div>
-                             <div className="space-y-8 pt-10 border-t border-slate-200">
-                                <div className="space-y-2"><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Registered Office Hub</p><p className="text-xs font-medium text-slate-600 leading-relaxed uppercase">{selectedCustomerData.address}</p></div>
-                                <div className="space-y-2"><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Dispatch / Shipping Matrix</p><p className="text-xs font-medium text-slate-600 leading-relaxed uppercase">{selectedCustomerData.shippingAddress}</p></div>
-                             </div>
                           </Card>
-                       </TabsContent>
-
-                       <TabsContent value="financials" className="m-0 space-y-10 animate-in fade-in duration-500">
-                          <Card className="p-10 bg-[#1E293B] text-white border-none shadow-2xl rounded-[2.5rem] relative overflow-hidden">
-                             <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-                             <div className="relative z-10 space-y-12">
-                                <div className="flex justify-between items-start">
-                                   <div><p className="text-[10px] font-black uppercase text-white/40 tracking-widest mb-2">Institutional Liquidity Index</p><h4 className="text-4xl font-display font-black tracking-tighter">₹ {selectedCustomerData.intel.outstanding.toLocaleString()}</h4></div>
-                                   <Badge className="bg-rose-500 text-white border-none text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-xl">OVERDUE_ALERT</Badge>
-                                </div>
-                                <div className="grid grid-cols-3 gap-10">
-                                   <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-1">Invoiced</p><p className="text-lg font-display font-black">₹ {selectedCustomerData.intel.invoiced.toLocaleString()}</p></div>
-                                   <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-1">Collected</p><p className="text-lg font-display font-black text-emerald-400">₹ {selectedCustomerData.intel.payments.toLocaleString()}</p></div>
-                                   <div><p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-1">PO Locked</p><p className="text-lg font-display font-black text-primary">₹ {selectedCustomerData.intel.poVal.toLocaleString()}</p></div>
-                                </div>
-                             </div>
-                          </Card>
-                          <div className="p-8 bg-slate-50 border border-slate-200 rounded-[2rem] flex flex-col items-center justify-center text-center opacity-40">
-                             <TrendingUp className="h-12 w-12 text-slate-300 mb-4" />
-                             <p className="text-[10px] font-bold uppercase tracking-widest">Revenue Growth Analytics & Payment Velocity Charts</p>
-                             <p className="text-[8px] text-slate-400 mt-1 uppercase italic">Generating historical yield trend matrix...</p>
-                          </div>
-                       </TabsContent>
-
-                       <TabsContent value="timeline" className="m-0 animate-in fade-in duration-500">
-                          <div className="relative pl-10 space-y-12 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-px before:bg-slate-100">
-                             {[
-                               { label: 'Customer Created', date: '---', icon: Contact, color: 'bg-blue-600' },
-                               { label: 'Quotation Generated', date: '---', icon: FileText, color: 'bg-amber-600' },
-                               { label: 'Customer PO Received', date: '---', icon: ShoppingCart, color: 'bg-emerald-600' },
-                               { label: 'Work Order Created', date: '---', icon: Target, color: 'bg-indigo-600' },
-                               { label: 'Invoice Raised', date: '---', icon: Receipt, color: 'bg-orange-600' },
-                               { label: 'Dispatch Completed', date: '---', icon: PackageCheck, color: 'bg-slate-900' },
-                             ].map((evt, i) => (
-                               <div key={i} className="relative group">
-                                  <div className={cn("absolute -left-10 top-0 h-10 w-10 rounded-2xl flex items-center justify-center text-white shadow-xl transition-transform group-hover:scale-110", evt.color)}><evt.icon className="h-5 w-5" /></div>
-                                  <div className="flex flex-col">
-                                     <h5 className="text-sm font-black text-[#001F3D] uppercase tracking-tight">{evt.label}</h5>
-                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Status: Initialized • Ledger Sync Active</p>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
                        </TabsContent>
                     </Tabs>
                  </div>
               </ScrollArea>
-
-              <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
-                 <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-600" /><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fidelity Link Active</span></div>
-                 <div className="flex gap-3">
-                    <Button variant="outline" className="rounded-xl h-12 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 bg-white" onClick={() => handleEditIdentity(selectedCustomerData)}><Edit2 className="h-4 w-4" /> Edit Account</Button>
-                    <Button className="rounded-xl bg-[#001F3D] text-white h-12 px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl">Close Matrix</Button>
-                 </div>
-              </div>
             </>
           )}
         </SheetContent>
       </Sheet>
 
+      {/* CUSTOMER ONBOARDING CENTER */}
       <Dialog open={isAddIdentityOpen} onOpenChange={setIsAddIdentityOpen}>
-        <DialogContent className="max-w-6xl h-[92vh] bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2rem] flex flex-col">
-          <DialogHeader className="p-8 bg-slate-50 border-b border-slate-100 shrink-0 flex flex-row justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-                <ClipboardList className="h-6 w-6 text-slate-600" />
+        <DialogContent className="max-w-[90vw] w-[1400px] h-[92vh] bg-white border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem] flex flex-col font-body">
+          <DialogHeader className="p-8 bg-[#001F3D] text-white shrink-0 flex flex-row justify-between items-center">
+            <div className="flex items-center gap-5">
+              <div className="p-4 bg-white/10 rounded-2xl border border-white/20 shadow-xl backdrop-blur-md">
+                <UserPlus className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{editingIdentityId ? 'Modify Identity' : 'Identify Matrix Node'}</DialogTitle>
-                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Identity Profile Matrix</DialogDescription>
+                <DialogTitle className="text-3xl font-display font-black text-white uppercase tracking-tight leading-none">Customer Onboarding Center</DialogTitle>
+                <DialogDescription className="text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] mt-2">Create and manage customer records, compliance details and business relationships.</DialogDescription>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsAddIdentityOpen(false)} className="rounded-full h-12 w-12 text-slate-300 hover:text-red-500 transition-colors">
-              <X className="h-7 w-7" />
+            <Button variant="ghost" size="icon" onClick={() => setIsAddIdentityOpen(false)} className="rounded-full h-12 w-12 text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+              <X className="h-8 w-8" />
             </Button>
           </DialogHeader>
 
-          <ScrollArea className="flex-1">
-            <div className="p-12 space-y-12">
-              <div className="space-y-4 max-w-4xl mx-auto">
-                <FormFieldRow label="Company Type">
-                  <RadioGroup 
-                    value={newIdentity.companyType} 
-                    onValueChange={(val: any) => handleInputChange('companyType', val)}
-                    className="flex gap-10"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Customer" id="ct-customer" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-customer" className="text-sm font-bold text-slate-600 cursor-pointer">Customer</Label>
+          <div className="flex-1 flex overflow-hidden">
+            {/* MAIN FORM AREA */}
+            <ScrollArea className="flex-1 bg-white p-12 border-r border-slate-100">
+               <div className="max-w-4xl mx-auto divide-y divide-slate-100">
+                  
+                  <OnboardingSection title="01. Customer Classification" icon={LayoutGrid}>
+                    <FormField label="Identity Context" required>
+                      <RadioGroup 
+                        value={newIdentity.companyType} 
+                        onValueChange={(val: any) => handleInputChange('companyType', val)}
+                        className="flex gap-8 bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner"
+                      >
+                        <div className="flex items-center space-x-3"><RadioGroupItem value="Customer" id="ct-customer" className="h-4 w-4 border-2 border-primary text-primary" /><Label htmlFor="ct-customer" className="text-xs font-bold text-slate-600 cursor-pointer">Customer</Label></div>
+                        <div className="flex items-center space-x-3"><RadioGroupItem value="Vendor" id="ct-vendor" className="h-4 w-4 border-2 border-primary text-primary" /><Label htmlFor="ct-vendor" className="text-xs font-bold text-slate-600 cursor-pointer">Vendor</Label></div>
+                        <div className="flex items-center space-x-3"><RadioGroupItem value="Both" id="ct-both" className="h-4 w-4 border-2 border-primary text-primary" /><Label htmlFor="ct-both" className="text-xs font-bold text-slate-600 cursor-pointer">Both</Label></div>
+                      </RadioGroup>
+                    </FormField>
+                    <FormField label="Customer Sub-Type" required>
+                      <Select value={newIdentity.customerType} onValueChange={(val) => handleInputChange('customerType', val)}>
+                        <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-xl">{CUSTOMER_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs font-bold uppercase">{t}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </FormField>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="02. GST & Compliance" icon={ShieldCheck}>
+                    <div className="col-span-full grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                       <div className="md:col-span-8">
+                          <FormField label="GSTIN Protocol" required>
+                             <div className="relative group">
+                                <Input placeholder="ENTER GSTIN NUMBER" className="h-12 pr-32 bg-slate-50/50 border-slate-200 rounded-xl font-bold uppercase text-xs focus-visible:ring-primary/20" value={newIdentity.gstNumber} onChange={(e) => handleInputChange('gstNumber', e.target.value)} />
+                                <Button variant="secondary" className="absolute right-1 top-1 h-10 bg-primary text-white hover:bg-black text-[9px] font-black uppercase rounded-lg px-6 shadow-lg" onClick={() => toast({title: "GST Synchronization", description: "Fetching company data from national matrix..."})}>Verify GST</Button>
+                             </div>
+                          </FormField>
+                       </div>
+                       <div className="md:col-span-4 pb-1">
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold text-[9px] uppercase px-4 h-10 w-full flex justify-center items-center gap-2"><CheckCircle2 className="h-3 w-3" /> Fiscally Verified</Badge>
+                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Vendor" id="ct-vendor" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-vendor" className="text-sm font-bold text-slate-600 cursor-pointer">Vendor</Label>
+                    <FormField label="PAN Registry">
+                       <Input placeholder="AUTO-POPULATED PAN" className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase" value={newIdentity.pan} onChange={(e) => handleInputChange('pan', e.target.value)} />
+                    </FormField>
+                    <FormField label="Registration Type">
+                       <Select value={newIdentity.registrationType} onValueChange={(val) => handleInputChange('registrationType', val)}>
+                          <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="Regular">Regular</SelectItem><SelectItem value="Composition">Composition</SelectItem><SelectItem value="Unregistered">Unregistered</SelectItem></SelectContent>
+                       </Select>
+                    </FormField>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="03. Company Information" icon={Building2}>
+                    <FormField label="Company Name" required>
+                       <Input placeholder="Enter legal entity name" className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs" value={newIdentity.name} onChange={(e) => handleInputChange('name', e.target.value)} />
+                    </FormField>
+                    <FormField label="Industry Vertical">
+                       <Select value={newIdentity.industry} onValueChange={(val) => handleInputChange('industry', val)}>
+                          <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl">{INDUSTRIES.map(i => <SelectItem key={i} value={i} className="text-xs font-bold uppercase">{i}</SelectItem>)}</SelectContent>
+                       </Select>
+                    </FormField>
+                    <FormField label="Corporate Website">
+                       <div className="relative"><Input placeholder="www.domain.com" className="h-12 pl-10 rounded-xl text-xs" value={newIdentity.website} onChange={(e) => handleInputChange('website', e.target.value)} /><Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" /></div>
+                    </FormField>
+                    <FormField label="Employee Count">
+                       <Input placeholder="e.g. 50-100" className="h-12 rounded-xl text-xs" value={newIdentity.employeeCount} onChange={(e) => handleInputChange('employeeCount', e.target.value)} />
+                    </FormField>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="04. Primary Contact" icon={User}>
+                    <FormField label="Contact Personnel" required>
+                       <Input placeholder="Identify Lead Contact" className="h-12 rounded-xl text-xs font-bold" value={newIdentity.contactPerson} onChange={(e) => handleInputChange('contactPerson', e.target.value)} />
+                    </FormField>
+                    <FormField label="Mobile Node" required>
+                       <div className="relative"><Input placeholder="+91" className="h-12 pl-10 rounded-xl text-xs font-bold" value={newIdentity.contactNumber} onChange={(e) => handleInputChange('contactNumber', e.target.value)} /><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" /></div>
+                    </FormField>
+                    <FormField label="Email Identity">
+                       <div className="relative"><Input placeholder="email@domain.com" className="h-12 pl-10 rounded-xl text-xs" value={newIdentity.email} onChange={(e) => handleInputChange('email', e.target.value)} /><Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" /></div>
+                    </FormField>
+                    <FormField label="Designation">
+                       <Input placeholder="Role in organization" className="h-12 rounded-xl text-xs" value={newIdentity.designation} onChange={(e) => handleInputChange('designation', e.target.value)} />
+                    </FormField>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="05. Address Matrix" icon={Target}>
+                    <div className="col-span-full space-y-6">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <FormField label="Billing Infrastructure" required>
+                             <Textarea placeholder="Full registered address" className="min-h-[100px] rounded-xl text-xs bg-slate-50 border-none shadow-inner" value={newIdentity.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                          </FormField>
+                          <FormField label="Shipping / Dispatch Matrix">
+                             <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-2"><Switch checked={newIdentity.shippingSameAsBilling} onCheckedChange={(val) => handleInputChange('shippingSameAsBilling', val)} /><span className="text-[10px] font-bold uppercase text-slate-400">Same as billing</span></div>
+                                <Textarea placeholder="Leave empty if same as billing" disabled={newIdentity.shippingSameAsBilling} className="min-h-[70px] rounded-xl text-xs bg-slate-50 border-none shadow-inner disabled:opacity-30" value={newIdentity.shippingAddress} onChange={(e) => handleInputChange('shippingAddress', e.target.value)} />
+                             </div>
+                          </FormField>
+                       </div>
+                       <div className="grid grid-cols-3 gap-6">
+                          <FormField label="City Identity"><Input className="h-10 rounded-lg text-xs" value={newIdentity.city} onChange={(e)=>handleInputChange('city', e.target.value)} /></FormField>
+                          <FormField label="State Node"><Input className="h-10 rounded-lg text-xs" value={newIdentity.state} onChange={(e)=>handleInputChange('state', e.target.value)} /></FormField>
+                          <FormField label="PIN Code"><Input className="h-10 rounded-lg text-xs font-code" value={newIdentity.pincode} onChange={(e)=>handleInputChange('pincode', e.target.value)} /></FormField>
+                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Both" id="ct-both" className="h-5 w-5 border-2 border-emerald-500 text-emerald-500" />
-                      <Label htmlFor="ct-both" className="text-sm font-bold text-slate-600 cursor-pointer">Customer / Vendor</Label>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="06. Commercial Settings" icon={Wallet}>
+                    <FormField label="Credit Window (Days)">
+                       <Input type="number" className="h-12 rounded-xl text-xs font-bold" value={newIdentity.creditDays} onChange={(e)=>handleInputChange('creditDays', e.target.value)} />
+                    </FormField>
+                    <FormField label="Credit Limit (₹)">
+                       <div className="relative"><Input type="number" className="h-12 pl-10 rounded-xl text-xs font-bold" value={newIdentity.creditLimit} onChange={(e)=>handleInputChange('creditLimit', e.target.value)} /><DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" /></div>
+                    </FormField>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="07. Relationship Management" icon={Zap}>
+                    <FormField label="Account Manager">
+                       <Select value={newIdentity.accountManager} onValueChange={(val)=>handleInputChange('accountManager', val)}>
+                          <SelectTrigger className="h-12 bg-white rounded-xl text-xs font-bold uppercase"><SelectValue placeholder="Identify Manager..." /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="manager_1">Manager A</SelectItem><SelectItem value="manager_2">Manager B</SelectItem></SelectContent>
+                       </Select>
+                    </FormField>
+                    <FormField label="Customer Priority">
+                       <Select value={newIdentity.priority} onValueChange={(val)=>handleInputChange('priority', val)}>
+                          <SelectTrigger className="h-12 bg-white rounded-xl text-xs font-bold uppercase"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl">{PRIORITY_LEVELS.map(p => <SelectItem key={p.id} value={p.id} className="text-xs font-bold uppercase">{p.label}</SelectItem>)}</SelectContent>
+                       </Select>
+                    </FormField>
+                  </OnboardingSection>
+
+                  <OnboardingSection title="08. Digital Attachments" icon={Upload}>
+                    <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4">
+                       {['GST Cert', 'PAN Card', 'Trade License', 'NDA'].map(doc => (
+                         <div key={doc} className="group relative h-24 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-50 transition-all cursor-pointer">
+                            <Upload className="h-5 w-5 text-slate-300 group-hover:text-primary" />
+                            <span className="text-[9px] font-bold uppercase text-slate-400">{doc}</span>
+                         </div>
+                       ))}
                     </div>
-                  </RadioGroup>
-                </FormFieldRow>
+                  </OnboardingSection>
 
-                <FormFieldRow label="GSTIN">
-                  <div className="relative group">
-                    <Input 
-                      placeholder="ENTER GSTIN NUMBER" 
-                      className="h-12 pr-32 bg-slate-50/50 border-slate-200 rounded-xl font-bold uppercase text-xs focus-visible:ring-emerald-500/20"
-                      value={newIdentity.gstNumber}
-                      onChange={(e) => handleInputChange('gstNumber', e.target.value)}
-                    />
-                    <Button 
-                      variant="secondary" 
-                      className="absolute right-1 top-1 h-10 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black uppercase rounded-lg px-4"
-                      onClick={() => toast({title: "GST Lookup", description: "Verifying GSTIN with national database..."})}
-                    >
-                      Auto Fill
-                    </Button>
+                  <OnboardingSection title="09. Health Profile" icon={Activity}>
+                     <FormField label="Lead Source">
+                        <Input className="h-10 rounded-lg text-xs" value={newIdentity.leadSource} onChange={(e)=>handleInputChange('leadSource', e.target.value)} />
+                     </FormField>
+                     <FormField label="Projected Annual Biz (₹)">
+                        <Input className="h-10 rounded-lg text-xs font-bold" value={newIdentity.projectedBiz} onChange={(e)=>handleInputChange('projectedBiz', e.target.value)} />
+                     </FormField>
+                  </OnboardingSection>
+               </div>
+            </ScrollArea>
+
+            {/* SCORE PREVIEW PANEL */}
+            <div className="w-[380px] bg-slate-50/50 p-10 shrink-0 overflow-y-auto hide-scrollbar border-l border-slate-100 flex flex-col gap-10">
+               <div className="space-y-6">
+                  <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">Customer Score Preview</h4>
+                  <Card className="p-8 bg-white border-none shadow-2xl rounded-[2.5rem] flex flex-col items-center text-center gap-6 relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 pointer-events-none transition-opacity"><Building2 className="h-20 w-20" /></div>
+                     <div className="relative w-32 h-32 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90">
+                           <circle cx="64" cy="64" r="58" stroke="#f1f5f9" strokeWidth="12" fill="transparent" />
+                           <circle cx="64" cy="64" r="58" stroke="#10b981" strokeWidth="12" fill="transparent" strokeDasharray="364.4" strokeDashoffset="364.4" strokeLinecap="round" className="transition-all duration-2000" />
+                        </svg>
+                        <div className="absolute flex flex-col items-center">
+                           <span className="text-4xl font-display font-black text-slate-900">A+</span>
+                        </div>
+                     </div>
+                     <div className="space-y-1">
+                        <p className="text-sm font-bold text-[#001F3D] uppercase">High Fidelity Node</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Risk Assessment: Nominal<br />Credit Rating: Triple-A</p>
+                     </div>
+                  </Card>
+               </div>
+
+               <div className="space-y-8">
+                  <div className="space-y-4">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol Metadata</p>
+                     <div className="space-y-3">
+                        {[
+                          { label: 'Type', val: newIdentity.customerType, icon: Contact },
+                          { label: 'Risk Level', val: 'Minimal', icon: ShieldCheck },
+                          { label: 'Credit Limit', val: `₹ ${newIdentity.creditLimit}`, icon: Wallet },
+                          { label: 'Priority', val: newIdentity.priority, icon: Zap },
+                        ].map(m => (
+                          <div key={m.label} className="flex justify-between items-center p-3 bg-white rounded-xl shadow-sm border border-slate-100">
+                             <div className="flex items-center gap-2 text-slate-400"><m.icon className="h-3 w-3" /><span className="text-[9px] font-bold uppercase">{m.label}</span></div>
+                             <span className="text-[10px] font-black text-[#001F3D] uppercase">{m.val}</span>
+                          </div>
+                        ))}
+                     </div>
                   </div>
-                </FormFieldRow>
 
-                <FormFieldRow label="Company Name" required>
-                  <Input 
-                    placeholder="Enter Company Name" 
-                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                    value={newIdentity.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                  />
-                </FormFieldRow>
-
-                <FormFieldRow label="Industry Vertical">
-                   <Select value={newIdentity.industry} onValueChange={(val) => handleInputChange('industry', val)}>
-                      <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Select Industry..." /></SelectTrigger>
-                      <SelectContent className="rounded-xl">{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
-                   </Select>
-                </FormFieldRow>
-
-                <FormFieldRow label="Customer Category">
-                   <Select value={newIdentity.customerType} onValueChange={(val) => handleInputChange('customerType', val)}>
-                      <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Select Category..." /></SelectTrigger>
-                      <SelectContent className="rounded-xl">{CUSTOMER_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                   </Select>
-                </FormFieldRow>
-
-                <FormFieldRow label="Contact Person">
-                  <Input 
-                    placeholder="Enter Contact Person" 
-                    className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                    value={newIdentity.contactPerson}
-                    onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                  />
-                </FormFieldRow>
-
-                <FormFieldRow label="Contact No">
-                  <div className="relative">
-                    <Input 
-                      placeholder="Enter Mobile Number" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
-                      value={newIdentity.contactNumber}
-                      onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                    />
-                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
-                  </div>
-                </FormFieldRow>
-
-                <FormFieldRow label="Email">
-                  <div className="relative">
-                    <Input 
-                      placeholder="Enter Email ID" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs pr-12"
-                      value={newIdentity.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                    />
-                    <Info className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200" />
-                  </div>
-                </FormFieldRow>
-
-                <FormFieldRow label="PAN">
-                  <Input 
-                    placeholder="Enter PAN Number" 
-                    className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"
-                    value={newIdentity.pan}
-                    onChange={(e) => handleInputChange('pan', e.target.value)}
-                  />
-                </FormFieldRow>
-              </div>
-
-              {/* Billing Address Section */}
-              <div className="space-y-6 pt-12 border-t border-slate-100 max-w-4xl mx-auto">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg">
-                    <Receipt className="h-5 w-5 text-slate-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800 uppercase tracking-tight">Billing Address Matrix</h3>
-                </div>
-
-                <div className="space-y-4">
-                  <FormFieldRow label="Address">
-                    <div className="space-y-3">
-                      <Input 
-                        placeholder="House No, Building, Street" 
-                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                        value={newIdentity.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                      />
-                      <Input 
-                        placeholder="Area, Locality, Sector" 
-                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                        value={newIdentity.addressLine2}
-                        onChange={(e) => handleInputChange('addressLine2', e.target.value)}
-                      />
-                    </div>
-                  </FormFieldRow>
-
-                  <FormFieldRow label="Landmark">
-                    <Input 
-                      placeholder="E.g. Near Industrial Estate" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs"
-                      value={newIdentity.landmark}
-                      onChange={(e) => handleInputChange('landmark', e.target.value)}
-                    />
-                  </FormFieldRow>
-
-                  <FormFieldRow label="City" required>
-                    <Input 
-                      placeholder="Enter City Name" 
-                      className="h-12 bg-white border-slate-200 rounded-xl font-bold text-xs uppercase"
-                      value={newIdentity.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                    />
-                  </FormFieldRow>
-                </div>
-              </div>
+                  <Card className="p-6 bg-[#001F3D] text-white border-none rounded-3xl space-y-4 shadow-xl">
+                     <div className="flex items-center gap-3"><AlertTriangle className="h-4 w-4 text-primary" /><h5 className="text-[10px] font-bold uppercase tracking-widest">Compliance Advisory</h5></div>
+                     <p className="text-[10px] text-white/50 leading-relaxed font-medium">Ensure GSTIN is verified before final commit to unlock institutional billing protocols.</p>
+                  </Card>
+               </div>
             </div>
-          </ScrollArea>
+          </div>
 
           <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
             <Button 
               variant="ghost" 
-              className="h-14 px-10 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
+              className="h-14 px-10 rounded-2xl font-bold uppercase text-[11px] tracking-widest text-slate-400"
               onClick={() => setIsAddIdentityOpen(false)}
             >
-              Cancel Protocol
+              Cancel
             </Button>
             <Button 
-              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl flex gap-3"
+              variant="outline"
+              className="h-14 px-10 rounded-2xl border-slate-200 bg-white font-bold uppercase text-[11px] tracking-widest"
+              onClick={() => toast({title: "Draft Cached", description: "Node metadata preserved in temporary matrix."})}
+            >
+              Save Draft
+            </Button>
+            <Button 
+              className="h-14 px-16 bg-[#001F3D] hover:bg-black text-white rounded-2xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-2xl flex gap-3 group"
               onClick={handleSaveIdentity}
             >
-              <Check className="h-5 w-5" /> Commit Identity Detail
+              <Check className="h-5 w-5" /> Save Customer <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </div>
         </DialogContent>
@@ -746,14 +768,3 @@ export function CustomerOrders({ customers, vendors, billing, orders, onSaveCust
     </div>
   );
 }
-
-const FormFieldRow = ({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) => (
-  <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2 border-b border-slate-50 last:border-0 min-h-[64px]">
-    <Label className="text-[13px] text-slate-500 font-bold uppercase tracking-widest md:col-span-4">
-      {label}{required && <span className="text-red-500 ml-1">*</span>}
-    </Label>
-    <div className="md:col-span-8">
-      {children}
-    </div>
-  </div>
-);

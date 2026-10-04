@@ -20,7 +20,9 @@ import {
   ShieldCheck,
   PackageCheck,
   Receipt,
-  Landmark
+  Landmark,
+  Users,
+  Settings
 } from 'lucide-react';
 import { Order, Machine, QualityReport, WorkLogEntry, InventoryItem, BillingRecord } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -193,7 +195,7 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
                {machineStatuses.map(m => (
                  <Card key={m.id} className="p-4 bg-white/5 border-white/5 hover:border-primary/40 transition-all group">
                     <div className="flex justify-between items-start mb-4">
-                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{m.id}</span>
+                       <span className="text-10px font-bold text-white/40 uppercase tracking-widest">{m.id}</span>
                        <Badge className={cn("text-[7px] font-bold uppercase border-none px-2", m.color.replace('text-', 'bg-') + '/20', m.color)}>{m.status}</Badge>
                     </div>
                     <div className="flex justify-between items-end mb-2">
@@ -305,9 +307,11 @@ export function ShopFloorOverview({ orders, reports, logs, machines, inventory, 
           </Card>
 
           <Card className="p-6 bg-[#071427] border-[#0F2745] space-y-6">
-             <div className="flex items-center gap-2 mb-4">
-                <UserCheck className="h-4 w-4 text-primary" />
-                <h3 className="text-[10px] font-black uppercase text-white tracking-[0.3em]">Approval Gateway</h3>
+             <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                   <UserCheck className="h-4 w-4 text-primary" />
+                   <h3 className="text-[10px] font-black uppercase text-white tracking-[0.3em]">Approval Gateway</h3>
+                </div>
              </div>
              <div className="space-y-3">
                 <div className="p-4 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group">

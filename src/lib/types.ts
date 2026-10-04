@@ -37,40 +37,58 @@ export interface Machine {
 
 export type ViewType = 
   | 'overview' 
+  | 'analytics'
+  | 'activity'
+  | 'approvals'
+  | 'notifications'
+  | 'sqcdp'
+  | 'customer-master'
+  | 'vendor-master'
+  | 'product-master'
+  | 'quotation'
+  | 'customer-po'
+  | 'sale-order'
+  | 'sale-invoice'
+  | 'purchase-order'
+  | 'purchase-invoice'
+  | 'delivery-challan'
+  | 'payments'
+  | 'credit-note'
+  | 'debit-note'
   | 'orders' 
-  | 'sqcdp' 
-  | 'operations' 
-  | 'hr' 
-  | 'my-portal'
-  | 'customer-orders' 
-  | 'weekly-plan' 
-  | 'users'
-  | 'user-detail'
   | 'order-details'
-  | 'billing'
-  | 'billing-quotation'
-  | 'billing-invoice'
-  | 'billing-po'
-  | 'billing-proforma'
-  | 'billing-inward'
-  | 'billing-outward'
-  | 'billing-bank'
-  | 'billing-dc'
-  | 'work-log'
-  | 'inventory'
-  | 'quality'
-  | 'settings'
-  | 'gantt'
-  | 'smart-quote'
+  | 'operations' 
   | 'production-planner'
-  | 'agile'
-  | 'training'
-  | 'manpower'
-  | 'salary'
-  | 'team-matrix'
+  | 'gantt'
+  | 'shop-floor'
+  | 'quality'
   | 'delivery'
+  | 'inventory'
+  | 'machine-utilization'
+  | 'machine-load-plan'
+  | 'tool-catalog'
+  | 'tool-cards'
+  | 'my-portal'
+  | 'manpower'
+  | 'training'
+  | 'hr' 
+  | 'salary'
+  | 'users'
+  | 'roles'
+  | 'permissions'
+  | 'approval-matrix'
   | 'print-templates'
-  | 'product-master';
+  | 'reports'
+  | 'settings'
+  | 'smart-quote'
+  | 'strategy-hub'
+  | 'business-planning'
+  | 'dpr-generator'
+  | 'financial-projections'
+  | 'user-detail'
+  | 'weekly-plan'
+  | 'work-log'
+  | 'billing';
 
 export interface ViewMetadata {
   title: string;
@@ -324,7 +342,7 @@ export interface UISettings {
   fontSize: number;
   tableDensity: 'compact' | 'standard' | 'comfortable';
   borderRadius: number;
-  primaryColor: string; // HSL string "243 75% 59%"
+  primaryColor: string;
   sidebarMode: 'slim' | 'full';
   cardShadow: 'none' | 'sm' | 'xl';
   labelCase: 'uppercase' | 'capitalize';
@@ -332,10 +350,10 @@ export interface UISettings {
   customTitles: Record<string, string>;
   woPrefix: string;
   woNextNumber: number;
-  brandLogo?: string; // High-fidelity corporate logo data URI
-  logoSize: number; // Unified scaling node for branding identities
+  brandLogo?: string;
+  logoSize: number;
   numberSeries?: Record<string, NumberSeries>;
-  monthlyBillingTargets?: Record<string, number>; // Key: "YYYY-MM", Val: Target Amount
+  monthlyBillingTargets?: Record<string, number>;
   billingTableSettings?: {
     colWidths: {
       description: number;
@@ -356,7 +374,7 @@ export interface SystemUser {
   username: string;
   firstName: string;
   lastName: string;
-  name: string; // Full composite name
+  name: string;
   email: string;
   password?: string;
   role: string;
@@ -396,7 +414,7 @@ export interface QualityReport {
 export interface DimensionRecord {
   id: string;
   balloonNo: string;
-  type of dim: string;
+  typeOfDim: string;
   instrument: string;
   target: string;
   tolerance: string;
@@ -439,7 +457,7 @@ export interface Training {
   description: string;
   department: string;
   durationHours: number;
-  impactScore: number; // How much it affects efficiency (0-10)
+  impactScore: number;
   materialsUrl?: string;
   videoUrl?: string;
   quiz?: QuizQuestion[];
@@ -502,7 +520,7 @@ export interface Letterhead {
 export interface PrintTemplate {
   id: string;
   name: string;
-  documentType: string; // Quotation, Invoice, etc.
+  documentType: string;
   layout: 'classic' | 'corporate' | 'industrial' | 'compact';
   letterheadId: string;
   isDefault: boolean;

@@ -27,10 +27,23 @@ import {
   Contact,
   PackageCheck,
   Printer,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Lock,
+  Target,
+  UserCheck,
+  TrendingUp,
+  History,
+  FileBarChart,
+  Building2,
+  Receipt,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Landmark,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarNavProps {
@@ -65,43 +78,87 @@ export function SidebarNav({
     const isMasterAdmin = userRole === 'Master Admin';
     const isHRAdmin = userRole === 'HR' || userRole === 'HR Manager' || isMasterAdmin;
 
-    const allItems = [
-      { id: 'overview', icon: LayoutDashboard, label: 'Dashboard', cat: 'Mission Control' },
-      { id: 'my-portal', icon: Contact, label: 'My Portal', cat: 'Personnel' },
-      { id: 'hr', icon: Briefcase, label: 'HR Hub', cat: 'Resources' },
-      { id: 'agile', icon: Kanban, label: 'Kanban', cat: 'Strategic' },
-      { id: 'orders', icon: ShoppingCart, label: 'Orders', cat: 'Production' },
-      { id: 'production-planner', icon: Factory, label: 'Mass Prod', cat: 'Production' },
-      { id: 'gantt', icon: LayoutGrid, label: 'Timeline', cat: 'Production' },
-      { id: 'operations', icon: Layers, label: 'Sheet', cat: 'Production' },
-      { id: 'quality', icon: ShieldCheck, label: 'Quality', cat: 'Quality' },
-      { id: 'delivery', icon: PackageCheck, label: 'Dispatch', cat: 'Commercial' },
-      { id: 'customer-orders', icon: Users, label: 'Registry', cat: 'Commercial' },
-      { id: 'inventory', icon: Box, label: 'Inventory', cat: 'Commercial' },
-      { id: 'billing', icon: CreditCard, label: 'Finance', cat: 'Commercial' },
-      { id: 'work-log', icon: ClipboardList, label: 'Logs', cat: 'Production' },
-      { id: 'machine-utilization', icon: Cpu, label: 'Assets', cat: 'Resources' },
-      { id: 'sqcdp', icon: LineChart, label: 'Analytics', cat: 'Strategic' },
-      { id: 'weekly-plan', icon: Calendar, label: 'Schedule', cat: 'Production' },
-      { id: 'smart-quote', icon: BrainCircuit, label: 'AI Quoting', cat: 'Strategic' },
-      { id: 'print-templates', icon: Printer, label: 'Templates', cat: 'Governance' },
+    const sections = [
+      {
+        name: 'COMMAND CENTER',
+        items: [
+          { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
+          { id: 'analytics', icon: TrendingUp, label: 'Analytics Dashboard' },
+          { id: 'activity', icon: History, label: 'Activity Feed' },
+          { id: 'approvals', icon: UserCheck, label: 'Approvals' },
+          { id: 'sqcdp', icon: LineChart, label: 'SQCDP Dashboard' },
+        ]
+      },
+      {
+        name: 'FINANCIAL HUB',
+        items: [
+          { id: 'customer-master', icon: Building2, label: 'Customer Master' },
+          { id: 'vendor-master', icon: Truck, label: 'Vendor Master' },
+          { id: 'product-master', icon: Box, label: 'Product Master' },
+          { id: 'quotation', icon: FileText, label: 'Quotation' },
+          { id: 'customer-po', icon: FileCheck, label: 'Customer PO' },
+          { id: 'sale-order', icon: ShoppingCart, label: 'Sales Orders' },
+          { id: 'sale-invoice', icon: Receipt, label: 'Sales Invoices' },
+          { id: 'purchase-order', icon: PackageCheck, label: 'Purchase Orders' },
+          { id: 'purchase-invoice', icon: Receipt, label: 'Purchase Invoices' },
+          { id: 'delivery-challan', icon: Truck, label: 'Delivery Challans' },
+          { id: 'payments', icon: Landmark, label: 'Payments' },
+          { id: 'credit-note', icon: ArrowDownLeft, label: 'Credit Notes' },
+          { id: 'debit-note', icon: ArrowUpRight, label: 'Debit Notes' },
+        ]
+      },
+      {
+        name: 'PRODUCTION HUB',
+        items: [
+          { id: 'orders', icon: ShoppingCart, label: 'Work Orders' },
+          { id: 'order-details', icon: Target, label: 'Order Details' },
+          { id: 'operations', icon: Layers, label: 'Operations Status' },
+          { id: 'production-planner', icon: Factory, label: 'Production Planner' },
+          { id: 'gantt', icon: LayoutGrid, label: 'Production Gantt' },
+          { id: 'quality', icon: ShieldCheck, label: 'Quality Management' },
+          { id: 'delivery', icon: PackageCheck, label: 'Dispatch Ledger' },
+          { id: 'inventory', icon: Box, label: 'Inventory Management' },
+        ]
+      },
+      {
+        name: 'RESOURCE HUB',
+        items: [
+          { id: 'machine-utilization', icon: Cpu, label: 'Machine Utilization' },
+          { id: 'machine-load-plan', icon: Calendar, label: 'Machine Load Planning' },
+          { id: 'tool-catalog', icon: Box, label: 'Tool Catalog' },
+          { id: 'my-portal', icon: Contact, label: 'Employee Portal' },
+          { id: 'hr', icon: Briefcase, label: 'HR Management' },
+          { id: 'salary', icon: CreditCard, label: 'Salary Structure' },
+        ]
+      },
+      {
+        name: 'ADMINISTRATION',
+        items: [
+          { id: 'users', icon: Users, label: 'User Management' },
+          { id: 'print-templates', icon: Printer, label: 'Template Manager' },
+          { id: 'reports', icon: FileBarChart, label: 'Report Center' },
+          { id: 'settings', icon: Settings, label: 'Settings' },
+        ]
+      },
+      {
+        name: 'STRATEGIC HUB',
+        items: [
+          { id: 'smart-quote', icon: BrainCircuit, label: 'AI Smart Quoting' },
+          { id: 'strategy-hub', icon: Target, label: 'Loan Project Hub' },
+        ]
+      }
     ];
 
-    const filtered = allItems.filter(item => {
-      if (isMasterAdmin) return true;
-      if (item.id === 'my-portal') return true;
-      if (item.id === 'hr') return isHRAdmin;
-      const level = permissions[item.id];
-      return level && level !== 'none';
-    });
-
-    const sections: Record<string, typeof filtered> = {};
-    filtered.forEach(item => {
-      if (!sections[item.cat]) sections[item.cat] = [];
-      sections[item.cat].push(item);
-    });
-
-    return Object.entries(sections).map(([name, items]) => ({ name, items }));
+    return sections.map(section => ({
+      ...section,
+      items: section.items.filter(item => {
+        if (isMasterAdmin) return true;
+        if (item.id === 'my-portal' || item.id === 'overview') return true;
+        if (item.id === 'hr') return isHRAdmin;
+        const level = permissions[item.id];
+        return level && level !== 'none';
+      })
+    })).filter(section => section.items.length > 0);
   }, [permissions, userRole]);
 
   if (!mounted) return <div className="bg-[#001F3D] h-full w-full" />;
@@ -111,21 +168,17 @@ export function SidebarNav({
       "bg-[#001F3D] dark:bg-card h-full flex flex-col border-r border-white/5 dark:border-border transition-all duration-300",
       isSlim ? "w-20" : "w-64"
     )}>
-      {/* Branding Hub */}
       <div className={cn(
         "bg-white/5 dark:bg-card border-b border-white/5 dark:border-border p-4 flex items-center gap-3",
         isSlim && "justify-center"
       )}>
-        <div 
-          className="relative rounded bg-white p-1" 
-          style={{ width: logoSize + 8, height: logoSize + 8 }}
-        >
+        <div className="relative rounded bg-white p-1" style={{ width: logoSize + 8, height: logoSize + 8 }}>
           <Image src={brandLogo} alt="Logo" fill className="object-contain" />
         </div>
         {!isSlim && (
           <div className="flex flex-col">
             <span className="text-white dark:text-primary font-black text-[10px] tracking-widest uppercase leading-none">Ferocious Tech</span>
-            <span className="text-white/40 dark:text-slate-400 text-[7px] font-bold tracking-tighter uppercase mt-1">Industrial Control Node</span>
+            <span className="text-white/40 dark:text-slate-400 text-[7px] font-bold tracking-tighter uppercase mt-1">Control Node v2.4</span>
           </div>
         )}
       </div>
@@ -142,7 +195,7 @@ export function SidebarNav({
               )}
               <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const Icon = item.icon;
+                  const Icon = item.icon || Box;
                   const isActive = currentView === item.id;
                   
                   return (
@@ -188,4 +241,25 @@ export function SidebarNav({
       </div>
     </div>
   );
+}
+
+function FileCheck(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+      <path d="m9 15 2 2 4-4" />
+    </svg>
+  )
 }

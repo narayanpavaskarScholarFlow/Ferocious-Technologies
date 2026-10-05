@@ -215,6 +215,7 @@ export interface ProductMaster {
   marketPrice?: number;
   marginPercent?: number;
   profitPercent?: number;
+  targetMarginPercent?: number;
 
   // Cost Breakup
   materialCost?: number;
@@ -243,20 +244,16 @@ export interface ProductMaster {
   outsourcingReason?: string[];
   mostOutsourcedProcess?: string;
   canManufactureInHouse?: boolean;
+  preferredVendorId?: string;
+  backupVendorId?: string;
   
-  // Electrical Metadata
-  voltage?: string;
-  current?: string;
-  power?: string;
-  phase?: string;
-  frequency?: string;
-  certification?: string;
-  warranty?: string;
-  bis?: boolean;
-  ce?: boolean;
-  rohs?: boolean;
-  electricalApplication?: string;
-  
+  // Partner / Supply Chain
+  primaryVendorId?: string;
+  leadTime?: number;
+  moq?: number;
+  paymentTerms?: string;
+  vendorRating?: number;
+
   // Media Matrix
   imageUrls?: string[];
   drawingUrls?: string[];
@@ -332,6 +329,7 @@ export interface BillingRecord {
   taxableValue?: number;
   marginPercent?: number;
   estimatedProfit?: number;
+  referenceNumber?: string;
 }
 
 export interface SQCDPData {

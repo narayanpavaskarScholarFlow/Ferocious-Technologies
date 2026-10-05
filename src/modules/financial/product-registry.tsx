@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -35,7 +34,10 @@ import {
   Monitor,
   Hammer,
   ClipboardCheck,
-  FileText
+  FileText,
+  Zap,
+  AlertCircle,
+  Award
 } from 'lucide-react';
 import { ProductMaster, Vendor, Machine, SystemUser, PermissionLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -322,7 +324,7 @@ export function ProductRegistry({
             </div>
             <div className="space-y-3">
               <Label className="text-[10px] font-bold uppercase text-slate-500">Functional Description</Label>
-              <Textarea placeholder="Technical overview of product usage and specifications..." className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium" value={formData.description} onChange={(e) => handleUpdateField('description', e.target.value)} />
+              <Textarea placeholder="Technical overview..." className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium" value={formData.description} onChange={(e) => handleUpdateField('description', e.target.value)} />
             </div>
           </div>
         );
@@ -440,6 +442,132 @@ export function ProductRegistry({
                       </div>
                    </div>
                 </Card>
+             </div>
+          </div>
+        );
+
+      case 6: // MARKET
+        return (
+          <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-2">
+                <Label className="text-[9px] font-bold uppercase text-slate-500">Current Demand</Label>
+                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.projectedDemand} onChange={(e) => handleUpdateField('projectedDemand', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-bold uppercase text-slate-500">Annual Requirement</Label>
+                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.annualRequirement} onChange={(e) => handleUpdateField('annualRequirement', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-bold uppercase text-slate-500">Potential Demand</Label>
+                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.potentialAnnualRequirement} onChange={(e) => handleUpdateField('potentialAnnualRequirement', e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="space-y-2">
+                  <Label className="text-[9px] font-bold uppercase text-slate-500">Target Industry</Label>
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.targetIndustry} onChange={(e) => handleUpdateField('targetIndustry', e.target.value)} />
+               </div>
+               <div className="space-y-2">
+                  <Label className="text-[9px] font-bold uppercase text-slate-500">Target Customer</Label>
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.targetCustomerType} onChange={(e) => handleUpdateField('targetCustomerType', e.target.value)} />
+               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+               <div className="space-y-2">
+                  <Label className="text-[9px] font-bold uppercase text-slate-500">Competitor Product</Label>
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.competitorProducts} onChange={(e) => handleUpdateField('competitorProducts', e.target.value)} />
+               </div>
+               <div className="space-y-2">
+                  <Label className="text-[9px] font-bold uppercase text-slate-500">Competitor Price</Label>
+                  <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.competitorPrice} onChange={(e) => handleUpdateField('competitorPrice', e.target.value)} />
+               </div>
+               <div className="space-y-2">
+                  <Label className="text-[9px] font-bold uppercase text-slate-500">Forecast Growth</Label>
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.forecastGrowth} onChange={(e) => handleUpdateField('forecastGrowth', e.target.value)} />
+               </div>
+            </div>
+          </div>
+        );
+
+      case 7: // OUTSOURCING
+        return (
+          <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-500">Outsourcing %</Label>
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.outsourcedPercent} onChange={(e) => handleUpdateField('outsourcedPercent', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-500">Annual Outsourcing Value (₹)</Label>
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.annualOutsourcingValue} onChange={(e) => handleUpdateField('annualOutsourcingValue', e.target.value)} />
+                </div>
+             </div>
+             <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Reason For Outsourcing</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'Machine Not Available', label: 'Machine Not Available' },
+                    { id: 'Capacity Full', label: 'Capacity Full' },
+                    { id: 'Special Process', label: 'Special Process' },
+                    { id: 'Commercial Advantage', label: 'Commercial Advantage' },
+                  ].map(reason => (
+                    <div key={reason.id} className="flex items-center space-x-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <Checkbox 
+                        id={reason.id} 
+                        checked={formData.outsourcingReason?.includes(reason.id)}
+                        onCheckedChange={(checked) => {
+                          const current = formData.outsourcingReason || [];
+                          const updated = checked 
+                            ? [...current, reason.id] 
+                            : current.filter(r => r !== reason.id);
+                          handleUpdateField('outsourcingReason', updated);
+                        }}
+                      />
+                      <Label htmlFor={reason.id} className="text-[10px] font-bold uppercase text-slate-600">{reason.label}</Label>
+                    </div>
+                  ))}
+                </div>
+             </div>
+          </div>
+        );
+
+      case 8: // PARTNERS
+        return (
+          <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-400">Primary Vendor</Label>
+                   <Select value={formData.primaryVendorId} onValueChange={(v) => handleUpdateField('primaryVendorId', v)}>
+                      <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue placeholder="Identify Vendor..." /></SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-2xl">
+                        {vendors.map(v => <SelectItem key={v.id} value={v.id} className="text-[10px] font-bold uppercase py-2">{v.name}</SelectItem>)}
+                      </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-400">Backup Vendor</Label>
+                   <Select value={formData.backupVendorId} onValueChange={(v) => handleUpdateField('backupVendorId', v)}>
+                      <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue placeholder="Identify Backup..." /></SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-2xl">
+                        {vendors.map(v => <SelectItem key={v.id} value={v.id} className="text-[10px] font-bold uppercase py-2">{v.name}</SelectItem>)}
+                      </SelectContent>
+                   </Select>
+                </div>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-500">Lead Time (Days)</Label>
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.leadTime} onChange={(e) => handleUpdateField('leadTime', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-500">MOQ</Label>
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.moq} onChange={(e) => handleUpdateField('moq', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-bold uppercase text-slate-500">Payment Terms</Label>
+                   <Input placeholder="e.g. 30 Days" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.paymentTerms} onChange={(e) => handleUpdateField('paymentTerms', e.target.value)} />
+                </div>
              </div>
           </div>
         );
@@ -671,7 +799,7 @@ export function ProductRegistry({
                 <Button variant="ghost" disabled={wizardStep === 1} className="rounded-xl h-14 px-10 font-bold uppercase text-[10px] tracking-widest text-slate-400" onClick={() => setWizardStep(s => s - 1)}><ChevronLeft className="mr-3 h-5 w-5" /> Previous Node</Button>
                 <div className="flex gap-4">
                   <Button variant="ghost" className="rounded-xl h-14 px-10 font-bold uppercase text-[10px] tracking-widest text-slate-400" onClick={() => setIsWizardOpen(false)}>Abort Protocol</Button>
-                  <Button className="h-14 bg-[#001F3D] hover:bg-black text-white rounded-xl px-16 font-bold uppercase text-[10px] tracking-[0.2em] shadow-2xl flex gap-3 group" onClick={() => wizardStep === 10 ? handleFinishWizard() : setWizardStep(s => s + 1)}>
+                  <Button className="h-14 bg-[#001F3D] hover:bg-black text-white rounded-xl px-16 font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3 group" onClick={() => wizardStep === 10 ? handleFinishWizard() : setWizardStep(s => s + 1)}>
                     {wizardStep === 10 ? 'Synchronize Matrix' : 'Proceed to Next Node'} <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </div>

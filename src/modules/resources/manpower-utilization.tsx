@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SystemUser, UserLeave } from '@/lib/types';
+import { SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Users, 
@@ -17,6 +17,7 @@ import {
   CalendarDays, 
   ClipboardList, 
   Wallet, 
+  Trash2
 } from 'lucide-react';
 import { 
   Dialog, 

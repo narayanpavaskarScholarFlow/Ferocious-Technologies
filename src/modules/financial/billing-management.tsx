@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -24,7 +23,9 @@ import {
   LayoutGrid,
   FileText,
   Printer,
-  ChevronDown
+  ChevronDown,
+  DotsVertical,
+  MoreVertical
 } from 'lucide-react';
 import { Customer, BillingRecord, ProductMaster, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,6 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 function numberToWords(num: number): string {
   if (num === 0) return "ZERO RUPEES ONLY";
@@ -89,7 +89,8 @@ export function BillingManagement({
     id: '', type: activeTab, customerName: '', customerId: '', date: new Date().toISOString().split('T')[0],
     number: '', status: 'Draft', items: [], subTotal: 0, amount: 0, taxTotal: 0, discountTotal: 0,
     roundOff: 0, notes: '', terms: '', quotationId: '',
-    placeOfSupply: '', shipTo: '', contactPerson: '', phoneNo: '', gstNumber: ''
+    placeOfSupply: '', shipTo: '', contactPerson: '', phoneNo: '', gstNumber: '',
+    referenceNumber: '', challanDate: ''
   });
 
   const filteredRecords = useMemo(() => {
@@ -137,8 +138,8 @@ export function BillingManagement({
       const newItems = [...(formData.items || [])];
       newItems[idx] = { ...newItems[idx], [field]: value };
       const item = newItems[idx];
-      const baseTotal = item.qty * item.price;
-      const discount = item.discountType === 'percentage' ? (baseTotal * item.discount / 100) : item.discount;
+      const baseTotal = (item.qty || 0) * (item.price || 0);
+      const discount = item.discountType === 'percentage' ? (baseTotal * (item.discount || 0) / 100) : (item.discount || 0);
       item.total = baseTotal - discount;
       setFormData({ ...formData, items: newItems });
     };
@@ -172,7 +173,7 @@ export function BillingManagement({
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                        <Label className="text-[10px] font-bold uppercase text-slate-500">Customer Name *</Label>
-                       <Select value={formData.customerId} onValueChange={(id) => {
+                       <Select value={formData.customerId ?? ''} onValueChange={(id) => {
                           const c = customers.find(x => x.id === id);
                           setFormData({ ...formData, customerId: id, customerName: c?.name || '', gstNumber: c?.gstNumber || '', contactPerson: c?.contactPerson || '', phoneNo: c?.contactNumber || '', shipTo: c?.address || '' });
                        }}>
@@ -182,14 +183,14 @@ export function BillingManagement({
                           </SelectContent>
                        </Select>
                     </div>
-                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">GSTIN</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.gstNumber} readOnly /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">GSTIN</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.gstNumber ?? ''} readOnly /></div>
                  </div>
               </Card>
 
               <Card className="lg:col-span-5 p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-8">
                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Document No.</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Document Date</Label><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-12" /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Document No.</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.number ?? ''} onChange={(e)=>setFormData({...formData, number: e.target.value})} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Document Date</Label><DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData({...formData, date: val})} className="h-12" /></div>
                  </div>
               </Card>
            </div>
@@ -214,7 +215,7 @@ export function BillingManagement({
                       <TableRow key={item.id} className="h-20 border-b border-slate-50 hover:bg-slate-50 transition-colors">
                          <TableCell className="px-6 text-xs font-bold text-slate-400">{(idx + 1).toString().padStart(2, '0')}</TableCell>
                          <TableCell>
-                            <Select value={item.productId} onValueChange={(pId) => {
+                            <Select value={item.productId ?? ''} onValueChange={(pId) => {
                                const p = products.find(x => x.id === pId);
                                const newItems = [...(formData.items || [])];
                                newItems[idx] = { 
@@ -235,9 +236,9 @@ export function BillingManagement({
                                </SelectContent>
                             </Select>
                          </TableCell>
-                         <TableCell><Input type="number" className="border-none bg-transparent text-center font-bold text-xs" value={item.qty} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
-                         <TableCell><Input type="number" className="border-none bg-transparent text-right font-display font-bold text-xs" value={item.price} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} /></TableCell>
-                         <TableCell className="text-right px-10 font-display font-black text-slate-900 text-sm">₹ {item.total.toLocaleString()}</TableCell>
+                         <TableCell><Input type="number" className="border-none bg-transparent text-center font-bold text-xs" value={item.qty ?? ''} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
+                         <TableCell><Input type="number" className="border-none bg-transparent text-right font-display font-bold text-xs" value={item.price ?? ''} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} /></TableCell>
+                         <TableCell className="text-right px-10 font-display font-black text-slate-900 text-sm">₹ {(item.total ?? 0).toLocaleString()}</TableCell>
                       </TableRow>
                     ))}
                  </TableBody>
@@ -248,7 +249,7 @@ export function BillingManagement({
               <div className="lg:col-span-8 space-y-6">
                  <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-6">
                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-l-4 border-blue-600 pl-4">Terms & Conditions</h4>
-                    <Textarea className="min-h-[100px] bg-slate-50 border-none rounded-xl text-[10px] font-medium leading-relaxed" defaultValue="Standard terms apply. 30 days validity." />
+                    <Textarea className="min-h-[100px] bg-slate-50 border-none rounded-xl text-[10px] font-medium leading-relaxed" value={formData.terms ?? "Standard terms apply. 30 days validity."} onChange={(e) => updateLocalUIField('terms' as any, e.target.value)} />
                  </Card>
               </div>
 
@@ -268,6 +269,10 @@ export function BillingManagement({
         </div>
       </div>
     );
+  };
+
+  const updateLocalUIField = (key: string, value: any) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
   };
 
   return (

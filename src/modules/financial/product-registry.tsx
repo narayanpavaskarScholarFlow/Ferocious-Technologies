@@ -255,7 +255,6 @@ export function ProductRegistry({
 
   const renderStepContent = () => {
     const activeStep = ONBOARDING_STEPS[wizardStep - 1];
-    const StepIcon = activeStep.icon;
     
     switch (wizardStep) {
       case 1: // BUSINESS UNIT
@@ -296,17 +295,17 @@ export function ProductRegistry({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Master Product Code *</Label>
-                <Input placeholder="FT-VMC-XXXX" className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.code} onChange={(e) => handleUpdateField('code', e.target.value)} />
+                <Input placeholder="FT-VMC-XXXX" className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.code ?? ''} onChange={(e) => handleUpdateField('code', e.target.value)} />
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Display Identity *</Label>
-                <Input placeholder="e.g. Mold Cavity Block" className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase" value={formData.name} onChange={(e) => handleUpdateField('name', e.target.value)} />
+                <Input placeholder="e.g. Mold Cavity Block" className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase" value={formData.name ?? ''} onChange={(e) => handleUpdateField('name', e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                <div className="space-y-2">
                  <Label className="text-[9px] font-bold uppercase text-slate-500">Classification</Label>
-                 <Select value={formData.type} onValueChange={(v) => handleUpdateField('type', v)}>
+                 <Select value={formData.type ?? ''} onValueChange={(v) => handleUpdateField('type', v)}>
                     <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase text-[10px]"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {['Finished Product', 'Raw Material', 'Semi-Finished', 'Assembly', 'Service'].map(t => <SelectItem key={t} value={t} className="text-[10px] font-bold uppercase">{t}</SelectItem>)}
@@ -315,16 +314,16 @@ export function ProductRegistry({
                </div>
                <div className="space-y-2">
                  <Label className="text-[9px] font-bold uppercase text-slate-500">Category Node</Label>
-                 <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={formData.category} onChange={(e) => handleUpdateField('category', e.target.value)} />
+                 <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={formData.category ?? ''} onChange={(e) => handleUpdateField('category', e.target.value)} />
                </div>
                <div className="space-y-2">
                  <Label className="text-[9px] font-bold uppercase text-slate-500">HSN/SAC Node</Label>
-                 <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-center" value={formData.hsn} onChange={(e) => handleUpdateField('hsn', e.target.value)} />
+                 <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold text-center" value={formData.hsn ?? ''} onChange={(e) => handleUpdateField('hsn', e.target.value)} />
                </div>
             </div>
             <div className="space-y-3">
               <Label className="text-[10px] font-bold uppercase text-slate-500">Functional Description</Label>
-              <Textarea placeholder="Technical overview..." className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium" value={formData.description} onChange={(e) => handleUpdateField('description', e.target.value)} />
+              <Textarea placeholder="Technical overview..." className="min-h-[120px] bg-slate-50 border-none rounded-2xl text-xs font-medium" value={formData.description ?? ''} onChange={(e) => handleUpdateField('description', e.target.value)} />
             </div>
           </div>
         );
@@ -336,37 +335,37 @@ export function ProductRegistry({
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">Drawing Protocol Number</Label>
                   <div className="relative">
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={formData.drawingNumber} onChange={(e) => handleUpdateField('drawingNumber', e.target.value)} />
+                    <Input className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={formData.drawingNumber ?? ''} onChange={(e) => handleUpdateField('drawingNumber', e.target.value)} />
                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                   </div>
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">Revision Node</Label>
-                  <Input className="h-12 bg-slate-50 border-none rounded-xl text-center font-code font-bold" value={formData.revisionNumber} onChange={(e) => handleUpdateField('revisionNumber', e.target.value)} />
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl text-center font-code font-bold" value={formData.revisionNumber ?? ''} onChange={(e) => handleUpdateField('revisionNumber', e.target.value)} />
                 </div>
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Material Grade</Label>
-                  <Input placeholder="e.g. OHNS, D2, P20" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={formData.materialGrade} onChange={(e) => handleUpdateField('materialGrade', e.target.value)} />
+                  <Input placeholder="e.g. OHNS, D2, P20" className="h-12 bg-slate-50 border-none rounded-xl font-bold" value={formData.materialGrade ?? ''} onChange={(e) => handleUpdateField('materialGrade', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Tolerance Spec</Label>
-                  <Input placeholder="± 0.005mm" className="h-12 bg-slate-50 border-none rounded-xl font-code" value={formData.tolerance} onChange={(e) => handleUpdateField('tolerance', e.target.value)} />
+                  <Input placeholder="± 0.005mm" className="h-12 bg-slate-50 border-none rounded-xl font-code" value={formData.tolerance ?? ''} onChange={(e) => handleUpdateField('tolerance', e.target.value)} />
                 </div>
              </div>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Weight (KG)</Label>
-                  <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center" value={formData.weight} onChange={(e) => handleUpdateField('weight', e.target.value)} />
+                  <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center" value={formData.weight ?? ''} onChange={(e) => handleUpdateField('weight', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Surface Finish</Label>
-                  <Input placeholder="Ra 0.8" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.surfaceFinish} onChange={(e) => handleUpdateField('surfaceFinish', e.target.value)} />
+                  <Input placeholder="Ra 0.8" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.surfaceFinish ?? ''} onChange={(e) => handleUpdateField('surfaceFinish', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Target Industry</Label>
-                  <Input placeholder="Automotive" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.industry} onChange={(e) => handleUpdateField('industry', e.target.value)} />
+                  <Input placeholder="Automotive" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.industry ?? ''} onChange={(e) => handleUpdateField('industry', e.target.value)} />
                 </div>
              </div>
           </div>
@@ -389,15 +388,15 @@ export function ProductRegistry({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500">Est. Cycle Time (Sec)</Label>
-                <Input type="number" className="h-14 bg-slate-50 border-none text-2xl font-display font-black text-primary text-center rounded-2xl" value={formData.cycleTimeSec} onChange={(e) => handleUpdateField('cycleTimeSec', e.target.value)} />
+                <Input type="number" className="h-14 bg-slate-50 border-none text-2xl font-display font-black text-primary text-center rounded-2xl" value={formData.cycleTimeSec ?? ''} onChange={(e) => handleUpdateField('cycleTimeSec', e.target.value)} />
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500">Est. Setup Time (Min)</Label>
-                <Input type="number" className="h-14 bg-slate-50 border-none text-2xl font-display font-black text-primary text-center rounded-2xl" value={formData.setupTimeMin} onChange={(e) => handleUpdateField('setupTimeMin', e.target.value)} />
+                <Input type="number" className="h-14 bg-slate-50 border-none text-2xl font-display font-black text-primary text-center rounded-2xl" value={formData.setupTimeMin ?? ''} onChange={(e) => handleUpdateField('setupTimeMin', e.target.value)} />
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase text-slate-500">Inspection Window (Min)</Label>
-                <Input type="number" className="h-14 bg-slate-50 border-none text-2xl font-display font-black text-primary text-center rounded-2xl" value={formData.inspectionTimeMin} onChange={(e) => handleUpdateField('inspectionTimeMin', e.target.value)} />
+                <Input type="number" className="h-14 bg-slate-50 border-none text-2xl font-display font-black text-primary text-center rounded-2xl" value={formData.inspectionTimeMin ?? ''} onChange={(e) => handleUpdateField('inspectionTimeMin', e.target.value)} />
               </div>
             </div>
           </div>
@@ -419,7 +418,7 @@ export function ProductRegistry({
                     <div key={cost.field} className="space-y-2">
                        <Label className="text-[9px] font-bold uppercase text-slate-500">{cost.label} (₹)</Label>
                        <div className="relative">
-                         <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={(formData as any)[cost.field]} onChange={(e) => handleUpdateField(cost.field as any, e.target.value)} />
+                         <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl pl-10 font-bold" value={(formData as any)[cost.field] ?? ''} onChange={(e) => handleUpdateField(cost.field as any, e.target.value)} />
                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                        </div>
                     </div>
@@ -434,10 +433,10 @@ export function ProductRegistry({
                       </div>
                       <div className="space-y-3">
                          <Label className="text-[9px] font-bold uppercase text-white/40">Selling Price Protocol</Label>
-                         <Input type="number" className="h-14 bg-white/5 border-white/10 text-white font-display text-2xl font-bold" value={formData.sellingPrice} onChange={(e) => handleUpdateField('sellingPrice', e.target.value)} />
+                         <Input type="number" className="h-14 bg-white/5 border-white/10 text-white font-display text-2xl font-bold" value={formData.sellingPrice ?? ''} onChange={(e) => handleUpdateField('sellingPrice', e.target.value)} />
                       </div>
                       <div className="flex justify-between items-end border-t border-white/10 pt-6">
-                         <div className="space-y-1"><p className="text-[8px] font-bold text-white/30 uppercase">Calculated Margin</p><p className="text-2xl font-display font-bold text-emerald-400">{formData.marginPercent}%</p></div>
+                         <div className="space-y-1"><p className="text-[8px] font-bold text-white/30 uppercase">Calculated Margin</p><p className="text-2xl font-display font-bold text-emerald-400">{formData.marginPercent ?? 0}%</p></div>
                          <div className="text-right space-y-1"><p className="text-[8px] font-bold text-white/30 uppercase">Target Matrix</p><p className="text-sm font-bold text-white/60">25%</p></div>
                       </div>
                    </div>
@@ -452,39 +451,39 @@ export function ProductRegistry({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-2">
                 <Label className="text-[9px] font-bold uppercase text-slate-500">Current Demand</Label>
-                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.projectedDemand} onChange={(e) => handleUpdateField('projectedDemand', e.target.value)} />
+                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.projectedDemand ?? ''} onChange={(e) => handleUpdateField('projectedDemand', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label className="text-[9px] font-bold uppercase text-slate-500">Annual Requirement</Label>
-                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.annualRequirement} onChange={(e) => handleUpdateField('annualRequirement', e.target.value)} />
+                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.annualRequirement ?? ''} onChange={(e) => handleUpdateField('annualRequirement', e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label className="text-[9px] font-bold uppercase text-slate-500">Potential Demand</Label>
-                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.potentialAnnualRequirement} onChange={(e) => handleUpdateField('potentialAnnualRequirement', e.target.value)} />
+                <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.potentialAnnualRequirement ?? ''} onChange={(e) => handleUpdateField('potentialAnnualRequirement', e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Target Industry</Label>
-                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.targetIndustry} onChange={(e) => handleUpdateField('targetIndustry', e.target.value)} />
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.targetIndustry ?? ''} onChange={(e) => handleUpdateField('targetIndustry', e.target.value)} />
                </div>
                <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Target Customer</Label>
-                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.targetCustomerType} onChange={(e) => handleUpdateField('targetCustomerType', e.target.value)} />
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.targetCustomerType ?? ''} onChange={(e) => handleUpdateField('targetCustomerType', e.target.value)} />
                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Competitor Product</Label>
-                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.competitorProducts} onChange={(e) => handleUpdateField('competitorProducts', e.target.value)} />
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.competitorProducts ?? ''} onChange={(e) => handleUpdateField('competitorProducts', e.target.value)} />
                </div>
                <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Competitor Price</Label>
-                  <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.competitorPrice} onChange={(e) => handleUpdateField('competitorPrice', e.target.value)} />
+                  <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.competitorPrice ?? ''} onChange={(e) => handleUpdateField('competitorPrice', e.target.value)} />
                </div>
                <div className="space-y-2">
                   <Label className="text-[9px] font-bold uppercase text-slate-500">Forecast Growth</Label>
-                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.forecastGrowth} onChange={(e) => handleUpdateField('forecastGrowth', e.target.value)} />
+                  <Input className="h-12 bg-slate-50 border-none rounded-xl" value={formData.forecastGrowth ?? ''} onChange={(e) => handleUpdateField('forecastGrowth', e.target.value)} />
                </div>
             </div>
           </div>
@@ -496,11 +495,11 @@ export function ProductRegistry({
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-500">Outsourcing %</Label>
-                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.outsourcedPercent} onChange={(e) => handleUpdateField('outsourcedPercent', e.target.value)} />
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.outsourcedPercent ?? ''} onChange={(e) => handleUpdateField('outsourcedPercent', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-500">Annual Outsourcing Value (₹)</Label>
-                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.annualOutsourcingValue} onChange={(e) => handleUpdateField('annualOutsourcingValue', e.target.value)} />
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.annualOutsourcingValue ?? ''} onChange={(e) => handleUpdateField('annualOutsourcingValue', e.target.value)} />
                 </div>
              </div>
              <div className="space-y-4">
@@ -538,7 +537,7 @@ export function ProductRegistry({
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-400">Primary Vendor</Label>
-                   <Select value={formData.primaryVendorId} onValueChange={(v) => handleUpdateField('primaryVendorId', v)}>
+                   <Select value={formData.primaryVendorId ?? ''} onValueChange={(v) => handleUpdateField('primaryVendorId', v)}>
                       <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue placeholder="Identify Vendor..." /></SelectTrigger>
                       <SelectContent className="rounded-xl shadow-2xl">
                         {vendors.map(v => <SelectItem key={v.id} value={v.id} className="text-[10px] font-bold uppercase py-2">{v.name}</SelectItem>)}
@@ -547,7 +546,7 @@ export function ProductRegistry({
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-400">Backup Vendor</Label>
-                   <Select value={formData.backupVendorId} onValueChange={(v) => handleUpdateField('backupVendorId', v)}>
+                   <Select value={formData.backupVendorId ?? ''} onValueChange={(v) => handleUpdateField('backupVendorId', v)}>
                       <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue placeholder="Identify Backup..." /></SelectTrigger>
                       <SelectContent className="rounded-xl shadow-2xl">
                         {vendors.map(v => <SelectItem key={v.id} value={v.id} className="text-[10px] font-bold uppercase py-2">{v.name}</SelectItem>)}
@@ -558,15 +557,15 @@ export function ProductRegistry({
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-500">Lead Time (Days)</Label>
-                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.leadTime} onChange={(e) => handleUpdateField('leadTime', e.target.value)} />
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.leadTime ?? ''} onChange={(e) => handleUpdateField('leadTime', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-500">MOQ</Label>
-                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.moq} onChange={(e) => handleUpdateField('moq', e.target.value)} />
+                   <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.moq ?? ''} onChange={(e) => handleUpdateField('moq', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[9px] font-bold uppercase text-slate-500">Payment Terms</Label>
-                   <Input placeholder="e.g. 30 Days" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.paymentTerms} onChange={(e) => handleUpdateField('paymentTerms', e.target.value)} />
+                   <Input placeholder="e.g. 30 Days" className="h-12 bg-slate-50 border-none rounded-xl" value={formData.paymentTerms ?? ''} onChange={(e) => handleUpdateField('paymentTerms', e.target.value)} />
                 </div>
              </div>
           </div>
@@ -595,22 +594,22 @@ export function ProductRegistry({
                        <TableBody>
                           {(formData.bom || []).map((item, idx) => (
                             <TableRow key={item.id} className="h-20 border-b border-slate-50">
-                               <TableCell className="px-8"><Input className="h-10 bg-slate-50/50 border-none font-bold text-xs" placeholder="Component Name" value={item.name} onChange={(e) => {
+                               <TableCell className="px-8"><Input className="h-10 bg-slate-50/50 border-none font-bold text-xs" placeholder="Component Name" value={item.name ?? ''} onChange={(e) => {
                                  const newBom = [...(formData.bom || [])];
                                  newBom[idx].name = e.target.value;
                                  handleUpdateField('bom', newBom);
                                }} /></TableCell>
-                               <TableCell className="text-center"><Input type="number" className="h-10 w-20 mx-auto bg-slate-50/50 border-none text-center font-bold" value={item.qty} onChange={(e) => {
+                               <TableCell className="text-center"><Input type="number" className="h-10 w-20 mx-auto bg-slate-50/50 border-none text-center font-bold" value={item.qty ?? ''} onChange={(e) => {
                                  const newBom = [...(formData.bom || [])];
                                  newBom[idx].qty = Number(e.target.value);
                                  handleUpdateField('bom', newBom);
                                }} /></TableCell>
-                               <TableCell className="text-center"><Input className="h-10 w-20 mx-auto bg-slate-50/50 border-none text-center font-code" value={item.revision} onChange={(e) => {
+                               <TableCell className="text-center"><Input className="h-10 w-20 mx-auto bg-slate-50/50 border-none text-center font-code" value={item.revision ?? ''} onChange={(e) => {
                                  const newBom = [...(formData.bom || [])];
                                  newBom[idx].revision = e.target.value;
                                  handleUpdateField('bom', newBom);
                                }} /></TableCell>
-                               <TableCell className="text-right"><Input type="number" className="h-10 w-32 ml-auto bg-slate-50/50 border-none text-right font-display font-bold" value={item.cost} onChange={(e) => {
+                               <TableCell className="text-right"><Input type="number" className="h-10 w-32 ml-auto bg-slate-50/50 border-none text-right font-display font-bold" value={item.cost ?? ''} onChange={(e) => {
                                  const newBom = [...(formData.bom || [])];
                                  newBom[idx].cost = Number(e.target.value);
                                  handleUpdateField('bom', newBom);
@@ -667,7 +666,7 @@ export function ProductRegistry({
                 </div>
                 <div className="text-right space-y-1">
                    <p className="text-[10px] font-black uppercase text-[#001F3D]/60 tracking-widest">Calculated Margin</p>
-                   <p className="text-5xl font-display font-black">{formData.marginPercent}%</p>
+                   <p className="text-5xl font-display font-black">{formData.marginPercent ?? 0}%</p>
                 </div>
              </Card>
           </div>
@@ -676,8 +675,7 @@ export function ProductRegistry({
       default:
         return (
           <div className="py-20 flex flex-col items-center justify-center opacity-30 text-center animate-pulse">
-            <StepIcon className="h-16 w-16 mb-4" />
-            <p className="text-sm font-bold uppercase tracking-widest">{activeStep.label} Matrix Construction...</p>
+            <p className="text-sm font-bold uppercase tracking-widest">Matrix Construction...</p>
           </div>
         );
     }
@@ -738,7 +736,6 @@ export function ProductRegistry({
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
         <DialogContent className="max-w-6xl h-[92vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
           <div className="flex-1 flex overflow-hidden">
-            {/* Sidebar Wizard Navigation */}
             <div className="w-80 bg-slate-900 p-10 border-r border-slate-800 flex flex-col justify-between shrink-0 relative overflow-hidden">
               <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '30px 30px' }} />
               <div className="space-y-12 relative z-10">
@@ -773,7 +770,6 @@ export function ProductRegistry({
               <p className="text-[9px] font-bold text-slate-700 uppercase tracking-[0.4em] relative z-10">ONBOARD_v2.4</p>
             </div>
 
-            {/* Main Content Area */}
             <div className="flex-1 flex flex-col bg-white overflow-hidden">
               <header className="p-10 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">

@@ -35,7 +35,8 @@ import {
   Clock,
   RotateCcw,
   Check,
-  Maximize2
+  Maximize2,
+  Settings2
 } from 'lucide-react';
 import { Customer, BillingRecord, ProductMaster, BillingLineItem, UISettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -58,12 +59,13 @@ import {
 import { Switch } from '@/components/ui/switch';
 
 /**
- * Utility to convert numerical currency to institutional words.
+ * Utility to convert numerical currency to institutional words (Indian Format).
  */
 function numberToWords(num: number): string {
   if (num === 0) return "ZERO RUPEES ONLY";
   const single = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN"];
   const double = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
+  
   function convert(n: number): string {
     if (n < 20) return single[n];
     if (n < 100) return double[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + single[n % 10] : "");
@@ -72,6 +74,7 @@ function numberToWords(num: number): string {
     if (n < 10000000) return convert(Math.floor(n / 100000)) + " LAKH" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
     return convert(Math.floor(num)) + " RUPEES ONLY";
   }
+  
   return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
 }
 
@@ -131,7 +134,8 @@ export function BillingManagement({
     isRoundOffActive: false,
     tcsRate: 0,
     tcsAmount: 0,
-    transportationCharges: 0
+    transportationCharges: 0,
+    paymentMethod: 'Bank Transfer'
   });
 
   const filteredRecords = useMemo(() => {
@@ -203,7 +207,7 @@ export function BillingManagement({
       let grandTotal = subTotal + taxTotal + tcsAmount + extraCharges - discountTotal;
       if (formData.isRoundOffActive) grandTotal = Math.round(grandTotal);
 
-      return { subTotal, taxTotal, grandTotal, discountTotal, tcsAmount };
+      return { subTotal, taxTotal, grandTotal, discountTotal, tcsAmount, extraCharges };
     }, [formData.items, formData.discountTotal, formData.tcsAmount, formData.isRoundOffActive, formData.transportationCharges]);
 
     const handleUpdateItem = (idx: number, field: keyof BillingLineItem, value: any) => {
@@ -254,6 +258,7 @@ export function BillingManagement({
         </div>
 
         <div className="max-w-[1700px] mx-auto w-full p-8 space-y-12">
+          {/* STEP 01: IDENTIFICATION & METADATA */}
           <div className="space-y-6">
             <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
               <div className="p-3 bg-primary/10 rounded-xl text-primary shadow-sm"><FileCheck className="h-6 w-6" /></div>
@@ -322,14 +327,11 @@ export function BillingManagement({
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">Ship To</Label>
-                      <Select defaultValue="--">
-                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent className="rounded-xl"><SelectItem value="--">--</SelectItem></SelectContent>
-                      </Select>
+                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.shipTo ?? '--'} onChange={(e)=>handleUpdateField('shipTo', e.target.value)} />
                    </div>
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-xs">Distance for e-way bill (in km)</Label>
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-xs">Distance for e-way (km)</Label>
                       <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.distanceEWay ?? ''} onChange={(e)=>handleUpdateField('distanceEWay', e.target.value)} />
                    </div>
 
@@ -342,31 +344,27 @@ export function BillingManagement({
 
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                 <div className="flex justify-between items-center px-1">
-                   <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Quotation Detail</h4>
+                   <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Document Registry</h4>
                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-50"><RotateCcw className="h-4 w-4 text-slate-400" /></Button>
                 </div>
 
                 <div className="space-y-6">
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">Type</Label>
-                      <Select defaultValue="Standard">
-                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Standard" /></SelectTrigger>
-                        <SelectContent className="rounded-xl"><SelectItem value="Standard">Standard</SelectItem><SelectItem value="Export">Export</SelectItem></SelectContent>
+                      <Select value={formData.type ?? 'quotation'} onValueChange={(v)=>handleUpdateField('type', v)}>
+                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-xl"><SelectItem value="quotation">Quotation</SelectItem><SelectItem value="invoice">Sales Invoice</SelectItem></SelectContent>
                       </Select>
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr_120px_200px] items-center gap-x-6 gap-y-4">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Quotation No.*</Label>
-                      <div className="col-span-1 flex items-center gap-2">
-                        <div className="bg-slate-100 text-[10px] font-bold text-slate-400 px-3 py-2 rounded-lg">Prefix</div>
-                        <Input readOnly className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-center flex-1" value={formData.number?.split('-')[1] || '1'} />
-                        <div className="bg-slate-100 text-[10px] font-bold text-slate-400 px-3 py-2 rounded-lg">Postfix</div>
-                      </div>
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-right">Quotation Date*</Label>
+                   <div className="grid grid-cols-[120px_1fr_120px_1fr] items-center gap-x-6 gap-y-4">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Doc. Number*</Label>
+                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-center" value={formData.number ?? ''} onChange={(e)=>handleUpdateField('number', e.target.value)} />
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-right">Date*</Label>
                       <DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-10 rounded-xl" />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr_120px_200px] items-center gap-x-6 gap-y-4">
+                   <div className="grid grid-cols-[120px_1fr_120px_1fr] items-center gap-x-6 gap-y-4">
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">Challan No.</Label>
                       <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.challanNo ?? ''} onChange={(e)=>handleUpdateField('challanNo', e.target.value)} />
                       <Label className="text-[11px] font-bold text-slate-500 uppercase text-right">Challan Date</Label>
@@ -379,7 +377,7 @@ export function BillingManagement({
                    </div>
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6 pt-6 border-t border-slate-50">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Delivery</Label>
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Delivery Mode</Label>
                       <Select value={formData.deliveryMode ?? ''} onValueChange={(v)=>handleUpdateField('deliveryMode', v)}>
                         <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Select Delivery Mode" /></SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -392,16 +390,20 @@ export function BillingManagement({
             </div>
           </div>
 
+          {/* STEP 02: EXECUTION MATRIX (PRODUCT ITEMS) */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-l-4 border-accent pl-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-accent/10 rounded-xl text-accent shadow-sm"><Box className="h-6 w-6" /></div>
                 <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 02: Execution Matrix</h3>
               </div>
-              <div className="flex items-center gap-6">
-                 <Button variant="ghost" onClick={addRow} className="text-primary font-black text-[10px] uppercase tracking-widest gap-2 bg-white border shadow-sm h-11 px-6 rounded-xl">
-                    <Plus className="h-4 w-4" /> Add Product Node
-                 </Button>
+              <div className="flex items-center gap-4 bg-white p-2 rounded-xl border shadow-sm">
+                 <span className="text-[9px] font-black uppercase text-slate-400 px-2">Discount:</span>
+                 <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black bg-white shadow-sm">Rs</Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black text-slate-400">%</Button>
+                 </div>
+                 <Button variant="ghost" size="icon" className="h-8 w-8"><Settings2 className="h-4 w-4 text-slate-300" /></Button>
               </div>
             </div>
 
@@ -411,23 +413,23 @@ export function BillingManagement({
                    <TableHeader className="bg-slate-50/80">
                       <TableRow className="hover:bg-transparent border-b border-slate-200">
                         <TableHead className="px-6 py-6 text-[9px] font-black uppercase w-16 text-center border-r">SR.</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase min-w-[400px] border-r">PRODUCT IDENTITY & NOTES</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-32 text-center border-r">HSN CODE</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase min-w-[450px] border-r">PRODUCT / OTHER CHARGES</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase w-32 text-center border-r">HSN/SAC CODE</TableHead>
                         <TableHead className="text-[9px] font-black uppercase w-24 text-center border-r">QTY.</TableHead>
                         <TableHead className="text-[9px] font-black uppercase w-24 text-center border-r">UOM</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-40 text-center border-r">RATE (₹)</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-28 text-center border-r">DISC.</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase w-40 text-center border-r">PRICE (₹)</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase w-40 text-center border-r">DISCOUNT</TableHead>
                         <TableHead className="text-[9px] font-black uppercase w-28 text-center border-r">IGST %</TableHead>
                         <TableHead className="text-right px-10 text-[9px] font-black uppercase w-48">TOTAL (₹)</TableHead>
-                        <TableHead className="w-16"></TableHead>
+                        <TableHead className="w-10"></TableHead>
                       </TableRow>
                    </TableHeader>
                    <TableBody>
                       {(formData.items || []).map((item, idx) => (
-                        <TableRow key={item.id} className="h-24 border-b border-slate-100 hover:bg-slate-50/30">
+                        <TableRow key={item.id} className="h-28 border-b border-slate-100 hover:bg-slate-50/30">
                            <TableCell className="text-center font-display font-black text-slate-300 border-r">{idx + 1}</TableCell>
                            <TableCell className="border-r p-0">
-                              <div className="flex flex-col h-full">
+                              <div className="flex flex-col h-full bg-white group-hover:bg-transparent">
                                 <Select value={item.productId ?? ''} onValueChange={(pId) => {
                                    const p = products.find(x => x.id === pId);
                                    handleUpdateItem(idx, 'productId', pId);
@@ -437,33 +439,52 @@ export function BillingManagement({
                                    handleUpdateItem(idx, 'unit', p?.uom || 'Nos');
                                    handleUpdateItem(idx, 'gstRate', p?.gstRate || 18);
                                 }}>
-                                   <SelectTrigger className="border-none bg-transparent h-12 font-black uppercase text-xs focus:ring-0 shadow-none px-6 text-[#001F3D]">
-                                      <SelectValue placeholder="Select Product Node..." />
+                                   <SelectTrigger className="border-none bg-transparent h-12 font-black uppercase text-sm focus:ring-0 shadow-none px-6 text-[#001F3D]">
+                                      <SelectValue placeholder="Enter Product name" />
                                    </SelectTrigger>
                                    <SelectContent className="rounded-xl shadow-2xl">
                                       {products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase py-2">{p.name}</SelectItem>)}
                                    </SelectContent>
                                 </Select>
-                                <div className="px-6 pb-2">
-                                   <Input placeholder="Technical Notes..." className="h-8 bg-slate-50/50 border-none text-[10px] rounded-lg" value={item.note ?? ''} onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} />
+                                <div className="px-6 pb-4">
+                                   <Textarea 
+                                    placeholder="Item Note..." 
+                                    className="h-16 bg-slate-50/50 border-none text-[10px] rounded-xl font-medium resize-none shadow-inner" 
+                                    value={item.note ?? ''} 
+                                    onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} 
+                                   />
                                 </div>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-code text-[11px]" value={item.hsn ?? ''} onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
-                           <TableCell className="border-r"><Input type="number" className="border-none bg-transparent text-center font-black text-sm" value={item.qty ?? ''} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
-                           <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-bold text-[10px]" value={item.unit ?? ''} onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
-                           <TableCell className="border-r"><Input type="number" className="border-none bg-transparent text-center font-display font-black text-sm" value={item.price ?? ''} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} /></TableCell>
-                           <TableCell className="border-r"><Input type="number" className="border-none bg-transparent text-center font-bold text-xs" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} /></TableCell>
+                           <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-code text-[11px]" value={item.hsn ?? ''} placeholder="HSN/SAC" onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
+                           <TableCell className="border-r"><Input type="number" className="border-none bg-transparent text-center font-black text-sm" value={item.qty ?? ''} placeholder="Qty." onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
+                           <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-bold text-[10px]" value={item.unit ?? ''} placeholder="UOM" onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
+                           <TableCell className="border-r">
+                              <div className="flex items-center gap-1 justify-center">
+                                 <Info className="h-3 w-3 text-slate-300" />
+                                 <Input type="number" className="border-none bg-transparent text-center font-display font-black text-sm w-32" value={item.price ?? ''} placeholder="Price" onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
+                              </div>
+                           </TableCell>
+                           <TableCell className="border-r">
+                              <div className="flex items-center px-4">
+                                 <Input type="number" className="border-none bg-transparent text-center font-bold text-xs" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} />
+                                 <div className="h-6 w-px bg-slate-100 mx-2" />
+                                 <Select value={item.discountType || 'percentage'} onValueChange={(v: any) => handleUpdateItem(idx, 'discountType', v)}>
+                                    <SelectTrigger className="border-none bg-transparent w-10 p-0 shadow-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl"><SelectItem value="percentage">%</SelectItem><SelectItem value="amount">Rs</SelectItem></SelectContent>
+                                 </Select>
+                              </div>
+                           </TableCell>
                            <TableCell className="border-r">
                               <Select value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
                                  <SelectTrigger className="border-none bg-transparent h-10 text-center font-bold text-[11px] shadow-none focus:ring-0 p-0"><SelectValue /></SelectTrigger>
                                  <SelectContent className="rounded-xl">
-                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>)}
+                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}</SelectItem>)}
                                  </SelectContent>
                               </Select>
                            </TableCell>
                            <TableCell className="text-right px-10 font-display font-black text-slate-900 text-sm">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                           <TableCell className="text-center"><Button variant="ghost" size="icon" className="text-slate-300 hover:text-red-500 rounded-xl" onClick={() => removeRow(item.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                           <TableCell className="text-center"><Button variant="ghost" size="icon" className="text-slate-200 hover:text-red-500 rounded-xl" onClick={() => removeRow(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-[#FFFDE7] hover:bg-[#FFFDE7] border-t-2 border-[#001F3D]">
@@ -471,9 +492,9 @@ export function BillingManagement({
                          <TableCell className="border-r"></TableCell>
                          <TableCell className="text-center font-display font-black text-sm border-r">{(formData.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
                          <TableCell className="border-r"></TableCell>
-                         <TableCell className="border-r"></TableCell>
-                         <TableCell className="border-r"></TableCell>
-                         <TableCell className="border-r"></TableCell>
+                         <TableCell className="text-center font-display font-black text-sm border-r">{(formData.items || []).reduce((acc, i) => acc + (i.price || 0), 0).toLocaleString()}</TableCell>
+                         <TableCell className="text-center font-display font-black text-sm border-r">0</TableCell>
+                         <TableCell className="text-center font-display font-black text-sm border-r">0</TableCell>
                          <TableCell className="text-right px-10 font-display font-black text-xl text-[#001F3D]">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                          <TableCell></TableCell>
                       </TableRow>
@@ -481,41 +502,142 @@ export function BillingManagement({
                  </Table>
                </div>
             </Card>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-             <div className="lg:col-span-7 space-y-8">
-                <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                   <h4 className="text-xs font-black uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Terms & Requisition</h4>
-                   <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Standard Terms Matrix</Label>
-                      <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-2xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
-                   </div>
-                </Card>
-             </div>
-             <div className="lg:col-span-5">
-                <Card className="p-12 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-8 relative overflow-hidden">
-                   <div className="space-y-6">
-                      <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase text-slate-400">Taxable Value</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                      <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase text-slate-400">Aggregate GST Node</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                      
-                      <div className="flex justify-between items-center pt-4 border-t">
-                         <div className="flex items-center gap-3"><Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} /><span className="text-[9px] font-black uppercase text-slate-500">Round Off Protocol</span></div>
-                         <span className="text-3xl font-display font-black text-[#001F3D]">₹ {Math.round(totals.grandTotal).toLocaleString()}</span>
-                      </div>
-                      
-                      <div className="pt-6 space-y-2">
-                         <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Transcription</p>
-                         <p className="text-[10px] font-black text-[#001F3D] uppercase text-center bg-slate-50 p-4 rounded-xl">{numberToWords(Math.round(totals.grandTotal))}</p>
-                      </div>
-                   </div>
-                   <Button className="w-full h-16 bg-[#10b981] hover:bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-emerald-500/20" onClick={handleSave}>
-                      Finalize & Commit Ledger
-                   </Button>
-                </Card>
-             </div>
-          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+               {/* LEFT COLUMN: TERMS & NOTES */}
+               <div className="lg:col-span-7 space-y-8">
+                  <div className="space-y-3">
+                     <Label className="text-[10px] font-black uppercase text-slate-400">Bank</Label>
+                     <Select value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
+                        <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Hide Bank Details" /></SelectTrigger>
+                        <SelectContent className="rounded-xl shadow-2xl">
+                           <SelectItem value="Bank Transfer">Main Corporate Node (HDFC)</SelectItem>
+                           <SelectItem value="Cash">Institutional Ledger Node (IDBI)</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
 
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
+                     <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest">Terms & Condition / Additional Note</h4>
+                     <div className="space-y-4">
+                        <div className="grid grid-cols-[100px_1fr] items-center gap-6">
+                           <Label className="text-[11px] font-bold text-slate-400 uppercase">Title</Label>
+                           <Input className="h-10 bg-slate-50 border-none rounded-xl" />
+                        </div>
+                        <div className="grid grid-cols-[100px_1fr] items-start gap-6">
+                           <Label className="text-[11px] font-bold text-slate-400 uppercase pt-2">Detail</Label>
+                           <div className="relative group">
+                              <Textarea className="min-h-[100px] bg-slate-50 border-none rounded-xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
+                              <div className="absolute right-3 bottom-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <Button variant="ghost" size="icon" className="h-7 w-7 bg-white/80"><ChevronDown className="h-3 w-3" /></Button>
+                                 <Button variant="ghost" size="icon" className="h-7 w-7 bg-white/80"><Maximize2 className="h-3 w-3" /></Button>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <Button variant="ghost" className="text-primary font-black text-[9px] uppercase tracking-widest gap-2 bg-slate-50 h-10 px-6 rounded-xl">
+                        <Plus className="h-3.5 w-3.5" /> Add Notes
+                     </Button>
+                  </Card>
+
+                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
+                     <div className="grid grid-cols-[100px_1fr] items-start gap-6">
+                        <Label className="text-[10px] font-black uppercase text-slate-900 pt-2 leading-tight">Document Note / Remarks</Label>
+                        <div className="space-y-2">
+                           <Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-xs" placeholder="Not Visible on Print" value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
+                           <p className="text-[8px] text-slate-300 font-bold uppercase tracking-widest ml-1">Not Visible on Print</p>
+                        </div>
+                     </div>
+                  </Card>
+               </div>
+
+               {/* RIGHT COLUMN: FINANCIAL SETTLEMENT */}
+               <div className="lg:col-span-5">
+                  <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-6 relative overflow-hidden">
+                     <div className="space-y-5">
+                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Taxable</span><span className="text-sm font-display font-black text-slate-900">{totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                        
+                        <Button variant="link" className="text-emerald-500 font-black text-[10px] uppercase p-0 h-auto">Add Additional Charge</Button>
+                        
+                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Total Taxable</span><span className="text-sm font-display font-black text-slate-900">{totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Total Tax</span><span className="text-sm font-display font-black text-slate-900">{totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                        
+                        {/* TCS Matrix */}
+                        <div className="flex items-center gap-3">
+                           <div className="flex-1 h-12 border-2 border-slate-100 rounded-xl px-4 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">TCS</span>
+                              <div className="flex items-center gap-2">
+                                 <div className="flex bg-slate-100 p-0.5 rounded-lg">
+                                    <button className="h-6 px-2 text-[10px] bg-white rounded shadow-sm">+</button>
+                                    <button className="h-6 px-2 text-[10px] text-slate-400">-</button>
+                                 </div>
+                                 <Input type="number" className="w-20 border-none bg-transparent h-8 text-right font-black" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
+                                 <Select defaultValue="percentage">
+                                    <SelectTrigger className="w-10 border-none shadow-none bg-transparent h-8 p-0 focus:ring-0"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl"><SelectItem value="percentage">%</SelectItem><SelectItem value="amount">Rs</SelectItem></SelectContent>
+                                 </Select>
+                              </div>
+                           </div>
+                        </div>
+                        <div className="flex justify-end pr-1"><span className="text-xs font-display font-bold text-slate-900">₹ {totals.tcsAmount.toLocaleString()}</span></div>
+
+                        {/* Global Discount Matrix */}
+                        <div className="flex items-center gap-3">
+                           <div className="flex-1 h-12 border-2 border-slate-100 rounded-xl px-4 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Discount</span>
+                              <div className="flex items-center gap-2">
+                                 <div className="flex bg-slate-100 p-0.5 rounded-lg">
+                                    <button className="h-6 px-2 text-[10px] text-slate-400">+</button>
+                                    <button className="h-6 px-2 text-[10px] bg-white rounded shadow-sm">-</button>
+                                 </div>
+                                 <Input type="number" className="w-20 border-none bg-transparent h-8 text-right font-black" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
+                                 <Select defaultValue="amount">
+                                    <SelectTrigger className="w-12 border-none shadow-none bg-transparent h-8 p-0 focus:ring-0"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl"><SelectItem value="percentage">%</SelectItem><SelectItem value="amount">Rs</SelectItem></SelectContent>
+                                 </Select>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="flex justify-between items-center py-2 border-y border-slate-50">
+                           <div className="flex items-center gap-3"><span className="text-[11px] font-bold text-slate-700 uppercase">Round Off</span><Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} /></div>
+                           <span className="text-sm font-display font-black text-slate-900">{formData.isRoundOffActive ? (totals.grandTotal - (totals.subTotal + totals.taxTotal + totals.tcsAmount - totals.discountTotal)).toFixed(2) : '0.00'}</span>
+                        </div>
+                        
+                        <div className="bg-[#FFFDE7] p-5 -mx-10 border-y-2 border-[#001F3D] flex justify-between items-center shadow-inner">
+                           <span className="text-sm font-black uppercase text-[#001F3D] ml-4">Grand Total</span>
+                           <span className="text-2xl font-display font-black text-[#001F3D] mr-4">₹ {totals.grandTotal.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="pt-6 space-y-4">
+                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Total in Words</p>
+                           <div className="p-4 bg-slate-50 rounded-2xl flex flex-col items-center gap-2 border border-slate-100">
+                              <p className="text-[10px] font-black text-[#001F3D] uppercase text-center leading-relaxed">{numberToWords(totals.grandTotal)}</p>
+                              <div className="flex items-center gap-2 text-primary font-display font-black text-sm uppercase">₹ {numberToWords(totals.grandTotal)}</div>
+                           </div>
+                        </div>
+
+                        <div className="pt-6">
+                           <div className="h-12 bg-slate-50 rounded-xl px-4 flex items-center justify-between group cursor-pointer hover:bg-slate-100 transition-all">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">Smart Suggestion</span>
+                              <Plus className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                           </div>
+                        </div>
+
+                        <div className="flex gap-4 pt-10">
+                           <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold uppercase text-[10px] border-slate-200" onClick={() => setIsRecordFormOpen(false)}><ChevronLeft className="h-3 w-3 mr-2" /> Back</Button>
+                           <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold uppercase text-[10px] border-slate-200 flex gap-2"><Archive className="h-3 w-3" /> Save Draft</Button>
+                        </div>
+                        
+                        <div className="flex gap-4">
+                           <Button className="flex-1 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSave}><Printer className="h-4 w-4" /> Save & Print</Button>
+                           <Button className="flex-1 h-14 bg-[#001F3D] hover:bg-black text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSave}><Check className="h-4 w-4" /> Save</Button>
+                        </div>
+                     </div>
+                  </Card>
+               </div>
+            </div>
+          </div>
         </div>
       </div>
     );

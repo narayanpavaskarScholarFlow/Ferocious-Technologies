@@ -6,30 +6,27 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  FileText, 
   Plus, 
   ChevronRight, 
-  Trash2, 
   Save, 
   Search, 
-  Printer, 
   ArrowLeft, 
   Box, 
   Receipt,
   ShoppingCart,
-  PackageCheck,
   Building2,
   Landmark,
   User,
-  PlusCircle,
   Link2,
   TableProperties,
-  Calculator,
   Settings,
   Layers,
-  LayoutGrid
+  LayoutGrid,
+  FileText,
+  Printer,
+  ChevronDown
 } from 'lucide-react';
-import { Customer, BillingRecord, Order, SystemUser, ProductMaster, BillingLineItem } from '@/lib/types';
+import { Customer, BillingRecord, ProductMaster, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,6 +44,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 function numberToWords(num: number): string {
   if (num === 0) return "ZERO RUPEES ONLY";
@@ -157,7 +155,7 @@ export function BillingManagement({
             <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full"><ArrowLeft className="h-5 w-5" /></Button>
             <div className="flex flex-col">
                <h2 className="text-xl font-display font-bold text-slate-900 uppercase leading-none">{formData.type} Entry</h2>
-               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Professional GST Management</p>
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Professional Document Hub</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -185,7 +183,6 @@ export function BillingManagement({
                        </Select>
                     </div>
                     <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">GSTIN</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.gstNumber} readOnly /></div>
-                    <div className="space-y-2 md:col-span-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Address</Label><Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-xs font-medium" value={formData.shipTo} onChange={(e)=>setFormData({...formData, shipTo: e.target.value})} /></div>
                  </div>
               </Card>
 
@@ -193,16 +190,6 @@ export function BillingManagement({
                  <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Document No.</Label><Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} /></div>
                     <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Document Date</Label><DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-12" /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-slate-500">Sales Executive</Label><Input className="h-12 bg-slate-50 border-none rounded-xl" value={currentUser || ''} disabled /></div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-slate-500">Status</Label>
-                       <Select value={formData.status} onValueChange={(v)=>setFormData({...formData, status: v})}>
-                          <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold uppercase"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                             {['Draft', 'Sent', 'Approved', 'Rejected'].map(s => <SelectItem key={s} value={s} className="text-xs font-bold uppercase">{s}</SelectItem>)}
-                          </SelectContent>
-                       </Select>
-                    </div>
                  </div>
               </Card>
            </div>
@@ -217,7 +204,6 @@ export function BillingManagement({
                     <TableRow>
                        <TableHead className="px-6 py-5 text-[9px] font-black uppercase w-16">Sr</TableHead>
                        <TableHead className="text-[9px] font-black uppercase">Product / Service</TableHead>
-                       <TableHead className="text-[9px] font-black uppercase w-32">HSN/SAC</TableHead>
                        <TableHead className="text-[9px] font-black uppercase text-center w-24">Qty</TableHead>
                        <TableHead className="text-right text-[9px] font-black uppercase w-32">Rate (₹)</TableHead>
                        <TableHead className="text-right px-10 text-[9px] font-black uppercase w-40">Total</TableHead>
@@ -249,7 +235,6 @@ export function BillingManagement({
                                </SelectContent>
                             </Select>
                          </TableCell>
-                         <TableCell><Input className="border-none bg-transparent font-code text-xs" value={item.hsn} readOnly /></TableCell>
                          <TableCell><Input type="number" className="border-none bg-transparent text-center font-bold text-xs" value={item.qty} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
                          <TableCell><Input type="number" className="border-none bg-transparent text-right font-display font-bold text-xs" value={item.price} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} /></TableCell>
                          <TableCell className="text-right px-10 font-display font-black text-slate-900 text-sm">₹ {item.total.toLocaleString()}</TableCell>
@@ -276,10 +261,6 @@ export function BillingManagement({
                     <div className="flex justify-between items-end">
                        <span className="text-sm font-black uppercase text-primary mb-1">Grand Total</span>
                        <span className="text-4xl font-display font-black tracking-tighter">₹ {totals.grandTotal.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-8">
-                       <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Amount In Words</p>
-                       <p className="text-[10px] font-black uppercase text-primary leading-tight">{numberToWords(totals.grandTotal)}</p>
                     </div>
                  </div>
               </Card>

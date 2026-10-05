@@ -36,7 +36,9 @@ import {
   Download,
   Copy,
   Zap,
-  MoreHorizontal
+  MoreHorizontal,
+  TrendingUp,
+  Archive
 } from 'lucide-react';
 import { Customer, BillingRecord, ProductMaster, BillingLineItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -168,7 +170,6 @@ export function BillingManagement({
 
     return (
       <div className="flex flex-col bg-slate-50 min-h-screen animate-in fade-in duration-300 font-body">
-        {/* Sticky Action Header */}
         <div className="sticky top-0 z-50 bg-white border-b border-slate-200 px-6 h-16 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full h-10 w-10">
@@ -193,7 +194,6 @@ export function BillingManagement({
         <ScrollArea className="flex-1">
           <div className="max-w-[1500px] mx-auto w-full p-6 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              {/* CUSTOMER INFORMATION PANEL */}
               <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl relative">
                 <div className="flex justify-between items-center mb-10">
                   <h3 className="text-sm font-black text-slate-700 uppercase tracking-[0.2em]">Customer Information</h3>
@@ -274,7 +274,6 @@ export function BillingManagement({
                 </div>
               </Card>
 
-              {/* DOCUMENT METADATA PANEL */}
               <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl space-y-10">
                 <h3 className="text-sm font-black text-slate-700 uppercase tracking-[0.2em]">Document Details</h3>
                 <div className="space-y-6">
@@ -311,7 +310,6 @@ export function BillingManagement({
               </Card>
             </div>
 
-            {/* PRODUCT GRID MATRIX */}
             <Card className="bg-white border-slate-200 shadow-sm rounded-2xl overflow-hidden">
                <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                   <div className="flex items-center gap-4">
@@ -391,7 +389,6 @@ export function BillingManagement({
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <div className="lg:col-span-7 space-y-6">
-                 {/* BANK SETTLEMENT */}
                  <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-[2rem] space-y-6">
                     <div className="flex items-center gap-3"><Landmark className="h-4 w-4 text-emerald-600" /><h4 className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Bank Settlement Matrix</h4></div>
                     <div className="grid grid-cols-2 gap-10 bg-slate-50 p-6 rounded-2xl text-[11px] text-slate-600 shadow-inner">
@@ -400,7 +397,6 @@ export function BillingManagement({
                     </div>
                  </Card>
 
-                 {/* TERMS PROTOCOL */}
                  <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-[2rem] space-y-6">
                     <div className="flex justify-between items-center">
                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-l-4 border-blue-600 pl-4">Terms & Conditions</h4>
@@ -410,7 +406,6 @@ export function BillingManagement({
                  </Card>
               </div>
 
-              {/* VALUATION SUMMARY */}
               <Card className="lg:col-span-5 p-12 bg-[#001F3D] text-white border-none shadow-2xl rounded-[3rem] relative overflow-hidden h-fit">
                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1.5px, transparent 0)', backgroundSize: '50px 50px' }} />
                  <div className="relative z-10 space-y-10">

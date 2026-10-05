@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,8 @@ import {
   RotateCcw,
   Check,
   Maximize2,
-  Settings2
+  Settings2,
+  DollarSign
 } from 'lucide-react';
 import { Customer, BillingRecord, ProductMaster, BillingLineItem, UISettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -76,14 +77,9 @@ function numberToWords(num: number): string {
     return convert(Math.floor(num)) + " RUPEES ONLY";
   }
   
-  return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
-}
-
-/** Custom Wallet Icon for Bank Selection */
-function Wallet({ className }: any) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
-  );
+  const mainPart = Math.floor(num);
+  const words = convert(mainPart);
+  return (words + " RUPEES ONLY").trim();
 }
 
 interface BillingManagementProps {
@@ -132,6 +128,7 @@ export function BillingManagement({
     contactPerson: '', 
     phoneNo: '', 
     gstNumber: '',
+    panNumber: '',
     referenceNumber: '', 
     challanNo: '',
     challanDate: '', 
@@ -183,26 +180,17 @@ export function BillingManagement({
         isRoundOffActive: false,
         tcsRate: 0,
         tcsAmount: 0,
+        transportationCharges: 0,
         terms: 'Subject to our home Jurisdiction.\nOur Responsibility Ceases as soon as goods leaves our Premises.',
       });
     }
     setIsRecordFormOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formData.customerId || !formData.number) {
-      toast({ variant: "destructive", title: "Information Required", description: "Customer and Document Number are mandatory." });
-      return;
-    }
-    onSaveRecord(formData as BillingRecord);
-    toast({ title: "Document Saved", description: `${formData.type} committed to ledger.` });
-    setIsRecordFormOpen(false);
-  };
-
   const FullPageEditor = () => {
-    const handleUpdateField = (field: keyof BillingRecord, value: any) => {
+    const handleUpdateField = useCallback((field: keyof BillingRecord, value: any) => {
       setFormData(prev => ({ ...prev, [field]: value }));
-    };
+    }, []);
 
     const totals = useMemo(() => {
       const items = formData.items || [];
@@ -213,9 +201,14 @@ export function BillingManagement({
       const extraCharges = Number(formData.transportationCharges) || 0;
 
       let grandTotal = subTotal + taxTotal + tcsAmount + extraCharges - discountTotal;
-      if (formData.isRoundOffActive) grandTotal = Math.round(grandTotal);
+      let roundOff = 0;
+      if (formData.isRoundOffActive) {
+        const rounded = Math.round(grandTotal);
+        roundOff = rounded - grandTotal;
+        grandTotal = rounded;
+      }
 
-      return { subTotal, taxTotal, grandTotal, discountTotal, tcsAmount, extraCharges };
+      return { subTotal, taxTotal, grandTotal, discountTotal, tcsAmount, extraCharges, roundOff };
     }, [formData.items, formData.discountTotal, formData.tcsAmount, formData.isRoundOffActive, formData.transportationCharges]);
 
     const handleUpdateItem = (idx: number, field: keyof BillingLineItem, value: any) => {
@@ -227,16 +220,34 @@ export function BillingManagement({
       if (item.discountType === 'percentage') discount = (baseTotal * (Number(item.discount) || 0) / 100);
       else discount = (Number(item.discount) || 0);
       item.total = baseTotal - discount;
-      setFormData({ ...formData, items: newItems });
+      setFormData(prev => ({ ...prev, items: newItems }));
     };
 
     const addRow = () => {
       const newItem: BillingLineItem = { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 };
-      setFormData({ ...formData, items: [...(formData.items || []), newItem] });
+      setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
     };
 
     const removeRow = (id: string) => {
-      setFormData({ ...formData, items: (formData.items || []).filter(i => i.id !== id) });
+      setFormData(prev => ({ ...prev, items: (prev.items || []).filter(i => i.id !== id) }));
+    };
+
+    const handleSaveLocal = () => {
+      if (!formData.customerId || !formData.number) {
+        toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Doc Number required." });
+        return;
+      }
+      const finalRecord = {
+        ...formData,
+        subTotal: totals.subTotal,
+        taxTotal: totals.taxTotal,
+        amount: totals.grandTotal,
+        roundOff: totals.roundOff,
+        updatedAt: new Date().toISOString()
+      } as BillingRecord;
+      onSaveRecord(finalRecord);
+      toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
+      setIsRecordFormOpen(false);
     };
 
     return (
@@ -256,10 +267,10 @@ export function BillingManagement({
           </div>
           <div className="flex gap-4">
              <Button variant="outline" className="rounded-xl h-12 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200" onClick={() => setIsRecordFormOpen(false)}>Back</Button>
-             <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-12 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl flex gap-3" onClick={handleSave}>
+             <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-12 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl flex gap-3" onClick={handleSaveLocal}>
                <Printer className="h-4 w-4" /> Save & Print
              </Button>
-             <Button className="bg-[#001F3D] hover:bg-black text-white h-12 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl" onClick={handleSave}>
+             <Button className="bg-[#001F3D] hover:bg-black text-white h-12 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl" onClick={handleSaveLocal}>
                <Check className="h-4 w-4 mr-2" /> Save Protocol
              </Button>
           </div>
@@ -290,9 +301,11 @@ export function BillingManagement({
                            customerId: id, 
                            customerName: c?.name || '', 
                            gstNumber: c?.gstNumber || '', 
+                           panNumber: c?.pan || '',
                            contactPerson: c?.contactPerson || '', 
                            phoneNo: c?.contactNumber || '', 
                            address: c?.address || '',
+                           shipTo: c?.shippingAddress || c?.address || '',
                            placeOfSupply: c?.city || ''
                          }));
                       }}>
@@ -322,7 +335,10 @@ export function BillingManagement({
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-xs uppercase" value={formData.gstNumber ?? ''} readOnly />
+                      <div className="flex gap-2">
+                        <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-xs uppercase" value={formData.gstNumber ?? ''} placeholder="GSTIN" readOnly />
+                        <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-xs uppercase" value={formData.panNumber ?? ''} placeholder="PAN" readOnly />
+                      </div>
                    </div>
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
@@ -335,7 +351,7 @@ export function BillingManagement({
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">Ship To</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.shipTo ?? '--'} onChange={(e)=>handleUpdateField('shipTo', e.target.value)} />
+                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.shipTo ?? ''} onChange={(e)=>handleUpdateField('shipTo', e.target.value)} />
                    </div>
 
                    <div className="grid grid-cols-[120px_1fr] items-center gap-6">
@@ -406,12 +422,9 @@ export function BillingManagement({
                 <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 02: Execution Matrix</h3>
               </div>
               <div className="flex items-center gap-4 bg-white p-2 rounded-xl border shadow-sm">
-                 <span className="text-[9px] font-black uppercase text-slate-400 px-2">Discount:</span>
-                 <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black bg-white shadow-sm">Rs</Button>
-                    <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black text-slate-400">%</Button>
-                 </div>
-                 <Button variant="ghost" size="icon" className="h-8 w-8"><Settings2 className="h-4 w-4 text-slate-300" /></Button>
+                 <Button variant="ghost" size="sm" onClick={addRow} className="h-8 text-[9px] font-black uppercase tracking-widest gap-2 text-primary">
+                    <Plus className="h-3.5 w-3.5" /> Append Row
+                 </Button>
               </div>
             </div>
 
@@ -440,12 +453,22 @@ export function BillingManagement({
                               <div className="flex flex-col h-full bg-white group-hover:bg-transparent">
                                 <Select value={item.productId ?? ''} onValueChange={(pId) => {
                                    const p = products.find(x => x.id === pId);
-                                   handleUpdateItem(idx, 'productId', pId);
-                                   handleUpdateItem(idx, 'description', p?.name || '');
-                                   handleUpdateItem(idx, 'hsn', p?.hsn || '');
-                                   handleUpdateItem(idx, 'price', p?.saleRate || 0);
-                                   handleUpdateItem(idx, 'unit', p?.uom || 'Nos');
-                                   handleUpdateItem(idx, 'gstRate', p?.gstRate || 18);
+                                   if (!p) return;
+                                   const newItems = [...(formData.items || [])];
+                                   newItems[idx] = { 
+                                     ...newItems[idx], 
+                                     productId: pId, 
+                                     description: p.name, 
+                                     hsn: p.hsn, 
+                                     price: p.saleRate, 
+                                     unit: p.uom, 
+                                     gstRate: p.gstRate,
+                                     drawingNumber: p.drawingNumber,
+                                     revisionNumber: p.revisionNumber,
+                                     material: p.material,
+                                     total: p.saleRate * (newItems[idx].qty || 1)
+                                   };
+                                   setFormData(prev => ({ ...prev, items: newItems }));
                                 }}>
                                    <SelectTrigger className="border-none bg-transparent h-12 font-black uppercase text-sm focus:ring-0 shadow-none px-6 text-[#001F3D]">
                                       <SelectValue placeholder="Enter Product name" />
@@ -469,7 +492,6 @@ export function BillingManagement({
                            <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-bold text-[10px]" value={item.unit ?? ''} placeholder="UOM" onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
                            <TableCell className="border-r">
                               <div className="flex items-center gap-1 justify-center">
-                                 <Info className="h-3 w-3 text-slate-300" />
                                  <Input type="number" className="border-none bg-transparent text-center font-display font-black text-sm w-32" value={item.price ?? ''} placeholder="Price" onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
                               </div>
                            </TableCell>
@@ -487,7 +509,7 @@ export function BillingManagement({
                               <Select value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
                                  <SelectTrigger className="border-none bg-transparent h-10 text-center font-bold text-[11px] shadow-none focus:ring-0 p-0"><SelectValue /></SelectTrigger>
                                  <SelectContent className="rounded-xl">
-                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}</SelectItem>)}
+                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>)}
                                  </SelectContent>
                               </Select>
                            </TableCell>
@@ -515,7 +537,7 @@ export function BillingManagement({
                {/* LEFT COLUMN: TERMS & NOTES */}
                <div className="lg:col-span-7 space-y-8">
                   <div className="space-y-3">
-                     <Label className="text-[10px] font-black uppercase text-slate-400">Bank</Label>
+                     <Label className="text-[10px] font-black uppercase text-slate-400">Bank Settlement Protocol</Label>
                      <Select value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
                         <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Hide Bank Details" /></SelectTrigger>
                         <SelectContent className="rounded-xl shadow-2xl">
@@ -528,32 +550,20 @@ export function BillingManagement({
                   <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
                      <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest">Terms & Condition / Additional Note</h4>
                      <div className="space-y-4">
-                        <div className="grid grid-cols-[100px_1fr] items-center gap-6">
-                           <Label className="text-[11px] font-bold text-slate-400 uppercase">Title</Label>
-                           <Input className="h-10 bg-slate-50 border-none rounded-xl" />
-                        </div>
                         <div className="grid grid-cols-[100px_1fr] items-start gap-6">
-                           <Label className="text-[11px] font-bold text-slate-400 uppercase pt-2">Detail</Label>
+                           <Label className="text-[11px] font-bold text-slate-400 uppercase pt-2">Detail Matrix</Label>
                            <div className="relative group">
-                              <Textarea className="min-h-[100px] bg-slate-50 border-none rounded-xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
-                              <div className="absolute right-3 bottom-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <Button variant="ghost" size="icon" className="h-7 w-7 bg-white/80"><ChevronDown className="h-3 w-3" /></Button>
-                                 <Button variant="ghost" size="icon" className="h-7 w-7 bg-white/80"><Maximize2 className="h-3 w-3" /></Button>
-                              </div>
+                              <Textarea className="min-h-[120px] bg-slate-50 border-none rounded-xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
                            </div>
                         </div>
                      </div>
-                     <Button variant="ghost" className="text-primary font-black text-[9px] uppercase tracking-widest gap-2 bg-slate-50 h-10 px-6 rounded-xl">
-                        <Plus className="h-3.5 w-3.5" /> Add Notes
-                     </Button>
                   </Card>
 
                   <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
                      <div className="grid grid-cols-[100px_1fr] items-start gap-6">
-                        <Label className="text-[10px] font-black uppercase text-slate-900 pt-2 leading-tight">Document Note / Remarks</Label>
+                        <Label className="text-[10px] font-black uppercase text-slate-900 pt-2 leading-tight">Document Note (Internal)</Label>
                         <div className="space-y-2">
-                           <Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-xs" placeholder="Not Visible on Print" value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
-                           <p className="text-[8px] text-slate-300 font-bold uppercase tracking-widest ml-1">Not Visible on Print</p>
+                           <Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-xs" placeholder="Not visible on final output" value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
                         </div>
                      </div>
                   </Card>
@@ -563,72 +573,52 @@ export function BillingManagement({
                <div className="lg:col-span-5">
                   <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-6 relative overflow-hidden">
                      <div className="space-y-5">
-                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Taxable</span><span className="text-sm font-display font-black text-slate-900">{totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Taxable Matrix</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
                         
-                        <Button variant="link" className="text-emerald-500 font-black text-[10px] uppercase p-0 h-auto">Add Additional Charge</Button>
+                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                          <Label className="text-[10px] font-bold uppercase text-emerald-600">Additional Charges (₹)</Label>
+                          <Input type="number" className="w-32 h-8 text-right font-bold border-slate-100 bg-slate-50" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
+                        </div>
                         
-                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Total Taxable</span><span className="text-sm font-display font-black text-slate-900">{totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Total Tax</span><span className="text-sm font-display font-black text-slate-900">{totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Total Tax Node</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
                         
                         {/* TCS Matrix */}
                         <div className="flex items-center gap-3">
                            <div className="flex-1 h-12 border-2 border-slate-100 rounded-xl px-4 flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">TCS</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">TCS Protocol</span>
                               <div className="flex items-center gap-2">
-                                 <div className="flex bg-slate-100 p-0.5 rounded-lg">
-                                    <button className="h-6 px-2 text-[10px] bg-white rounded shadow-sm">+</button>
-                                    <button className="h-6 px-2 text-[10px] text-slate-400">-</button>
-                                 </div>
                                  <Input type="number" className="w-20 border-none bg-transparent h-8 text-right font-black" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
-                                 <Select defaultValue="percentage">
-                                    <SelectTrigger className="w-10 border-none shadow-none bg-transparent h-8 p-0 focus:ring-0"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl"><SelectItem value="percentage">%</SelectItem><SelectItem value="amount">Rs</SelectItem></SelectContent>
-                                 </Select>
+                                 <span className="text-[10px] font-bold text-slate-300">%</span>
                               </div>
                            </div>
                         </div>
-                        <div className="flex justify-end pr-1"><span className="text-xs font-display font-bold text-slate-900">₹ {totals.tcsAmount.toLocaleString()}</span></div>
+                        <div className="flex justify-end pr-1"><span className="text-xs font-display font-bold text-slate-900">₹ {((totals.subTotal * (formData.tcsRate ?? 0)) / 100).toLocaleString()}</span></div>
 
                         {/* Global Discount Matrix */}
                         <div className="flex items-center gap-3">
                            <div className="flex-1 h-12 border-2 border-slate-100 rounded-xl px-4 flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">Discount</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Global Discount</span>
                               <div className="flex items-center gap-2">
-                                 <div className="flex bg-slate-100 p-0.5 rounded-lg">
-                                    <button className="h-6 px-2 text-[10px] text-slate-400">+</button>
-                                    <button className="h-6 px-2 text-[10px] bg-white rounded shadow-sm">-</button>
-                                 </div>
                                  <Input type="number" className="w-20 border-none bg-transparent h-8 text-right font-black" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
-                                 <Select defaultValue="amount">
-                                    <SelectTrigger className="w-12 border-none shadow-none bg-transparent h-8 p-0 focus:ring-0"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl"><SelectItem value="percentage">%</SelectItem><SelectItem value="amount">Rs</SelectItem></SelectContent>
-                                 </Select>
+                                 <span className="text-[10px] font-bold text-slate-300">₹</span>
                               </div>
                            </div>
                         </div>
 
                         <div className="flex justify-between items-center py-2 border-y border-slate-50">
                            <div className="flex items-center gap-3"><span className="text-[11px] font-bold text-slate-700 uppercase">Round Off</span><Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} /></div>
-                           <span className="text-sm font-display font-black text-slate-900">{formData.isRoundOffActive ? (totals.grandTotal - (totals.subTotal + totals.taxTotal + totals.tcsAmount - totals.discountTotal)).toFixed(2) : '0.00'}</span>
+                           <span className="text-sm font-display font-black text-slate-900">₹ {totals.roundOff.toFixed(2)}</span>
                         </div>
                         
                         <div className="bg-[#FFFDE7] p-5 -mx-10 border-y-2 border-[#001F3D] flex justify-between items-center shadow-inner">
-                           <span className="text-sm font-black uppercase text-[#001F3D] ml-4">Grand Total</span>
+                           <span className="text-sm font-black uppercase text-[#001F3D] ml-4">Grand Total Settlement</span>
                            <span className="text-2xl font-display font-black text-[#001F3D] mr-4">₹ {totals.grandTotal.toLocaleString()}</span>
                         </div>
                         
                         <div className="pt-6 space-y-4">
-                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Total in Words</p>
-                           <div className="p-4 bg-slate-50 rounded-2xl flex flex-col items-center gap-2 border border-slate-100">
-                              <p className="text-[10px] font-black text-[#001F3D] uppercase text-center leading-relaxed">{numberToWords(totals.grandTotal)}</p>
-                              <div className="flex items-center gap-2 text-primary font-display font-black text-sm uppercase">₹ {numberToWords(totals.grandTotal)}</div>
-                           </div>
-                        </div>
-
-                        <div className="pt-6">
-                           <div className="h-12 bg-slate-50 rounded-xl px-4 flex items-center justify-between group cursor-pointer hover:bg-slate-100 transition-all">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase">Smart Suggestion</span>
-                              <Plus className="h-4 w-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Total Institutional Amount in Words</p>
+                           <div className="p-6 bg-slate-50 rounded-2xl flex flex-col items-center gap-2 border border-slate-100 text-center">
+                              <p className="text-[10px] font-black text-[#001F3D] uppercase leading-relaxed">{numberToWords(totals.grandTotal)}</p>
                            </div>
                         </div>
 
@@ -638,8 +628,8 @@ export function BillingManagement({
                         </div>
                         
                         <div className="flex gap-4">
-                           <Button className="flex-1 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSave}><Printer className="h-4 w-4" /> Save & Print</Button>
-                           <Button className="flex-1 h-14 bg-[#001F3D] hover:bg-black text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSave}><Check className="h-4 w-4" /> Save</Button>
+                           <Button className="flex-1 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSaveLocal}><Printer className="h-4 w-4" /> Save & Print</Button>
+                           <Button className="flex-1 h-14 bg-[#001F3D] hover:bg-black text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSaveLocal}><Check className="h-4 w-4" /> Save</Button>
                         </div>
                      </div>
                   </Card>

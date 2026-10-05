@@ -358,6 +358,7 @@ export interface Customer {
   location: string;
   totalOrders: number;
   outstanding?: string;
+  outstandingDays?: number;
   pendingPOs?: number;
   status?: 'Active' | 'Closed';
 }

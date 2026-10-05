@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -251,27 +252,28 @@ export function BillingManagement({
     };
 
     return (
-      <div className="flex flex-col bg-slate-50 min-h-screen animate-in fade-in duration-500 font-body pb-20">
-        <div className="sticky top-0 z-50 bg-white border-b border-slate-200 px-8 h-20 flex items-center justify-between shadow-sm">
+      <div className="flex flex-col bg-slate-50 min-h-screen animate-in fade-in duration-500 font-body pb-20 overflow-x-hidden">
+        {/* PREMIUM STICKY HEADER */}
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-8 h-20 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6">
-            <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full h-12 w-12 hover:bg-slate-100">
+            <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full h-12 w-12 hover:bg-slate-100 transition-all">
               <ArrowLeft className="h-6 w-6 text-slate-500" />
             </Button>
             <div className="flex flex-col">
                <div className="flex items-center gap-2 mb-1">
-                 <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase px-2 py-0.5">QUOTATION_LEDGER</Badge>
-                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Entry Node</span>
+                 <Badge className="bg-[#001F3D] text-white border-none text-[8px] font-black uppercase px-2 py-0.5 tracking-widest">QUOTATION_LEDGER</Badge>
+                 <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Entry Node</span>
                </div>
-               <h2 className="text-2xl font-display font-black text-[#001F3D] uppercase leading-none">{formData.type} Editor</h2>
+               <h2 className="text-2xl font-display font-black text-[#001F3D] uppercase leading-none tracking-tight">{formData.type} Editor</h2>
             </div>
           </div>
           <div className="flex gap-4">
-             <Button variant="outline" className="rounded-xl h-12 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200" onClick={() => setIsRecordFormOpen(false)}>Back</Button>
-             <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-12 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl flex gap-3" onClick={handleSaveLocal}>
+             <Button variant="outline" className="rounded-xl h-11 px-8 font-bold uppercase text-[10px] tracking-widest border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all shadow-sm" onClick={() => setIsRecordFormOpen(false)}>Abort Protocol</Button>
+             <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg shadow-emerald-500/20 flex gap-3 transition-all transform hover:scale-[1.02]" onClick={handleSaveLocal}>
                <Printer className="h-4 w-4" /> Save & Print
              </Button>
-             <Button className="bg-[#001F3D] hover:bg-black text-white h-12 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-xl" onClick={handleSaveLocal}>
-               <Check className="h-4 w-4 mr-2" /> Save Protocol
+             <Button className="bg-[#001F3D] hover:bg-black text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg shadow-blue-900/20 flex gap-3 transition-all transform hover:scale-[1.02]" onClick={handleSaveLocal}>
+               <Check className="h-4 w-4 mr-2" /> Commit Node
              </Button>
           </div>
         </div>
@@ -279,21 +281,26 @@ export function BillingManagement({
         <div className="max-w-[1700px] mx-auto w-full p-8 space-y-12">
           {/* STEP 01: IDENTIFICATION & METADATA */}
           <div className="space-y-6">
-            <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
-              <div className="p-3 bg-primary/10 rounded-xl text-primary shadow-sm"><FileCheck className="h-6 w-6" /></div>
-              <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 01: Identification & Metadata</h3>
+            <div className="flex items-center gap-4 border-l-4 border-[#001F3D] pl-6">
+              <div className="p-3 bg-slate-900 rounded-xl text-white shadow-xl shadow-blue-900/10"><FileCheck className="h-6 w-6" /></div>
+              <div>
+                <h3 className="text-xl font-display font-black text-[#001F3D] uppercase tracking-tight">Step 01: Identification & Metadata</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Entity Registry</p>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                <div className="flex justify-between items-center px-1">
-                   <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Customer Information</h4>
-                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-50"><MoreHorizontal className="h-4 w-4" /></Button>
+              {/* CUSTOMER INFORMATION CARD */}
+              <Card className="p-10 bg-white border-slate-200/60 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] rounded-[3rem] space-y-10 relative overflow-hidden group hover:border-primary/20 transition-all">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity"><Building2 className="h-24 w-24" /></div>
+                <div className="flex justify-between items-center px-1 relative z-10">
+                   <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Customer Matrix</h4>
+                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-slate-50 text-slate-400 hover:text-primary"><MoreHorizontal className="h-4 w-4" /></Button>
                 </div>
                 
-                <div className="space-y-4">
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">M/S.*</Label>
+                <div className="space-y-6 relative z-10">
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Account M/S.*</Label>
                       <Select value={formData.customerId ?? ''} onValueChange={(id) => {
                          const c = customers.find(x => x.id === id);
                          setFormData(prev => ({ 
@@ -309,103 +316,108 @@ export function BillingManagement({
                            placeOfSupply: c?.city || ''
                          }));
                       }}>
-                         <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs">
+                         <SelectTrigger className="h-12 bg-slate-50/50 border-none rounded-2xl font-black uppercase text-xs shadow-inner focus:ring-primary/20">
                             <SelectValue placeholder="Identify Institutional Account..." />
                          </SelectTrigger>
-                         <SelectContent className="rounded-xl shadow-2xl">
-                            {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-2">{c.name}</SelectItem>)}
+                         <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
+                            {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-3 border-b border-slate-50 last:border-0">{c.name}</SelectItem>)}
                          </SelectContent>
                       </Select>
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-start gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase pt-2">Address</Label>
-                      <Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-xs font-medium resize-none shadow-inner" value={formData.address ?? ''} readOnly />
+                   <div className="grid grid-cols-[140px_1fr] items-start gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pt-3">Billing Base</Label>
+                      <Textarea className="min-h-[100px] bg-slate-50/30 border-none rounded-2xl text-xs font-bold leading-relaxed resize-none shadow-inner text-slate-600" value={formData.address ?? ''} readOnly placeholder="Identify account to load location matrix..." />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Contact Person</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.contactPerson ?? ''} readOnly />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Identity Rep.</Label>
+                      <Input className="h-11 bg-slate-50/30 border-none rounded-xl font-black text-xs text-slate-700" value={formData.contactPerson ?? ''} readOnly placeholder="---" />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Phone No</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.phoneNo ?? ''} readOnly />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Network Phone</Label>
+                      <Input className="h-11 bg-slate-50/30 border-none rounded-xl font-black text-xs text-slate-700" value={formData.phoneNo ?? ''} readOnly placeholder="---" />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">GSTIN / PAN</Label>
-                      <div className="flex gap-2">
-                        <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-xs uppercase" value={formData.gstNumber ?? ''} placeholder="GSTIN" readOnly />
-                        <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-xs uppercase" value={formData.panNumber ?? ''} placeholder="PAN" readOnly />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tax Identifiers</Label>
+                      <div className="flex gap-4">
+                        <Input className="h-11 bg-slate-50/30 border-none rounded-xl font-black font-code text-xs uppercase text-primary text-center" value={formData.gstNumber ?? ''} placeholder="GSTIN" readOnly />
+                        <Input className="h-11 bg-slate-50/30 border-none rounded-xl font-black font-code text-xs uppercase text-primary text-center" value={formData.panNumber ?? ''} placeholder="PAN" readOnly />
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Rev. Charge</Label>
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 pt-6 border-t border-slate-50">
+                      <Label className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Rev. Charge Protocol</Label>
                       <Select value={formData.revCharge ?? 'No'} onValueChange={(v)=>handleUpdateField('revCharge', v)}>
-                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent className="rounded-xl"><SelectItem value="No">No</SelectItem><SelectItem value="Yes">Yes</SelectItem></SelectContent>
+                        <SelectTrigger className="h-11 bg-white border-2 border-slate-100 rounded-xl font-black uppercase text-xs shadow-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-xl"><SelectItem value="No" className="font-bold text-[10px] uppercase py-2">NO_REQUIRED</SelectItem><SelectItem value="Yes" className="font-bold text-[10px] uppercase py-2">YES_APPLICABLE</SelectItem></SelectContent>
                       </Select>
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Ship To</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.shipTo ?? ''} onChange={(e)=>handleUpdateField('shipTo', e.target.value)} />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Shipment Node</Label>
+                      <Input className="h-12 bg-white border-2 border-slate-100 rounded-2xl font-bold text-xs shadow-sm focus-visible:ring-primary/20" value={formData.shipTo ?? ''} onChange={(e)=>handleUpdateField('shipTo', e.target.value)} placeholder="Physical destination..." />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-xs">Distance for e-way (km)</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.distanceEWay ?? ''} onChange={(e)=>handleUpdateField('distanceEWay', e.target.value)} />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">E-Way Offset (KM)</Label>
+                      <Input type="number" className="h-11 bg-white border-2 border-slate-100 rounded-xl font-black text-xs text-center shadow-sm" value={formData.distanceEWay ?? ''} onChange={(e)=>handleUpdateField('distanceEWay', e.target.value)} placeholder="Distance" />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Place of Supply*</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs" value={formData.placeOfSupply ?? ''} onChange={(e)=>handleUpdateField('placeOfSupply', e.target.value)} />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-primary uppercase tracking-[0.2em]">Supply Node*</Label>
+                      <Input className="h-12 bg-primary/5 border-2 border-primary/20 rounded-2xl font-black uppercase text-xs text-primary shadow-sm text-center tracking-widest" value={formData.placeOfSupply ?? ''} onChange={(e)=>handleUpdateField('placeOfSupply', e.target.value)} placeholder="Identify Supply Origin..." />
                    </div>
                 </div>
               </Card>
 
-              <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
-                <div className="flex justify-between items-center px-1">
-                   <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Document Registry</h4>
-                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-slate-50"><RotateCcw className="h-4 w-4 text-slate-400" /></Button>
+              {/* DOCUMENT REGISTRY CARD */}
+              <Card className="p-10 bg-white border-slate-200/60 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] rounded-[3rem] space-y-10 relative overflow-hidden group hover:border-primary/20 transition-all">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity"><Archive className="h-24 w-24" /></div>
+                <div className="flex justify-between items-center px-1 relative z-10">
+                   <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Document Archive</h4>
+                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-slate-50 text-slate-400 hover:text-primary"><RotateCcw className="h-4 w-4" /></Button>
                 </div>
 
-                <div className="space-y-6">
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Type</Label>
+                <div className="space-y-8 relative z-10">
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Protocol Type</Label>
                       <Select value={formData.type ?? 'quotation'} onValueChange={(v)=>handleUpdateField('type', v)}>
-                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent className="rounded-xl"><SelectItem value="quotation">Quotation</SelectItem><SelectItem value="invoice">Sales Invoice</SelectItem></SelectContent>
+                        <SelectTrigger className="h-12 bg-white border-2 border-slate-100 rounded-2xl font-black uppercase text-xs shadow-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-xl shadow-2xl">
+                           <SelectItem value="quotation" className="font-bold text-[10px] uppercase py-3">QUOTATION_NODE</SelectItem>
+                           <SelectItem value="invoice" className="font-bold text-[10px] uppercase py-3">SALES_INVOICE_NODE</SelectItem>
+                        </SelectContent>
                       </Select>
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr_120px_1fr] items-center gap-x-6 gap-y-4">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Doc. Number*</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-center" value={formData.number ?? ''} onChange={(e)=>handleUpdateField('number', e.target.value)} />
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-right">Date*</Label>
-                      <DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-10 rounded-xl" />
+                   <div className="grid grid-cols-[140px_1fr_120px_1fr] items-center gap-x-8 gap-y-6">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Doc. Identifier*</Label>
+                      <Input className="h-12 bg-slate-900 border-none rounded-2xl font-black font-code text-center text-white shadow-xl" value={formData.number ?? ''} onChange={(e)=>handleUpdateField('number', e.target.value)} />
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Temporal ID*</Label>
+                      <DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-12 rounded-2xl shadow-sm border-2 border-slate-100 bg-white" />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr_120px_1fr] items-center gap-x-6 gap-y-4">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Challan No.</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.challanNo ?? ''} onChange={(e)=>handleUpdateField('challanNo', e.target.value)} />
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase text-right">Challan Date</Label>
-                      <Input placeholder="dd/mm/yy" className="h-10 bg-slate-50 border-none rounded-xl text-center text-xs" value={formData.challanDate ?? ''} onChange={(e)=>handleUpdateField('challanDate', e.target.value)} />
+                   <div className="grid grid-cols-[140px_1fr_120px_1fr] items-center gap-x-8 gap-y-6">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Challan Reference</Label>
+                      <Input className="h-11 bg-slate-50/50 border-none rounded-xl font-black text-xs text-center" value={formData.challanNo ?? ''} onChange={(e)=>handleUpdateField('challanNo', e.target.value)} placeholder="Node ID" />
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Sync Date</Label>
+                      <Input placeholder="dd/mm/yy" className="h-11 bg-slate-50/50 border-none rounded-xl text-center text-xs font-bold" value={formData.challanDate ?? ''} onChange={(e)=>handleUpdateField('challanDate', e.target.value)} />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">L.R. No.</Label>
-                      <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs" value={formData.lrNo ?? ''} onChange={(e)=>handleUpdateField('lrNo', e.target.value)} />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">L.R. Identifier</Label>
+                      <Input className="h-11 bg-slate-50/50 border-none rounded-xl font-black text-xs px-6" value={formData.lrNo ?? ''} onChange={(e)=>handleUpdateField('lrNo', e.target.value)} placeholder="Logistics Reference Node..." />
                    </div>
 
-                   <div className="grid grid-cols-[120px_1fr] items-center gap-6 pt-6 border-t border-slate-50">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase">Delivery Mode</Label>
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 pt-8 border-t border-slate-50">
+                      <Label className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Logistics Hub</Label>
                       <Select value={formData.deliveryMode ?? ''} onValueChange={(v)=>handleUpdateField('deliveryMode', v)}>
-                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Select Delivery Mode" /></SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {['Direct', 'Courier', 'Hand Delivery', 'Self Pickup'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        <SelectTrigger className="h-12 bg-white border-2 border-slate-100 rounded-2xl font-black uppercase text-xs shadow-sm"><SelectValue placeholder="Identify Hub Path..." /></SelectTrigger>
+                        <SelectContent className="rounded-xl shadow-2xl">
+                          {['Direct', 'Courier', 'Hand Delivery', 'Self Pickup'].map(m => <SelectItem key={m} value={m} className="font-bold text-[10px] uppercase py-2">{m}</SelectItem>)}
                         </SelectContent>
                       </Select>
                    </div>
@@ -414,43 +426,46 @@ export function BillingManagement({
             </div>
           </div>
 
-          {/* STEP 02: EXECUTION MATRIX (PRODUCT ITEMS) */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-l-4 border-accent pl-6">
+          {/* STEP 02: EXECUTION MATRIX (PRODUCT GRID) */}
+          <div className="space-y-6 pt-12">
+            <div className="flex items-center justify-between border-l-4 border-[#10b981] pl-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-accent/10 rounded-xl text-accent shadow-sm"><Box className="h-6 w-6" /></div>
-                <h3 className="text-xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Step 02: Execution Matrix</h3>
+                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 shadow-xl shadow-emerald-500/10"><Box className="h-6 w-6" /></div>
+                <div>
+                   <h3 className="text-xl font-display font-black text-[#001F3D] uppercase tracking-tight">Step 02: Execution Matrix</h3>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">High-Fidelity Product Allocation</p>
+                </div>
               </div>
-              <div className="flex items-center gap-4 bg-white p-2 rounded-xl border shadow-sm">
-                 <Button variant="ghost" size="sm" onClick={addRow} className="h-8 text-[9px] font-black uppercase tracking-widest gap-2 text-primary">
-                    <Plus className="h-3.5 w-3.5" /> Append Row
+              <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+                 <Button variant="ghost" size="sm" onClick={addRow} className="h-9 text-[10px] font-black uppercase tracking-widest gap-2 text-emerald-600 hover:bg-emerald-50 rounded-xl px-6 transition-all">
+                    <Plus className="h-4 w-4" /> Append Sequence Node
                  </Button>
               </div>
             </div>
 
             <Card className="bg-white border-slate-200 shadow-2xl rounded-[3rem] overflow-hidden">
                <div className="overflow-x-auto">
-                 <Table className="min-w-[1600px]">
-                   <TableHeader className="bg-slate-50/80">
-                      <TableRow className="hover:bg-transparent border-b border-slate-200">
-                        <TableHead className="px-6 py-6 text-[9px] font-black uppercase w-16 text-center border-r">SR.</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase min-w-[450px] border-r">PRODUCT / OTHER CHARGES</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-32 text-center border-r">HSN/SAC CODE</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-24 text-center border-r">QTY.</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-24 text-center border-r">UOM</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-40 text-center border-r">PRICE (₹)</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-40 text-center border-r">DISCOUNT</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-28 text-center border-r">IGST %</TableHead>
-                        <TableHead className="text-right px-10 text-[9px] font-black uppercase w-48">TOTAL (₹)</TableHead>
-                        <TableHead className="w-10"></TableHead>
+                 <Table className="min-w-[1700px]">
+                   <TableHeader className="bg-slate-50/80 sticky top-0 z-20">
+                      <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
+                        <TableHead className="px-6 py-6 text-[10px] font-black uppercase w-16 text-center border-r border-slate-100 text-[#001F3D]">SR.</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase min-w-[500px] border-r border-slate-100 text-[#001F3D]">PRODUCT / TECHNICAL REQUISITION</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-36 text-center border-r border-slate-100 text-[#001F3D]">HSN/SAC CODE</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-28 text-center border-r border-slate-100 text-[#001F3D]">QTY.</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-28 text-center border-r border-slate-100 text-[#001F3D]">UOM</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-48 text-center border-r border-slate-100 text-[#001F3D]">UNIT PRICE (₹)</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-48 text-center border-r border-slate-100 text-[#001F3D]">DISCOUNT MATRIX</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-32 text-center border-r border-slate-100 text-[#001F3D]">IGST %</TableHead>
+                        <TableHead className="text-right px-10 text-[10px] font-black uppercase w-56 text-primary">VALUATION (₹)</TableHead>
+                        <TableHead className="w-16"></TableHead>
                       </TableRow>
                    </TableHeader>
                    <TableBody>
                       {(formData.items || []).map((item, idx) => (
-                        <TableRow key={item.id} className="h-28 border-b border-slate-100 hover:bg-slate-50/30">
-                           <TableCell className="text-center font-display font-black text-slate-300 border-r">{idx + 1}</TableCell>
-                           <TableCell className="border-r p-0">
-                              <div className="flex flex-col h-full bg-white group-hover:bg-transparent">
+                        <TableRow key={item.id} className="h-32 border-b border-slate-100 hover:bg-slate-50/30 transition-colors group">
+                           <TableCell className="text-center font-display font-black text-slate-300 border-r border-slate-50 group-hover:text-primary transition-colors">{idx + 1}</TableCell>
+                           <TableCell className="border-r border-slate-50 p-0 relative">
+                              <div className="flex flex-col h-full bg-white group-hover:bg-transparent transition-colors">
                                 <Select value={item.productId ?? ''} onValueChange={(pId) => {
                                    const p = products.find(x => x.id === pId);
                                    if (!p) return;
@@ -470,62 +485,70 @@ export function BillingManagement({
                                    };
                                    setFormData(prev => ({ ...prev, items: newItems }));
                                 }}>
-                                   <SelectTrigger className="border-none bg-transparent h-12 font-black uppercase text-sm focus:ring-0 shadow-none px-6 text-[#001F3D]">
-                                      <SelectValue placeholder="Enter Product name" />
+                                   <SelectTrigger className="border-none bg-transparent h-14 font-black uppercase text-[15px] focus:ring-0 shadow-none px-8 text-[#001F3D] tracking-tight group-hover:pl-10 transition-all">
+                                      <SelectValue placeholder="Identify Product Node..." />
                                    </SelectTrigger>
-                                   <SelectContent className="rounded-xl shadow-2xl">
-                                      {products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase py-2">{p.name}</SelectItem>)}
+                                   <SelectContent className="rounded-2xl shadow-2xl border-slate-100 min-w-[400px]">
+                                      {products.map(p => (
+                                        <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase py-4 border-b border-slate-50 last:border-0">
+                                           <div className="flex flex-col gap-1">
+                                              <span className="text-slate-900">{p.name}</span>
+                                              <span className="text-[8px] text-slate-400 font-code tracking-widest">{p.code} • HSN: {p.hsn}</span>
+                                           </div>
+                                        </SelectItem>
+                                      ))}
                                    </SelectContent>
                                 </Select>
-                                <div className="px-6 pb-4">
+                                <div className="px-8 pb-4">
                                    <Textarea 
-                                    placeholder="Item Note..." 
-                                    className="h-16 bg-slate-50/50 border-none text-[10px] rounded-xl font-medium resize-none shadow-inner" 
+                                    placeholder="Technical Item Notes / Specs..." 
+                                    className="h-16 bg-slate-50/50 border-none text-[10px] rounded-2xl font-medium resize-none shadow-inner focus-visible:ring-primary/20 placeholder:text-slate-300" 
                                     value={item.note ?? ''} 
                                     onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} 
                                    />
                                 </div>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-code text-[11px]" value={item.hsn ?? ''} placeholder="HSN/SAC" onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
-                           <TableCell className="border-r"><Input type="number" className="border-none bg-transparent text-center font-black text-sm" value={item.qty ?? ''} placeholder="Qty." onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
-                           <TableCell className="border-r"><Input className="border-none bg-transparent text-center font-bold text-[10px]" value={item.unit ?? ''} placeholder="UOM" onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
-                           <TableCell className="border-r">
-                              <div className="flex items-center gap-1 justify-center">
-                                 <Input type="number" className="border-none bg-transparent text-center font-display font-black text-sm w-32" value={item.price ?? ''} placeholder="Price" onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
+                           <TableCell className="border-r border-slate-50 p-4"><Input className="h-11 bg-slate-50 border-none rounded-xl text-center font-code font-bold text-[11px] text-slate-500 uppercase" value={item.hsn ?? ''} placeholder="HSN/SAC" onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4"><Input type="number" className="h-11 bg-slate-50 border-none rounded-xl text-center font-black text-sm text-[#001F3D]" value={item.qty ?? ''} placeholder="Qty." onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4"><Input className="h-11 bg-slate-50 border-none rounded-xl text-center font-black text-[10px] uppercase text-slate-400" value={item.unit ?? ''} placeholder="UOM" onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4">
+                              <div className="relative">
+                                 <Input type="number" className="h-11 bg-slate-50 border-none rounded-xl text-center font-display font-black text-sm w-full pl-6 text-[#001F3D]" value={item.price ?? ''} placeholder="0.00" onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
+                                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300">₹</span>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r">
-                              <div className="flex items-center px-4">
-                                 <Input type="number" className="border-none bg-transparent text-center font-bold text-xs" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} />
-                                 <div className="h-6 w-px bg-slate-100 mx-2" />
+                           <TableCell className="border-r border-slate-50 p-4">
+                              <div className="flex items-center bg-slate-50 rounded-xl px-4 h-11 border border-transparent focus-within:border-primary/20 transition-all">
+                                 <Input type="number" className="border-none bg-transparent text-center font-black text-xs p-0 focus-visible:ring-0 shadow-none w-full" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} />
+                                 <div className="h-6 w-px bg-slate-200 mx-2" />
                                  <Select value={item.discountType || 'percentage'} onValueChange={(v: any) => handleUpdateItem(idx, 'discountType', v)}>
-                                    <SelectTrigger className="border-none bg-transparent w-10 p-0 shadow-none"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl"><SelectItem value="percentage">%</SelectItem><SelectItem value="amount">Rs</SelectItem></SelectContent>
+                                    <SelectTrigger className="border-none bg-transparent w-10 p-0 shadow-none focus:ring-0 h-8 font-black text-[10px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl border-slate-100 shadow-xl"><SelectItem value="percentage" className="font-bold text-[10px]">%</SelectItem><SelectItem value="amount" className="font-bold text-[10px]">Rs</SelectItem></SelectContent>
                                  </Select>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r">
+                           <TableCell className="border-r border-slate-50 p-4">
                               <Select value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
-                                 <SelectTrigger className="border-none bg-transparent h-10 text-center font-bold text-[11px] shadow-none focus:ring-0 p-0"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="rounded-xl">
-                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>)}
+                                 <SelectTrigger className="bg-slate-50 border-none h-11 rounded-xl text-center font-black text-[11px] shadow-none focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                                 <SelectContent className="rounded-xl shadow-xl border-slate-100">
+                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="font-bold text-[10px] py-2">{r}%</SelectItem>)}
                                  </SelectContent>
                               </Select>
                            </TableCell>
-                           <TableCell className="text-right px-10 font-display font-black text-slate-900 text-sm">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                           <TableCell className="text-center"><Button variant="ghost" size="icon" className="text-slate-200 hover:text-red-500 rounded-xl" onClick={() => removeRow(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
+                           <TableCell className="text-right px-10 font-display font-black text-[#001F3D] text-lg bg-slate-50/30 group-hover:bg-transparent transition-all">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                           <TableCell className="text-center px-4"><Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100" onClick={() => removeRow(item.id)}><Trash2 className="h-5 w-5" /></Button></TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="bg-[#FFFDE7] hover:bg-[#FFFDE7] border-t-2 border-[#001F3D]">
-                         <TableCell colSpan={2} className="px-10 py-5 text-right font-black text-[11px] uppercase text-[#001F3D] border-r">Total Quotation. Val</TableCell>
-                         <TableCell className="border-r"></TableCell>
-                         <TableCell className="text-center font-display font-black text-sm border-r">{(formData.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
-                         <TableCell className="border-r"></TableCell>
-                         <TableCell className="text-center font-display font-black text-sm border-r">{(formData.items || []).reduce((acc, i) => acc + (i.price || 0), 0).toLocaleString()}</TableCell>
-                         <TableCell className="text-center font-display font-black text-sm border-r">0</TableCell>
-                         <TableCell className="text-center font-display font-black text-sm border-r">0</TableCell>
-                         <TableCell className="text-right px-10 font-display font-black text-xl text-[#001F3D]">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableRow className="bg-[#FFF9C4] hover:bg-[#FFF9C4] border-t-4 border-[#001F3D]">
+                         <TableCell colSpan={2} className="px-10 py-6 text-right font-black text-[11px] uppercase text-[#001F3D] border-r border-[#001F3D]/10 tracking-widest">Global Matrix Valuation Node</TableCell>
+                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="text-center font-display font-black text-lg border-r border-[#001F3D]/10 text-[#001F3D]">{(formData.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
+                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="text-right px-10 font-display font-black text-2xl text-[#001F3D]">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                          <TableCell></TableCell>
                       </TableRow>
                    </TableBody>
@@ -533,103 +556,120 @@ export function BillingManagement({
                </div>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-8">
                {/* LEFT COLUMN: TERMS & NOTES */}
                <div className="lg:col-span-7 space-y-8">
                   <div className="space-y-3">
-                     <Label className="text-[10px] font-black uppercase text-slate-400">Bank Settlement Protocol</Label>
+                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] ml-1">Bank Settlement Protocol</Label>
                      <Select value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
-                        <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl font-bold uppercase text-xs"><SelectValue placeholder="Hide Bank Details" /></SelectTrigger>
-                        <SelectContent className="rounded-xl shadow-2xl">
-                           <SelectItem value="Bank Transfer">Main Corporate Node (HDFC)</SelectItem>
-                           <SelectItem value="Cash">Institutional Ledger Node (IDBI)</SelectItem>
+                        <SelectTrigger className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-black uppercase text-xs shadow-sm hover:border-primary/40 transition-all">
+                           <SelectValue placeholder="Identify Bank Node" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
+                           <SelectItem value="Bank Transfer" className="font-bold text-[10px] uppercase py-3 px-4 border-b border-slate-50 last:border-0">Main Corporate Node (HDFC_BANK_PUNE)</SelectItem>
+                           <SelectItem value="Cash" className="font-bold text-[10px] uppercase py-3 px-4">Institutional Ledger Node (INTERNAL_CASH)</SelectItem>
                         </SelectContent>
                      </Select>
                   </div>
 
-                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
-                     <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest">Terms & Condition / Additional Note</h4>
-                     <div className="space-y-4">
-                        <div className="grid grid-cols-[100px_1fr] items-start gap-6">
-                           <Label className="text-[11px] font-bold text-slate-400 uppercase pt-2">Detail Matrix</Label>
-                           <div className="relative group">
-                              <Textarea className="min-h-[120px] bg-slate-50 border-none rounded-xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
+                  <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] space-y-10 relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity"><ClipboardList className="h-24 w-24" /></div>
+                     <h4 className="text-[10px] font-black uppercase text-[#001F3D] tracking-[0.4em] relative z-10">Commercial Terms Protocol</h4>
+                     <div className="space-y-4 relative z-10">
+                        <div className="grid grid-cols-[120px_1fr] items-start gap-8">
+                           <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pt-4">T&C Detail</Label>
+                           <div className="relative group/text">
+                              <Textarea className="min-h-[160px] bg-slate-50/50 border-none rounded-2xl text-[13px] font-bold leading-relaxed shadow-inner focus-visible:ring-primary/20 transition-all text-slate-600" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
+                              <div className="absolute bottom-4 right-4 bg-white px-3 py-1 rounded-lg border border-slate-200 text-[8px] font-bold uppercase text-slate-300 opacity-0 group-hover/text:opacity-100 transition-opacity">Editable Node</div>
                            </div>
                         </div>
                      </div>
                   </Card>
 
-                  <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-6">
-                     <div className="grid grid-cols-[100px_1fr] items-start gap-6">
-                        <Label className="text-[10px] font-black uppercase text-slate-900 pt-2 leading-tight">Document Note (Internal)</Label>
-                        <div className="space-y-2">
-                           <Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-xs" placeholder="Not visible on final output" value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
+                  <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] space-y-10 relative overflow-hidden group">
+                     <div className="grid grid-cols-[120px_1fr] items-start gap-8 relative z-10">
+                        <Label className="text-[10px] font-black uppercase text-[#001F3D] pt-4 leading-tight tracking-[0.3em]">Internal Audit Notes</Label>
+                        <div className="space-y-4">
+                           <Textarea className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-xs font-medium italic shadow-inner" placeholder="Restricted visibility: Management audit trail only..." value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
+                           <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest flex items-center gap-2 animate-pulse"><ShieldAlert className="h-3 w-3" /> Note: This matrix is purged from final print output.</p>
                         </div>
                      </div>
                   </Card>
                </div>
 
-               {/* RIGHT COLUMN: FINANCIAL SETTLEMENT */}
+               {/* RIGHT COLUMN: FINANCIAL SETTLEMENT PROTOCOL */}
                <div className="lg:col-span-5">
-                  <Card className="p-10 bg-white border-slate-200 shadow-2xl rounded-[3rem] space-y-6 relative overflow-hidden">
-                     <div className="space-y-5">
-                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Taxable Matrix</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                        
-                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-                          <Label className="text-[10px] font-bold uppercase text-emerald-600">Additional Charges (₹)</Label>
-                          <Input type="number" className="w-32 h-8 text-right font-bold border-slate-100 bg-slate-50" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
+                  <Card className="p-10 bg-white border-slate-200/80 shadow-[0_48px_96px_-24px_rgba(0,0,0,0.1)] rounded-[4rem] space-y-8 relative overflow-hidden border-t-8 border-t-[#001F3D]">
+                     <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><Calculator className="h-32 w-32" /></div>
+                     
+                     <div className="space-y-6 relative z-10">
+                        <div className="flex justify-between items-center px-2 py-2">
+                           <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Gross Yield Baseline</span>
+                           <span className="text-lg font-display font-black text-[#001F3D]">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         
-                        <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-slate-700 uppercase">Total Tax Node</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-                        
-                        {/* TCS Matrix */}
-                        <div className="flex items-center gap-3">
-                           <div className="flex-1 h-12 border-2 border-slate-100 rounded-xl px-4 flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">TCS Protocol</span>
-                              <div className="flex items-center gap-2">
-                                 <Input type="number" className="w-20 border-none bg-transparent h-8 text-right font-black" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
-                                 <span className="text-[10px] font-bold text-slate-300">%</span>
+                        <div className="p-6 bg-slate-50/80 rounded-3xl space-y-5 border border-slate-100 shadow-inner">
+                           <div className="flex justify-between items-center group">
+                             <Label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2"><Truck className="h-3.5 w-3.5" /> Logistics/Extra (₹)</Label>
+                             <Input type="number" className="w-40 h-10 text-right font-black border-2 border-transparent bg-white rounded-xl shadow-sm focus:border-emerald-500 transition-all text-[#001F3D]" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
+                           </div>
+                           
+                           <div className="flex justify-between items-center"><span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tax Provision (IGST)</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                           
+                           <div className="h-[1px] bg-slate-200/50 w-full" />
+
+                           {/* TCS MATRIX */}
+                           <div className="flex items-center gap-4">
+                              <div className="flex-1 h-12 bg-white border-2 border-slate-100 rounded-2xl px-5 flex items-center justify-between shadow-sm group hover:border-primary/40 transition-all">
+                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TCS Protocol (%)</span>
+                                 <div className="flex items-center gap-3">
+                                    <Input type="number" className="w-20 border-none bg-transparent h-10 text-right font-black text-[#001F3D] focus-visible:ring-0 shadow-none" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
+                                 </div>
+                              </div>
+                           </div>
+                           <div className="flex justify-end pr-4"><span className="text-[11px] font-display font-bold text-slate-400">Yield Impact: ₹ {((totals.subTotal * (formData.tcsRate ?? 0)) / 100).toLocaleString()}</span></div>
+
+                           {/* GLOBAL DISCOUNT MATRIX */}
+                           <div className="flex items-center gap-4">
+                              <div className="flex-1 h-12 bg-white border-2 border-slate-100 rounded-2xl px-5 flex items-center justify-between shadow-sm group hover:border-primary/40 transition-all">
+                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Discount Matrix</span>
+                                 <div className="flex items-center gap-3">
+                                    <Input type="number" className="w-28 border-none bg-transparent h-10 text-right font-black text-[#001F3D] focus-visible:ring-0 shadow-none" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
+                                    <span className="text-[12px] font-black text-slate-200">₹</span>
+                                 </div>
                               </div>
                            </div>
                         </div>
-                        <div className="flex justify-end pr-1"><span className="text-xs font-display font-bold text-slate-900">₹ {((totals.subTotal * (formData.tcsRate ?? 0)) / 100).toLocaleString()}</span></div>
 
-                        {/* Global Discount Matrix */}
-                        <div className="flex items-center gap-3">
-                           <div className="flex-1 h-12 border-2 border-slate-100 rounded-xl px-4 flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">Global Discount</span>
-                              <div className="flex items-center gap-2">
-                                 <Input type="number" className="w-20 border-none bg-transparent h-8 text-right font-black" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
-                                 <span className="text-[10px] font-bold text-slate-300">₹</span>
-                              </div>
+                        <div className="flex justify-between items-center py-4 px-2 border-y border-slate-100 group">
+                           <div className="flex items-center gap-4">
+                              <span className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Round Off</span>
+                              <Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} className="data-[state=checked]:bg-emerald-500" />
+                           </div>
+                           <span className="text-sm font-display font-black text-slate-400 italic">₹ {totals.roundOff.toFixed(2)}</span>
+                        </div>
+                        
+                        <div className="bg-[#FFFDE7] p-8 -mx-10 border-y-2 border-[#001F3D] flex flex-col items-center gap-3 shadow-2xl relative">
+                           <div className="absolute top-0 left-0 w-full h-1 bg-[#001F3D] opacity-10 animate-pulse" />
+                           <span className="text-[10px] font-black uppercase text-[#001F3D]/60 tracking-[0.5em]">Institutional Net Value</span>
+                           <span className="text-6xl font-display font-black text-[#001F3D] tracking-tighter drop-shadow-sm">₹ {totals.grandTotal.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="pt-10 space-y-6">
+                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] text-center">Formal Transcription Node</p>
+                           <div className="p-8 bg-slate-900 rounded-[2.5rem] flex flex-col items-center gap-3 border border-white/5 shadow-2xl transform hover:scale-[1.02] transition-transform cursor-help">
+                              <p className="text-[11px] font-black text-emerald-400 uppercase leading-relaxed text-center tracking-tight px-2">{numberToWords(totals.grandTotal)}</p>
+                              <div className="h-1 w-12 bg-white/10 rounded-full" />
                            </div>
                         </div>
 
-                        <div className="flex justify-between items-center py-2 border-y border-slate-50">
-                           <div className="flex items-center gap-3"><span className="text-[11px] font-bold text-slate-700 uppercase">Round Off</span><Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} /></div>
-                           <span className="text-sm font-display font-black text-slate-900">₹ {totals.roundOff.toFixed(2)}</span>
+                        <div className="grid grid-cols-2 gap-4 pt-12">
+                           <Button variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px] border-slate-200 text-slate-400 hover:text-[#001F3D] hover:bg-slate-50 transition-all tracking-[0.2em]" onClick={() => setIsRecordFormOpen(false)}><ChevronLeft className="h-4 w-4 mr-2" /> Back</Button>
+                           <Button variant="outline" className="h-14 rounded-2xl font-black uppercase text-[10px] border-slate-200 text-slate-400 hover:text-primary hover:bg-primary/5 transition-all tracking-[0.2em] flex gap-2"><Archive className="h-4 w-4" /> Save Draft</Button>
                         </div>
                         
-                        <div className="bg-[#FFFDE7] p-5 -mx-10 border-y-2 border-[#001F3D] flex justify-between items-center shadow-inner">
-                           <span className="text-sm font-black uppercase text-[#001F3D] ml-4">Grand Total Settlement</span>
-                           <span className="text-2xl font-display font-black text-[#001F3D] mr-4">₹ {totals.grandTotal.toLocaleString()}</span>
-                        </div>
-                        
-                        <div className="pt-6 space-y-4">
-                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Total Institutional Amount in Words</p>
-                           <div className="p-6 bg-slate-50 rounded-2xl flex flex-col items-center gap-2 border border-slate-100 text-center">
-                              <p className="text-[10px] font-black text-[#001F3D] uppercase leading-relaxed">{numberToWords(totals.grandTotal)}</p>
-                           </div>
-                        </div>
-
-                        <div className="flex gap-4 pt-10">
-                           <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold uppercase text-[10px] border-slate-200" onClick={() => setIsRecordFormOpen(false)}><ChevronLeft className="h-3 w-3 mr-2" /> Back</Button>
-                           <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold uppercase text-[10px] border-slate-200 flex gap-2"><Archive className="h-3 w-3" /> Save Draft</Button>
-                        </div>
-                        
-                        <div className="flex gap-4">
-                           <Button className="flex-1 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSaveLocal}><Printer className="h-4 w-4" /> Save & Print</Button>
-                           <Button className="flex-1 h-14 bg-[#001F3D] hover:bg-black text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl flex gap-2" onClick={handleSaveLocal}><Check className="h-4 w-4" /> Save</Button>
+                        <div className="grid grid-cols-1 gap-4">
+                           <Button className="h-16 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[1.5rem] font-black uppercase text-[11px] tracking-[0.3em] shadow-xl shadow-emerald-500/20 flex gap-4 transition-all transform active:scale-95" onClick={handleSaveLocal}><Printer className="h-5 w-5" /> Generate & Finalize</Button>
                         </div>
                      </div>
                   </Card>
@@ -649,76 +689,100 @@ export function BillingManagement({
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
                 <Calculator className="h-4 w-4" />
-                Financial Management Hub
+                Quotation Management Hub
               </div>
-              <h2 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">Quotation Ledger</h2>
+              <h2 className="text-4xl font-display font-black text-[#001F3D] uppercase tracking-tight">Quotation Ledger</h2>
             </div>
-            <Button className="h-12 bg-[#001F3D] text-white rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-xl flex gap-3 group" onClick={() => handleOpenForm('quotation')}>
+            <Button className="h-12 bg-[#001F3D] hover:bg-black text-white rounded-2xl px-10 font-black uppercase text-[10px] tracking-widest shadow-2xl flex gap-3 group transition-all transform hover:scale-[1.02]" onClick={() => handleOpenForm('quotation')}>
               <Plus className="h-4 w-4" /> Initialize Quotation <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-1">
-             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-primary transition-all">
-                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Conversion Rate</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-4xl font-display font-black text-blue-600">68%</p>
-                  <TrendingUp className="h-6 w-6 text-blue-100" />
+             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl group hover:border-blue-500 transition-all relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity"><TrendingUp className="h-20 w-20" /></div>
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-[0.3em] relative z-10">Conversion Matrix</p>
+                <div className="flex items-center justify-between relative z-10">
+                  <p className="text-4xl font-display font-black text-blue-600 tracking-tighter">68.4%</p>
+                  <Badge className="bg-blue-50 text-blue-700 border-none text-[8px] font-black uppercase px-2">+1.2%</Badge>
                 </div>
              </Card>
-             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-emerald-500 transition-all">
-                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">MTD Quote Value</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-3xl font-display font-black text-slate-900">₹ {(filteredRecords.reduce((acc, r) => acc + (r.amount || 0), 0) / 100000).toFixed(1)}L</p>
-                  <Calculator className="h-6 w-6 text-emerald-100" />
+             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl group hover:border-emerald-500 transition-all relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity"><Calculator className="h-20 w-20" /></div>
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-[0.3em] relative z-10">MTD Valuation</p>
+                <div className="flex items-center justify-between relative z-10">
+                  <p className="text-3xl font-display font-black text-slate-900 tracking-tighter">₹ {(filteredRecords.reduce((acc, r) => acc + (r.amount || 0), 0) / 100000).toFixed(1)}L</p>
+                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 </div>
              </Card>
-             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-amber-500 transition-all">
-                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Average Aging</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-3xl font-display font-black text-amber-500">12 Days</p>
-                  <History className="h-6 w-6 text-amber-100" />
+             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl group hover:border-amber-500 transition-all relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity"><History className="h-20 w-20" /></div>
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-[0.3em] relative z-10">Avg Lead Protocol</p>
+                <div className="flex items-center justify-between relative z-10">
+                  <p className="text-3xl font-display font-black text-amber-600 tracking-tighter">12.5 Days</p>
+                  <span className="text-[8px] font-bold text-slate-300 uppercase">Archive Median</span>
                 </div>
              </Card>
           </div>
 
-          <Card className="overflow-hidden border-none bg-white shadow-xl rounded-[2.5rem]">
-            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-               <div className="relative w-80">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input placeholder="Filter matrix..." className="pl-12 h-12 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase shadow-sm" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+          <Card className="overflow-hidden border-none bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] rounded-[3rem]">
+            <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-center justify-between gap-6">
+               <div className="relative w-full md:w-96 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <Input placeholder="Search matrix identity or account..." className="pl-12 h-12 bg-white border-slate-200 rounded-2xl text-[11px] font-black uppercase shadow-sm focus-visible:ring-primary/20" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
                </div>
-               <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 font-bold text-[9px] h-10 px-6 uppercase tracking-widest rounded-xl shadow-sm">{filteredRecords.length} Active Records</Badge>
+               <div className="flex items-center gap-4">
+                  <Button variant="outline" className="h-11 rounded-xl font-bold uppercase text-[9px] tracking-widest gap-3 border-slate-200 bg-white"><Download className="h-4 w-4" /> Export Ledger</Button>
+                  <Badge variant="outline" className="bg-white border-slate-200 text-slate-400 font-bold text-[9px] h-11 px-8 uppercase tracking-widest rounded-xl shadow-sm">{filteredRecords.length} Active Records</Badge>
+               </div>
             </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-white border-b border-slate-100">
-                  <TableRow>
-                    <TableHead className="px-10 py-6 font-bold text-[10px] uppercase text-slate-400">Doc Identity</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Account</TableHead>
-                    <TableHead className="text-right font-bold text-[10px] uppercase text-slate-400">Net Valuation (₹)</TableHead>
-                    <TableHead className="text-center font-bold text-[10px] uppercase text-slate-400">Lifecycle State</TableHead>
-                    <TableHead className="text-right px-10 w-20"></TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="px-10 py-8 font-black text-[10px] uppercase text-slate-400 tracking-[0.2em]">Doc Identity</TableHead>
+                    <TableHead className="font-black text-[10px] uppercase text-slate-400 tracking-[0.2em]">Customer Account</TableHead>
+                    <TableHead className="text-right font-black text-[10px] uppercase text-slate-400 tracking-[0.2em]">Net Valuation</TableHead>
+                    <TableHead className="text-center font-black text-[10px] uppercase text-slate-400 tracking-[0.2em]">State</TableHead>
+                    <TableHead className="text-right px-10 w-24"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map(r => (
-                    <TableRow key={r.id} className="h-24 border-b border-slate-50 hover:bg-slate-50 transition-all cursor-pointer group" onClick={() => handleOpenForm(activeTab, r)}>
-                      <TableCell className="px-10 font-bold text-xs text-primary font-code">{r.number}</TableCell>
-                      <TableCell><span className="text-sm font-black text-[#001F3D] uppercase tracking-tight group-hover:text-primary transition-colors">{r.customerName}</span></TableCell>
-                      <TableCell className="text-right font-display font-black text-lg">₹ {r.amount?.toLocaleString()}</TableCell>
-                      <TableCell className="text-center"><Badge variant="outline" className="text-[9px] font-black uppercase px-5 py-1.5 rounded-full border-slate-100 bg-slate-50 shadow-sm">{r.status}</Badge></TableCell>
+                    <TableRow key={r.id} className="h-28 border-b border-slate-50 hover:bg-slate-50/80 transition-all cursor-pointer group" onClick={() => handleOpenForm(activeTab, r)}>
+                      <TableCell className="px-10">
+                         <div className="flex flex-col gap-1">
+                            <span className="font-black text-[13px] text-primary font-code tracking-tight">{r.number}</span>
+                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{r.date}</span>
+                         </div>
+                      </TableCell>
+                      <TableCell><span className="text-[15px] font-black text-[#001F3D] uppercase tracking-tight group-hover:text-primary transition-colors leading-tight">{r.customerName}</span></TableCell>
+                      <TableCell className="text-right">
+                         <div className="flex flex-col items-end gap-1">
+                            <span className="font-display font-black text-xl text-[#001F3D]">₹ {r.amount?.toLocaleString()}</span>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase">Incl. Taxes & Protocol</span>
+                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                         <Badge className={cn(
+                           "text-[9px] font-black uppercase px-6 py-2 rounded-full border shadow-sm transition-all",
+                           r.status === 'Draft' ? 'bg-slate-50 text-slate-400 border-slate-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                         )}>
+                           {r.status}
+                         </Badge>
+                      </TableCell>
                       <TableCell className="text-right px-10">
-                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all bg-slate-100"><ChevronRight className="h-5 w-5 text-slate-400" /></Button>
+                        <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl opacity-0 group-hover:opacity-100 transition-all bg-white shadow-xl border border-slate-100 transform group-hover:translate-x-2"><ChevronRight className="h-6 w-6 text-primary" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
                   {filteredRecords.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-64 text-center">
-                        <div className="flex flex-col items-center justify-center opacity-20 py-10">
-                          <Archive className="h-16 w-16 mb-4" />
-                          <p className="text-xs font-bold uppercase tracking-widest">No Quotation Records Discovered</p>
+                      <TableCell colSpan={5} className="h-80 text-center">
+                        <div className="flex flex-col items-center justify-center opacity-10 py-10 scale-125">
+                          <Archive className="h-24 w-24 mb-6" />
+                          <p className="text-2xl font-display font-black uppercase tracking-tight">Ledger Matrix Null</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.4em] mt-2">Initialize protocol to generate records</p>
                         </div>
                       </TableCell>
                     </TableRow>

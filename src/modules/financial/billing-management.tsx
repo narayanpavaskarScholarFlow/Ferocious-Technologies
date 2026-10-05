@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -54,6 +53,7 @@ import {
   Calculator,
   User,
   Layout,
+  LayoutGrid,
   Type,
   Maximize2,
   Hammer,
@@ -64,6 +64,7 @@ import {
   Cpu,
   ShieldCheck,
   Package,
+  PackageCheck,
   Wrench,
   Check
 } from 'lucide-react';

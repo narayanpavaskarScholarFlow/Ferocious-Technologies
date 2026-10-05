@@ -52,7 +52,20 @@ import {
   Settings2,
   TableProperties,
   Calculator,
-  User
+  User,
+  Layout,
+  Type,
+  Maximize2,
+  Hammer,
+  Settings,
+  Scale,
+  Percent,
+  Layers,
+  Cpu,
+  ShieldCheck,
+  Package,
+  Wrench,
+  Check
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ProductMaster, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -72,7 +85,7 @@ import {
   format, 
   isValid
 } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -210,6 +223,8 @@ export function BillingManagement({
   };
 
   const FullPageEditor = () => {
+    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(['hsn', 'qty', 'unit', 'price', 'discount', 'gst', 'total']));
+    
     const subTotal = useMemo(() => {
       return (formData.items || []).reduce((acc, i) => acc + (i.total || 0), 0);
     }, [formData.items]);
@@ -224,6 +239,42 @@ export function BillingManagement({
       total -= (formData.discountTotal || 0);
       return formData.isRoundOffActive ? Math.round(total) : total;
     }, [subTotal, taxTotal, formData.additionalCharges, formData.discountTotal, formData.isRoundOffActive]);
+
+    const toggleColumn = (colId: string) => {
+      const next = new Set(visibleColumns);
+      if (next.has(colId)) next.delete(colId);
+      else next.add(colId);
+      setVisibleColumns(next);
+    };
+
+    const addRow = (type: string = 'product') => {
+      const newItems = [...(formData.items || []), { 
+        id: Date.now().toString(), 
+        description: '', 
+        hsn: '', 
+        qty: 1, 
+        unit: 'Nos', 
+        price: 0, 
+        discount: 0, 
+        discountType: 'percentage', 
+        gstRate: 18, 
+        total: 0,
+        type: type // metadata for the row
+      }];
+      setFormData({...formData, items: newItems as any});
+      toast({ title: `Added ${type}`, description: "Matrix expanded with new line item." });
+    };
+
+    const handleCommercialAction = (action: string) => {
+      if (action === 'apply-gst-all') {
+        const newItems = (formData.items || []).map(i => ({ ...i, gstRate: 18 }));
+        setFormData({...formData, items: newItems});
+        toast({ title: "Tax Sync", description: "Applied 18% GST to all rows." });
+      } else if (action === 'round-off') {
+        setFormData({...formData, isRoundOffActive: !formData.isRoundOffActive});
+        toast({ title: "Round Off " + (!formData.isRoundOffActive ? "Enabled" : "Disabled") });
+      }
+    };
 
     return (
       <div className="flex flex-col bg-[#F8FAFC] min-h-screen animate-in fade-in duration-300 pb-20 font-body">
@@ -245,7 +296,7 @@ export function BillingManagement({
           </div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto w-full p-6 space-y-6">
+        <div className="max-w-[1500px] mx-auto w-full p-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl space-y-8">
                <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest border-l-4 border-primary pl-4">Customer Information</h3>
@@ -315,33 +366,111 @@ export function BillingManagement({
 
           <Card className="bg-white border-slate-200 shadow-sm rounded-3xl overflow-hidden">
             <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest">Product Grid</h3>
-              <Button variant="ghost" size="sm" onClick={() => {
-                const newItems = [...(formData.items || []), { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }];
-                setFormData({...formData, items: newItems as any});
-              }} className="text-primary text-[10px] font-bold uppercase"><Plus className="h-3 w-3 mr-2" /> Add Row</Button>
+              <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest">Product / Service Grid</h3>
+              
+              <DropdownMenu>
+                 <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="rounded-xl h-10 px-6 font-black uppercase text-[9px] tracking-widest gap-2 bg-white border-slate-200 shadow-sm">
+                       <Settings2 className="h-3.5 w-3.5" /> Action Center
+                    </Button>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent align="end" className="w-72 rounded-2xl shadow-2xl p-1 border-slate-100">
+                    <DropdownMenuLabel className="text-[8px] font-black uppercase text-slate-400 px-4 py-2">Line Item Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => addRow('product')} className="gap-3 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold uppercase"><PlusCircle className="h-4 w-4 text-blue-600" /> Add Single Product</DropdownMenuItem>
+                    <DropdownMenuItem className="gap-3 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold uppercase"><LayoutGrid className="h-4 w-4 text-blue-600" /> Add Multiple Products</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addRow('service')} className="gap-3 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold uppercase"><Settings className="h-4 w-4 text-primary" /> Add Service Node</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addRow('assembly')} className="gap-3 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold uppercase"><Box className="h-4 w-4 text-indigo-600" /> Add Assembly</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addRow('raw_material')} className="gap-3 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold uppercase"><Layers className="h-4 w-4 text-amber-600" /> Add Raw Material</DropdownMenuItem>
+                    
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                       <DropdownMenuSubTrigger className="gap-3 py-3 px-4 rounded-xl text-[10px] font-bold uppercase"><DollarSign className="h-4 w-4 text-emerald-600" /> Add Charges</DropdownMenuSubTrigger>
+                       <DropdownMenuSubContent className="w-56 rounded-xl shadow-2xl p-1">
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Additional Charges</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Freight Charges</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Packing Charges</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Installation Charges</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Tooling Charges</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Consultancy Charges</DropdownMenuItem>
+                       </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                       <DropdownMenuSubTrigger className="gap-3 py-3 px-4 rounded-xl text-[10px] font-bold uppercase"><RefreshCw className="h-4 w-4 text-primary" /> Product Import</DropdownMenuSubTrigger>
+                       <DropdownMenuSubContent className="w-64 rounded-xl p-1">
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">From Product Master</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">From Previous Quotation</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">From Customer PO</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">From Work Order</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Import From Excel Matrix</DropdownMenuItem>
+                       </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                       <DropdownMenuSubTrigger className="gap-3 py-3 px-4 rounded-xl text-[10px] font-bold uppercase"><TableProperties className="h-4 w-4 text-slate-400" /> Custom Columns</DropdownMenuSubTrigger>
+                       <DropdownMenuSubContent className="w-56 rounded-xl p-1">
+                          {[
+                            { id: 'hsn', l: 'HSN/SAC Node' },
+                            { id: 'discount', l: 'Discount Matrix' },
+                            { id: 'gst', l: 'Tax Node (GST)' },
+                            { id: 'uom', l: 'UOM Unit' },
+                            { id: 'margin', l: 'Margin %' },
+                            { id: 'vendor', l: 'Partner Link' },
+                            { id: 'drawing', l: 'Drawing Number' },
+                            { id: 'material', l: 'Material Grade' },
+                            { id: 'machine', l: 'Asset Req.' },
+                          ].map(col => (
+                            <DropdownMenuCheckboxItem 
+                              key={col.id} 
+                              checked={visibleColumns.has(col.id)} 
+                              onCheckedChange={() => toggleColumn(col.id)}
+                              className="text-[9px] font-bold uppercase py-2.5"
+                            >
+                               {col.l}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                       </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                       <DropdownMenuSubTrigger className="gap-3 py-3 px-4 rounded-xl text-[10px] font-bold uppercase"><Calculator className="h-4 w-4 text-emerald-600" /> Commercial Options</DropdownMenuSubTrigger>
+                       <DropdownMenuSubContent className="w-64 rounded-xl p-1">
+                          <DropdownMenuItem onClick={() => handleCommercialAction('apply-gst-all')} className="text-[9px] font-bold uppercase py-2.5">Apply 18% GST to All</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCommercialAction('round-off')} className="text-[9px] font-bold uppercase py-2.5">Round Off Grand Total</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Apply Margin Formula</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[9px] font-bold uppercase py-2.5">Apply Overall Discount</DropdownMenuItem>
+                       </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                 </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white border-b text-[8px] font-black uppercase text-slate-400">
-                    <th className="py-4 px-6 w-12 text-center">Sr.</th>
-                    <th className="py-4 px-4 min-w-[300px]">Product / Description</th>
-                    <th className="py-4 px-4 w-32 text-center">HSN</th>
-                    <th className="py-4 px-4 w-24 text-center">Qty</th>
-                    <th className="py-4 px-4 w-24 text-center">UOM</th>
-                    <th className="py-4 px-4 w-32 text-center">Rate</th>
-                    <th className="py-4 px-4 w-32 text-center">Discount</th>
-                    <th className="py-4 px-4 w-24 text-center">GST%</th>
-                    <th className="py-4 px-6 text-right w-32">Total</th>
+                    <th className="py-4 px-6 w-12 text-center border-r">Sr.</th>
+                    <th className="py-4 px-4 min-w-[300px] border-r">Product Identity / Description</th>
+                    {visibleColumns.has('hsn') && <th className="py-4 px-4 w-28 text-center border-r">HSN/SAC</th>}
+                    {visibleColumns.has('drawing') && <th className="py-4 px-4 w-28 text-center border-r">Drawing #</th>}
+                    {visibleColumns.has('material') && <th className="py-4 px-4 w-28 text-center border-r">Material</th>}
+                    <th className="py-4 px-4 w-24 text-center border-r">Qty</th>
+                    {visibleColumns.has('uom') && <th className="py-4 px-4 w-20 text-center border-r">UOM</th>}
+                    <th className="py-4 px-4 w-32 text-center border-r">Rate (₹)</th>
+                    {visibleColumns.has('discount') && <th className="py-4 px-4 w-24 text-center border-r">Disc. %</th>}
+                    {visibleColumns.has('gst') && <th className="py-4 px-4 w-20 text-center border-r">GST %</th>}
+                    <th className="py-4 px-6 text-right w-40">Matrix Total</th>
                     <th className="py-4 px-4 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {(formData.items || []).map((item, idx) => (
-                    <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/30">
-                      <td className="text-center py-4 font-bold text-[10px] text-slate-300">{idx + 1}</td>
-                      <td className="px-4">
+                    <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/30 transition-all group">
+                      <td className="text-center py-4 font-bold text-[10px] text-slate-300 border-r">{idx + 1}</td>
+                      <td className="px-4 border-r">
                         <Select value={item.productId} onValueChange={(pId) => {
                           const p = products.find(x => x.id === pId);
                           const newItems = [...(formData.items || [])];
@@ -351,42 +480,97 @@ export function BillingManagement({
                           <SelectTrigger className="border-none bg-transparent h-10 text-[11px] font-bold uppercase focus:ring-0">
                             <SelectValue placeholder="Select Product..." />
                           </SelectTrigger>
-                          <SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase">{p.name}</SelectItem>)}</SelectContent>
+                          <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                             <div className="px-2 py-1.5 text-[8px] font-black text-slate-400 border-b mb-1 uppercase tracking-widest">Engineering Registry</div>
+                             {products.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase py-2.5">{p.name}</SelectItem>)}
+                          </SelectContent>
                         </Select>
                       </td>
-                      <td className="px-4"><Input className="h-10 border-none bg-transparent text-center text-[10px] font-code" value={item.hsn} readOnly /></td>
-                      <td className="px-4"><Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-bold" value={item.qty} onChange={(e) => {
-                         const newItems = [...(formData.items || [])];
-                         newItems[idx].qty = Number(e.target.value);
-                         newItems[idx].total = newItems[idx].qty * newItems[idx].price;
-                         setFormData({...formData, items: newItems});
-                      }} /></td>
-                      <td className="px-4"><Input className="h-10 border-none bg-transparent text-center text-[10px]" value={item.unit} readOnly /></td>
-                      <td className="px-4"><Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-bold" value={item.price} onChange={(e) => {
-                         const newItems = [...(formData.items || [])];
-                         newItems[idx].price = Number(e.target.value);
-                         newItems[idx].total = newItems[idx].qty * newItems[idx].price;
-                         setFormData({...formData, items: newItems});
-                      }} /></td>
-                      <td className="px-4"><Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-bold" value={item.discount} onChange={(e) => {
-                         const newItems = [...(formData.items || [])];
-                         newItems[idx].discount = Number(e.target.value);
-                         setFormData({...formData, items: newItems});
-                      }} /></td>
-                      <td className="px-4">
-                         <Select value={item.gstRate.toString()} onValueChange={(v) => {
+                      {visibleColumns.has('hsn') && (
+                        <td className="px-4 border-r">
+                           <Input className="h-10 border-none bg-transparent text-center text-[10px] font-code" value={item.hsn} readOnly />
+                        </td>
+                      )}
+                      {visibleColumns.has('drawing') && (
+                        <td className="px-4 border-r text-center">
+                           <span className="text-[9px] font-bold text-slate-400">---</span>
+                        </td>
+                      )}
+                      {visibleColumns.has('material') && (
+                        <td className="px-4 border-r text-center">
+                           <span className="text-[9px] font-bold text-slate-400">---</span>
+                        </td>
+                      )}
+                      <td className="px-4 border-r">
+                        <Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-bold text-xs" value={item.qty} onChange={(e) => {
                            const newItems = [...(formData.items || [])];
-                           newItems[idx].gstRate = Number(v);
+                           newItems[idx].qty = Number(e.target.value);
+                           newItems[idx].total = newItems[idx].qty * newItems[idx].price;
                            setFormData({...formData, items: newItems});
-                         }}>
-                            <SelectTrigger className="border-none bg-transparent h-10 text-[10px] font-bold"><SelectValue /></SelectTrigger>
-                            <SelectContent><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent>
-                         </Select>
+                        }} />
                       </td>
-                      <td className="text-right px-6 font-display font-bold">₹ {item.total.toLocaleString()}</td>
-                      <td className="px-4"><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-red-500" onClick={() => setFormData({...formData, items: (formData.items || []).filter((_, i) => i !== idx)})}><Trash2 className="h-4 w-4" /></Button></td>
+                      {visibleColumns.has('uom') && (
+                        <td className="px-4 border-r">
+                           <Input className="h-10 border-none bg-transparent text-center text-[10px] font-bold text-slate-500" value={item.unit} readOnly />
+                        </td>
+                      )}
+                      <td className="px-4 border-r">
+                        <Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-display font-bold text-sm" value={item.price} onChange={(e) => {
+                           const newItems = [...(formData.items || [])];
+                           newItems[idx].price = Number(e.target.value);
+                           newItems[idx].total = newItems[idx].qty * newItems[idx].price;
+                           setFormData({...formData, items: newItems});
+                        }} />
+                      </td>
+                      {visibleColumns.has('discount') && (
+                        <td className="px-4 border-r">
+                           <Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center text-[10px] font-bold text-rose-500" value={item.discount} onChange={(e) => {
+                             const newItems = [...(formData.items || [])];
+                             newItems[idx].discount = Number(e.target.value);
+                             setFormData({...formData, items: newItems});
+                          }} />
+                        </td>
+                      )}
+                      {visibleColumns.has('gst') && (
+                        <td className="px-4 border-r">
+                           <Select value={item.gstRate.toString()} onValueChange={(v) => {
+                             const newItems = [...(formData.items || [])];
+                             newItems[idx].gstRate = Number(v);
+                             setFormData({...formData, items: newItems});
+                           }}>
+                              <SelectTrigger className="border-none bg-transparent h-10 text-[10px] font-bold"><SelectValue /></SelectTrigger>
+                              <SelectContent className="rounded-xl"><SelectItem value="0">0%</SelectItem><SelectItem value="5">5%</SelectItem><SelectItem value="12">12%</SelectItem><SelectItem value="18">18%</SelectItem><SelectItem value="28">28%</SelectItem></SelectContent>
+                           </Select>
+                        </td>
+                      )}
+                      <td className="text-right px-6 font-display font-black text-sm text-[#001F3D]">₹ {item.total.toLocaleString()}</td>
+                      <td className="px-4">
+                        <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-200 hover:text-slate-900"><MoreVertical className="h-4 w-4" /></Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end" className="w-48 rounded-xl p-1">
+                              <DropdownMenuItem className="text-[10px] font-bold uppercase py-2.5 gap-3"><Copy className="h-3.5 w-3.5" /> Duplicate Row</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setFormData({...formData, items: (formData.items || []).filter((_, i) => i !== idx)})} className="text-[10px] font-bold uppercase py-2.5 gap-3 text-red-600"><Trash2 className="h-3.5 w-3.5" /> Delete Row</DropdownMenuItem>
+                           </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
                     </tr>
                   ))}
+                  <tr className="bg-[#FFFDE7] border-t-2 border-[#001F3D] font-black text-[10px] uppercase text-[#001F3D]">
+                    <td colSpan={2} className="py-4 px-6 text-right border-r">Aggregate Line Totals</td>
+                    {visibleColumns.has('hsn') && <td className="border-r"></td>}
+                    {visibleColumns.has('drawing') && <td className="border-r"></td>}
+                    {visibleColumns.has('material') && <td className="border-r"></td>}
+                    <td className="text-center border-r">{(formData.items || []).reduce((acc, i) => acc + i.qty, 0)}</td>
+                    {visibleColumns.has('uom') && <td className="border-r"></td>}
+                    <td className="border-r"></td>
+                    {visibleColumns.has('discount') && <td className="border-r"></td>}
+                    {visibleColumns.has('gst') && <td className="border-r"></td>}
+                    <td className="text-right px-6 font-display font-black text-lg">₹ {subTotal.toLocaleString()}</td>
+                    <td></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -395,30 +579,37 @@ export function BillingManagement({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-7 space-y-6">
                <Card className="p-8 bg-white border-slate-200 rounded-3xl space-y-6">
-                  <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Bank Details & Terms</h3>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Bank Name</Label><Input className="bg-slate-50" defaultValue="HDFC Bank" /></div>
-                    <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">IFSC Code</Label><Input className="bg-slate-50 uppercase" defaultValue="HDFC0001234" /></div>
+                  <div className="flex items-center gap-3 border-l-4 border-emerald-500 pl-4">
+                     <Landmark className="h-4 w-4 text-emerald-600" />
+                     <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Settlement Protocols</h3>
                   </div>
-                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Terms & Conditions</Label><Textarea className="min-h-[80px] bg-slate-50" value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} placeholder="Enter quotation terms..." /></div>
-                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Remarks</Label><Textarea className="min-h-[80px] bg-slate-50" value={formData.notes} onChange={(e)=>setFormData({...formData, notes: e.target.value})} placeholder="Internal remarks..." /></div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Bank Matrix</Label><Input className="bg-slate-50 border-none rounded-lg h-10 font-bold" defaultValue="HDFC Bank" /></div>
+                    <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Security IFSC</Label><Input className="bg-slate-50 border-none rounded-lg h-10 uppercase font-bold" defaultValue="HDFC0001234" /></div>
+                  </div>
+                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Legal Terms & Jurisdiction</Label><Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-[11px] font-medium" value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} placeholder="Enter document terms..." /></div>
+                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Institutional Remarks</Label><Textarea className="min-h-[80px] bg-slate-50 border-none rounded-xl text-[11px] font-medium" value={formData.notes} onChange={(e)=>setFormData({...formData, notes: e.target.value})} placeholder="Internal notes node..." /></div>
                </Card>
             </div>
             <div className="lg:col-span-5">
-               <Card className="p-10 bg-white border-slate-200 rounded-3xl shadow-xl space-y-6">
-                  <div className="space-y-4">
-                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>Sub Total</span><span>₹ {subTotal.toLocaleString()}</span></div>
-                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>GST Total</span><span>₹ {taxTotal.toLocaleString()}</span></div>
-                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>Additional Charges</span><Input type="number" className="h-8 w-24 text-right" value={formData.additionalCharges} onChange={(e)=>setFormData({...formData, additionalCharges: Number(e.target.value)})} /></div>
-                     <div className="pt-6 border-t flex justify-between items-end">
+               <Card className="p-10 bg-white border-slate-200 rounded-[2.5rem] shadow-2xl space-y-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5"><FileBarChart className="h-24 w-24" /></div>
+                  <div className="space-y-6 relative z-10">
+                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-widest"><span>Gross Matrix Value</span><span>₹ {subTotal.toLocaleString()}</span></div>
+                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-widest"><span>Tax Protocol (GST)</span><span className="text-primary">₹ {taxTotal.toLocaleString()}</span></div>
+                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-widest"><span>Logistics / Extra</span><Input type="number" className="h-9 w-28 bg-slate-50 border-none text-right font-bold" value={formData.additionalCharges} onChange={(e)=>setFormData({...formData, additionalCharges: Number(e.target.value)})} /></div>
+                     
+                     <div className="pt-8 border-t-2 border-slate-900/5 flex justify-between items-end">
                         <div className="space-y-1">
-                          <p className="text-[10px] font-black uppercase text-slate-300">Grand Total</p>
-                          <p className="text-4xl font-display font-black text-[#001F3D]">₹ {grandTotal.toLocaleString()}</p>
+                          <p className="text-[9px] font-black uppercase text-slate-300 tracking-[0.4em]">Final Valuation</p>
+                          <p className="text-5xl font-display font-black text-[#001F3D] tracking-tighter">₹ {grandTotal.toLocaleString()}</p>
                         </div>
+                        {formData.isRoundOffActive && <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[8px] font-bold mb-2">ROUNDED</Badge>}
                      </div>
-                     <div className="pt-6 border-t space-y-1">
-                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Amount In Words</p>
-                        <p className="text-[10px] font-black uppercase text-primary leading-tight">{numberToWords(grandTotal)}</p>
+                     
+                     <div className="pt-8 border-t border-slate-50 space-y-2">
+                        <p className="text-[8px] font-black uppercase text-slate-300 tracking-widest">Financial Transcription</p>
+                        <p className="text-[11px] font-black uppercase text-primary leading-tight">{numberToWords(grandTotal)}</p>
                      </div>
                   </div>
                </Card>
@@ -525,4 +716,3 @@ export function BillingManagement({
     </div>
   );
 }
-

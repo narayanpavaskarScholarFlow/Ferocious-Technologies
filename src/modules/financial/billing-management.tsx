@@ -50,7 +50,9 @@ import {
   Info,
   Globe,
   Settings2,
-  TableProperties
+  TableProperties,
+  Calculator,
+  User
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser, PermissionLevel, UISettings, BillingLineItem, InventoryItem, ProductMaster, Machine } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -144,11 +146,11 @@ export function BillingManagement({
     const totalValue = relevantRecords.reduce((acc, r) => acc + (r.amount || 0), 0);
     const pending = relevantRecords.filter(r => ['Draft', 'Sent', 'Pending'].includes(r.status)).length;
     const approved = relevantRecords.filter(r => r.status === 'Approved' || r.status === 'Paid').length;
-    const rejectedOrExpired = relevantRecords.filter(r => r.status === 'Rejected' || r.status === 'Expired').length;
+    const expired = relevantRecords.filter(r => r.status === 'Expired').length;
     const converted = relevantRecords.filter(r => r.status.startsWith('Converted')).length;
     const conversionRate = totalCount > 0 ? Math.round((converted / totalCount) * 100) : 0;
 
-    return { totalCount, totalValue, pending, approved, rejectedOrExpired, conversionRate };
+    return { totalCount, totalValue, pending, approved, expired, conversionRate };
   }, [records, activeTab]);
 
   const filteredRecords = useMemo(() => {
@@ -187,11 +189,11 @@ export function BillingManagement({
 
   const handleSave = () => {
     if (!formData.customerId || !formData.number) { 
-      toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Document Number are mandatory." }); 
+      toast({ variant: "destructive", title: "Missing Information", description: "Customer and Document Number are required." }); 
       return; 
     }
     onSaveRecord(formData as BillingRecord);
-    toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
+    toast({ title: "Quotation Saved", description: `Quotation ${formData.number} has been committed to the ledger.` });
     setIsRecordFormOpen(false);
   };
 
@@ -199,12 +201,12 @@ export function BillingManagement({
     const newRecord = { 
       ...record, 
       id: `REC-${Date.now()}`, 
-      number: `${DOCUMENT_TYPES.find(t=>t.id===record.type)?.prefix || 'DOC'}-${Math.floor(1000 + Math.random() * 9000)}`,
+      number: `${DOCUMENT_TYPES.find(t=>t.id===record.type)?.prefix || 'DOC'}-CLONE-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toISOString().split('T')[0],
       status: 'Draft'
     };
     onSaveRecord(newRecord);
-    toast({ title: "Document Duplicated" });
+    toast({ title: "Quotation Duplicated" });
   };
 
   const FullPageEditor = () => {
@@ -219,10 +221,9 @@ export function BillingManagement({
     const grandTotal = useMemo(() => {
       let total = subTotal + taxTotal;
       total += (formData.additionalCharges || 0);
-      total += (formData.tcsAmount || 0);
       total -= (formData.discountTotal || 0);
       return formData.isRoundOffActive ? Math.round(total) : total;
-    }, [subTotal, taxTotal, formData.additionalCharges, formData.tcsAmount, formData.discountTotal, formData.isRoundOffActive]);
+    }, [subTotal, taxTotal, formData.additionalCharges, formData.discountTotal, formData.isRoundOffActive]);
 
     return (
       <div className="flex flex-col bg-[#F8FAFC] min-h-screen animate-in fade-in duration-300 pb-20 font-body">
@@ -234,12 +235,12 @@ export function BillingManagement({
             <h2 className="text-lg font-display font-bold uppercase">{editingRecordId ? 'Edit' : 'Create'} {activeTab.replace('_', ' ')}</h2>
           </div>
           <div className="flex gap-3">
-             <Button variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl px-6 h-10 font-bold uppercase text-[9px]" onClick={() => setIsRecordFormOpen(false)}>Discard</Button>
+             <Button variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl px-6 h-10 font-bold uppercase text-[9px]" onClick={() => setIsRecordFormOpen(false)}>Save Draft</Button>
              <Button className="bg-[#00E5A8] hover:bg-emerald-600 text-[#001F3D] h-10 px-8 rounded-xl text-[10px] uppercase font-black" onClick={handleSave}>
                <Printer className="h-4 w-4 mr-2" /> Save & Print
              </Button>
              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-8 rounded-xl text-[10px] uppercase font-black" onClick={handleSave}>
-               <Save className="h-4 w-4 mr-2" /> Save
+               <Save className="h-4 w-4 mr-2" /> Save Quotation
              </Button>
           </div>
         </div>
@@ -247,13 +248,13 @@ export function BillingManagement({
         <div className="max-w-[1400px] mx-auto w-full p-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl space-y-8">
-               <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest border-l-4 border-primary pl-4">Customer Details</h3>
+               <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest border-l-4 border-primary pl-4">Customer Information</h3>
                <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Search Customer</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Customer Name</Label>
                     <Select value={formData.customerId} onValueChange={(id) => { 
                       const c = customers.find(x => x.id === id); 
-                      setFormData({ ...formData, customerId: id, customerName: c?.name || '', contactPerson: c?.contactPerson || '', phoneNo: c?.contactNumber || '', gstNumber: c?.gstNumber || '' }); 
+                      setFormData({ ...formData, customerId: id, customerName: c?.name || '', contactPerson: c?.contactPerson || '', phoneNo: c?.contactNumber || '', gstNumber: c?.gstNumber || '', shipTo: c?.address || '' }); 
                     }}>
                       <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase">
                         <SelectValue placeholder="Identify Customer Account..." />
@@ -262,6 +263,16 @@ export function BillingManagement({
                         {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase">{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-bold uppercase text-slate-500">GSTIN</Label>
+                       <Input className="h-10 bg-slate-50 border-none rounded-lg font-code" value={formData.gstNumber} readOnly />
+                    </div>
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-bold uppercase text-slate-500">Mobile</Label>
+                       <Input className="h-10 bg-slate-50 border-none rounded-lg" value={formData.phoneNo} readOnly />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Billing Address</Label>
@@ -274,12 +285,16 @@ export function BillingManagement({
                <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest border-l-4 border-primary pl-4">Quotation Details</h3>
                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Document No.</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Quotation No.</Label>
                     <Input className="h-12 bg-slate-50 border-none rounded-xl font-bold font-code" value={formData.number} onChange={(e)=>setFormData({...formData, number: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Date</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Quotation Date</Label>
                     <DatePicker value={formData.date} onChange={(val)=>setFormData({...formData, date: val})} className="h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Validity Date</Label>
+                    <DatePicker value={formData.dueDate} onChange={(val)=>setFormData({...formData, dueDate: val})} className="h-12" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Status</Label>
@@ -294,21 +309,17 @@ export function BillingManagement({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">GSTIN / Tax ID</Label>
-                    <Input className="h-12 bg-slate-50 border-none rounded-xl font-code uppercase" value={formData.gstNumber} onChange={(e)=>setFormData({...formData, gstNumber: e.target.value})} />
-                  </div>
                </div>
             </Card>
           </div>
 
           <Card className="bg-white border-slate-200 shadow-sm rounded-3xl overflow-hidden">
             <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest">Product / Service Grid</h3>
+              <h3 className="text-xs font-black uppercase text-slate-500 tracking-widest">Product Grid</h3>
               <Button variant="ghost" size="sm" onClick={() => {
                 const newItems = [...(formData.items || []), { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }];
                 setFormData({...formData, items: newItems as any});
-              }} className="text-primary text-[10px] font-bold uppercase"><Plus className="h-3 w-3 mr-2" /> Add Item</Button>
+              }} className="text-primary text-[10px] font-bold uppercase"><Plus className="h-3 w-3 mr-2" /> Add Row</Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -318,7 +329,9 @@ export function BillingManagement({
                     <th className="py-4 px-4 min-w-[300px]">Product / Description</th>
                     <th className="py-4 px-4 w-32 text-center">HSN</th>
                     <th className="py-4 px-4 w-24 text-center">Qty</th>
+                    <th className="py-4 px-4 w-24 text-center">UOM</th>
                     <th className="py-4 px-4 w-32 text-center">Rate</th>
+                    <th className="py-4 px-4 w-32 text-center">Discount</th>
                     <th className="py-4 px-4 w-24 text-center">GST%</th>
                     <th className="py-4 px-6 text-right w-32">Total</th>
                     <th className="py-4 px-4 w-12"></th>
@@ -332,7 +345,7 @@ export function BillingManagement({
                         <Select value={item.productId} onValueChange={(pId) => {
                           const p = products.find(x => x.id === pId);
                           const newItems = [...(formData.items || [])];
-                          newItems[idx] = { ...newItems[idx], productId: pId, description: p?.name || '', hsn: p?.hsn || '', price: p?.saleRate || 0, gstRate: p?.gstRate || 18, total: (newItems[idx].qty || 1) * (p?.saleRate || 0) };
+                          newItems[idx] = { ...newItems[idx], productId: pId, description: p?.name || '', hsn: p?.hsn || '', price: p?.saleRate || 0, unit: p?.uom || 'Nos', gstRate: p?.gstRate || 18, total: (newItems[idx].qty || 1) * (p?.saleRate || 0) };
                           setFormData({...formData, items: newItems});
                         }}>
                           <SelectTrigger className="border-none bg-transparent h-10 text-[11px] font-bold uppercase focus:ring-0">
@@ -348,10 +361,16 @@ export function BillingManagement({
                          newItems[idx].total = newItems[idx].qty * newItems[idx].price;
                          setFormData({...formData, items: newItems});
                       }} /></td>
+                      <td className="px-4"><Input className="h-10 border-none bg-transparent text-center text-[10px]" value={item.unit} readOnly /></td>
                       <td className="px-4"><Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-bold" value={item.price} onChange={(e) => {
                          const newItems = [...(formData.items || [])];
                          newItems[idx].price = Number(e.target.value);
                          newItems[idx].total = newItems[idx].qty * newItems[idx].price;
+                         setFormData({...formData, items: newItems});
+                      }} /></td>
+                      <td className="px-4"><Input type="number" className="h-10 border-none bg-slate-50/50 rounded-lg text-center font-bold" value={item.discount} onChange={(e) => {
+                         const newItems = [...(formData.items || [])];
+                         newItems[idx].discount = Number(e.target.value);
                          setFormData({...formData, items: newItems});
                       }} /></td>
                       <td className="px-4">
@@ -381,14 +400,16 @@ export function BillingManagement({
                     <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Bank Name</Label><Input className="bg-slate-50" defaultValue="HDFC Bank" /></div>
                     <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">IFSC Code</Label><Input className="bg-slate-50 uppercase" defaultValue="HDFC0001234" /></div>
                   </div>
-                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Terms & Conditions</Label><Textarea className="min-h-[80px] bg-slate-50" defaultValue="1. Subject to Pune jurisdiction. 2. 50% advance with PO." /></div>
+                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Terms & Conditions</Label><Textarea className="min-h-[80px] bg-slate-50" value={formData.terms} onChange={(e)=>setFormData({...formData, terms: e.target.value})} placeholder="Enter quotation terms..." /></div>
+                  <div className="space-y-2"><Label className="text-[9px] font-bold uppercase text-slate-400">Remarks</Label><Textarea className="min-h-[80px] bg-slate-50" value={formData.notes} onChange={(e)=>setFormData({...formData, notes: e.target.value})} placeholder="Internal remarks..." /></div>
                </Card>
             </div>
             <div className="lg:col-span-5">
                <Card className="p-10 bg-white border-slate-200 rounded-3xl shadow-xl space-y-6">
                   <div className="space-y-4">
                      <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>Sub Total</span><span>₹ {subTotal.toLocaleString()}</span></div>
-                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>Tax Summary (GST)</span><span>₹ {taxTotal.toLocaleString()}</span></div>
+                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>GST Total</span><span>₹ {taxTotal.toLocaleString()}</span></div>
+                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase"><span>Additional Charges</span><Input type="number" className="h-8 w-24 text-right" value={formData.additionalCharges} onChange={(e)=>setFormData({...formData, additionalCharges: Number(e.target.value)})} /></div>
                      <div className="pt-6 border-t flex justify-between items-end">
                         <div className="space-y-1">
                           <p className="text-[10px] font-black uppercase text-slate-300">Grand Total</p>
@@ -415,17 +436,17 @@ export function BillingManagement({
            {/* KPI DASHBOARD */}
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 px-1">
               {[
-                { label: 'Total Quotes', val: biMetrics.totalCount, icon: FileBox, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Ledger Value', val: `₹${(biMetrics.totalValue / 100000).toFixed(1)}L`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                { label: 'Total Quotations', val: biMetrics.totalCount, icon: FileBox, color: 'text-blue-600', bg: 'bg-blue-50' },
+                { label: 'Quotation Value', val: `₹${(biMetrics.totalValue / 100000).toFixed(1)}L`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                 { label: 'Pending', val: biMetrics.pending, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
                 { label: 'Approved', val: biMetrics.approved, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                { label: 'Expired', val: biMetrics.rejectedOrExpired, icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
-                { label: 'Conversion', val: `${biMetrics.conversionRate}%`, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/5' },
+                { label: 'Expired', val: biMetrics.expired, icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
+                { label: 'Conversion Rate', val: `${biMetrics.conversionRate}%`, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/5' },
               ].map(kpi => (
                 <Card key={kpi.label} className="p-4 md:p-5 bg-white border-slate-200 shadow-sm flex flex-col justify-between group hover:border-primary transition-all">
                   <div className="flex justify-between items-start mb-4">
-                     <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest">{kpi.label}</p>
-                     <div className={cn("p-1.5 rounded-lg", kpi.bg, kpi.color)}><kpi.icon className="h-3.5 w-3.5" /></div>
+                     <p className="text-[7px] font-black uppercase text-slate-400 tracking-widest leading-none">{kpi.label}</p>
+                     <div className={cn("p-1.5 rounded-lg", kpi.bg, kpi.color)}><kpi.icon className="h-3 w-3" /></div>
                   </div>
                   <p className={cn("text-xl md:text-2xl font-display font-black leading-none", kpi.color)}>{kpi.val}</p>
                 </Card>
@@ -435,7 +456,7 @@ export function BillingManagement({
            <div className="flex flex-col sm:flex-row gap-4 px-2">
               <div className="relative flex-1 group">
                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
-                 <Input placeholder="Search Quotation Number, Customer Name or GSTIN..." className="h-12 pl-12 rounded-2xl bg-white border-none shadow-xl shadow-blue-900/5 text-xs font-bold" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+                 <Input placeholder="Search Quote No, Customer, GSTIN or Mobile..." className="h-12 pl-12 rounded-2xl bg-white border-none shadow-xl shadow-blue-900/5 text-xs font-bold" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
               </div>
               <Button className="h-12 bg-[#001F3D] text-white rounded-2xl px-8 font-black uppercase text-[10px] tracking-widest shadow-2xl flex gap-3" onClick={() => handleOpenForm('quotation')}>
                  <Plus className="h-4 w-4" /> Create Quotation
@@ -446,27 +467,25 @@ export function BillingManagement({
               <Table>
                 <TableHeader className="bg-slate-50/80">
                   <TableRow>
-                    <TableHead className="px-8 py-6 font-black text-[9px] uppercase text-slate-400">Quotation Node</TableHead>
-                    <TableHead className="font-black text-[9px] uppercase text-slate-400">Customer Identity</TableHead>
-                    <TableHead className="text-right font-black text-[9px] uppercase text-slate-400">Quotation Value</TableHead>
-                    <TableHead className="text-center font-black text-[9px] uppercase text-slate-400">Lifecycle State</TableHead>
+                    <TableHead className="px-8 py-6 font-black text-[9px] uppercase text-slate-400">Quote No.</TableHead>
+                    <TableHead className="font-black text-[9px] uppercase text-slate-400">Date</TableHead>
+                    <TableHead className="font-black text-[9px] uppercase text-slate-400">Customer Name</TableHead>
+                    <TableHead className="text-right font-black text-[9px] uppercase text-slate-400">Value</TableHead>
+                    <TableHead className="text-center font-black text-[9px] uppercase text-slate-400">Status</TableHead>
                     <TableHead className="text-right px-8 font-black text-[9px] uppercase text-slate-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map(r => (
                     <TableRow key={r.id} className="h-24 border-b border-slate-50 hover:bg-slate-50 transition-all group">
-                      <TableCell className="px-8" onClick={() => handleOpenForm(r.type, r)}>
-                         <div className="flex flex-col cursor-pointer">
-                            <span className="text-xs font-bold text-primary font-code group-hover:underline">{r.number}</span>
-                            <span className="text-[9px] text-slate-400 font-bold mt-1 uppercase">{r.date}</span>
-                         </div>
+                      <TableCell className="px-8">
+                         <span className="text-xs font-bold text-primary font-code group-hover:underline cursor-pointer" onClick={() => handleOpenForm(r.type, r)}>{r.number}</span>
                       </TableCell>
                       <TableCell>
-                         <div className="flex flex-col">
-                            <span className="text-sm font-black text-[#001F3D] uppercase tracking-tight">{r.customerName}</span>
-                            <span className="text-[8px] text-slate-400 font-bold uppercase mt-1">ID: {r.customerId || '---'}</span>
-                         </div>
+                         <span className="text-[9px] text-slate-400 font-bold uppercase">{r.date}</span>
+                      </TableCell>
+                      <TableCell>
+                         <span className="text-sm font-black text-[#001F3D] uppercase tracking-tight">{r.customerName}</span>
                       </TableCell>
                       <TableCell className="text-right font-display font-black text-sm px-6">₹ {r.amount?.toLocaleString()}</TableCell>
                       <TableCell className="text-center">
@@ -485,8 +504,9 @@ export function BillingManagement({
                                <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-primary"><MoreVertical className="h-4 w-4" /></Button>
                                </DropdownMenuTrigger>
-                               <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl p-1">
-                                  <DropdownMenuItem onClick={() => handleDuplicate(r)} className="text-[10px] font-bold uppercase py-3 gap-3"><Copy className="h-4 w-4" /> Duplicate</DropdownMenuItem>
+                               <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl p-1">
+                                  <DropdownMenuItem onClick={() => handleDuplicate(r)} className="text-[10px] font-bold uppercase py-3 gap-3"><Copy className="h-4 w-4" /> Duplicate Quotation</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 gap-3"><Printer className="h-4 w-4" /> Print PDF</DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 gap-3 text-primary"><ShoppingCart className="h-4 w-4" /> Create Customer PO</DropdownMenuItem>
                                   <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 gap-3 text-primary"><Target className="h-4 w-4" /> Convert to Work Order</DropdownMenuItem>
@@ -497,15 +517,6 @@ export function BillingManagement({
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredRecords.length === 0 && (
-                    <TableRow>
-                       <TableCell colSpan={5} className="h-96 text-center opacity-30">
-                          <FileBox className="h-20 w-20 mx-auto mb-6 text-slate-300" />
-                          <h4 className="text-2xl font-display font-bold uppercase tracking-tight text-[#001F3D]">Quotation Matrix Null</h4>
-                          <p className="text-[10px] font-bold uppercase tracking-widest mt-2">Initialize a new quotation protocol to populate the ledger.</p>
-                       </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
            </Card>
@@ -514,3 +525,4 @@ export function BillingManagement({
     </div>
   );
 }
+

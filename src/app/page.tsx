@@ -47,7 +47,7 @@ import { ExternalDashboard } from '@/modules/strategic/external-dashboard';
 import { LoginScreen } from '@/components/login-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, User, ChevronRight, Lock } from 'lucide-react';
+import { LogOut, User, ChevronRight, Lock, Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +56,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { 
   useFirestore, 
@@ -127,6 +129,7 @@ const VIEW_CONFIG: Record<ViewType | string, ViewMetadata> = {
 
 function IndustrialERPInternal() {
   const db = useFirestore();
+  const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -134,6 +137,7 @@ function IndustrialERPInternal() {
   const [selectedDetailUserId, setSelectedDetailUserId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [uiSettings, setUISettings] = useState<UISettings>(DEFAULT_UI_SETTINGS);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
   const customersQuery = useMemoFirebase(() => collection(db, 'customers'), [db]);
@@ -212,12 +216,12 @@ function IndustrialERPInternal() {
   const pageDisplayTitle = uiSettings.customTitles[currentView] || currentViewMetadata.title;
 
   const AccessDenied = () => (
-    <div className="h-[60vh] flex flex-col items-center justify-center opacity-30 text-center animate-in zoom-in-95 duration-500">
-      <div className="p-16 bg-red-50 rounded-[4rem] mb-8">
-        <Lock className="h-32 w-32 text-red-600" />
+    <div className="h-[60vh] flex flex-col items-center justify-center opacity-30 text-center animate-in zoom-in-95 duration-500 px-4">
+      <div className="p-12 bg-red-50 rounded-[3rem] mb-8">
+        <Lock className="h-24 w-24 text-red-600" />
       </div>
-      <h3 className="text-4xl font-display font-black text-[#001F3D] uppercase tracking-tight">Access Gate Locked</h3>
-      <p className="text-sm text-slate-400 mt-4 max-w-sm mx-auto font-medium leading-relaxed uppercase tracking-widest">
+      <h3 className="text-3xl font-display font-black text-[#001F3D] uppercase tracking-tight">Access Gate Locked</h3>
+      <p className="text-xs text-slate-400 mt-4 max-w-sm mx-auto font-medium leading-relaxed uppercase tracking-widest">
         Your current identity node does not have authorized clearance for this operational matrix.
       </p>
       <Button variant="outline" className="mt-10 h-12 rounded-xl uppercase font-bold text-[10px] tracking-widest px-8" onClick={() => setCurrentView('overview')}>Return to Hub</Button>
@@ -226,6 +230,7 @@ function IndustrialERPInternal() {
 
   return (
     <div className={cn("flex h-screen text-[#0F172A] font-body overflow-hidden transition-colors duration-500", uiSettings.theme === 'dark' ? 'bg-[#020617] dark' : 'bg-[#F8FAFC]')}>
+      {/* Sidebar for Desktop & Tablet */}
       <div className={cn("hidden lg:block shrink-0 transition-all duration-300", uiSettings.sidebarMode === 'slim' ? "w-20" : "w-64")}>
         <SidebarNav 
           currentView={currentView} 
@@ -240,24 +245,49 @@ function IndustrialERPInternal() {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-16 bg-white dark:bg-card border-b border-slate-200 dark:border-border shrink-0 px-8 flex items-center justify-between z-50">
-          <div className="flex flex-col">
-             <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                <span>{currentViewMetadata.category}</span>
-                <ChevronRight className="h-2 w-2" />
-                <span className="text-blue-600">{pageDisplayTitle}</span>
-             </div>
-             <h2 className="text-xl font-display font-bold text-slate-900 dark:text-white uppercase tracking-tight leading-none">{pageDisplayTitle}</h2>
+        <header className="h-16 bg-white dark:bg-card border-b border-slate-200 dark:border-border shrink-0 px-4 md:px-8 flex items-center justify-between z-50">
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu Trigger */}
+            <div className="lg:hidden">
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 border-none w-72 bg-[#1E293B]">
+                  <SidebarNav 
+                    currentView={currentView} 
+                    onViewChange={(v) => { setCurrentView(v); setIsMobileMenuOpen(false); }} 
+                    permissions={permissions} 
+                    userRole={currentUserData?.role}
+                    brandLogo={uiSettings.brandLogo}
+                    logoSize={uiSettings.logoSize}
+                    customTitles={uiSettings.customTitles}
+                    isMobile
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
+            
+            <div className="flex flex-col">
+               <div className="flex items-center gap-2 text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="hidden sm:inline">{currentViewMetadata.category}</span>
+                  <ChevronRight className="h-2 w-2 hidden sm:inline" />
+                  <span className="text-blue-600 truncate max-w-[120px]">{pageDisplayTitle}</span>
+               </div>
+               <h2 className="text-lg md:text-xl font-display font-bold text-slate-900 dark:text-white uppercase tracking-tight leading-none truncate">{pageDisplayTitle}</h2>
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
              <div className="text-right hidden sm:block">
                 <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-none">{currentUser}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{currentUserData?.role || 'Personnel'}</p>
              </div>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Avatar className="h-9 w-9 border border-slate-200 dark:border-border cursor-pointer hover:ring-4 ring-blue-50 transition-all">
+                   <Avatar className="h-8 w-8 md:h-9 md:w-9 border border-slate-200 dark:border-border cursor-pointer hover:ring-4 ring-blue-50 transition-all">
                       <AvatarImage src={currentUserData?.image} />
                       <AvatarFallback className="bg-slate-100 text-slate-400 text-[10px] font-bold">FT</AvatarFallback>
                    </Avatar>
@@ -271,7 +301,7 @@ function IndustrialERPInternal() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full p-8 scrollbar-hide">
+        <main className="flex-1 overflow-y-auto w-full p-4 md:p-8 scrollbar-hide">
           <div className="animate-in fade-in duration-500 max-w-[1600px] mx-auto">
             {!isAuthorizedToView ? <AccessDenied /> : (
               <>
@@ -295,7 +325,7 @@ function IndustrialERPInternal() {
                 {currentView === 'inventory' && <InventoryManagement items={inventory || []} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
                 {currentView === 'work-log' && <WorkLogEntry logs={logs || []} machines={machines || []} users={usersData || []} orders={orders || []} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
                 {currentView === 'machine-utilization' && <MachineUtilization machines={machines || []} orders={orders || []} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
-                {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments || []} leaves={leaves || []} slips={slips || []} holidays={[]} users={usersData || []} />}
+                {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments || []} leaves={leaves || []} slips={slips || []} holidays={[]} users={usersData || []} onNavigateToLogs={() => setCurrentView('work-log')} />}
                 {currentView === 'hr' && <HRManagement users={usersData || []} trainings={[]} assignments={assignments || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={(t)=>setDocumentNonBlocking(doc(db,'trainings',t.id),t,{merge:true})} onDeleteTraining={(id)=>deleteDocumentNonBlocking(doc(db,'trainings',id))} onSaveAssignment={(a)=>setDocumentNonBlocking(doc(db,'training_assignments',a.id),a,{merge:true})} onDeleteAssignment={(id)=>deleteDocumentNonBlocking(doc(db,'training_assignments',id))} currentUser={currentUser} />}
                 {currentView === 'users' && <UserManagement users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
                 {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData || []} onBack={() => setCurrentView('users')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); setCurrentView('my-portal'); }} />}

@@ -59,6 +59,7 @@ interface SidebarNavProps {
   userRole?: string;
   brandLogo?: string;
   logoSize?: number;
+  isMobile?: boolean;
 }
 
 export function SidebarNav({ 
@@ -69,7 +70,8 @@ export function SidebarNav({
   customTitles = {}, 
   userRole, 
   brandLogo = '',
-  logoSize = 32
+  logoSize = 32,
+  isMobile = false
 }: SidebarNavProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -83,15 +85,17 @@ export function SidebarNav({
     const sections = [
       {
         name: 'COMMAND CENTER',
+        mobileVisible: true,
         items: [
           { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
-          { id: 'analytics', icon: LineChart, label: 'Analytics' },
+          { id: 'analytics', icon: LineChart, label: 'Analytics', mobileHidden: true },
           { id: 'activity', icon: Activity, label: 'Performance Hub' },
           { id: 'sqcdp', icon: Target, label: 'Quality Metrics' },
         ]
       },
       {
         name: 'FINANCIAL HUB',
+        mobileVisible: false,
         items: [
           { id: 'customer-master', icon: Building2, label: 'Customers' },
           { id: 'vendor-master', icon: Truck, label: 'Vendors' },
@@ -104,10 +108,11 @@ export function SidebarNav({
       },
       {
         name: 'PRODUCTION HUB',
+        mobileVisible: true,
         items: [
           { id: 'orders', icon: ShoppingCart, label: 'Work Orders' },
-          { id: 'production-planner', icon: Factory, label: 'Planner' },
-          { id: 'gantt', icon: Calendar, label: 'Timeline' },
+          { id: 'production-planner', icon: Factory, label: 'Planner', mobileHidden: true },
+          { id: 'gantt', icon: Calendar, label: 'Timeline', mobileHidden: true },
           { id: 'quality', icon: ShieldCheck, label: 'Quality' },
           { id: 'inventory', icon: Boxes, label: 'Inventory' },
           { id: 'work-log', icon: ClipboardList, label: 'Work Logs' },
@@ -115,14 +120,16 @@ export function SidebarNav({
       },
       {
         name: 'RESOURCE HUB',
+        mobileVisible: true,
         items: [
-          { id: 'machine-utilization', icon: Cpu, label: 'Assets' },
+          { id: 'machine-utilization', icon: Cpu, label: 'Assets', mobileHidden: true },
           { id: 'my-portal', icon: Contact, label: 'Self Service' },
-          { id: 'hr', icon: Briefcase, label: 'HR Admin' },
+          { id: 'hr', icon: Briefcase, label: 'HR Admin', mobileHidden: true },
         ]
       },
       {
         name: 'ADMINISTRATION',
+        mobileVisible: false,
         items: [
           { id: 'users', icon: Users, label: 'User Ledger' },
           { id: 'print-templates', icon: Printer, label: 'Designer' },
@@ -131,6 +138,7 @@ export function SidebarNav({
       },
       {
         name: 'STRATEGIC HUB',
+        mobileVisible: false,
         items: [
           { id: 'smart-quote', icon: BrainCircuit, label: 'AI Quoting' },
           { id: 'strategy-hub', icon: Target, label: 'Strategy Hub' },
@@ -138,28 +146,28 @@ export function SidebarNav({
       }
     ];
 
-    return sections.map(section => ({
-      ...section,
-      items: section.items.filter(item => {
-        if (isMasterAdmin) return true;
-        // Access Matrix Visibility Lock: If NONE, hide completely.
-        const level = permissions[item.id];
-        if (level === 'none') return false;
-        
-        // Default visibility for core personal nodes
-        if (item.id === 'my-portal' || item.id === 'overview') return true;
-        
-        return level && level !== 'none';
-      })
-    })).filter(section => section.items.length > 0);
-  }, [permissions, userRole]);
+    return sections
+      .filter(section => !isMobile || section.mobileVisible)
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => {
+          if (isMobile && item.mobileHidden) return false;
+          if (isMasterAdmin) return true;
+          const level = permissions[item.id];
+          if (level === 'none') return false;
+          if (item.id === 'my-portal' || item.id === 'overview') return true;
+          return level && level !== 'none';
+        })
+      }))
+      .filter(section => section.items.length > 0);
+  }, [permissions, userRole, isMobile]);
 
   if (!mounted) return <div className="bg-[#1E293B] h-full w-full" />;
 
   return (
     <div className={cn(
       "bg-[#1E293B] h-full flex flex-col border-r border-white/5 transition-all duration-300",
-      isSlim ? "w-20" : "w-64"
+      isSlim ? "w-20" : "w-full lg:w-64"
     )}>
       <div className={cn(
         "p-6 flex items-center gap-3 shrink-0 border-b border-white/5",
@@ -174,7 +182,7 @@ export function SidebarNav({
             </div>
           )}
         </div>
-        {!isSlim && (
+        {(!isSlim || isMobile) && (
           <div className="flex flex-col">
             <span className="text-white font-bold text-xs tracking-tight uppercase">Ferocious Tech</span>
             <span className="text-slate-400 text-[8px] font-bold uppercase tracking-widest mt-0.5">Enterprise Matrix</span>
@@ -186,7 +194,7 @@ export function SidebarNav({
         <div className="p-4 space-y-8 pb-20">
           {menuSections.map((section) => (
             <div key={section.name} className="space-y-2">
-              {!isSlim && (
+              {(!isSlim || isMobile) && (
                 <div className="px-3 py-2">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{section.name}</span>
                 </div>
@@ -210,10 +218,10 @@ export function SidebarNav({
                             )}
                           >
                             <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300")} />
-                            {!isSlim && <span className="text-[11px] font-medium tracking-wide truncate">{customTitles[item.id] || item.label}</span>}
+                            {(!isSlim || isMobile) && <span className="text-[11px] font-medium tracking-wide truncate">{customTitles[item.id] || item.label}</span>}
                           </button>
                         </TooltipTrigger>
-                        {isSlim && <TooltipContent side="right" className="bg-slate-900 text-white border-none text-[10px] font-bold uppercase">{item.label}</TooltipContent>}
+                        {isSlim && !isMobile && <TooltipContent side="right" className="bg-slate-900 text-white border-none text-[10px] font-bold uppercase">{item.label}</TooltipContent>}
                       </Tooltip>
                     </TooltipProvider>
                   );
@@ -229,11 +237,11 @@ export function SidebarNav({
           onClick={() => onViewChange('settings')}
           className={cn(
             "w-full flex items-center gap-3 px-3 h-10 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors",
-            isSlim && "justify-center"
+            isSlim && !isMobile && "justify-center"
           )}
         >
           <Settings className="h-4 w-4 shrink-0" />
-          {!isSlim && <span className="text-[11px] font-medium uppercase tracking-wider">Configuration</span>}
+          {(!isSlim || isMobile) && <span className="text-[11px] font-medium uppercase tracking-wider">Configuration</span>}
         </button>
       </div>
     </div>

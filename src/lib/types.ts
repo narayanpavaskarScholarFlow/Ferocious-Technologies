@@ -174,9 +174,9 @@ export interface ProductMaster {
   purchaseRate: number;
   drawingNumber?: string;
   revisionNumber?: string;
-  category: string; // Business Unit: Manufacturing | Electricals
+  category: string; 
   subCategory?: string;
-  type: string; // Raw Material, Finished Product, Assembly, etc.
+  type: string; 
   status: 'Active' | 'Inactive';
   updatedAt: string;
   
@@ -198,10 +198,11 @@ export interface ProductMaster {
   customerPartNumber?: string;
   
   // Manufacturing Information
-  machinesRequired?: string[]; // VMC, CNC, etc.
+  machinesRequired?: string[]; 
   cycleTimeSec?: number;
   setupTimeMin?: number;
   inspectionTimeMin?: number;
+  assemblyTimeMin?: number;
   
   // Commercial Information
   standardCost?: number;

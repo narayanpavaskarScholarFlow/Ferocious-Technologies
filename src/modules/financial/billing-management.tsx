@@ -39,7 +39,10 @@ import {
   Check,
   Maximize2,
   Settings2,
-  DollarSign
+  DollarSign,
+  ClipboardList,
+  ShieldAlert,
+  Truck
 } from 'lucide-react';
 import { Customer, BillingRecord, ProductMaster, BillingLineItem, UISettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -303,17 +306,18 @@ export function BillingManagement({
                       <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Account M/S.*</Label>
                       <Select value={formData.customerId ?? ''} onValueChange={(id) => {
                          const c = customers.find(x => x.id === id);
+                         if (!c) return;
                          setFormData(prev => ({ 
                            ...prev, 
                            customerId: id, 
-                           customerName: c?.name || '', 
-                           gstNumber: c?.gstNumber || '', 
-                           panNumber: c?.pan || '',
-                           contactPerson: c?.contactPerson || '', 
-                           phoneNo: c?.contactNumber || '', 
-                           address: c?.address || '',
-                           shipTo: c?.shippingAddress || c?.address || '',
-                           placeOfSupply: c?.city || ''
+                           customerName: c.name, 
+                           gstNumber: c.gstNumber || '', 
+                           panNumber: c.pan || '',
+                           contactPerson: c.contactPerson || '', 
+                           phoneNo: c.contactNumber || '', 
+                           address: c.address || '',
+                           shipTo: c.shippingAddress || c.address || '',
+                           placeOfSupply: c.city || ''
                          }));
                       }}>
                          <SelectTrigger className="h-12 bg-slate-50/50 border-none rounded-2xl font-black uppercase text-xs shadow-inner focus:ring-primary/20">

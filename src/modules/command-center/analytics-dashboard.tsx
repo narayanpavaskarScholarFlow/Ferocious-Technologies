@@ -4,12 +4,18 @@
 import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { 
   TrendingUp, 
   Cpu, 
   BarChart3, 
-  PieChart, 
   Activity, 
   ShieldCheck, 
   ShoppingCart, 
@@ -22,7 +28,9 @@ import {
   Target,
   ArrowUpRight,
   TrendingDown,
-  PackageCheck
+  PackageCheck,
+  UserCheck,
+  Bell
 } from 'lucide-react';
 import { 
   Order, 
@@ -43,7 +51,9 @@ import {
   Tooltip as ChartTooltip,
   Bar,
   BarChart,
-  Cell
+  Cell,
+  PieChart,
+  Pie
 } from 'recharts';
 
 interface AnalyticsDashboardProps {
@@ -101,7 +111,7 @@ export function AnalyticsDashboard({ orders, billing, reports, logs, machines, u
 
   const trends = {
     billing: [
-      { name: 'Jan', val: 45 }, { name: 'Feb', val: 52 }, { name: 'Mar', val: metrics.monthlyBilling / 10000 }
+      { name: 'Jan', val: 45 }, { name: 'Feb', val: 52 }, { name: 'Mar', val: (metrics.monthlyBilling / 10000) || 48 }
     ],
     production: [
       { name: 'W1', val: 70 }, { name: 'W2', val: 85 }, { name: 'W3', val: 78 }, { name: 'W4', val: metrics.prodAchievement }

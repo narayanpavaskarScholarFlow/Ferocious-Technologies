@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Plus, 
   ChevronRight, 
+  ChevronLeft,
   Save, 
   Search, 
   ArrowLeft, 
@@ -78,6 +79,13 @@ function numberToWords(num: number): string {
   return (convert(Math.floor(num)) + " RUPEES ONLY").trim();
 }
 
+/** Custom Wallet Icon for Bank Selection */
+function Wallet({ className }: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+  );
+}
+
 interface BillingManagementProps {
   currentUser: string | null;
   customers: Customer[];
@@ -141,8 +149,8 @@ export function BillingManagement({
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
       const isType = r.type === activeTab;
-      const matchesSearch = r.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           r.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = (r.number || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           (r.customerName || '').toLowerCase().includes(searchTerm.toLowerCase());
       return isType && matchesSearch;
     });
   }, [records, activeTab, searchTerm]);

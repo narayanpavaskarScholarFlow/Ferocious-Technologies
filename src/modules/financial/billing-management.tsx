@@ -17,24 +17,16 @@ import {
   Landmark,
   User,
   Link2,
-  TableProperties,
-  Settings,
-  Layers,
-  LayoutGrid,
   FileText,
   Printer,
   ChevronDown,
-  MoreVertical,
   Trash2,
   Calendar,
   Calculator,
-  PlusCircle,
   History,
-  FileBarChart,
   FileCheck,
   Send,
   Download,
-  Copy,
   Zap,
   MoreHorizontal,
   TrendingUp,
@@ -107,7 +99,6 @@ export function BillingManagement({
   const [searchTerm, setSearchTerm] = useState('');
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
 
-  // High-fidelity state for institutional billing documents
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '', 
     type: activeTab, 
@@ -197,6 +188,10 @@ export function BillingManagement({
   };
 
   const FullPageEditor = () => {
+    const handleUpdateField = (field: keyof BillingRecord, value: any) => {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     const totals = useMemo(() => {
       const items = formData.items || [];
       const subTotal = items.reduce((acc, i) => acc + (i.total || 0), 0);
@@ -259,8 +254,6 @@ export function BillingManagement({
         </div>
 
         <div className="max-w-[1700px] mx-auto w-full p-8 space-y-12">
-          
-          {/* STEP 1: IDENTIFICATION & METADATA */}
           <div className="space-y-6">
             <div className="flex items-center gap-4 border-l-4 border-primary pl-6">
               <div className="p-3 bg-primary/10 rounded-xl text-primary shadow-sm"><FileCheck className="h-6 w-6" /></div>
@@ -268,7 +261,6 @@ export function BillingManagement({
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Customer Information Card */}
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                 <div className="flex justify-between items-center px-1">
                    <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Customer Information</h4>
@@ -280,10 +272,16 @@ export function BillingManagement({
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">M/S.*</Label>
                       <Select value={formData.customerId ?? ''} onValueChange={(id) => {
                          const c = customers.find(x => x.id === id);
-                         setFormData({ 
-                           ...formData, customerId: id, customerName: c?.name || '', gstNumber: c?.gstNumber || '', contactPerson: c?.contactPerson || '', phoneNo: c?.contactNumber || '', address: c?.address || '',
-                           placeOfSupply: (c as any)?.city || ''
-                         });
+                         setFormData(prev => ({ 
+                           ...prev, 
+                           customerId: id, 
+                           customerName: c?.name || '', 
+                           gstNumber: c?.gstNumber || '', 
+                           contactPerson: c?.contactPerson || '', 
+                           phoneNo: c?.contactNumber || '', 
+                           address: c?.address || '',
+                           placeOfSupply: c?.city || ''
+                         }));
                       }}>
                          <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl font-bold uppercase text-xs">
                             <SelectValue placeholder="Identify Institutional Account..." />
@@ -342,7 +340,6 @@ export function BillingManagement({
                 </div>
               </Card>
 
-              {/* Quotation Detail Card */}
               <Card className="p-8 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                 <div className="flex justify-between items-center px-1">
                    <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Quotation Detail</h4>
@@ -362,11 +359,11 @@ export function BillingManagement({
                       <Label className="text-[11px] font-bold text-slate-500 uppercase">Quotation No.*</Label>
                       <div className="col-span-1 flex items-center gap-2">
                         <div className="bg-slate-100 text-[10px] font-bold text-slate-400 px-3 py-2 rounded-lg">Prefix</div>
-                        <Input className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-center flex-1" value={formData.number?.split('-')[1] || '1'} />
+                        <Input readOnly className="h-10 bg-slate-50 border-none rounded-xl font-bold font-code text-center flex-1" value={formData.number?.split('-')[1] || '1'} />
                         <div className="bg-slate-100 text-[10px] font-bold text-slate-400 px-3 py-2 rounded-lg">Postfix</div>
                       </div>
                       <Label className="text-[11px] font-bold text-slate-500 uppercase text-right">Quotation Date*</Label>
-                      <DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData({...formData, date: val})} className="h-10 rounded-xl" />
+                      <DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-10 rounded-xl" />
                    </div>
 
                    <div className="grid grid-cols-[120px_1fr_120px_200px] items-center gap-x-6 gap-y-4">
@@ -395,7 +392,6 @@ export function BillingManagement({
             </div>
           </div>
 
-          {/* STEP 2: EXECUTION MATRIX */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-l-4 border-accent pl-6">
               <div className="flex items-center gap-4">
@@ -461,7 +457,9 @@ export function BillingManagement({
                            <TableCell className="border-r">
                               <Select value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
                                  <SelectTrigger className="border-none bg-transparent h-10 text-center font-bold text-[11px] shadow-none focus:ring-0 p-0"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="rounded-xl">{[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>)}</SelectContent>
+                                 <SelectContent className="rounded-xl">
+                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()}>{r}%</SelectItem>)}
+                                 </SelectContent>
                               </Select>
                            </TableCell>
                            <TableCell className="text-right px-10 font-display font-black text-slate-900 text-sm">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
@@ -485,14 +483,13 @@ export function BillingManagement({
             </Card>
           </div>
 
-          {/* STEP 3: SETTLEMENT MATRIX */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
              <div className="lg:col-span-7 space-y-8">
                 <Card className="p-10 bg-white border-slate-200 shadow-xl rounded-[2.5rem] space-y-8">
                    <h4 className="text-xs font-black uppercase text-[#001F3D] tracking-widest border-l-4 border-primary pl-4">Terms & Requisition</h4>
                    <div className="space-y-4">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Standard Terms Matrix</Label>
-                      <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-2xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>setFormData({...formData, terms: e.target.value})} />
+                      <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-2xl text-xs font-medium leading-relaxed shadow-inner" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
                    </div>
                 </Card>
              </div>
@@ -503,7 +500,7 @@ export function BillingManagement({
                       <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase text-slate-400">Aggregate GST Node</span><span className="text-sm font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
                       
                       <div className="flex justify-between items-center pt-4 border-t">
-                         <div className="flex items-center gap-3"><Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>setFormData({...formData, isRoundOffActive: v})} /><span className="text-[9px] font-black uppercase text-slate-500">Round Off Protocol</span></div>
+                         <div className="flex items-center gap-3"><Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} /><span className="text-[9px] font-black uppercase text-slate-500">Round Off Protocol</span></div>
                          <span className="text-3xl font-display font-black text-[#001F3D]">₹ {Math.round(totals.grandTotal).toLocaleString()}</span>
                       </div>
                       
@@ -544,15 +541,24 @@ export function BillingManagement({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-1">
              <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-primary transition-all">
                 <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Conversion Rate</p>
-                <div className="flex items-center justify-between"><p className="text-4xl font-display font-black text-blue-600">68%</p><TrendingUp className="h-6 w-6 text-blue-100" /></div>
+                <div className="flex items-center justify-between">
+                  <p className="text-4xl font-display font-black text-blue-600">68%</p>
+                  <TrendingUp className="h-6 w-6 text-blue-100" />
+                </div>
              </Card>
              <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-emerald-500 transition-all">
                 <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">MTD Quote Value</p>
-                <div className="flex items-center justify-between"><p className="text-3xl font-display font-black text-slate-900">₹ {(filteredRecords.reduce((acc, r) => acc + (r.amount || 0), 0) / 100000).toFixed(1)}L</p><Calculator className="h-6 w-6 text-emerald-100" /></div>
+                <div className="flex items-center justify-between">
+                  <p className="text-3xl font-display font-black text-slate-900">₹ {(filteredRecords.reduce((acc, r) => acc + (r.amount || 0), 0) / 100000).toFixed(1)}L</p>
+                  <Calculator className="h-6 w-6 text-emerald-100" />
+                </div>
              </Card>
              <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-2xl group hover:border-amber-500 transition-all">
                 <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Average Aging</p>
-                <div className="flex items-center justify-between"><p className="text-3xl font-display font-black text-amber-500">12 Days</p><History className="h-6 w-6 text-amber-100" /></div>
+                <div className="flex items-center justify-between">
+                  <p className="text-3xl font-display font-black text-amber-500">12 Days</p>
+                  <History className="h-6 w-6 text-amber-100" />
+                </div>
              </Card>
           </div>
 
@@ -567,7 +573,7 @@ export function BillingManagement({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-white border-b border-slate-100">
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow>
                     <TableHead className="px-10 py-6 font-bold text-[10px] uppercase text-slate-400">Doc Identity</TableHead>
                     <TableHead className="font-bold text-[10px] uppercase text-slate-400">Customer Account</TableHead>
                     <TableHead className="text-right font-bold text-[10px] uppercase text-slate-400">Net Valuation (₹)</TableHead>

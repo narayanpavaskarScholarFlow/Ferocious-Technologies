@@ -160,6 +160,10 @@ export interface BillingLineItem {
   discountType: 'percentage' | 'amount';
   gstRate: number;
   total: number;
+  drawingNumber?: string;
+  revisionNumber?: string;
+  material?: string;
+  standardCost?: number;
 }
 
 export interface ProductMaster {
@@ -319,6 +323,15 @@ export interface BillingRecord {
   gstNumber?: string;
   panNumber?: string;
   quotationId?: string;
+  fy?: string;
+  salesExecutive?: string;
+  deliveryTerms?: string;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
+  taxableValue?: number;
+  marginPercent?: number;
+  estimatedProfit?: number;
 }
 
 export interface SQCDPData {

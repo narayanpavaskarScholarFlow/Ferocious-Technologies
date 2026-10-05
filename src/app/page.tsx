@@ -9,6 +9,7 @@ import { ViewType, WorkLogEntry as WorkLogEntryType, SystemUser, Customer, Order
 import { ShopFloorOverview } from '@/modules/command-center/shop-floor-overview';
 import { ShopFloorSQCDP } from '@/modules/command-center/shop-floor-sqcdp';
 import { ActivityFeed } from '@/modules/command-center/activity-feed';
+import { AnalyticsDashboard } from '@/modules/command-center/analytics-dashboard';
 
 // FINANCIAL HUB MODULES
 import { BillingManagement } from '@/modules/financial/billing-management';
@@ -290,7 +291,7 @@ function IndustrialERPInternal() {
             {!isAuthorizedToView ? <div className="p-20 text-center opacity-30 text-xs font-bold uppercase tracking-widest">Access Protocol Restricted</div> : (
               <>
                 {currentView === 'overview' && <ShopFloorOverview orders={orders || []} reports={reports || []} logs={logs || []} machines={machines || []} inventory={inventory || []} billing={billing || []} permissions={permissions} isMasterAdmin={isMasterAdmin} />}
-                {currentView === 'analytics' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="dashboard" />}
+                {currentView === 'analytics' && <AnalyticsDashboard orders={orders || []} billing={billing || []} reports={reports || []} logs={logs || []} machines={machines || []} users={usersData || []} />}
                 {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders || []} reports={reports || []} logs={logs || []} users={usersData || []} assignments={assignments || []} />}
                 {currentView === 'activity' && <ActivityFeed orders={orders || []} billing={billing || []} reports={reports || []} assignments={assignments || []} users={usersData || []} logs={logs || []} leaves={leaves || []} currentUser={currentUser} />}
                 {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} billing={billing || []} orders={orders || []} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}

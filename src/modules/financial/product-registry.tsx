@@ -143,6 +143,62 @@ export function ProductRegistry({
     );
   }, [products, searchTerm]);
 
+  const handleOpenWizard = () => {
+    setFormData({
+      id: '',
+      code: '',
+      name: '',
+      description: '',
+      hsn: '',
+      gstRate: 18,
+      uom: 'Nos',
+      saleRate: 0,
+      purchaseRate: 0,
+      status: 'Active',
+      businessUnit: 'Manufacturing',
+      category: 'Component',
+      subCategory: '',
+      type: 'Finished Product',
+      drawingNumber: '',
+      revisionNumber: '00',
+      customerPartNumber: '',
+      internalPartNumber: '',
+      material: '',
+      materialGrade: '',
+      weight: '',
+      tolerance: '',
+      surfaceFinish: '',
+      application: '',
+      industry: '',
+      machinesRequired: [],
+      cycleTimeSec: 0,
+      setupTimeMin: 0,
+      inspectionTimeMin: 0,
+      assemblyTimeMin: 0,
+      materialCost: 0,
+      machiningCost: 0,
+      toolingCost: 0,
+      inspectionCost: 0,
+      assemblyCost: 0,
+      packagingCost: 0,
+      standardCost: 0,
+      sellingPrice: 0,
+      marketPrice: 0,
+      marginPercent: 0,
+      annualRequirement: 0,
+      targetIndustry: '',
+      competitorProducts: '',
+      competitorPrice: 0,
+      forecastGrowth: '',
+      outsourcedPercent: 0,
+      annualOutsourcingValue: 0,
+      outsourcingReason: [],
+      bom: []
+    });
+    setWizardStep(1);
+    setIsWizardOpen(true);
+  };
+
   const handleUpdateField = (field: keyof ProductMaster, value: any) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
@@ -196,7 +252,8 @@ export function ProductRegistry({
   };
 
   const renderStepContent = () => {
-    const StepIcon = ONBOARDING_STEPS[wizardStep - 1].icon;
+    const activeStep = ONBOARDING_STEPS[wizardStep - 1];
+    const StepIcon = activeStep.icon;
     
     switch (wizardStep) {
       case 1: // BUSINESS UNIT
@@ -492,7 +549,7 @@ export function ProductRegistry({
         return (
           <div className="py-20 flex flex-col items-center justify-center opacity-30 text-center animate-pulse">
             <StepIcon className="h-16 w-16 mb-4" />
-            <p className="text-sm font-bold uppercase tracking-widest">{ONBOARDING_STEPS[wizardStep - 1].label} Matrix Construction...</p>
+            <p className="text-sm font-bold uppercase tracking-widest">{activeStep.label} Matrix Construction...</p>
           </div>
         );
     }
@@ -591,10 +648,14 @@ export function ProductRegistry({
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col bg-white overflow-hidden">
               <header className="p-10 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                   <div>
-                    <h3 className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">{ONBOARDING_STEPS[wizardStep - 1].label} Matrix</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Onboarding Protocol • Step {wizardStep} of 10</p>
+                    <DialogTitle className="text-3xl font-display font-bold text-[#001F3D] uppercase tracking-tight">
+                      {ONBOARDING_STEPS[wizardStep - 1].label} Matrix
+                    </DialogTitle>
+                    <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                      Institutional Onboarding Protocol • Node {wizardStep} of 10
+                    </DialogDescription>
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setIsWizardOpen(false)} className="rounded-full h-12 w-12 text-slate-300 hover:text-red-500 transition-colors"><X className="h-8 w-8" /></Button>

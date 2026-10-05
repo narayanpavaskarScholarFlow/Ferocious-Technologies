@@ -24,10 +24,9 @@ import {
   X, 
   Check,
   TrendingUp,
-  LayoutGrid,
   Settings2,
-  Info,
-  Maximize2
+  Maximize2,
+  ImageIcon
 } from 'lucide-react';
 import { ProductMaster, Vendor, Machine, SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -155,14 +154,10 @@ export function ProductRegistry({ products, vendors, machines, users }: { produc
                 </TableCell>
               </TableRow>
             ))}
-            {filteredProducts.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="h-40 text-center opacity-30 text-[10px] font-bold uppercase italic">No product nodes discovered.</TableCell></TableRow>
-            )}
           </TableBody>
         </Table>
       </Card>
 
-      {/* 10-STEP PRODUCT WIZARD */}
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
         <DialogContent className="max-w-5xl h-[90vh] bg-white border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
           <div className="flex-1 flex overflow-hidden">
@@ -173,7 +168,7 @@ export function ProductRegistry({ products, vendors, machines, users }: { produc
                 </div>
                 <div className="space-y-6">
                   {ONBOARDING_STEPS.map((s) => {
-                    const Icon = s.icon;
+                    const StepIcon = s.icon;
                     return (
                       <div key={s.id} className="flex items-center gap-6 group cursor-pointer" onClick={() => setWizardStep(s.id)}>
                         <div className={cn(

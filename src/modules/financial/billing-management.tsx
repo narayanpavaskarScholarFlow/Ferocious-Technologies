@@ -49,7 +49,8 @@ import {
   Share2,
   Filter,
   Users,
-  CreditCard
+  CreditCard,
+  X
 } from 'lucide-react';
 import { Customer, BillingRecord, ProductMaster, BillingLineItem, UISettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -89,8 +90,7 @@ function numberToWords(num: number): string {
   }
   
   const mainPart = Math.floor(num);
-  const words = convert(mainPart);
-  return (words + " RUPEES ONLY").trim();
+  return (convert(mainPart) + " RUPEES ONLY").trim();
 }
 
 interface BillingManagementProps {

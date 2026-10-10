@@ -30,11 +30,13 @@ import {
   Hammer,
   ShieldAlert,
   Zap,
-  Info
+  Info,
+  ArrowLeft
 } from 'lucide-react';
 import { BillingRecord, Customer, Order, ProductMaster, WorkLogEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { BillingManagement } from './billing-management';
+import { format } from 'date-fns';
 
 interface FinancialHubProps {
   currentUser: string | null;
@@ -236,7 +238,6 @@ export function FinancialHub({
 
   return (
     <div className="space-y-10 font-body pb-20">
-      {/* INSTITUTIONAL TAB SELECTOR */}
       <div className="flex justify-center">
          <div className="bg-slate-100 p-1.5 rounded-full inline-flex border border-slate-200 shadow-sm gap-1">
             <button 

@@ -44,7 +44,8 @@ import {
   Shield,
   Lock,
   Target,
-  Activity
+  Activity,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -97,6 +98,7 @@ export function SidebarNav({
         name: 'FINANCIAL HUB',
         mobileVisible: false,
         items: [
+          { id: 'financial-hub', icon: Wallet, label: 'Financial Hub' },
           { id: 'customer-master', icon: Building2, label: 'Customers' },
           { id: 'vendor-master', icon: Truck, label: 'Vendors' },
           { id: 'product-master', icon: Box, label: 'Products' },
@@ -155,7 +157,7 @@ export function SidebarNav({
           if (isMasterAdmin) return true;
           const level = permissions[item.id];
           if (level === 'none') return false;
-          if (item.id === 'my-portal' || item.id === 'overview') return true;
+          if (item.id === 'my-portal' || item.id === 'overview' || item.id === 'financial-hub') return true;
           return level && level !== 'none';
         })
       }))

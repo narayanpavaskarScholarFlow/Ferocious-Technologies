@@ -12,6 +12,7 @@ import { ActivityFeed } from '@/modules/command-center/activity-feed';
 import { AnalyticsDashboard } from '@/modules/command-center/analytics-dashboard';
 
 // FINANCIAL HUB MODULES
+import { FinancialHub } from '@/modules/financial/financial-hub';
 import { BillingManagement } from '@/modules/financial/billing-management';
 import { ProductRegistry } from '@/modules/financial/product-registry';
 import { CustomerOrders } from '@/modules/financial/customer-orders';
@@ -103,6 +104,7 @@ const VIEW_CONFIG: Record<ViewType | string, ViewMetadata> = {
   analytics: { title: 'Analytics Dashboard', category: 'Command Center' },
   activity: { title: 'Performance Hub', category: 'Command Center' },
   sqcdp: { title: 'Quality Metrics', category: 'Command Center' },
+  'financial-hub': { title: 'Financial Control Center', category: 'Financial Hub' },
   'customer-master': { title: 'Customer Master', category: 'Financial Hub' },
   'vendor-master': { title: 'Vendor Master', category: 'Financial Hub' },
   'product-master': { title: 'Product Registry', category: 'Financial Hub' },
@@ -294,9 +296,10 @@ function IndustrialERPInternal() {
                 {currentView === 'analytics' && <AnalyticsDashboard orders={orders || []} billing={billing || []} reports={reports || []} logs={logs || []} machines={machines || []} users={usersData || []} />}
                 {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders || []} reports={reports || []} logs={logs || []} users={usersData || []} assignments={assignments || []} />}
                 {currentView === 'activity' && <ActivityFeed orders={orders || []} billing={billing || []} reports={reports || []} assignments={assignments || []} users={usersData || []} logs={logs || []} leaves={leaves || []} currentUser={currentUser} />}
+                {currentView === 'financial-hub' && <FinancialHub currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} orders={orders || []} logs={logs || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
                 {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} billing={billing || []} orders={orders || []} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
                 {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} billing={billing || []} orders={orders || []} machines={machines || []} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
-                {currentView === 'product-master' && <ProductRegistry products={products || []} vendors={vendors || []} machines={machines || []} users={usersData || []} />}
+                {currentView === 'product-master' && <ProductRegistry products={products || []} vendors={vendors || []} machines={machines || []} users={usersData || []} onSaveProduct={(p)=>setDocumentNonBlocking(doc(db,'products',p.id),p,{merge:true})} />}
                 {currentView === 'quotation' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="quotation" />}
                 {currentView === 'sale-invoice' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="invoice" />}
                 {currentView === 'purchase-order' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="purchase_order" />}

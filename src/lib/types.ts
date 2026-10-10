@@ -42,6 +42,7 @@ export type ViewType =
   | 'approvals'
   | 'notifications'
   | 'sqcdp'
+  | 'financial-hub'
   | 'customer-master'
   | 'vendor-master'
   | 'product-master'

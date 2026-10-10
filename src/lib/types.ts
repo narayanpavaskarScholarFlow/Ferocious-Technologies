@@ -43,6 +43,8 @@ export type ViewType =
   | 'notifications'
   | 'sqcdp'
   | 'financial-hub'
+  | 'institutional-intelligence'
+  | 'operational-quick-links'
   | 'customer-master'
   | 'vendor-master'
   | 'product-master'

@@ -18,6 +18,8 @@ import { ProductRegistry } from '@/modules/financial/product-registry';
 import { CustomerOrders } from '@/modules/financial/customer-orders';
 import { VendorManagement } from '@/modules/financial/vendor-management';
 import { DocumentTemplateManager } from '@/modules/financial/document-template-manager';
+import { InstitutionalIntelligence } from '@/modules/financial/institutional-intelligence';
+import { OperationalQuickLinks } from '@/modules/financial/operational-quick-links';
 
 // PRODUCTION HUB MODULES
 import { ShopFloorOrders } from '@/modules/production/shop-floor-orders';
@@ -105,6 +107,8 @@ const VIEW_CONFIG: Record<ViewType | string, ViewMetadata> = {
   activity: { title: 'Performance Hub', category: 'Command Center' },
   sqcdp: { title: 'Quality Metrics', category: 'Command Center' },
   'financial-hub': { title: 'Financial Control Center', category: 'Financial Hub' },
+  'institutional-intelligence': { title: 'Institutional Intelligence', category: 'Financial Hub' },
+  'operational-quick-links': { title: 'Operational Quick Links', category: 'Financial Hub' },
   'customer-master': { title: 'Customer Master', category: 'Financial Hub' },
   'vendor-master': { title: 'Vendor Master', category: 'Financial Hub' },
   'product-master': { title: 'Product Registry', category: 'Financial Hub' },
@@ -297,6 +301,8 @@ function IndustrialERPInternal() {
                 {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders || []} reports={reports || []} logs={logs || []} users={usersData || []} assignments={assignments || []} />}
                 {currentView === 'activity' && <ActivityFeed orders={orders || []} billing={billing || []} reports={reports || []} assignments={assignments || []} users={usersData || []} logs={logs || []} leaves={leaves || []} currentUser={currentUser} />}
                 {currentView === 'financial-hub' && <FinancialHub currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} orders={orders || []} logs={logs || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
+                {currentView === 'institutional-intelligence' && <InstitutionalIntelligence records={billing || []} customers={customers || []} orders={orders || []} logs={logs || []} />}
+                {currentView === 'operational-quick-links' && <OperationalQuickLinks currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
                 {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} billing={billing || []} orders={orders || []} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
                 {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} billing={billing || []} orders={orders || []} machines={machines || []} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
                 {currentView === 'product-master' && <ProductRegistry products={products || []} vendors={vendors || []} machines={machines || []} users={usersData || []} onSaveProduct={(p)=>setDocumentNonBlocking(doc(db,'products',p.id),p,{merge:true})} />}

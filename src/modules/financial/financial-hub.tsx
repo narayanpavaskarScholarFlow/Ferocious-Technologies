@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +30,9 @@ import {
   Zap,
   Info,
   ArrowLeft,
-  X
+  X,
+  Download,
+  Share2
 } from 'lucide-react';
 import { BillingRecord, Customer, Order, ProductMaster, WorkLogEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';

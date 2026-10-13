@@ -45,7 +45,6 @@ import {
   Lock,
   Target,
   Activity,
-  Wallet,
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -99,7 +98,6 @@ export function SidebarNav({
         name: 'FINANCIAL HUB',
         mobileVisible: true,
         items: [
-          { id: 'financial-hub', icon: Wallet, label: 'Financial Hub' },
           { id: 'institutional-intelligence', icon: Landmark, label: 'Institutional Intelligence' },
           { id: 'operational-quick-links', icon: Zap, label: 'Operational Quick Links' },
           { id: 'customer-master', icon: Building2, label: 'Customers' },

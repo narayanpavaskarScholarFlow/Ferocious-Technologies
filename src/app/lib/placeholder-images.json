@@ -1,4 +1,3 @@
-
 {
   "placeholderImages": [
     {
@@ -6,54 +5,6 @@
       "description": "Ferocious Tech Corporate Logo",
       "imageUrl": "https://picsum.photos/seed/ferocious-tech-v3/400/400",
       "imageHint": "lion technology logo"
-    },
-    {
-      "id": "milling",
-      "description": "Industrial Milling Machine",
-      "imageUrl": "https://picsum.photos/seed/milling/600/400",
-      "imageHint": "milling machine"
-    },
-    {
-      "id": "turning",
-      "description": "CNC Turning Center",
-      "imageUrl": "https://picsum.photos/seed/turning/600/400",
-      "imageHint": "cnc lathe"
-    },
-    {
-      "id": "grinding",
-      "description": "Precision Grinding Unit",
-      "imageUrl": "https://picsum.photos/seed/grinding/600/400",
-      "imageHint": "grinding machine"
-    },
-    {
-      "id": "3d-printing",
-      "description": "Professional 3D Printer",
-      "imageUrl": "https://picsum.photos/seed/3dprint/600/400",
-      "imageHint": "3d printer"
-    },
-    {
-      "id": "edm",
-      "description": "Electrical Discharge Machine",
-      "imageUrl": "https://picsum.photos/seed/edm/600/400",
-      "imageHint": "edm machine"
-    },
-    {
-      "id": "double-column",
-      "description": "Double Column Milling Center",
-      "imageUrl": "https://picsum.photos/seed/doublecol/600/400",
-      "imageHint": "large milling machine"
-    },
-    {
-      "id": "conduit-connector",
-      "description": "Precision Curved Conduit Connector",
-      "imageUrl": "https://picsum.photos/seed/conduit/600/400",
-      "imageHint": "curved industrial pipe"
-    },
-    {
-      "id": "engine-plate",
-      "description": "VMC Machined Engine Plate",
-      "imageUrl": "https://picsum.photos/seed/engineplate/600/400",
-      "imageHint": "machined metal part"
     }
   ]
 }

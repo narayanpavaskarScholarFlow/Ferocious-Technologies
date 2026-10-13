@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,38 +17,22 @@ import {
 } from '@/components/ui/table';
 import { 
   Landmark, 
-  FileText, 
-  Target, 
   Plus, 
   Trash2, 
   Save, 
-  Edit3, 
-  Maximize2, 
+  ChevronRight, 
+  ChevronLeft,
+  Printer,
+  TrendingUp,
+  DollarSign,
   Calculator,
   CalendarDays,
-  Printer,
-  ChevronRight,
-  TrendingUp,
-  Building2,
-  DollarSign,
-  Type,
-  Baseline,
-  Highlighter,
-  ChevronDown,
   Bold,
   Italic,
   Underline as UnderlineIcon,
   List,
   ListOrdered,
-  Undo,
-  Redo,
-  TableProperties,
-  Heading1,
-  AlignJustify,
-  ZoomIn,
-  ZoomOut,
-  X,
-  ShieldAlert
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -56,22 +40,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 // Tiptap Imports for Rich Text
 import { useEditor, EditorContent, Extension } from '@tiptap/react';
@@ -88,69 +56,7 @@ import Color from '@tiptap/extension-color';
 import FontFamily from '@tiptap/extension-font-family';
 import Highlight from '@tiptap/extension-highlight';
 import TiptapImage from '@tiptap/extension-image';
-import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
-
-// Custom Font Size Extension
-const FontSize = Extension.create({
-  name: 'fontSize',
-  addOptions() {
-    return {
-      types: ['textStyle'],
-    }
-  },
-  addAttributes() {
-    return {
-      fontSize: {
-        default: null,
-        parseHTML: element => element.style.fontSize,
-        renderHTML: attributes => {
-          if (!attributes.fontSize) return {}
-          return { style: `font-size: ${attributes.fontSize}` }
-        },
-      },
-    }
-  },
-  addCommands() {
-    return {
-      setFontSize: (fontSize: string) => ({ chain }: any) => {
-        return chain().setMark('textStyle', { fontSize }).run()
-      },
-      unsetFontSize: () => ({ chain }: any) => {
-        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
-      },
-    }
-  },
-});
-
-const CustomBulletList = BulletList.extend({
-  addAttributes() {
-    return {
-      bulletType: {
-        default: 'disc',
-        parseHTML: element => element.getAttribute('data-bullet-type'),
-        renderHTML: attributes => {
-          return { 'data-bullet-type': attributes.bulletType }
-        },
-      },
-    }
-  },
-});
-
-const CustomOrderedList = OrderedList.extend({
-  addAttributes() {
-    return {
-      listType: {
-        default: 'decimal',
-        parseHTML: element => element.getAttribute('data-list-type'),
-        renderHTML: attributes => {
-          return { 'data-list-type': attributes.listType }
-        },
-      },
-    }
-  },
-});
 
 const REPORT_SEQUENCE = [
   { id: 'coverDetails', label: '00. Cover Metadata' },
@@ -159,51 +65,19 @@ const REPORT_SEQUENCE = [
   { id: 'visionMission', label: '03. Vision & Mission' },
   { id: 'promoterProfile', label: '04. Promoter Profile' },
   { id: 'projectDetails', label: '05. Project Details' },
-  { id: 'productServices', label: '06. Product & Services' },
-  { id: 'marketAnalysis', label: '07. Market Analysis' },
-  { id: 'swotAnalysis', label: '08. SWOT Analysis' },
-  { id: 'businessModel', label: '09. Business Model' },
-  { id: 'operationsPlan', label: '10. Operations Plan' },
-  { id: 'layout', label: '11. Layout' },
-  { id: 'locationAnalysis', label: '12. Location Analysis' },
-  { id: 'orgStructure', label: '13. Organizational Structure' },
-  { id: 'marketingStrategy', label: '14. Marketing Strategy' },
-  { id: 'techIntegration', label: '15. Technology Integration' },
-  { id: 'projectCost', label: '16. Project Cost' },
-  { id: 'meansOfFinance', label: '17. Means of Finance' },
-  { id: 'workingCapitalRequirement', label: '18. Working Capital' },
   { id: 'financialProjections', label: '19. Projections' },
-  { id: 'cashFlowStatement', label: '20. Cash Flow' },
-  { id: 'turnoverAnalysis', label: '21. Turnover Analysis' },
-  { id: 'breakevenAnalysis', label: '22. Break-even Analysis' },
-  { id: 'dscrMatrix', label: '23. DSCR Matrix' },
-  { id: 'keyRatios', label: '24. Key Ratios' },
-  { id: 'mpbfCalculation', label: '25. MPBF Calculation' },
-  { id: 'amortizationSchedule', label: '26. Amortization' },
-  { id: 'riskMitigation', label: '27. Risk & Mitigation' },
-  { id: 'govtSchemes', label: '28. Government Schemes' },
-  { id: 'licensesRegistrations', label: '29. Licenses' },
-  { id: 'roadmap', label: '30. Roadmap' },
   { id: 'conclusion', label: '31. Conclusion' }
 ];
-
-const FONT_FAMILIES = [
-  { name: 'Standard Sans', value: 'Inter' },
-  { name: 'Space Grotesk', value: 'Space Grotesk' },
-  { name: 'Source Code', value: 'Source Code Pro' },
-];
-
-const FONT_SIZES = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px'];
 
 const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ bulletList: false, orderedList: false }),
-      CustomBulletList, CustomOrderedList, ListItem, Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph', 'bulletList', 'orderedList'] }),
+      ListItem, Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }), TiptapTable.configure({ resizable: true }),
       TiptapTableRow, TiptapTableCell, TiptapTableHeader, TiptapImage.configure({ inline: true, allowBase64: true }),
-      TextStyle, Color, FontFamily, FontSize, Highlight.configure({ multicolor: true }),
+      TextStyle, Color, FontFamily, Highlight.configure({ multicolor: true }),
     ],
     content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -218,9 +92,6 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: st
         <Button variant="ghost" size="icon" className={cn("h-7 w-7", editor.isActive('bold') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="h-3.5 w-3.5" /></Button>
         <Button variant="ghost" size="icon" className={cn("h-7 w-7", editor.isActive('italic') && "bg-white/20")} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="h-3.5 w-3.5" /></Button>
         <Button variant="ghost" size="icon" className={cn("h-7 w-7", editor.isActive('underline') && "bg-white/20")} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon className="h-3.5 w-3.5" /></Button>
-        <div className="h-4 w-px bg-white/10 mx-1" />
-        <Button variant="ghost" size="icon" className={cn("h-7 w-7", editor.isActive('bulletList') && "bg-white/20")} onClick={() => editor.chain().focus().toggleBulletList().run()}><List className="h-3.5 w-3.5" /></Button>
-        <Button variant="ghost" size="icon" className={cn("h-7 w-7", editor.isActive('orderedList') && "bg-white/20")} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered className="h-3.5 w-3.5" /></Button>
       </div>
       <EditorContent editor={editor} />
     </div>
@@ -237,12 +108,13 @@ export function LoanProjectHub({ brandLogo = '' }: { brandLogo?: string }) {
   const strategyRef = useMemoFirebase(() => doc(db, 'settings', 'loan_strategy'), [db]);
   const { data: savedStrategy } = useDoc<any>(strategyRef);
 
+  // Default values cleared for fresh installation
   const [foundationalData, setFormData] = useState<any>({
-    projectName: 'Establishment of Precision VMC Facility',
-    businessFirmName: 'Ferocious Tech',
-    businessIndustry: 'Precision Engineering',
-    executiveSummary: '<p>Initial summary matrix node...</p>',
-    visionMission: '<p>Standard vision and mission...</p>',
+    projectName: '',
+    businessFirmName: '',
+    businessIndustry: '',
+    executiveSummary: '',
+    visionMission: '',
     coverTitleFontSize: 60,
     coverTitleColor: '#001F3D',
   });
@@ -260,7 +132,7 @@ export function LoanProjectHub({ brandLogo = '' }: { brandLogo?: string }) {
 
   const handleSaveStrategy = () => {
     setDocumentNonBlocking(strategyRef, { foundationalData, checklist, updatedAt: new Date().toISOString() }, { merge: true });
-    toast({ title: "Strategy Synchronized", description: "All project nodes committed." });
+    toast({ title: "Strategy Matrix Committed" });
   };
 
   return (
@@ -308,9 +180,9 @@ export function LoanProjectHub({ brandLogo = '' }: { brandLogo?: string }) {
         <TabsContent value="display" className="m-0 flex flex-col items-center">
            <div className="w-full bg-slate-900/5 p-8 border-b border-slate-200/60 sticky top-16 z-50 flex justify-between items-center backdrop-blur-md">
               <div className="flex items-center gap-4 bg-white/50 p-1.5 rounded-xl border border-slate-200">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}><ZoomOut className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}><ChevronLeft className="h-4 w-4" /></Button>
                   <span className="text-[10px] font-bold font-code w-12 text-center">{Math.round(zoom * 100)}%</span>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setZoom(Math.min(1.5, zoom + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setZoom(Math.min(1.5, zoom + 0.1))}><ChevronRight className="h-4 w-4" /></Button>
               </div>
               <Button className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-12 font-bold uppercase text-[10px] tracking-[0.2em] shadow-xl flex gap-3" onClick={() => window.print()}>
                 <Printer className="h-4 w-4" /> Print DPR Matrix

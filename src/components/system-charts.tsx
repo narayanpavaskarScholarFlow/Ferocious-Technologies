@@ -1,23 +1,13 @@
-
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-const usageData = [
-  { name: "MON", value: 42 },
-  { name: "TUE", value: 58 },
-  { name: "WED", value: 75 },
-  { name: "THU", value: 62 },
-  { name: "FRI", value: 89 },
-  { name: "SAT", value: 24 },
-  { name: "SUN", value: 18 },
-];
+// Cleared sample data for fresh installation
+const usageData: any[] = [];
 
 const statusData = [
-  { name: "Active", value: 82, color: "hsl(var(--primary))" },
-  { name: "Maintenance", value: 12, color: "hsl(var(--accent))" },
-  { name: "Obsolete", value: 6, color: "hsl(var(--muted))" },
+  { name: "Nominal", value: 100, color: "hsl(var(--primary))" },
 ];
 
 export function SystemCharts() {
@@ -26,23 +16,27 @@ export function SystemCharts() {
       {/* Activity Chart */}
       <div className="glass-effect p-4 rounded-xl border border-white/5">
         <h4 className="text-xs font-code text-muted-foreground uppercase tracking-widest mb-6">Asset Utilization</h4>
-        <div className="h-[180px] w-full">
-          <ChartContainer config={{ value: { label: "Utilization", color: "hsl(var(--primary))" } }}>
-            <BarChart data={usageData}>
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {usageData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={index === 4 ? "hsl(var(--accent))" : "hsl(var(--primary))"} fillOpacity={0.8} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ChartContainer>
+        <div className="h-[180px] w-full flex items-center justify-center">
+          {usageData.length > 0 ? (
+            <ChartContainer config={{ value: { label: "Utilization", color: "hsl(var(--primary))" } }}>
+              <BarChart data={usageData}>
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {usageData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill="hsl(var(--primary))" fillOpacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/10">No data signals detected</p>
+          )}
         </div>
       </div>
 

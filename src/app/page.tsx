@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -339,9 +338,9 @@ function IndustrialERPInternal() {
                 {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} billing={billing || []} orders={orders || []} users={usersData || []} currentUser={currentUser} onSaveCustomer={handleSaveCustomer} onSaveVendor={handleSaveVendor} />}
                 {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} billing={billing || []} orders={orders || []} machines={machines || []} onSaveVendor={handleSaveVendor} />}
                 {currentView === 'product-master' && <ProductRegistry products={products || []} vendors={vendors || []} machines={machines || []} users={usersData || []} onSaveProduct={(p)=>setDocumentNonBlocking(doc(db,'products',p.id),p,{merge:true})} />}
-                {currentView === 'quotation' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="quotation" />}
-                {currentView === 'sale-invoice' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="invoice" />}
-                {currentView === 'purchase-order' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="purchase_order" />}
+                {currentView === 'quotation' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} users={usersData || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="quotation" />}
+                {currentView === 'sale-invoice' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} users={usersData || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="invoice" />}
+                {currentView === 'purchase-order' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} users={usersData || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="purchase_order" />}
                 {currentView === 'orders' && <ShopFloorOrders orders={orders || []} billing={billing || []} logs={logs || []} machines={machines || []} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setCurrentView('operations'); }} />}
                 {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders || []} customers={customers || []} staff={usersData || []} billing={billing || []} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={uiSettings} />}
                 {currentView === 'operations' && <OperationsStatus initialOrderId={selectedOrderId} orders={orders || []} users={usersData || []} machines={machines || []} />}

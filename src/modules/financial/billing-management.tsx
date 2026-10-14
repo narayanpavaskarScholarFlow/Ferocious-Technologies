@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -50,9 +49,15 @@ import {
   Filter,
   Users,
   CreditCard,
-  X
+  X,
+  MoreVertical,
+  Eye,
+  Edit2,
+  Fingerprint,
+  EyeOff,
+  AlertTriangle
 } from 'lucide-react';
-import { Customer, BillingRecord, ProductMaster, BillingLineItem, UISettings } from '@/lib/types';
+import { Customer, BillingRecord, ProductMaster, BillingLineItem, UISettings, SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,6 +76,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 /**
  * Utility to convert numerical currency to institutional words (Indian Format).
@@ -98,6 +104,7 @@ interface BillingManagementProps {
   customers: Customer[];
   records: BillingRecord[];
   products: ProductMaster[];
+  users: SystemUser[];
   onSaveRecord: (record: BillingRecord) => void;
   onDeleteRecord: (id: string) => void;
   initialTab?: string;
@@ -108,6 +115,7 @@ export function BillingManagement({
   customers, 
   records, 
   products, 
+  users,
   onSaveRecord, 
   onDeleteRecord, 
   initialTab = 'quotation' 
@@ -116,6 +124,14 @@ export function BillingManagement({
   const [activeTab, setActiveTab] = useState(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
+  const [viewOnly, setViewOnly] = useState(false);
+
+  // Secure Delete Protocol States
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<BillingRecord | null>(null);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -167,7 +183,8 @@ export function BillingManagement({
     });
   }, [records, activeTab, searchTerm]);
 
-  const handleOpenForm = (type: string, record?: BillingRecord) => {
+  const handleOpenForm = (type: string, record?: BillingRecord, readOnly = false) => {
+    setViewOnly(readOnly);
     if (record) {
       setFormData(record);
     } else {
@@ -203,8 +220,48 @@ export function BillingManagement({
     setIsRecordFormOpen(true);
   };
 
+  const handleOpenDelete = (record: BillingRecord) => {
+    setRecordToDelete(record);
+    setDeleteStep(1);
+    setPasswordAttempt('');
+    setShowDeletePassword(false);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleVerifyPassword = () => {
+    if (!currentUser) {
+      toast({ variant: "destructive", title: "Session Protocol Error", description: "Identity not found in matrix." });
+      return;
+    }
+
+    const isMasterAdmin = currentUser.toLowerCase() === 'master admin';
+    let isMatch = false;
+
+    if (isMasterAdmin) {
+      isMatch = passwordAttempt === 'admin123';
+    } else {
+      const activeUser = users.find(u => u.name === currentUser || u.email === currentUser || u.username === currentUser);
+      if (activeUser) {
+        isMatch = passwordAttempt === activeUser.password || (!activeUser.password && passwordAttempt === 'user123');
+      }
+    }
+
+    if (isMatch) setDeleteStep(3);
+    else toast({ variant: "destructive", title: "Authentication Failed", description: "Incorrect Password" });
+  };
+
+  const handleFinalDelete = () => {
+    if (!recordToDelete) return;
+    onDeleteRecord(recordToDelete.id);
+    toast({ title: "Purge Complete", description: "Record removed from master ledger." });
+    setIsDeleteDialogOpen(false);
+    setRecordToDelete(null);
+    setDeleteStep(1);
+  };
+
   const FullPageEditor = () => {
     const handleUpdateField = useCallback((field: keyof BillingRecord, value: any) => {
+      if (viewOnly) return;
       setFormData(prev => ({ ...prev, [field]: value }));
     }, []);
 
@@ -228,6 +285,7 @@ export function BillingManagement({
     }, [formData.items, formData.discountTotal, formData.tcsAmount, formData.isRoundOffActive, formData.transportationCharges]);
 
     const handleUpdateItem = (idx: number, field: keyof BillingLineItem, value: any) => {
+      if (viewOnly) return;
       const newItems = [...(formData.items || [])];
       newItems[idx] = { ...newItems[idx], [field]: value };
       const item = newItems[idx];
@@ -240,15 +298,18 @@ export function BillingManagement({
     };
 
     const addRow = () => {
+      if (viewOnly) return;
       const newItem: BillingLineItem = { id: Date.now().toString(), description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 };
       setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
     };
 
     const removeRow = (id: string) => {
+      if (viewOnly) return;
       setFormData(prev => ({ ...prev, items: (prev.items || []).filter(i => i.id !== id) }));
     };
 
     const handleSaveLocal = () => {
+      if (viewOnly) return;
       if (!formData.customerId || !formData.number) {
         toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Doc Number required." });
         return;
@@ -281,18 +342,20 @@ export function BillingManagement({
                  <Badge className="bg-primary text-white border-none text-[8px] font-black uppercase px-2 py-0.5 tracking-[0.2em]">{formData.status}</Badge>
                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Protocol Node: {formData.number}</span>
                </div>
-               <h2 className="text-2xl font-display font-black text-[#001F3D] uppercase leading-none tracking-tight">{formData.type?.replace('_', ' ')} Editor</h2>
+               <h2 className="text-2xl font-display font-black text-[#001F3D] uppercase leading-none tracking-tight">{formData.type?.replace('_', ' ')} {viewOnly ? 'Viewer' : 'Editor'}</h2>
             </div>
           </div>
           <div className="flex gap-4">
              <Button variant="outline" className="rounded-xl h-11 px-6 font-bold uppercase text-[9px] tracking-widest border-slate-200 bg-white text-slate-500 hover:bg-slate-50 gap-2"><Share2 className="h-3.5 w-3.5" /> Share</Button>
              <Button variant="outline" className="rounded-xl h-11 px-6 font-bold uppercase text-[9px] tracking-widest border-slate-200 bg-white text-slate-500 hover:bg-slate-50 gap-2"><Download className="h-3.5 w-3.5" /> PDF Matrix</Button>
              <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={handleSaveLocal}>
-               <Printer className="h-4 w-4" /> Save & Print
+               <Printer className="h-4 w-4" /> {viewOnly ? 'Print Matrix' : 'Save & Print'}
              </Button>
-             <Button className="bg-[#001F3D] hover:bg-black text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={handleSaveLocal}>
-               <Save className="h-4 w-4" /> Commit Node
-             </Button>
+             {!viewOnly && (
+               <Button className="bg-[#001F3D] hover:bg-black text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={handleSaveLocal}>
+                 <Save className="h-4 w-4" /> Commit Node
+               </Button>
+             )}
           </div>
         </div>
 
@@ -309,7 +372,7 @@ export function BillingManagement({
                 <div className="space-y-6 relative z-10">
                    <div className="grid grid-cols-[140px_1fr] items-center gap-8">
                       <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Identify M/S.*</Label>
-                      <Select value={formData.customerId ?? ''} onValueChange={(id) => {
+                      <Select disabled={viewOnly} value={formData.customerId ?? ''} onValueChange={(id) => {
                          const c = customers.find(x => x.id === id);
                          if (!c) return;
                          setFormData(prev => ({ 
@@ -349,7 +412,7 @@ export function BillingManagement({
 
                    <div className="grid grid-cols-[140px_1fr] items-center gap-8 pt-6 border-t border-slate-50">
                       <Label className="text-[11px] font-black text-primary uppercase tracking-[0.2em]">Supply Node*</Label>
-                      <Input className="h-14 bg-primary/5 border-2 border-primary/20 rounded-2xl font-black uppercase text-xs text-primary shadow-sm text-center tracking-widest" value={formData.placeOfSupply ?? ''} onChange={(e)=>handleUpdateField('placeOfSupply', e.target.value)} placeholder="Identify Supply Origin..." />
+                      <Input readOnly={viewOnly} className="h-14 bg-primary/5 border-2 border-primary/20 rounded-2xl font-black uppercase text-xs text-primary shadow-sm text-center tracking-widest" value={formData.placeOfSupply ?? ''} onChange={(e)=>handleUpdateField('placeOfSupply', e.target.value)} placeholder="Identify Supply Origin..." />
                    </div>
                 </div>
             </Card>
@@ -364,14 +427,14 @@ export function BillingManagement({
                 <div className="space-y-8 relative z-10">
                    <div className="grid grid-cols-[140px_1fr_120px_1fr] items-center gap-x-8 gap-y-8">
                       <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Doc. Identifier*</Label>
-                      <Input className="h-14 bg-slate-900 border-none rounded-2xl font-black font-code text-center text-white shadow-xl text-lg" value={formData.number ?? ''} onChange={(e)=>handleUpdateField('number', e.target.value)} />
+                      <Input readOnly={viewOnly} className="h-14 bg-slate-900 border-none rounded-2xl font-black font-code text-center text-white shadow-xl text-lg" value={formData.number ?? ''} onChange={(e)=>handleUpdateField('number', e.target.value)} />
                       <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Protocol Date*</Label>
-                      <DatePicker value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-14 rounded-2xl shadow-sm border-2 border-slate-100 bg-white" />
+                      <DatePicker disabled={viewOnly} value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-14 rounded-2xl shadow-sm border-2 border-slate-100 bg-white" />
                    </div>
 
                    <div className="grid grid-cols-[140px_1fr] items-center gap-8">
                       <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Reference No.</Label>
-                      <Input className="h-12 bg-slate-50/50 border-none rounded-xl font-black text-xs px-6 shadow-inner" value={formData.referenceNumber ?? ''} onChange={(e)=>handleUpdateField('referenceNumber', e.target.value)} placeholder="PO/Quotation Reference..." />
+                      <Input readOnly={viewOnly} className="h-12 bg-slate-50/50 border-none rounded-xl font-black text-xs px-6 shadow-inner" value={formData.referenceNumber ?? ''} onChange={(e)=>handleUpdateField('referenceNumber', e.target.value)} placeholder="PO/Quotation Reference..." />
                    </div>
 
                    <div className="grid grid-cols-[140px_1fr] items-center gap-8">
@@ -384,7 +447,7 @@ export function BillingManagement({
 
                    <div className="grid grid-cols-[140px_1fr] items-center gap-8 pt-8 border-t border-slate-50">
                       <Label className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Settlement Path</Label>
-                      <Select value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
+                      <Select disabled={viewOnly} value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
                         <SelectTrigger className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-black uppercase text-xs shadow-sm"><SelectValue /></SelectTrigger>
                         <SelectContent className="rounded-xl">
                            <SelectItem value="Bank Transfer" className="font-bold text-[10px] uppercase py-3">BANK_TRANSFER_PROTOCOL</SelectItem>
@@ -406,9 +469,11 @@ export function BillingManagement({
                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">High-Fidelity Document Detail Registry</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={addRow} className="h-11 rounded-2xl font-black uppercase text-[10px] tracking-widest gap-2 bg-white border-2 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm">
-                <Plus className="h-4 w-4" /> Append Matrix Node
-              </Button>
+              {!viewOnly && (
+                <Button variant="outline" size="sm" onClick={addRow} className="h-11 rounded-2xl font-black uppercase text-[10px] tracking-widest gap-2 bg-white border-2 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm">
+                  <Plus className="h-4 w-4" /> Append Matrix Node
+                </Button>
+              )}
             </div>
 
             <Card className="bg-white border-slate-200 shadow-2xl rounded-[3rem] overflow-hidden">
@@ -434,7 +499,7 @@ export function BillingManagement({
                            <TableCell className="text-center font-display font-black text-slate-300 border-r border-slate-50 group-hover:text-primary transition-colors">{idx + 1}</TableCell>
                            <TableCell className="border-r border-slate-50 p-0 relative">
                               <div className="flex flex-col h-full bg-white group-hover:bg-transparent transition-colors">
-                                <Select value={item.productId ?? ''} onValueChange={(pId) => {
+                                <Select disabled={viewOnly} value={item.productId ?? ''} onValueChange={(pId) => {
                                    const p = products.find(x => x.id === pId);
                                    if (!p) return;
                                    handleUpdateItem(idx, 'description', p.name);
@@ -459,22 +524,22 @@ export function BillingManagement({
                                    </SelectContent>
                                 </Select>
                                 <div className="px-8 pb-4">
-                                   <Textarea placeholder="Node-specific technical observations..." className="h-16 bg-slate-50/50 border-none text-[10px] rounded-2xl font-medium resize-none shadow-inner focus-visible:ring-primary/20 placeholder:text-slate-300" value={item.note ?? ''} onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} />
+                                   <Textarea readOnly={viewOnly} placeholder="Node-specific technical observations..." className="h-16 bg-slate-50/50 border-none text-[10px] rounded-2xl font-medium resize-none shadow-inner focus-visible:ring-primary/20 placeholder:text-slate-300" value={item.note ?? ''} onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} />
                                 </div>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input className="h-12 bg-slate-50 border-none rounded-xl text-center font-code font-bold text-[11px] text-slate-500 uppercase" value={item.hsn ?? ''} onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-base text-[#001F3D]" value={item.qty ?? ''} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-[11px] uppercase text-slate-400" value={item.unit ?? ''} onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} className="h-12 bg-slate-50 border-none rounded-xl text-center font-code font-bold text-[11px] text-slate-500 uppercase" value={item.hsn ?? ''} onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-base text-[#001F3D]" value={item.qty ?? ''} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-[11px] uppercase text-slate-400" value={item.unit ?? ''} onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
                            <TableCell className="border-r border-slate-50 p-4">
                               <div className="relative">
-                                 <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-display font-black text-base w-full pl-6 text-[#001F3D]" value={item.price ?? ''} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
+                                 <Input readOnly={viewOnly} type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-display font-black text-base w-full pl-6 text-[#001F3D]" value={item.price ?? ''} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300">₹</span>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-xs" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} /></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-xs" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} /></TableCell>
                            <TableCell className="border-r border-slate-50 p-4">
-                              <Select value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
+                              <Select disabled={viewOnly} value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
                                  <SelectTrigger className="bg-slate-50 border-none h-12 rounded-xl text-center font-black text-[11px] shadow-none focus:ring-primary/20"><SelectValue /></SelectTrigger>
                                  <SelectContent className="rounded-xl shadow-xl border-slate-100">
                                    {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="font-bold text-[10px] py-2">{r}%</SelectItem>)}
@@ -482,7 +547,7 @@ export function BillingManagement({
                               </Select>
                            </TableCell>
                            <TableCell className="text-right px-10 font-display font-black text-[#001F3D] text-lg bg-slate-50/30 group-hover:bg-transparent transition-all">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                           <TableCell className="text-center px-4"><Button variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100" onClick={() => removeRow(item.id)}><Trash2 className="h-5 w-5" /></Button></TableCell>
+                           <TableCell className="text-center px-4"><Button disabled={viewOnly} variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100" onClick={() => removeRow(item.id)}><Trash2 className="h-5 w-5" /></Button></TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-[#FFF9C4] hover:bg-[#FFF9C4] border-t-4 border-[#001F3D]">
@@ -508,14 +573,14 @@ export function BillingManagement({
                      <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity"><ClipboardList className="h-24 w-24" /></div>
                      <div className="flex items-center gap-3 border-l-4 border-[#001F3D] pl-6 relative z-10"><h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Commercial Terms Protocol</h4></div>
                      <div className="space-y-6 relative z-10">
-                        <Textarea className="min-h-[160px] bg-slate-50/50 border-none rounded-2xl text-[13px] font-bold leading-relaxed shadow-inner p-8 text-slate-600" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
+                        <Textarea readOnly={viewOnly} className="min-h-[160px] bg-slate-50/50 border-none rounded-2xl text-[13px] font-bold leading-relaxed shadow-inner p-8 text-slate-600" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
                      </div>
                   </Card>
 
                   <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] relative overflow-hidden group">
                      <div className="flex items-center gap-3 border-l-4 border-rose-500 pl-6 mb-8 relative z-10"><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Internal Audit Logs</h4></div>
                      <div className="space-y-4 relative z-10">
-                        <Textarea className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-xs font-medium italic shadow-inner p-6" placeholder="Restricted visibility: Management audit trail node..." value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
+                        <Textarea readOnly={viewOnly} className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-xs font-medium italic shadow-inner p-6" placeholder="Restricted visibility: Management audit trail node..." value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
                         <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest flex items-center gap-2 animate-pulse"><ShieldAlert className="h-3 w-3" /> System Warning: Internal notes are purged from official print output.</p>
                      </div>
                   </Card>
@@ -533,7 +598,7 @@ export function BillingManagement({
                         <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6 border border-slate-100 shadow-inner">
                            <div className="flex justify-between items-center group">
                              <Label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2"><Truck className="h-4 w-4" /> Logistics/Addl (₹)</Label>
-                             <Input type="number" className="w-44 h-12 text-right font-black border-2 border-transparent bg-white rounded-xl shadow-sm focus:border-emerald-500 transition-all text-lg text-[#001F3D]" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
+                             <Input readOnly={viewOnly} type="number" className="w-44 h-12 text-right font-black border-2 border-transparent bg-white rounded-xl shadow-sm focus:border-emerald-500 transition-all text-lg text-[#001F3D]" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
                            </div>
                            
                            <div className="flex justify-between items-center"><span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Aggregate Tax (IGST)</span><span className="text-base font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
@@ -543,7 +608,7 @@ export function BillingManagement({
                            <div className="flex items-center gap-4">
                               <div className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl px-6 flex items-center justify-between shadow-sm hover:border-primary/30 transition-all">
                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TCS Protocol (%)</span>
-                                 <Input type="number" className="w-24 border-none bg-transparent h-10 text-right font-black text-lg text-[#001F3D] focus-visible:ring-0 shadow-none" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
+                                 <Input readOnly={viewOnly} type="number" className="w-24 border-none bg-transparent h-10 text-right font-black text-lg text-[#001F3D] focus-visible:ring-0 shadow-none" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
                               </div>
                            </div>
 
@@ -551,7 +616,7 @@ export function BillingManagement({
                               <div className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl px-6 flex items-center justify-between shadow-sm hover:border-primary/30 transition-all">
                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Matrix Discount</span>
                                  <div className="flex items-center gap-2">
-                                    <Input type="number" className="w-32 border-none bg-transparent h-10 text-right font-black text-lg text-rose-500 focus-visible:ring-0 shadow-none" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
+                                    <Input readOnly={viewOnly} type="number" className="w-32 border-none bg-transparent h-10 text-right font-black text-lg text-rose-500 focus-visible:ring-0 shadow-none" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
                                     <span className="text-[11px] font-black text-slate-200">₹</span>
                                  </div>
                               </div>
@@ -561,7 +626,7 @@ export function BillingManagement({
                         <div className="flex justify-between items-center py-4 px-6 border-y border-slate-100 group">
                            <div className="flex items-center gap-4">
                               <span className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Round-Off Protocol</span>
-                              <Switch checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} className="data-[state=checked]:bg-emerald-500" />
+                              <Switch disabled={viewOnly} checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} className="data-[state=checked]:bg-emerald-500" />
                            </div>
                            <span className="text-sm font-display font-black text-slate-400 italic">₹ {totals.roundOff.toFixed(2)}</span>
                         </div>
@@ -625,14 +690,14 @@ export function BillingManagement({
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map(r => (
-                    <TableRow key={r.id} className="h-28 border-b border-slate-50 hover:bg-slate-50/80 transition-all cursor-pointer group" onClick={() => handleOpenForm(activeTab, r)}>
-                      <TableCell className="px-10">
-                         <div className="flex flex-col gap-1.5">
+                    <TableRow key={r.id} className="h-28 border-b border-slate-50 hover:bg-slate-50/80 transition-all group">
+                      <TableCell className="px-10" onClick={() => handleOpenForm(activeTab, r, true)}>
+                         <div className="flex flex-col gap-1.5 cursor-pointer">
                             <span className="font-black text-[14px] text-primary font-code tracking-tight">{r.number}</span>
                             <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{r.date}</span>
                          </div>
                       </TableCell>
-                      <TableCell><span className="text-[17px] font-black text-[#001F3D] uppercase tracking-tight group-hover:text-primary transition-colors leading-tight">{r.customerName}</span></TableCell>
+                      <TableCell onClick={() => handleOpenForm(activeTab, r, true)}><span className="text-[17px] font-black text-[#001F3D] uppercase tracking-tight group-hover:text-primary transition-colors leading-tight cursor-pointer">{r.customerName}</span></TableCell>
                       <TableCell className="text-right">
                          <div className="flex flex-col items-end gap-1.5">
                             <span className="font-display font-black text-2xl text-[#001F3D]">₹ {r.amount?.toLocaleString()}</span>
@@ -648,7 +713,24 @@ export function BillingManagement({
                          </Badge>
                       </TableCell>
                       <TableCell className="text-right px-10">
-                        <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl opacity-0 group-hover:opacity-100 transition-all bg-white shadow-2xl border border-slate-100 transform group-hover:translate-x-2 flex items-center justify-center"><ChevronRight className="h-6 w-6 text-primary" /></Button>
+                        <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100"><MoreVertical className="h-4 w-4" /></Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end" className="w-64 rounded-[1.5rem] border-slate-100 shadow-2xl p-2 font-body">
+                              <DropdownMenuItem onClick={() => handleOpenForm(activeTab, r, true)} className="text-[10px] font-black uppercase py-3 px-4 gap-3 cursor-pointer"><Eye className="h-4 w-4 text-slate-400" /> View {activeTab.replace('_', ' ')}</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenForm(activeTab, r)} className="text-[10px] font-black uppercase py-3 px-4 gap-3 cursor-pointer"><Edit2 className="h-4 w-4 text-primary" /> Edit {activeTab.replace('_', ' ')}</DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="bg-slate-50 my-2" />
+                              
+                              <DropdownMenuItem onClick={() => handleOpenForm('invoice', r)} className="text-[10px] font-black uppercase py-3 px-4 gap-3 cursor-pointer text-indigo-600"><Receipt className="h-4 w-4" /> Create Invoice</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenForm('purchase_order', r)} className="text-[10px] font-black uppercase py-3 px-4 gap-3 cursor-pointer text-indigo-600"><ShoppingCart className="h-4 w-4" /> Create Purchase Order</DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="bg-slate-50 my-2" />
+                              
+                              <DropdownMenuItem onClick={() => handleOpenDelete(r)} className="text-[10px] font-black uppercase py-3 px-4 gap-3 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700"><Trash2 className="h-4 w-4" /> Delete {activeTab.replace('_', ' ')}</DropdownMenuItem>
+                           </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -669,6 +751,95 @@ export function BillingManagement({
           </Card>
         </div>
       )}
+
+      {/* SECURE DELETE DIALOG */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        setIsDeleteDialogOpen(open);
+        if (!open) {
+          setShowDeletePassword(false);
+          setPasswordAttempt('');
+          setDeleteStep(1);
+        }
+      }}>
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
+           <DialogHeader className="p-8 bg-red-600 text-white flex flex-row items-center gap-4 shrink-0">
+              <div className="p-3 bg-white/20 rounded-xl"><Trash2 className="h-8 w-8" /></div>
+              <div>
+                 <DialogTitle className="text-2xl font-display font-black uppercase">Secure Purge Protocol</DialogTitle>
+                 <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Institutional Data Safety Gate</DialogDescription>
+              </div>
+           </DialogHeader>
+
+           <div className="p-10 space-y-10">
+              {deleteStep === 1 && (
+                <div className="space-y-6 animate-in fade-in duration-500">
+                   <p className="text-sm font-bold text-slate-700 leading-relaxed">Are you sure you want to delete this {activeTab.replace('_', ' ')} from the master ledger?</p>
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Document Node</p>
+                      <h4 className="text-lg font-black text-[#001F3D] uppercase leading-tight">{recordToDelete?.number}</h4>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">{recordToDelete?.customerName}</p>
+                   </div>
+                   <div className="flex gap-4">
+                      <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setIsDeleteDialogOpen(false)}>Abort</Button>
+                      <Button className="flex-1 bg-[#001F3D] text-white rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setDeleteStep(2)}>Confirm Intent</Button>
+                   </div>
+                </div>
+              )}
+
+              {deleteStep === 2 && (
+                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                   <div className="flex items-center gap-4 p-5 bg-blue-50 border border-blue-100 rounded-2xl">
+                      <Fingerprint className="h-6 w-6 text-blue-600" />
+                      <p className="text-xs font-bold text-blue-700 uppercase leading-relaxed">Identity verification required. Enter your account password to authorize deletion.</p>
+                   </div>
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Authentication Key</Label>
+                      <div className="relative">
+                        <Input 
+                          type={showDeletePassword ? "text" : "password"} 
+                          placeholder="••••••••" 
+                          className="h-14 bg-slate-50 border-none rounded-xl text-center font-bold text-lg shadow-inner pr-14"
+                          value={passwordAttempt}
+                          onChange={(e) => setPasswordAttempt(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowDeletePassword(!showDeletePassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-20"
+                        >
+                          {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                   </div>
+                   <div className="flex gap-4">
+                      <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setDeleteStep(1)}>Back</Button>
+                      <Button className="flex-1 bg-blue-600 text-white rounded-xl h-12 uppercase font-bold text-[10px]" onClick={handleVerifyPassword}>Authorize Purge</Button>
+                   </div>
+                </div>
+              )}
+
+              {deleteStep === 3 && (
+                <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                   <div className="flex flex-col items-center text-center gap-6">
+                      <div className="p-6 bg-red-50 rounded-full animate-pulse"><AlertTriangle className="h-14 w-14 text-red-600" /></div>
+                      <div className="space-y-2">
+                         <h4 className="text-xl font-display font-black text-red-600 uppercase">Permanent Data Destruction</h4>
+                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed px-6">Warning: This action permanently deletes the selected record and cannot be undone.</p>
+                      </div>
+                   </div>
+                   <div className="flex gap-4 pt-4">
+                      <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                      <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl h-12 uppercase font-black text-[10px] tracking-widest shadow-xl shadow-red-600/20" onClick={handleFinalDelete}>Delete Permanently</Button>
+                   </div>
+                </div>
+              )}
+           </div>
+           
+           <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+              <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.5em]">Institutional Security Protocol v2.4</p>
+           </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

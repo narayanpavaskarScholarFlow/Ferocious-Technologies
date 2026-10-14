@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -127,16 +127,43 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
     creditLimit: '0',
   });
 
+  // PERFORMANCE OPTIMIZATION: Pre-calculate intelligence for all customers in one pass
+  // This prevents O(N^3) complexity in the table map.
+  const customerIntelMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    
+    // Create maps for faster lookup
+    const customerIdToName: Record<string, string> = {};
+    customers.forEach(c => customerIdToName[c.id] = c.name);
+
+    customers.forEach(customer => {
+      const cBilling = billing.filter(r => r.customerId === customer.id || r.customerName === customer.name);
+      const cOrders = orders.filter(o => o.customerId === customer.id || o.customer === customer.name);
+      
+      const poVal = cBilling.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
+      const invoiced = cBilling.filter(r => r.type === 'invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
+      const payments = cBilling.filter(r => r.type === 'inward_payment').reduce((acc, r) => acc + (r.amount || 0), 0);
+      const outstanding = invoiced - payments;
+      const quotes = cBilling.filter(r => r.type === 'quotation' && r.status === 'Pending').length;
+      const activeWO = cOrders.filter(o => ['Active', 'Production', 'Planning'].includes(o.status)).length;
+      
+      map[customer.id] = { poVal, outstanding, quotes, activeWO, invoiced, payments };
+    });
+
+    return map;
+  }, [customers, billing, orders]);
+
   const kpis = useMemo(() => {
     const active = customers.filter(c => c.status !== 'Closed').length;
     const inactive = customers.length - active;
+    
+    let totalOutstanding = 0;
+    Object.values(customerIntelMap).forEach(intel => totalOutstanding += intel.outstanding);
+    
     const totalPO = billing.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
-    const totalInvoiced = billing.filter(r => r.type === 'invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
-    const totalPayments = billing.filter(r => r.type === 'inward_payment').reduce((acc, r) => acc + (r.amount || 0), 0);
-    const outstanding = totalInvoiced - totalPayments;
 
-    return { total: customers.length, active, inactive, totalPO, outstanding };
-  }, [customers, billing]);
+    return { total: customers.length, active, inactive, totalPO, outstanding: totalOutstanding };
+  }, [customers, billing, customerIntelMap]);
 
   const filteredItems = useMemo(() => {
     return customers.filter(item => {
@@ -148,26 +175,12 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
     });
   }, [searchTerm, customers, activeFilter]);
 
-  const getCustomerIntelligence = (id: string) => {
-    const cBilling = billing.filter(r => r.customerId === id || r.customerName === customers.find(c => c.id === id)?.name);
-    const cOrders = orders.filter(o => o.customerId === id || o.customer === customers.find(c => c.id === id)?.name);
-    
-    const poVal = cBilling.filter(r => r.type === 'purchase_order').reduce((acc, r) => acc + (r.amount || 0), 0);
-    const invoiced = cBilling.filter(r => r.type === 'invoice').reduce((acc, r) => acc + (r.amount || 0), 0);
-    const payments = cBilling.filter(r => r.type === 'inward_payment').reduce((acc, r) => acc + (r.amount || 0), 0);
-    const outstanding = invoiced - payments;
-    const quotes = cBilling.filter(r => r.type === 'quotation' && r.status === 'Pending').length;
-    const activeWO = cOrders.filter(o => ['Active', 'Production', 'Planning'].includes(o.status)).length;
-    
-    return { poVal, outstanding, quotes, activeWO, invoiced, payments };
-  };
-
   const selectedCustomerData = useMemo(() => {
     if (!selectedCustomerId) return null;
     const base = customers.find(c => c.id === selectedCustomerId);
     if (!base) return null;
-    return { ...base, intel: getCustomerIntelligence(base.id) };
-  }, [selectedCustomerId, customers, billing, orders]);
+    return { ...base, intel: customerIntelMap[base.id] || { poVal: 0, outstanding: 0, quotes: 0, activeWO: 0, invoiced: 0, payments: 0 } };
+  }, [selectedCustomerId, customers, customerIntelMap]);
 
   const handleInputChange = (field: string, value: any) => {
     setNewIdentity(prev => ({ ...prev, [field]: value }));
@@ -197,11 +210,15 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
       status: 'Active'
     };
 
-    onSaveCustomer(baseData);
-    
-    toast({ title: "Customer Synchronized", description: `${newIdentity.name} has been saved.` });
-    setIsAddIdentityOpen(false); 
-    setEditingIdentityId(null);
+    try {
+      onSaveCustomer(baseData);
+      toast({ title: "Customer Synchronized", description: `${newIdentity.name} has been saved.` });
+      setIsAddIdentityOpen(false); 
+      setEditingIdentityId(null);
+    } catch (e) {
+      console.error("Save Protocol Failure:", e);
+      toast({ variant: "destructive", title: "Protocol Refused", description: "Failed to sync identity data." });
+    }
   };
 
   const handleOpenDelete = (customer: Customer) => {
@@ -214,11 +231,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
 
   const handleVerifyPassword = () => {
     if (!currentUser) {
-      toast({
-        variant: "destructive",
-        title: "Session Expired",
-        description: "Your session has expired. Please login again."
-      });
+      toast({ variant: "destructive", title: "Session Expired", description: "Please login again." });
       return;
     }
 
@@ -226,48 +239,30 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
     let isMatch = false;
 
     if (isMasterAdmin) {
-      // Default Master Admin Password Protocol
       isMatch = passwordAttempt === 'admin123';
     } else {
-      // Find the currently authenticated identity in the matrix
-      const activeUser = users.find(u => 
-        u.name === currentUser || u.email === currentUser || u.username === currentUser
-      );
-
+      const activeUser = users.find(u => u.name === currentUser || u.email === currentUser || u.username === currentUser);
       if (activeUser) {
         isMatch = passwordAttempt === activeUser.password || (!activeUser.password && passwordAttempt === 'user123');
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Session Protocol Error",
-          description: "Authenticated identity not found in matrix."
-        });
-        return;
       }
     }
 
-    if (isMatch) {
-      setDeleteStep(3);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Authentication Failed",
-        description: "Incorrect Password"
-      });
-    }
+    if (isMatch) setDeleteStep(3);
+    else toast({ variant: "destructive", title: "Authentication Failed", description: "Incorrect Password" });
   };
 
   const handleFinalDelete = () => {
     if (!customerToDelete) return;
-    
-    deleteDocumentNonBlocking(doc(db, 'customers', customerToDelete.id));
-    
-    // Audit Log Simulation
-    console.log(`[ERP_AUDIT_LOG] Node Purged: ${customerToDelete.name} (ID: ${customerToDelete.id}) Deleted By: ${currentUser} on ${new Date().toLocaleString()}`);
-    
-    toast({ title: "Customer deleted successfully.", description: `Node ${customerToDelete.id} purged from master ledger.` });
-    setIsDeleteDialogOpen(false);
-    setCustomerToDelete(null);
+    try {
+      deleteDocumentNonBlocking(doc(db, 'customers', customerToDelete.id));
+      toast({ title: "Customer deleted successfully." });
+      setIsDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+      setDeleteStep(1);
+    } catch (e) {
+      console.error("Purge Protocol Failure:", e);
+      toast({ variant: "destructive", title: "Purge Interrupted", description: "System failed to destroy node metadata." });
+    }
   };
 
   return (
@@ -302,7 +297,6 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
         </div>
       </header>
 
-      {/* KPI SUMMARY */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-1">
         {[
           { label: 'Total', val: kpis.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -346,7 +340,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
             </TableHeader>
             <TableBody>
               {filteredItems.map((item) => {
-                const intel = getCustomerIntelligence(item.id);
+                const intel = customerIntelMap[item.id] || { outstanding: 0 };
                 return (
                   <TableRow key={item.id} className="hover:bg-slate-50/50 border-slate-50 h-20 transition-all group">
                     <TableCell onClick={() => setSelectedCustomerId(item.id)} className="cursor-pointer px-8">
@@ -413,6 +407,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
         if (!open) {
           setShowDeletePassword(false);
           setPasswordAttempt('');
+          setDeleteStep(1);
         }
       }}>
         <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
@@ -514,7 +509,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
 
               <ScrollArea className="flex-1">
                  <div className="p-8 space-y-12">
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        <Card className="p-8 bg-slate-50 border-none shadow-inner rounded-3xl space-y-4">
                           <div className="flex items-center gap-3 text-primary"><DollarSign className="h-4 w-4" /><h4 className="text-[10px] font-black uppercase tracking-widest">Financial Standing</h4></div>
                           <div className="space-y-4">
@@ -533,7 +528,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
 
                     <div className="space-y-6">
                        <h3 className="text-xs font-bold uppercase tracking-widest text-[#001F3D] border-l-4 border-primary pl-4">Account Profile</h3>
-                       <div className="grid grid-cols-2 gap-8 bg-slate-50 p-8 rounded-3xl">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-3xl">
                           {[
                             { label: 'Contact Person', val: selectedCustomerData.contactPerson, icon: User },
                             { label: 'Mobile', val: selectedCustomerData.contactNumber, icon: Phone },

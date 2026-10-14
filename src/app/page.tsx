@@ -203,6 +203,39 @@ function IndustrialERPInternal() {
     setCurrentUser(null);
   }, []);
 
+  // Stabilize handlers to prevent unnecessary re-renders of data-heavy children
+  const handleSaveCustomer = useCallback((c: Customer) => {
+    setDocumentNonBlocking(doc(db, 'customers', c.id), c, { merge: true });
+  }, [db]);
+
+  const handleSaveVendor = useCallback((v: Vendor) => {
+    setDocumentNonBlocking(doc(db, 'vendors', v.id), v, { merge: true });
+  }, [db]);
+
+  const handleSaveRecord = useCallback((r: BillingRecord) => {
+    setDocumentNonBlocking(doc(db, 'billing', r.id), r, { merge: true });
+  }, [db]);
+
+  const handleDeleteRecord = useCallback((id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'billing', id));
+  }, [db]);
+
+  const handleSaveOrder = useCallback((o: Order) => {
+    setDocumentNonBlocking(doc(db, 'orders', o.id), o, { merge: true });
+  }, [db]);
+
+  const handleSaveItem = useCallback((i: InventoryItem) => {
+    setDocumentNonBlocking(doc(db, 'inventory', i.id), i, { merge: true });
+  }, [db]);
+
+  const handleSaveUser = useCallback((u: SystemUser) => {
+    setDocumentNonBlocking(doc(db, 'users', u.id), u, { merge: true });
+  }, [db]);
+
+  const handleDeleteUser = useCallback((id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'users', id));
+  }, [db]);
+
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('jayasimha_user');
@@ -300,30 +333,30 @@ function IndustrialERPInternal() {
                 {currentView === 'analytics' && <AnalyticsDashboard orders={orders || []} billing={billing || []} reports={reports || []} logs={logs || []} machines={machines || []} users={usersData || []} />}
                 {currentView === 'sqcdp' && <ShopFloorSQCDP orders={orders || []} reports={reports || []} logs={logs || []} users={usersData || []} assignments={assignments || []} />}
                 {currentView === 'activity' && <ActivityFeed orders={orders || []} billing={billing || []} reports={reports || []} assignments={assignments || []} users={usersData || []} logs={logs || []} leaves={leaves || []} currentUser={currentUser} />}
-                {currentView === 'financial-hub' && <FinancialHub currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} orders={orders || []} logs={logs || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
+                {currentView === 'financial-hub' && <FinancialHub currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} orders={orders || []} logs={logs || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} />}
                 {currentView === 'institutional-intelligence' && <InstitutionalIntelligence records={billing || []} customers={customers || []} orders={orders || []} logs={logs || []} />}
-                {currentView === 'operational-quick-links' && <OperationalQuickLinks currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} />}
-                {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} billing={billing || []} orders={orders || []} users={usersData || []} currentUser={currentUser} onSaveCustomer={(c)=>setDocumentNonBlocking(doc(db,'customers',c.id),c,{merge:true})} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
-                {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} billing={billing || []} orders={orders || []} machines={machines || []} onSaveVendor={(v)=>setDocumentNonBlocking(doc(db,'vendors',v.id),v,{merge:true})} />}
+                {currentView === 'operational-quick-links' && <OperationalQuickLinks currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} />}
+                {currentView === 'customer-master' && <CustomerOrders customers={customers || []} vendors={vendors || []} billing={billing || []} orders={orders || []} users={usersData || []} currentUser={currentUser} onSaveCustomer={handleSaveCustomer} onSaveVendor={handleSaveVendor} />}
+                {currentView === 'vendor-master' && <VendorManagement vendors={vendors || []} billing={billing || []} orders={orders || []} machines={machines || []} onSaveVendor={handleSaveVendor} />}
                 {currentView === 'product-master' && <ProductRegistry products={products || []} vendors={vendors || []} machines={machines || []} users={usersData || []} onSaveProduct={(p)=>setDocumentNonBlocking(doc(db,'products',p.id),p,{merge:true})} />}
-                {currentView === 'quotation' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="quotation" />}
-                {currentView === 'sale-invoice' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="invoice" />}
-                {currentView === 'purchase-order' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={(r)=>setDocumentNonBlocking(doc(db,'billing',r.id),r,{merge:true})} onDeleteRecord={(id)=>deleteDocumentNonBlocking(doc(db,'billing',id))} initialTab="purchase_order" />}
+                {currentView === 'quotation' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="quotation" />}
+                {currentView === 'sale-invoice' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="invoice" />}
+                {currentView === 'purchase-order' && <BillingManagement currentUser={currentUser} customers={customers || []} records={billing || []} products={products || []} onSaveRecord={handleSaveRecord} onDeleteRecord={handleDeleteRecord} initialTab="purchase_order" />}
                 {currentView === 'orders' && <ShopFloorOrders orders={orders || []} billing={billing || []} logs={logs || []} machines={machines || []} onNavigateToOrderDetails={(id) => { setSelectedOrderId(id); setCurrentView('order-details'); }} onNavigateToOperations={(id) => { setCurrentView('operations'); }} />}
-                {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders || []} customers={customers || []} staff={usersData || []} billing={billing || []} onBack={() => setCurrentView('orders')} onSave={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} uiSettings={uiSettings} />}
+                {currentView === 'order-details' && <OrderDetails orderId={selectedOrderId} orders={orders || []} customers={customers || []} staff={usersData || []} billing={billing || []} onBack={() => setCurrentView('orders')} onSave={handleSaveOrder} uiSettings={uiSettings} />}
                 {currentView === 'operations' && <OperationsStatus initialOrderId={selectedOrderId} orders={orders || []} users={usersData || []} machines={machines || []} />}
                 {currentView === 'production-planner' && <ProductionPlanner batches={[]} orders={orders || []} machines={machines || []} users={usersData || []} onSaveBatch={(b)=>setDocumentNonBlocking(doc(db,'production_batches',b.id),b,{merge:true})} onDeleteBatch={(id)=>deleteDocumentNonBlocking(doc(db,'production_batches',id))} />}
                 {currentView === 'gantt' && <ProductionGantt orders={orders || []} onNavigateToOperations={(id) => { setCurrentView('operations'); }} />}
                 {currentView === 'quality' && <QualityManagement orders={orders || []} users={usersData || []} vendors={vendors || []} permissions={permissions} />}
-                {currentView === 'delivery' && <DispatchLedger orders={orders || []} reports={reports || []} billing={billing || []} onSaveOrder={(o)=>setDocumentNonBlocking(doc(db,'orders',o.id),o,{merge:true})} />}
-                {currentView === 'inventory' && <InventoryManagement items={inventory || []} onSaveItem={(i)=>setDocumentNonBlocking(doc(db,'inventory',i.id),i,{merge:true})} />}
+                {currentView === 'delivery' && <DispatchLedger orders={orders || []} reports={reports || []} billing={billing || []} onSaveOrder={handleSaveOrder} />}
+                {currentView === 'inventory' && <InventoryManagement items={inventory || []} onSaveItem={handleSaveItem} />}
                 {currentView === 'work-log' && <WorkLogEntry logs={logs || []} machines={machines || []} users={usersData || []} orders={orders || []} currentUser={currentUser} onAddLog={(l)=>setDocumentNonBlocking(doc(db,'work_logs',l.id),l,{merge:true})} onDeleteLog={(id)=>deleteDocumentNonBlocking(doc(db,'work_logs',id))} />}
                 {currentView === 'machine-utilization' && <MachineUtilization machines={machines || []} orders={orders || []} onSaveMachine={(m)=>setDocumentNonBlocking(doc(db,'machines',m.id),m,{merge:true})} />}
                 {currentView === 'my-portal' && <PersonnelPortal currentUser={currentUserData} assignments={assignments || []} leaves={leaves || []} slips={slips || []} holidays={[]} users={usersData || []} onNavigateToLogs={() => setCurrentView('work-log')} />}
-                {currentView === 'hr' && <HRManagement users={usersData || []} trainings={[]} assignments={assignments || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onSaveTraining={(t)=>setDocumentNonBlocking(doc(db,'trainings',t.id),t,{merge:true})} onDeleteTraining={(id)=>deleteDocumentNonBlocking(doc(db,'trainings',id))} onSaveAssignment={(a)=>setDocumentNonBlocking(doc(db,'training_assignments',a.id),a,{merge:true})} onDeleteAssignment={(id)=>deleteDocumentNonBlocking(doc(db,'training_assignments',id))} currentUser={currentUser} />}
-                {currentView === 'users' && <UserManagement users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
-                {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData || []} onBack={() => setCurrentView('users')} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onVerifyPortal={(n)=>{ setCurrentUser(n); setCurrentView('my-portal'); }} />}
-                {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData || []} onSaveUser={(u)=>setDocumentNonBlocking(doc(db,'users',u.id),u,{merge:true})} onDeleteUser={(id)=>deleteDocumentNonBlocking(doc(db,'users',id))} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
+                {currentView === 'hr' && <HRManagement users={usersData || []} trainings={[]} assignments={assignments || []} onSaveUser={handleSaveUser} onSaveTraining={(t)=>setDocumentNonBlocking(doc(db,'trainings',t.id),t,{merge:true})} onDeleteTraining={(id)=>deleteDocumentNonBlocking(doc(db,'trainings',id))} onSaveAssignment={(a)=>setDocumentNonBlocking(doc(db,'training_assignments',a.id),a,{merge:true})} onDeleteAssignment={(id)=>deleteDocumentNonBlocking(doc(db,'training_assignments',id))} currentUser={currentUser} />}
+                {currentView === 'users' && <UserManagement users={usersData || []} onSaveUser={handleSaveUser} onDeleteUser={handleDeleteUser} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
+                {currentView === 'user-detail' && <UserDetailView userId={selectedDetailUserId} users={usersData || []} onBack={() => setCurrentView('users')} onSaveUser={handleSaveUser} onVerifyPortal={(n)=>{ setCurrentUser(n); setCurrentView('my-portal'); }} />}
+                {currentView === 'settings' && <ProfileSettings currentUser={currentUser} users={usersData || []} onSaveUser={handleSaveUser} onDeleteUser={handleDeleteUser} uiSettings={uiSettings} onUpdateUISettings={setUISettings} currentUserData={currentUserData} onNavigateToDetail={(id)=>{setSelectedDetailUserId(id); setCurrentView('user-detail');}} />}
                 {currentView === 'smart-quote' && <SmartQuotingAssistant machines={machines || []} />}
                 {currentView === 'strategy-hub' && <LoanProjectHub />}
                 {currentView === 'print-templates' && <DocumentTemplateManager />}

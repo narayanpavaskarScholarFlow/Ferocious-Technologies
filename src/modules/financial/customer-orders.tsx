@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -37,9 +38,13 @@ import {
   Contact,
   CreditCard,
   ClipboardList,
-  Edit2
+  Edit2,
+  Trash2,
+  AlertTriangle,
+  Lock,
+  Fingerprint
 } from 'lucide-react';
-import { Customer, Vendor, BillingRecord, Order } from '@/lib/types';
+import { Customer, Vendor, BillingRecord, Order, SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
   Dialog, 
@@ -47,6 +52,7 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { 
   Sheet, 
@@ -66,6 +72,8 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
+import { useFirestore, deleteDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const CUSTOMER_TYPES = [
   "OEM", "Corporate", "Dealer", "Government", "Service Customer"
@@ -76,11 +84,14 @@ interface CustomerOrdersProps {
   vendors: Vendor[];
   billing: BillingRecord[];
   orders: Order[];
+  users: SystemUser[];
+  currentUser: string | null;
   onSaveCustomer: (customer: Customer) => void;
   onSaveVendor: (vendor: Vendor) => void;
 }
 
-export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: CustomerOrdersProps) {
+export function CustomerOrders({ customers, billing, orders, users, currentUser, onSaveCustomer }: CustomerOrdersProps) {
+  const db = useFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -89,6 +100,12 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
   const [editingIdentityId, setEditingIdentityId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   
+  // Delete States
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
   const [newIdentity, setNewIdentity] = useState({
     name: '',
     gstNumber: '',
@@ -182,6 +199,42 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
     toast({ title: "Customer Synchronized", description: `${newIdentity.name} has been saved.` });
     setIsAddIdentityOpen(false); 
     setEditingIdentityId(null);
+  };
+
+  const handleOpenDelete = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteStep(1);
+    setPasswordAttempt('');
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleVerifyPassword = () => {
+    const activeUser = users.find(u => u.name === currentUser || u.email === currentUser);
+    if (!activeUser) {
+      toast({ variant: "destructive", title: "Session Protocol Error", description: "Authenticated identity not found in matrix." });
+      return;
+    }
+
+    const isMatch = passwordAttempt === activeUser.password || (!activeUser.password && passwordAttempt === 'admin123');
+
+    if (isMatch) {
+      setDeleteStep(3);
+    } else {
+      toast({ variant: "destructive", title: "Authentication Failed", description: "Authentication Failed. Incorrect Password." });
+    }
+  };
+
+  const handleFinalDelete = () => {
+    if (!customerToDelete) return;
+    
+    deleteDocumentNonBlocking(doc(db, 'customers', customerToDelete.id));
+    
+    // Audit Log Simulation
+    console.log(`[ERP_AUDIT_LOG] Node Purged: ${customerToDelete.name} (ID: ${customerToDelete.id}) Deleted By: ${currentUser} on ${new Date().toLocaleString()}`);
+    
+    toast({ title: "Customer deleted successfully.", description: `Node ${customerToDelete.id} purged from master ledger.` });
+    setIsDeleteDialogOpen(false);
+    setCustomerToDelete(null);
   };
 
   return (
@@ -299,6 +352,8 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
                              <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 px-4 gap-3 text-primary"><FileText className="h-4 w-4" /> Create Quotation</DropdownMenuItem>
                              <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 px-4 gap-3 text-primary"><ShoppingCart className="h-4 w-4" /> Create PO</DropdownMenuItem>
                              <DropdownMenuItem className="text-[10px] font-bold uppercase py-3 px-4 gap-3 text-primary"><Receipt className="h-4 w-4" /> Create Invoice</DropdownMenuItem>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => handleOpenDelete(item)} className="text-[10px] font-bold uppercase py-3 px-4 gap-3 text-red-600 focus:bg-red-50 focus:text-red-700"><Trash2 className="h-4 w-4" /> Delete Customer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -318,6 +373,79 @@ export function CustomerOrders({ customers, billing, orders, onSaveCustomer }: C
           </Table>
         </div>
       </Card>
+
+      {/* SECURE DELETE DIALOG */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
+           <DialogHeader className="p-8 bg-red-600 text-white flex flex-row items-center gap-4 shrink-0">
+              <div className="p-3 bg-white/20 rounded-xl"><Trash2 className="h-8 w-8" /></div>
+              <div>
+                 <DialogTitle className="text-2xl font-display font-black uppercase">Secure Purge Protocol</DialogTitle>
+                 <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Institutional Data Safety Gate</DialogDescription>
+              </div>
+           </DialogHeader>
+
+           <div className="p-10 space-y-10">
+              {deleteStep === 1 && (
+                <div className="space-y-6 animate-in fade-in duration-500">
+                   <p className="text-sm font-bold text-slate-700 leading-relaxed">Are you sure you want to delete this customer record from the master ledger?</p>
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Account Node</p>
+                      <h4 className="text-lg font-black text-[#001F3D] uppercase leading-tight">{customerToDelete?.name}</h4>
+                      <p className="text-xs font-code text-slate-400 font-bold uppercase">ID: {customerToDelete?.id}</p>
+                   </div>
+                   <div className="flex gap-4">
+                      <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setIsDeleteDialogOpen(false)}>Abort</Button>
+                      <Button className="flex-1 bg-[#001F3D] text-white rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setDeleteStep(2)}>Confirm Intent</Button>
+                   </div>
+                </div>
+              )}
+
+              {deleteStep === 2 && (
+                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                   <div className="flex items-center gap-4 p-5 bg-blue-50 border border-blue-100 rounded-2xl">
+                      <Fingerprint className="h-6 w-6 text-blue-600" />
+                      <p className="text-xs font-bold text-blue-700 uppercase leading-relaxed">Identity verification required. Enter your account password to authorize deletion.</p>
+                   </div>
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Authentication Key</Label>
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        className="h-14 bg-slate-50 border-none rounded-xl text-center font-bold text-lg shadow-inner"
+                        value={passwordAttempt}
+                        onChange={(e) => setPasswordAttempt(e.target.value)}
+                      />
+                   </div>
+                   <div className="flex gap-4">
+                      <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setDeleteStep(1)}>Back</Button>
+                      <Button className="flex-1 bg-blue-600 text-white rounded-xl h-12 uppercase font-bold text-[10px]" onClick={handleVerifyPassword}>Authorize Purge</Button>
+                   </div>
+                </div>
+              )}
+
+              {deleteStep === 3 && (
+                <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                   <div className="flex flex-col items-center text-center gap-6">
+                      <div className="p-6 bg-red-50 rounded-full animate-pulse"><AlertTriangle className="h-14 w-14 text-red-600" /></div>
+                      <div className="space-y-2">
+                         <h4 className="text-xl font-display font-black text-red-600 uppercase">Permanent Data Destruction</h4>
+                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed px-6">Warning: This action permanently deletes the selected customer record and cannot be undone.</p>
+                      </div>
+                   </div>
+                   <div className="flex gap-4 pt-4">
+                      <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                      <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl h-12 uppercase font-black text-[10px] tracking-widest shadow-xl shadow-red-600/20" onClick={handleFinalDelete}>Delete Permanently</Button>
+                   </div>
+                </div>
+              )}
+           </div>
+           
+           <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+              <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.5em]">Luminous Security Protocol v2.4</p>
+           </div>
+        </DialogContent>
+      </Dialog>
 
       {/* CUSTOMER DETAIL SIDE PANEL */}
       <Sheet open={!!selectedCustomerId} onOpenChange={(open) => !open && setSelectedCustomerId(null)}>

@@ -508,7 +508,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
 
       {/* SIMPLIFIED ONBOARDING DIALOG */}
       <Dialog open={isAddIdentityOpen} onOpenChange={setIsAddIdentityOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] bg-white p-0 overflow-hidden rounded-[2.5rem] flex flex-col">
+        <DialogContent className="max-w-4xl h-[92vh] bg-white p-0 overflow-hidden rounded-[2.5rem] flex flex-col gap-0 border-none">
           <DialogHeader className="p-8 bg-slate-50 border-b border-slate-100 flex flex-row justify-between items-center shrink-0">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white rounded-xl shadow-sm"><UserPlus className="h-6 w-6 text-[#001F3D]" /></div>
@@ -517,8 +517,8 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
             <Button variant="ghost" size="icon" onClick={() => setIsAddIdentityOpen(false)} className="rounded-full h-10 w-10 text-slate-300 hover:text-red-500"><X className="h-6 w-6" /></Button>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 p-10">
-            <div className="max-w-3xl mx-auto space-y-10">
+          <ScrollArea className="flex-1">
+            <div className="max-w-3xl mx-auto space-y-10 p-10">
                {/* IDENTITY NODE */}
                <div className="space-y-6">
                   <div className="flex items-center gap-3 border-l-4 border-primary pl-4"><h4 className="text-xs font-black uppercase text-slate-900 tracking-widest">Account Identity</h4></div>

@@ -77,6 +77,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { format, parseISO, isValid } from 'date-fns';
 
 /**
  * Utility to convert numerical currency to institutional words (Indian Format).
@@ -137,6 +138,35 @@ export function BillingManagement({
     setActiveTab(initialTab);
   }, [initialTab]);
 
+  // FINANCIAL YEAR HELPERS
+  const getFinancialYear = useCallback((dateStr: string) => {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    // FY starts April 1st
+    const startYear = month < 3 ? year - 1 : year;
+    const endYear = startYear + 1;
+    const startYearStr = startYear.toString().slice(-2);
+    const endYearStr = endYear.toString().slice(-2);
+    return `FY${startYearStr}-${endYearStr}`;
+  }, []);
+
+  const calculateNextQuotationNumber = useCallback((dateStr: string) => {
+    const fy = getFinancialYear(dateStr);
+    const prefix = `QUO/${fy}/`;
+    const sameFY = records.filter(r => r.type === 'quotation' && r.number?.startsWith(prefix));
+    
+    if (sameFY.length === 0) return `${prefix}0001`;
+    
+    const sequences = sameFY.map(r => {
+      const parts = r.number.split('/');
+      const lastPart = parts[parts.length - 1];
+      return parseInt(lastPart) || 0;
+    });
+    const max = Math.max(...sequences);
+    return `${prefix}${(max + 1).toString().padStart(4, '0')}`;
+  }, [records, getFinancialYear]);
+
   const [formData, setFormData] = useState<Partial<BillingRecord>>({
     id: '', 
     type: activeTab, 
@@ -174,6 +204,16 @@ export function BillingManagement({
     paymentMethod: 'Bank Transfer'
   });
 
+  // Re-calculate quotation number if date changes on a new record
+  useEffect(() => {
+    if (isRecordFormOpen && !formData.id?.startsWith('EXIST-') && formData.type === 'quotation' && formData.date) {
+      const nextNum = calculateNextQuotationNumber(formData.date);
+      if (nextNum !== formData.number) {
+        setFormData(prev => ({ ...prev, number: nextNum }));
+      }
+    }
+  }, [formData.date, formData.type, isRecordFormOpen, formData.id, formData.number, calculateNextQuotationNumber]);
+
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
       const isType = r.type === activeTab;
@@ -186,15 +226,20 @@ export function BillingManagement({
   const handleOpenForm = (type: string, record?: BillingRecord, readOnly = false) => {
     setViewOnly(readOnly);
     if (record) {
-      setFormData(record);
+      setFormData({ ...record, id: `EXIST-${record.id}` }); // Prefix to identify existing records
     } else {
+      const initialDate = new Date().toISOString().split('T')[0];
+      const initialNumber = type === 'quotation' 
+        ? calculateNextQuotationNumber(initialDate)
+        : `${type.substring(0, 3).toUpperCase()}-${(records.length + 1001)}`;
+
       setFormData({
-        id: `REC-${Date.now()}`, 
+        id: `NEW-${Date.now()}`, 
         type, 
         customerName: '', 
         customerId: '', 
-        date: new Date().toISOString().split('T')[0],
-        number: `${type.substring(0, 3).toUpperCase()}-${(records.length + 1001)}`, 
+        date: initialDate,
+        number: initialNumber, 
         status: 'Draft', 
         items: [{ id: '1', description: '', hsn: '', qty: 1, unit: 'Nos', price: 0, discount: 0, discountType: 'percentage', gstRate: 18, total: 0 }],
         subTotal: 0, 
@@ -308,31 +353,45 @@ export function BillingManagement({
       setFormData(prev => ({ ...prev, items: (prev.items || []).filter(i => i.id !== id) }));
     };
 
-    const handleSaveLocal = () => {
-      if (viewOnly) return;
-      if (!formData.customerId || !formData.number) {
-        toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Doc Number required." });
+    const handleSaveLocal = (shouldPrint: boolean = false) => {
+      if (viewOnly && !shouldPrint) {
+        setIsRecordFormOpen(false);
         return;
       }
-      const finalRecord = {
-        ...formData,
-        subTotal: totals.subTotal,
-        taxTotal: totals.taxTotal,
-        amount: totals.grandTotal,
-        roundOff: totals.roundOff,
-        updatedAt: new Date().toISOString()
-      } as BillingRecord;
-      onSaveRecord(finalRecord);
-      toast({ title: "Ledger Synchronized", description: `${formData.type} committed to master matrix.` });
-      setIsRecordFormOpen(false);
+      
+      if (!viewOnly) {
+        if (!formData.customerId || !formData.number) {
+          toast({ variant: "destructive", title: "Protocol Refused", description: "Identity and Doc Number required." });
+          return;
+        }
+        const finalRecord = {
+          ...formData,
+          id: formData.id?.startsWith('NEW-') ? formData.id.replace('NEW-', '') : formData.id?.replace('EXIST-', ''),
+          subTotal: totals.subTotal,
+          taxTotal: totals.taxTotal,
+          amount: totals.grandTotal,
+          roundOff: totals.roundOff,
+          updatedAt: new Date().toISOString()
+        } as BillingRecord;
+        onSaveRecord(finalRecord);
+      }
+
+      if (shouldPrint) {
+        toast({ title: "Synchronizing Print Matrix..." });
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      } else {
+        setIsRecordFormOpen(false);
+      }
     };
 
     const isProcurement = formData.type === 'purchase_invoice' || formData.type === 'purchase_order' || formData.type === 'outward_payment' || formData.type === 'job_work';
 
     return (
-      <div className="flex flex-col bg-slate-50 min-h-screen animate-in fade-in duration-500 font-body pb-20 overflow-x-hidden">
+      <div className="flex flex-col bg-slate-50 min-h-screen animate-in fade-in duration-500 font-body pb-20 overflow-x-hidden print:bg-white print:p-0">
         {/* ACTION BAR (Top Sticky) */}
-        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-8 h-20 flex items-center justify-between shadow-md">
+        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 px-8 h-20 flex items-center justify-between shadow-md no-print">
           <div className="flex items-center gap-6">
             <Button variant="ghost" size="icon" onClick={() => setIsRecordFormOpen(false)} className="rounded-full h-12 w-12 hover:bg-slate-100 transition-all group">
               <X className="h-6 w-6 text-slate-400 group-hover:text-red-500" />
@@ -348,218 +407,239 @@ export function BillingManagement({
           <div className="flex gap-4">
              <Button variant="outline" className="rounded-xl h-11 px-6 font-bold uppercase text-[9px] tracking-widest border-slate-200 bg-white text-slate-500 hover:bg-slate-50 gap-2"><Share2 className="h-3.5 w-3.5" /> Share</Button>
              <Button variant="outline" className="rounded-xl h-11 px-6 font-bold uppercase text-[9px] tracking-widest border-slate-200 bg-white text-slate-500 hover:bg-slate-50 gap-2"><Download className="h-3.5 w-3.5" /> PDF Matrix</Button>
-             <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={handleSaveLocal}>
+             <Button className="bg-[#10b981] hover:bg-emerald-600 text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={() => handleSaveLocal(true)}>
                <Printer className="h-4 w-4" /> {viewOnly ? 'Print Matrix' : 'Save & Print'}
              </Button>
              {!viewOnly && (
-               <Button className="bg-[#001F3D] hover:bg-black text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={handleSaveLocal}>
+               <Button className="bg-[#001F3D] hover:bg-black text-white h-11 px-10 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg flex gap-3 transition-all" onClick={() => handleSaveLocal(false)}>
                  <Save className="h-4 w-4" /> Commit Node
                </Button>
              )}
           </div>
         </div>
 
-        <div className="max-w-[1700px] mx-auto w-full p-8 space-y-12">
+        <div className="max-w-[1700px] mx-auto w-full p-8 space-y-12 print:p-0 print:max-w-none">
+          {/* PRINT-ONLY COMPANY HEADER */}
+          <div className="hidden print:flex justify-between items-start border-b-2 border-[#001F3D] pb-10 mb-10">
+             <div className="space-y-2">
+                <h1 className="text-4xl font-display font-black text-[#001F3D] uppercase tracking-tighter">FEROCIOUS TECH</h1>
+                <p className="text-xs font-bold text-primary uppercase tracking-[0.3em]">Precision Engineering & Tool Room Hub</p>
+                <div className="text-[10px] font-medium text-slate-500 max-w-sm">
+                   Plot No. 45, Phase II, Industrial Estate, Pune, MH 411026
+                </div>
+             </div>
+             <div className="text-right">
+                <h2 className="text-5xl font-display font-black text-[#001F3D] uppercase tracking-tight mb-4">{formData.type?.replace('_', ' ')}</h2>
+                <div className="space-y-1">
+                   <p className="text-xs font-bold uppercase text-slate-400">Node Identifier: <span className="text-[#001F3D]">{formData.number}</span></p>
+                   <p className="text-xs font-bold uppercase text-slate-400">Temporal Node: <span className="text-[#001F3D]">{formData.date}</span></p>
+                </div>
+             </div>
+          </div>
+
           {/* HEADER SECTION: Identity & Info */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="p-10 bg-white border-slate-200/60 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] rounded-[3rem] space-y-10 relative overflow-hidden group hover:border-primary/20 transition-all">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity"><Building2 className="h-24 w-24" /></div>
-                <div className="flex justify-between items-center px-1 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-2 print:gap-10">
+            <Card className="p-10 bg-white border-slate-200/60 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] rounded-[3rem] space-y-10 relative overflow-hidden group hover:border-primary/20 transition-all print:border-none print:shadow-none print:p-0">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity no-print"><Building2 className="h-24 w-24" /></div>
+                <div className="flex justify-between items-center px-1 relative z-10 no-print">
                    <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">{isProcurement ? 'Vendor' : 'Customer'} Matrix</h4>
                    <Badge variant="outline" className="border-slate-100 text-[9px] font-bold uppercase">Identity Node</Badge>
                 </div>
                 
                 <div className="space-y-6 relative z-10">
-                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
-                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Identify M/S.*</Label>
-                      <Select disabled={viewOnly} value={formData.customerId ?? ''} onValueChange={(id) => {
-                         const c = customers.find(x => x.id === id);
-                         if (!c) return;
-                         setFormData(prev => ({ 
-                           ...prev, 
-                           customerId: id, 
-                           customerName: c.name, 
-                           gstNumber: c.gstNumber || '', 
-                           panNumber: c.pan || '',
-                           contactPerson: c.contactPerson || '', 
-                           phoneNo: c.contactNumber || '', 
-                           address: c.address || '',
-                           shipTo: c.shippingAddress || c.address || '',
-                           placeOfSupply: c.city || ''
-                         }));
-                      }}>
-                         <SelectTrigger className="h-14 bg-slate-50/50 border-none rounded-2xl font-black uppercase text-xs shadow-inner focus:ring-primary/20">
-                            <SelectValue placeholder={`Select ${isProcurement ? 'Partner' : 'Account'}...`} />
-                         </SelectTrigger>
-                         <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
-                            {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-4 border-b border-slate-50 last:border-0">{c.name}</SelectItem>)}
-                         </SelectContent>
-                      </Select>
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 print:block print:space-y-1">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest print:text-[8px]">Identify M/S.*</Label>
+                      <div className="print:hidden">
+                        <Select disabled={viewOnly} value={formData.customerId ?? ''} onValueChange={(id) => {
+                          const c = customers.find(x => x.id === id);
+                          if (!c) return;
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            customerId: id, 
+                            customerName: c.name, 
+                            gstNumber: c.gstNumber || '', 
+                            panNumber: c.pan || '',
+                            contactPerson: c.contactPerson || '', 
+                            phoneNo: c.contactNumber || '', 
+                            address: c.address || '',
+                            shipTo: c.shippingAddress || c.address || '',
+                            placeOfSupply: c.city || ''
+                          }));
+                        }}>
+                          <SelectTrigger className="h-14 bg-slate-50/50 border-none rounded-2xl font-black uppercase text-xs shadow-inner focus:ring-primary/20">
+                              <SelectValue placeholder={`Select ${isProcurement ? 'Partner' : 'Account'}...`} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
+                              {customers.map(c => <SelectItem key={c.id} value={c.id} className="text-[10px] font-bold uppercase py-4 border-b border-slate-50 last:border-0">{c.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="hidden print:block text-sm font-black uppercase text-[#001F3D]">{formData.customerName || 'N/A'}</div>
                    </div>
 
-                   <div className="grid grid-cols-[140px_1fr] items-start gap-8">
-                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pt-3">Billing Base</Label>
-                      <Textarea className="min-h-[100px] bg-slate-50/30 border-none rounded-2xl text-xs font-bold leading-relaxed resize-none shadow-inner text-slate-600" value={formData.address ?? ''} readOnly placeholder="Identify node to load location matrix..." />
-                   </div>
-
-                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
-                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Tax Identity</Label>
-                      <div className="flex gap-4">
-                        <Input className="h-12 bg-slate-50/30 border-none rounded-xl font-black font-code text-xs uppercase text-primary text-center" value={formData.gstNumber ?? ''} placeholder="GSTIN" readOnly />
-                        <Input className="h-12 bg-slate-50/30 border-none rounded-xl font-black font-code text-xs uppercase text-primary text-center" value={formData.panNumber ?? ''} placeholder="PAN" readOnly />
+                   <div className="grid grid-cols-[140px_1fr] items-start gap-8 print:block print:space-y-1">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pt-3 print:text-[8px]">Billing Base</Label>
+                      <div className="min-h-[100px] bg-slate-50/30 border-none rounded-2xl text-xs font-bold leading-relaxed shadow-inner text-slate-600 print:bg-white print:text-slate-700 print:text-[10px] print:min-h-0 print:rounded-none print:shadow-none">
+                         {formData.address || 'Address information not initialized.'}
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 pt-6 border-t border-slate-50">
-                      <Label className="text-[11px] font-black text-primary uppercase tracking-[0.2em]">Supply Node*</Label>
-                      <Input readOnly={viewOnly} className="h-14 bg-primary/5 border-2 border-primary/20 rounded-2xl font-black uppercase text-xs text-primary shadow-sm text-center tracking-widest" value={formData.placeOfSupply ?? ''} onChange={(e)=>handleUpdateField('placeOfSupply', e.target.value)} placeholder="Identify Supply Origin..." />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 print:flex print:gap-10">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest print:hidden">Tax Identity</Label>
+                      <div className="flex gap-4">
+                        <div className="space-y-1">
+                          <span className="hidden print:block text-[8px] font-bold text-slate-400 uppercase">GSTIN</span>
+                          <Input className="h-12 bg-slate-50/30 border-none rounded-xl font-black font-code text-xs uppercase text-primary text-center print:bg-white print:text-left print:p-0 print:h-auto" value={formData.gstNumber ?? ''} placeholder="GSTIN" readOnly />
+                        </div>
+                        <div className="space-y-1">
+                           <span className="hidden print:block text-[8px] font-bold text-slate-400 uppercase">PAN</span>
+                           <Input className="h-12 bg-slate-50/30 border-none rounded-xl font-black font-code text-xs uppercase text-primary text-center print:bg-white print:text-left print:p-0 print:h-auto" value={formData.panNumber ?? ''} placeholder="PAN" readOnly />
+                        </div>
+                      </div>
                    </div>
                 </div>
             </Card>
 
-            <Card className="p-10 bg-white border-slate-200/60 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] rounded-[3rem] space-y-10 relative overflow-hidden group hover:border-primary/20 transition-all">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity"><Archive className="h-24 w-24" /></div>
-                <div className="flex justify-between items-center px-1 relative z-10">
+            <Card className="p-10 bg-white border-slate-200/60 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] rounded-[3rem] space-y-10 relative overflow-hidden group hover:border-primary/20 transition-all print:border-none print:shadow-none print:p-0">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity no-print"><Archive className="h-24 w-24" /></div>
+                <div className="flex justify-between items-center px-1 relative z-10 no-print">
                    <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Metadata Registry</h4>
                    <div className="flex items-center gap-2"><Clock className="h-3 w-3 text-slate-300" /><span className="text-[9px] font-bold text-slate-300 uppercase">Archive Link Active</span></div>
                 </div>
 
                 <div className="space-y-8 relative z-10">
-                   <div className="grid grid-cols-[140px_1fr_120px_1fr] items-center gap-x-8 gap-y-8">
-                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Doc. Identifier*</Label>
-                      <Input readOnly={viewOnly} className="h-14 bg-slate-900 border-none rounded-2xl font-black font-code text-center text-white shadow-xl text-lg" value={formData.number ?? ''} onChange={(e)=>handleUpdateField('number', e.target.value)} />
-                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Protocol Date*</Label>
-                      <DatePicker disabled={viewOnly} value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-14 rounded-2xl shadow-sm border-2 border-slate-100 bg-white" />
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 print:block print:space-y-1">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest print:text-[8px]">Doc. Identifier*</Label>
+                      <Input 
+                        readOnly={viewOnly || formData.type === 'quotation'} 
+                        className={cn(
+                          "h-14 bg-slate-900 border-none rounded-2xl font-black font-code text-center text-white shadow-xl text-lg print:bg-white print:text-[#001F3D] print:text-left print:h-auto print:p-0 print:rounded-none print:shadow-none",
+                          formData.type === 'quotation' && "bg-slate-800 opacity-80"
+                        )} 
+                        value={formData.number ?? ''} 
+                        onChange={(e)=>handleUpdateField('number', e.target.value)} 
+                      />
                    </div>
 
-                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 print:block print:space-y-1">
+                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest print:text-[8px]">Protocol Date*</Label>
+                      <div className="print:hidden">
+                        <DatePicker disabled={viewOnly} value={formData.date ?? ''} onChange={(val)=>setFormData(prev => ({...prev, date: val}))} className="h-14 rounded-2xl shadow-sm border-2 border-slate-100 bg-white" />
+                      </div>
+                      <div className="hidden print:block text-sm font-black text-[#001F3D]">{formData.date}</div>
+                   </div>
+
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 print:hidden">
                       <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Reference No.</Label>
                       <Input readOnly={viewOnly} className="h-12 bg-slate-50/50 border-none rounded-xl font-black text-xs px-6 shadow-inner" value={formData.referenceNumber ?? ''} onChange={(e)=>handleUpdateField('referenceNumber', e.target.value)} placeholder="PO/Quotation Reference..." />
                    </div>
 
-                   <div className="grid grid-cols-[140px_1fr] items-center gap-8">
-                      <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Created By</Label>
-                      <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
-                         <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">{currentUser?.charAt(0)}</div>
-                         <div className="flex flex-col"><span className="text-xs font-black uppercase text-slate-700">{currentUser}</span><span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Authenticated Personnel</span></div>
+                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 print:block print:space-y-1">
+                      <Label className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest print:text-[8px]">Settlement Path</Label>
+                      <div className="print:hidden">
+                        <Select disabled={viewOnly} value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
+                          <SelectTrigger className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-black uppercase text-xs shadow-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="Bank Transfer" className="font-bold text-[10px] uppercase py-3">BANK_TRANSFER_PROTOCOL</SelectItem>
+                            <SelectItem value="Cash" className="font-bold text-[10px] uppercase py-3">INTERNAL_CASH_SETTLEMENT</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                   </div>
-
-                   <div className="grid grid-cols-[140px_1fr] items-center gap-8 pt-8 border-t border-slate-50">
-                      <Label className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Settlement Path</Label>
-                      <Select disabled={viewOnly} value={formData.paymentMethod ?? 'Bank Transfer'} onValueChange={(v)=>handleUpdateField('paymentMethod', v)}>
-                        <SelectTrigger className="h-14 bg-white border-2 border-slate-100 rounded-2xl font-black uppercase text-xs shadow-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                           <SelectItem value="Bank Transfer" className="font-bold text-[10px] uppercase py-3">BANK_TRANSFER_PROTOCOL</SelectItem>
-                           <SelectItem value="Cash" className="font-bold text-[10px] uppercase py-3">INTERNAL_CASH_SETTLEMENT</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="hidden print:block text-xs font-bold text-slate-700">{formData.paymentMethod || 'Bank Transfer'}</div>
                    </div>
                 </div>
             </Card>
           </div>
 
           {/* STEP 02: EXECUTION MATRIX (GRID) */}
-          <div className="space-y-6 pt-12">
-            <div className="flex items-center justify-between border-l-4 border-[#10b981] pl-6">
+          <div className="space-y-6 pt-12 print:pt-6">
+            <div className="flex items-center justify-between border-l-4 border-[#10b981] pl-6 print:border-none print:pl-0">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 shadow-xl shadow-emerald-500/10"><Box className="h-6 w-6" /></div>
+                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 shadow-xl shadow-emerald-500/10 no-print"><Box className="h-6 w-6" /></div>
                 <div>
-                   <h3 className="text-xl font-display font-black text-[#001F3D] uppercase tracking-tight">Step 02: Execution Matrix</h3>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">High-Fidelity Document Detail Registry</p>
+                   <h3 className="text-xl font-display font-black text-[#001F3D] uppercase tracking-tight print:text-xs">Execution Matrix</h3>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 print:hidden">Document Line Items & Technical Specs</p>
                 </div>
               </div>
               {!viewOnly && (
-                <Button variant="outline" size="sm" onClick={addRow} className="h-11 rounded-2xl font-black uppercase text-[10px] tracking-widest gap-2 bg-white border-2 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm">
+                <Button variant="outline" size="sm" onClick={addRow} className="h-11 rounded-2xl font-black uppercase text-[10px] tracking-widest gap-2 bg-white border-2 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm no-print">
                   <Plus className="h-4 w-4" /> Append Matrix Node
                 </Button>
               )}
             </div>
 
-            <Card className="bg-white border-slate-200 shadow-2xl rounded-[3rem] overflow-hidden">
+            <Card className="bg-white border-slate-200 shadow-2xl rounded-[3rem] overflow-hidden print:border-none print:shadow-none print:rounded-none">
                <div className="overflow-x-auto">
-                 <Table className="min-w-[1700px]">
-                   <TableHeader className="bg-slate-50/80 sticky top-0 z-20">
+                 <Table className="min-w-[1700px] print:min-w-full">
+                   <TableHeader className="bg-slate-50/80 sticky top-0 z-20 print:bg-slate-100">
                       <TableRow className="hover:bg-transparent border-b-2 border-slate-200">
-                        <TableHead className="px-6 py-6 text-[10px] font-black uppercase w-16 text-center border-r border-slate-100 text-[#001F3D]">SR.</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase min-w-[500px] border-r border-slate-100 text-[#001F3D]">DOCUMENT CONTENT / TECHNICAL LINE ITEMS</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-36 text-center border-r border-slate-100 text-[#001F3D]">HSN/SAC CODE</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-28 text-center border-r border-slate-100 text-[#001F3D]">QTY.</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-28 text-center border-r border-slate-100 text-[#001F3D]">UOM</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-48 text-center border-r border-slate-100 text-[#001F3D]">UNIT PRICE (₹)</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-48 text-center border-r border-slate-100 text-[#001F3D]">DISCOUNT %</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-32 text-center border-r border-slate-100 text-[#001F3D]">IGST %</TableHead>
-                        <TableHead className="text-right px-10 text-[10px] font-black uppercase w-56 text-primary">VALUATION (₹)</TableHead>
-                        <TableHead className="w-16"></TableHead>
+                        <TableHead className="px-6 py-6 text-[10px] font-black uppercase w-16 text-center border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">SR.</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase min-w-[500px] border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">DOCUMENT CONTENT / TECHNICAL LINE ITEMS</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-36 text-center border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">HSN CODE</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-28 text-center border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">QTY.</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-28 text-center border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">UOM</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-48 text-center border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">UNIT PRICE (₹)</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-32 text-center border-r border-slate-100 text-[#001F3D] print:py-3 print:text-[8px]">IGST %</TableHead>
+                        <TableHead className="text-right px-10 text-[10px] font-black uppercase w-56 text-primary print:py-3 print:text-[8px] print:px-4">VALUATION (₹)</TableHead>
+                        <TableHead className="w-16 no-print"></TableHead>
                       </TableRow>
                    </TableHeader>
                    <TableBody>
                       {(formData.items || []).map((item, idx) => (
-                        <TableRow key={item.id} className="h-32 border-b border-slate-100 hover:bg-slate-50/30 transition-colors group">
-                           <TableCell className="text-center font-display font-black text-slate-300 border-r border-slate-50 group-hover:text-primary transition-colors">{idx + 1}</TableCell>
-                           <TableCell className="border-r border-slate-50 p-0 relative">
-                              <div className="flex flex-col h-full bg-white group-hover:bg-transparent transition-colors">
-                                <Select disabled={viewOnly} value={item.productId ?? ''} onValueChange={(pId) => {
-                                   const p = products.find(x => x.id === pId);
-                                   if (!p) return;
-                                   handleUpdateItem(idx, 'description', p.name);
-                                   handleUpdateItem(idx, 'productId', pId);
-                                   handleUpdateItem(idx, 'hsn', p.hsn);
-                                   handleUpdateItem(idx, 'price', p.saleRate);
-                                   handleUpdateItem(idx, 'unit', p.uom);
-                                   handleUpdateItem(idx, 'gstRate', p.gstRate);
-                                }}>
-                                   <SelectTrigger className="border-none bg-transparent h-14 font-black uppercase text-[15px] focus:ring-0 shadow-none px-8 text-[#001F3D] tracking-tight group-hover:pl-10 transition-all">
-                                      <SelectValue placeholder="Identify Product/Process Node..." />
-                                   </SelectTrigger>
-                                   <SelectContent className="rounded-2xl shadow-2xl border-slate-100 min-w-[400px]">
-                                      {products.map(p => (
-                                        <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase py-4 border-b border-slate-50 last:border-0">
-                                           <div className="flex flex-col gap-1">
-                                              <span className="text-slate-900">{p.name}</span>
-                                              <span className="text-[8px] text-slate-400 font-code tracking-widest">{p.code} • HSN: {p.hsn}</span>
-                                           </div>
-                                        </SelectItem>
-                                      ))}
-                                   </SelectContent>
-                                </Select>
-                                <div className="px-8 pb-4">
-                                   <Textarea readOnly={viewOnly} placeholder="Node-specific technical observations..." className="h-16 bg-slate-50/50 border-none text-[10px] rounded-2xl font-medium resize-none shadow-inner focus-visible:ring-primary/20 placeholder:text-slate-300" value={item.note ?? ''} onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} />
+                        <TableRow key={item.id} className="h-32 border-b border-slate-100 hover:bg-slate-50/30 transition-colors group print:h-auto">
+                           <TableCell className="text-center font-display font-black text-slate-300 border-r border-slate-50 group-hover:text-primary transition-colors print:text-[#001F3D] print:text-xs print:py-4">{idx + 1}</TableCell>
+                           <TableCell className="border-r border-slate-50 p-0 relative print:p-4">
+                              <div className="flex flex-col h-full bg-white group-hover:bg-transparent transition-colors print:space-y-1">
+                                <div className="print:hidden">
+                                  <Select disabled={viewOnly} value={item.productId ?? ''} onValueChange={(pId) => {
+                                    const p = products.find(x => x.id === pId);
+                                    if (!p) return;
+                                    handleUpdateItem(idx, 'description', p.name);
+                                    handleUpdateItem(idx, 'productId', pId);
+                                    handleUpdateItem(idx, 'hsn', p.hsn);
+                                    handleUpdateItem(idx, 'price', p.saleRate);
+                                    handleUpdateItem(idx, 'unit', p.uom);
+                                    handleUpdateItem(idx, 'gstRate', p.gstRate);
+                                  }}>
+                                    <SelectTrigger className="border-none bg-transparent h-14 font-black uppercase text-[15px] focus:ring-0 shadow-none px-8 text-[#001F3D] tracking-tight group-hover:pl-10 transition-all">
+                                        <SelectValue placeholder="Identify Product/Process Node..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl shadow-2xl border-slate-100 min-w-[400px]">
+                                        {products.map(p => (
+                                          <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase py-4 border-b border-slate-50 last:border-0">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-slate-900">{p.name}</span>
+                                                <span className="text-[8px] text-slate-400 font-code tracking-widest">{p.code} • HSN: {p.hsn}</span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="hidden print:block text-sm font-black uppercase text-[#001F3D]">{item.description}</div>
+                                <div className="px-8 pb-4 print:p-0">
+                                   <Textarea readOnly={viewOnly} placeholder="Node-specific notes..." className="h-16 bg-slate-50/50 border-none text-[10px] rounded-2xl font-medium resize-none shadow-inner focus-visible:ring-primary/20 print:bg-white print:h-auto print:p-0 print:text-[8px]" value={item.note ?? ''} onChange={(e) => handleUpdateItem(idx, 'note', e.target.value)} />
                                 </div>
                               </div>
                            </TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} className="h-12 bg-slate-50 border-none rounded-xl text-center font-code font-bold text-[11px] text-slate-500 uppercase" value={item.hsn ?? ''} onChange={(e)=>handleUpdateItem(idx, 'hsn', e.target.value)} /></TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-base text-[#001F3D]" value={item.qty ?? ''} onChange={(e) => handleUpdateItem(idx, 'qty', Number(e.target.value))} /></TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-[11px] uppercase text-slate-400" value={item.unit ?? ''} onChange={(e)=>handleUpdateItem(idx, 'unit', e.target.value)} /></TableCell>
-                           <TableCell className="border-r border-slate-50 p-4">
-                              <div className="relative">
-                                 <Input readOnly={viewOnly} type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-display font-black text-base w-full pl-6 text-[#001F3D]" value={item.price ?? ''} onChange={(e) => handleUpdateItem(idx, 'price', Number(e.target.value))} />
-                                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300">₹</span>
-                              </div>
-                           </TableCell>
-                           <TableCell className="border-r border-slate-50 p-4"><Input readOnly={viewOnly} type="number" className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-xs" value={item.discount ?? ''} onChange={(e) => handleUpdateItem(idx, 'discount', Number(e.target.value))} /></TableCell>
-                           <TableCell className="border-r border-slate-50 p-4">
-                              <Select disabled={viewOnly} value={(item.gstRate ?? 18).toString()} onValueChange={(v)=>handleUpdateItem(idx, 'gstRate', Number(v))}>
-                                 <SelectTrigger className="bg-slate-50 border-none h-12 rounded-xl text-center font-black text-[11px] shadow-none focus:ring-primary/20"><SelectValue /></SelectTrigger>
-                                 <SelectContent className="rounded-xl shadow-xl border-slate-100">
-                                   {[0, 5, 12, 18, 28].map(r => <SelectItem key={r} value={r.toString()} className="font-bold text-[10px] py-2">{r}%</SelectItem>)}
-                                 </SelectContent>
-                              </Select>
-                           </TableCell>
-                           <TableCell className="text-right px-10 font-display font-black text-[#001F3D] text-lg bg-slate-50/30 group-hover:bg-transparent transition-all">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                           <TableCell className="text-center px-4"><Button disabled={viewOnly} variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100" onClick={() => removeRow(item.id)}><Trash2 className="h-5 w-5" /></Button></TableCell>
+                           <TableCell className="border-r border-slate-50 p-4 print:text-center print:text-xs font-code">{item.hsn || '---'}</TableCell>
+                           <TableCell className="border-r border-slate-50 p-4 text-center font-black print:text-xs">{item.qty}</TableCell>
+                           <TableCell className="border-r border-slate-50 p-4 text-center font-black uppercase text-slate-400 print:text-xs">{item.unit}</TableCell>
+                           <TableCell className="border-r border-slate-50 p-4 text-center font-display font-black print:text-xs">₹ {item.price?.toLocaleString()}</TableCell>
+                           <TableCell className="border-r border-slate-50 p-4 text-center font-black print:text-xs">{item.gstRate}%</TableCell>
+                           <TableCell className="text-right px-10 font-display font-black text-[#001F3D] text-lg bg-slate-50/30 group-hover:bg-transparent transition-all print:bg-white print:text-xs print:px-4">₹ {(item.total ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                           <TableCell className="text-center px-4 no-print"><Button disabled={viewOnly} variant="ghost" size="icon" className="h-10 w-10 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100" onClick={() => removeRow(item.id)}><Trash2 className="h-5 w-5" /></Button></TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="bg-[#FFF9C4] hover:bg-[#FFF9C4] border-t-4 border-[#001F3D]">
-                         <TableCell colSpan={2} className="px-10 py-8 text-right font-black text-[11px] uppercase text-[#001F3D] border-r border-[#001F3D]/10 tracking-widest leading-none">Total Document Yield Matrix</TableCell>
+                      <TableRow className="bg-[#FFF9C4] hover:bg-[#FFF9C4] border-t-4 border-[#001F3D] print:bg-slate-50 print:border-t-2">
+                         <TableCell colSpan={2} className="px-10 py-8 text-right font-black text-[11px] uppercase text-[#001F3D] border-r border-[#001F3D]/10 tracking-widest leading-none print:py-4 print:text-[9px]">Aggregate Matrix Yield</TableCell>
                          <TableCell className="border-r border-[#001F3D]/10"></TableCell>
-                         <TableCell className="text-center font-display font-black text-xl border-r border-[#001F3D]/10 text-[#001F3D]">{(formData.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
-                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
-                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="text-center font-display font-black text-xl border-r border-[#001F3D]/10 text-[#001F3D] print:text-sm">{(formData.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</TableCell>
                          <TableCell className="border-r border-[#001F3D]/10"></TableCell>
                          <TableCell className="border-r border-[#001F3D]/10"></TableCell>
-                         <TableCell className="text-right px-10 font-display font-black text-3xl text-[#001F3D]">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                         <TableCell></TableCell>
+                         <TableCell className="border-r border-[#001F3D]/10"></TableCell>
+                         <TableCell className="text-right px-10 font-display font-black text-3xl text-[#001F3D] print:text-lg print:px-4">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                         <TableCell className="no-print"></TableCell>
                       </TableRow>
                    </TableBody>
                  </Table>
@@ -567,84 +647,77 @@ export function BillingManagement({
             </Card>
 
             {/* BOTTOM SECTION: SETTLEMENT & TERMS */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-12">
-               <div className="lg:col-span-7 space-y-10">
-                  <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] space-y-10 relative overflow-hidden group">
-                     <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity"><ClipboardList className="h-24 w-24" /></div>
-                     <div className="flex items-center gap-3 border-l-4 border-[#001F3D] pl-6 relative z-10"><h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Commercial Terms Protocol</h4></div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-12 print:grid-cols-2 print:gap-10">
+               <div className="lg:col-span-7 space-y-10 print:col-span-1 print:space-y-6">
+                  <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] space-y-10 relative overflow-hidden group print:p-0 print:border-none print:shadow-none">
+                     <div className="flex items-center gap-3 border-l-4 border-[#001F3D] pl-6 relative z-10 print:pl-2"><h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em] print:text-[8px]">Terms & Conditions</h4></div>
                      <div className="space-y-6 relative z-10">
-                        <Textarea readOnly={viewOnly} className="min-h-[160px] bg-slate-50/50 border-none rounded-2xl text-[13px] font-bold leading-relaxed shadow-inner p-8 text-slate-600" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
+                        <Textarea readOnly={viewOnly} className="min-h-[160px] bg-slate-50/50 border-none rounded-2xl text-[13px] font-bold leading-relaxed shadow-inner p-8 text-slate-600 print:bg-white print:p-0 print:text-[10px] print:min-h-0" value={formData.terms ?? ""} onChange={(e)=>handleUpdateField('terms', e.target.value)} />
                      </div>
                   </Card>
 
-                  <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] relative overflow-hidden group">
+                  <Card className="p-10 bg-white border-slate-200/60 shadow-xl rounded-[3rem] relative overflow-hidden group no-print">
                      <div className="flex items-center gap-3 border-l-4 border-rose-500 pl-6 mb-8 relative z-10"><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Internal Audit Logs</h4></div>
                      <div className="space-y-4 relative z-10">
-                        <Textarea readOnly={viewOnly} className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-xs font-medium italic shadow-inner p-6" placeholder="Restricted visibility: Management audit trail node..." value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
-                        <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest flex items-center gap-2 animate-pulse"><ShieldAlert className="h-3 w-3" /> System Warning: Internal notes are purged from official print output.</p>
+                        <Textarea readOnly={viewOnly} className="min-h-[100px] bg-slate-50/50 border-none rounded-2xl text-xs font-medium italic shadow-inner p-6" placeholder="Restricted visibility node..." value={formData.note ?? ""} onChange={(e)=>handleUpdateField('note', e.target.value)} />
                      </div>
                   </Card>
                </div>
 
-               <div className="lg:col-span-5">
-                  <Card className="p-10 bg-white border-slate-200/80 shadow-[0_48px_96px_-24px_rgba(0,0,0,0.1)] rounded-[4rem] space-y-8 relative overflow-hidden border-t-8 border-t-[#001F3D]">
-                     <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><Calculator className="h-32 w-32" /></div>
+               <div className="lg:col-span-5 print:col-span-1">
+                  <Card className="p-10 bg-white border-slate-200/80 shadow-[0_48px_96px_-24px_rgba(0,0,0,0.1)] rounded-[4rem] space-y-8 relative overflow-hidden border-t-8 border-t-[#001F3D] print:p-0 print:border-none print:shadow-none">
                      <div className="space-y-8 relative z-10">
-                        <div className="flex justify-between items-center px-4">
-                           <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Base Valuation Baseline</span>
-                           <span className="text-xl font-display font-black text-[#001F3D]">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <div className="flex justify-between items-center px-4 print:px-0">
+                           <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest print:text-[8px]">Base Valuation</span>
+                           <span className="text-xl font-display font-black text-[#001F3D] print:text-sm">₹ {totals.subTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         
-                        <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6 border border-slate-100 shadow-inner">
+                        <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6 border border-slate-100 shadow-inner print:p-4 print:bg-white print:rounded-none print:border-y-2 print:space-y-3">
                            <div className="flex justify-between items-center group">
-                             <Label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2"><Truck className="h-4 w-4" /> Logistics/Addl (₹)</Label>
-                             <Input readOnly={viewOnly} type="number" className="w-44 h-12 text-right font-black border-2 border-transparent bg-white rounded-xl shadow-sm focus:border-emerald-500 transition-all text-lg text-[#001F3D]" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
+                             <Label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2 print:text-[8px]"><Truck className="h-4 w-4 no-print" /> Addl Charges (₹)</Label>
+                             <div className="print:hidden">
+                                <Input readOnly={viewOnly} type="number" className="w-44 h-12 text-right font-black border-2 border-transparent bg-white rounded-xl shadow-sm focus:border-emerald-500 transition-all text-lg text-[#001F3D]" value={formData.transportationCharges ?? 0} onChange={(e) => handleUpdateField('transportationCharges', Number(e.target.value))} />
+                             </div>
+                             <span className="hidden print:block text-xs font-black text-[#001F3D]">₹ {totals.extraCharges.toLocaleString()}</span>
                            </div>
                            
-                           <div className="flex justify-between items-center"><span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Aggregate Tax (IGST)</span><span className="text-base font-display font-black text-slate-900">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+                           <div className="flex justify-between items-center"><span className="text-[11px] font-black text-slate-500 uppercase tracking-widest print:text-[8px]">Aggregate Tax</span><span className="text-base font-display font-black text-slate-900 print:text-xs">₹ {totals.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
                            
-                           <div className="h-[1px] bg-slate-200/50 w-full" />
-
-                           <div className="flex items-center gap-4">
-                              <div className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl px-6 flex items-center justify-between shadow-sm hover:border-primary/30 transition-all">
-                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">TCS Protocol (%)</span>
-                                 <Input readOnly={viewOnly} type="number" className="w-24 border-none bg-transparent h-10 text-right font-black text-lg text-[#001F3D] focus-visible:ring-0 shadow-none" value={formData.tcsRate ?? 0} onChange={(e)=>handleUpdateField('tcsRate', Number(e.target.value))} />
-                              </div>
-                           </div>
-
-                           <div className="flex items-center gap-4">
-                              <div className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl px-6 flex items-center justify-between shadow-sm hover:border-primary/30 transition-all">
-                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Matrix Discount</span>
-                                 <div className="flex items-center gap-2">
-                                    <Input readOnly={viewOnly} type="number" className="w-32 border-none bg-transparent h-10 text-right font-black text-lg text-rose-500 focus-visible:ring-0 shadow-none" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
-                                    <span className="text-[11px] font-black text-slate-200">₹</span>
-                                 </div>
-                              </div>
+                           <div className="flex items-center justify-between no-print">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Discount (₹)</span>
+                              <Input readOnly={viewOnly} type="number" className="w-32 border-none bg-white h-10 text-right font-black text-lg text-rose-500 rounded-xl" value={formData.discountTotal ?? 0} onChange={(e)=>handleUpdateField('discountTotal', Number(e.target.value))} />
                            </div>
                         </div>
 
-                        <div className="flex justify-between items-center py-4 px-6 border-y border-slate-100 group">
-                           <div className="flex items-center gap-4">
-                              <span className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest">Round-Off Protocol</span>
-                              <Switch disabled={viewOnly} checked={formData.isRoundOffActive} onCheckedChange={(v)=>handleUpdateField('isRoundOffActive', v)} className="data-[state=checked]:bg-emerald-500" />
-                           </div>
-                           <span className="text-sm font-display font-black text-slate-400 italic">₹ {totals.roundOff.toFixed(2)}</span>
+                        <div className="flex justify-between items-center py-4 px-6 border-y border-slate-100 print:py-2 print:px-0">
+                           <span className="text-[11px] font-black text-[#001F3D] uppercase tracking-widest print:text-[9px]">Institutional Net Value</span>
+                           <span className="text-4xl font-display font-black text-[#001F3D] print:text-xl">₹ {totals.grandTotal.toLocaleString()}</span>
                         </div>
                         
-                        <div className="bg-[#FFFDE7] p-10 -mx-10 border-y-2 border-[#001F3D] flex flex-col items-center gap-3 shadow-2xl relative">
-                           <span className="text-[11px] font-black uppercase text-[#001F3D]/60 tracking-[0.6em]">Institutional Net Value</span>
-                           <span className="text-7xl font-display font-black text-[#001F3D] tracking-tighter drop-shadow-md">₹ {totals.grandTotal.toLocaleString()}</span>
-                        </div>
-                        
-                        <div className="pt-10 space-y-8">
-                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] text-center">Formal Transcription Protocol</p>
-                           <div className="p-8 bg-slate-900 rounded-[2.5rem] flex flex-col items-center gap-3 border border-white/5 shadow-2xl transition-all transform hover:scale-[1.02]">
-                              <p className="text-[12px] font-black text-emerald-400 uppercase leading-relaxed text-center tracking-tight px-4">{numberToWords(totals.grandTotal)}</p>
-                              <div className="h-1 w-16 bg-white/10 rounded-full" />
+                        <div className="pt-10 space-y-6 print:pt-4">
+                           <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] text-center print:text-left print:text-[7px]">Transcription Protocol</p>
+                           <div className="p-8 bg-slate-900 rounded-[2.5rem] text-center print:p-0 print:bg-white">
+                              <p className="text-[12px] font-black text-emerald-400 uppercase leading-relaxed print:text-[#001F3D] print:text-left print:text-[10px]">{numberToWords(totals.grandTotal)}</p>
                            </div>
                         </div>
                      </div>
                   </Card>
+
+                  {/* SIGNATURE SECTION (PRINT ONLY) */}
+                  <div className="hidden print:block mt-20 pt-10 border-t-2 border-slate-100">
+                     <div className="flex justify-between items-end">
+                        <div className="space-y-8">
+                           <div className="h-16 w-32 border-2 border-dashed border-slate-100 flex items-center justify-center">
+                              <span className="text-[8px] font-bold text-slate-200 uppercase tracking-widest">STAMP_NODE</span>
+                           </div>
+                           <p className="text-[10px] font-black uppercase text-[#001F3D]">Authorized Signatory</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-4">Verification Matrix Sync v2.4</p>
+                           <div className="h-1 w-40 bg-slate-100 rounded-full ml-auto" />
+                        </div>
+                     </div>
+                  </div>
                </div>
             </div>
           </div>

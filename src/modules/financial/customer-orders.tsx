@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -212,18 +213,47 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
   };
 
   const handleVerifyPassword = () => {
-    const activeUser = users.find(u => u.name === currentUser || u.email === currentUser);
-    if (!activeUser) {
-      toast({ variant: "destructive", title: "Session Protocol Error", description: "Authenticated identity not found in matrix." });
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please login again."
+      });
       return;
     }
 
-    const isMatch = passwordAttempt === activeUser.password || (!activeUser.password && passwordAttempt === 'admin123');
+    const isMasterAdmin = currentUser.toLowerCase() === 'master admin';
+    let isMatch = false;
+
+    if (isMasterAdmin) {
+      // Default Master Admin Password Protocol
+      isMatch = passwordAttempt === 'admin123';
+    } else {
+      // Find the currently authenticated identity in the matrix
+      const activeUser = users.find(u => 
+        u.name === currentUser || u.email === currentUser || u.username === currentUser
+      );
+
+      if (activeUser) {
+        isMatch = passwordAttempt === activeUser.password || (!activeUser.password && passwordAttempt === 'user123');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Session Protocol Error",
+          description: "Authenticated identity not found in matrix."
+        });
+        return;
+      }
+    }
 
     if (isMatch) {
       setDeleteStep(3);
     } else {
-      toast({ variant: "destructive", title: "Authentication Failed", description: "Authentication Failed. Incorrect Password." });
+      toast({
+        variant: "destructive",
+        title: "Authentication Failed",
+        description: "Incorrect Password"
+      });
     }
   };
 
@@ -242,7 +272,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 font-body">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 px-2">
+      <header className="flex flex-col lg:flex-row justify-between items-center gap-6 px-2">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3 text-primary font-bold text-[9px] uppercase tracking-[0.3em]">
             <Target className="h-4 w-4" />

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -42,7 +41,9 @@ import {
   Trash2,
   AlertTriangle,
   Lock,
-  Fingerprint
+  Fingerprint,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Customer, Vendor, BillingRecord, Order, SystemUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -104,6 +105,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
   const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const [newIdentity, setNewIdentity] = useState({
@@ -205,6 +207,7 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
     setCustomerToDelete(customer);
     setDeleteStep(1);
     setPasswordAttempt('');
+    setShowDeletePassword(false);
     setIsDeleteDialogOpen(true);
   };
 
@@ -375,7 +378,13 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
       </Card>
 
       {/* SECURE DELETE DIALOG */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        setIsDeleteDialogOpen(open);
+        if (!open) {
+          setShowDeletePassword(false);
+          setPasswordAttempt('');
+        }
+      }}>
         <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden">
            <DialogHeader className="p-8 bg-red-600 text-white flex flex-row items-center gap-4 shrink-0">
               <div className="p-3 bg-white/20 rounded-xl"><Trash2 className="h-8 w-8" /></div>
@@ -409,13 +418,22 @@ export function CustomerOrders({ customers, billing, orders, users, currentUser,
                    </div>
                    <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Authentication Key</Label>
-                      <Input 
-                        type="password" 
-                        placeholder="••••••••" 
-                        className="h-14 bg-slate-50 border-none rounded-xl text-center font-bold text-lg shadow-inner"
-                        value={passwordAttempt}
-                        onChange={(e) => setPasswordAttempt(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input 
+                          type={showDeletePassword ? "text" : "password"} 
+                          placeholder="••••••••" 
+                          className="h-14 bg-slate-50 border-none rounded-xl text-center font-bold text-lg shadow-inner pr-14"
+                          value={passwordAttempt}
+                          onChange={(e) => setPasswordAttempt(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowDeletePassword(!showDeletePassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors z-20"
+                        >
+                          {showDeletePassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
                    </div>
                    <div className="flex gap-4">
                       <Button variant="ghost" className="flex-1 rounded-xl h-12 uppercase font-bold text-[10px]" onClick={() => setDeleteStep(1)}>Back</Button>
